@@ -1,0 +1,9 @@
+description: "A delimiter-looking line in the body is ignored as Markdown"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

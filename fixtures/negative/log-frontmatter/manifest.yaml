@@ -1,0 +1,11 @@
+description: "log.md must not contain frontmatter"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "log.md should not contain frontmatter"

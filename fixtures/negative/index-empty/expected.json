@@ -1,0 +1,16 @@
+{
+  "exit_code": 1,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "file": "index.md",
+      "severity": "ERROR",
+      "message": "index.md should contain at least one heading"
+    }
+  ],
+  "counts": {
+    "errors": 1,
+    "warnings": 0,
+    "info": 0
+  }
+}

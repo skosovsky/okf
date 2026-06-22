@@ -1,0 +1,11 @@
+description: "Missing local index is tolerated by orphan check"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "INFO"
+      message_contains: "missing index.md, skipping orphan check for this directory"

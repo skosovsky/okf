@@ -1,0 +1,9 @@
+description: "Cyclic directory links do not recurse forever"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

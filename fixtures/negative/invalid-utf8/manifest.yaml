@@ -1,0 +1,11 @@
+description: "Invalid UTF-8 in a markdown concept file is a conformance error"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "unparseable concept document: invalid encoding: invalid UTF-8"

@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "'tags' should be a YAML list of strings"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

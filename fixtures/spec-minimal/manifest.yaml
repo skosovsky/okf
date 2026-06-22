@@ -1,0 +1,9 @@
+description: "Appendix A minimal bundle passes strict validation; tables/customers.md is a synthetic non-verbatim completion scaffold for the incomplete SPEC listing"
+run:
+  path: "."
+  strict: true
+  check_links: true
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics: []

@@ -1,0 +1,151 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+body {
+  padding: 0;
+  background: #fff;
+}
+
+.wrapper {
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+header {
+  display: none;
+}
+
+section {
+  float: none;
+  width: min(100%, 900px);
+  margin: 0 auto;
+  padding: 0;
+}
+
+footer {
+  float: none;
+  position: static;
+  width: min(100%, 900px);
+  margin: 2.5rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+footer p {
+  margin: 0.35rem 0;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin: 0 0 1.5rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+}
+
+.site-nav a,
+.site-nav summary {
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav summary:hover {
+  text-decoration: underline;
+}
+
+.site-nav__docs {
+  position: relative;
+}
+
+.site-nav__docs[open] {
+  z-index: 2;
+}
+
+.site-nav__docs summary {
+  list-style: none;
+}
+
+.site-nav__docs summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav__docs summary::after {
+  content: " ▾";
+  font-size: 0.8em;
+}
+
+.site-nav__docs[open] summary::after {
+  content: " ▴";
+}
+
+.site-nav__docs a {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.site-nav__docs[open] {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.site-nav__meta-start {
+  margin-left: auto;
+}
+
+.hero-image {
+  margin: 1rem 0 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.callout {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+  margin: 1rem 0;
+}
+
+.card {
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.card h3 {
+  margin-top: 0;
+}
+
+@media screen and (max-width: 720px) {
+  .wrapper {
+    width: min(100% - 32px, 900px);
+    padding: 1.25rem 0 2rem;
+  }
+
+  .site-nav__meta-start {
+    margin-left: 0;
+  }
+
+  section,
+  footer {
+    width: 100%;
+  }
+}

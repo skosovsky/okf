@@ -1,0 +1,21 @@
+title: Open Knowledge Format
+description: Markdown knowledge bundles for humans and AI agents.
+theme: jekyll-theme-minimal
+repository: skosovsky/okf
+url: https://skosovsky.github.io
+baseurl: /okf
+show_downloads: false
+
+github:
+  repository_url: https://github.com/skosovsky/okf
+
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "open-knowledge-format": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "c810dccd077be06b44ae920a17c5c77c03fca1498a16edff0576fed886e443a1"
+    }
+  }
+}

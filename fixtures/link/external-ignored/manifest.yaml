@@ -1,0 +1,9 @@
+description: "External markdown links are ignored by link checking"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

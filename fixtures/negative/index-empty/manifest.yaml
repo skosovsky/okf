@@ -1,0 +1,11 @@
+description: "Empty index.md violates the reserved index structure"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "index.md should contain at least one heading"

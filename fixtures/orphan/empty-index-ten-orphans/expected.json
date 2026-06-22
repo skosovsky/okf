@@ -1,0 +1,61 @@
+{
+  "exit_code": 0,
+  "scanned_files": 12,
+  "diagnostics": [
+    {
+      "file": "sub/c01.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c02.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c03.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c04.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c05.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c06.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c07.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c08.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c09.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    },
+    {
+      "file": "sub/c10.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in sub/index.md)"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 0
+  }
+}

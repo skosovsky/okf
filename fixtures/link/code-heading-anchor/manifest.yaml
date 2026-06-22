@@ -1,0 +1,11 @@
+description: "Anchor resolution ignores heading-looking lines inside fenced code blocks"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "anchor not found in target file: ./b.md#fake-heading"

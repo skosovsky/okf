@@ -1,0 +1,11 @@
+description: "A fully empty concept file is missing the required frontmatter block"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "missing YAML frontmatter block"

@@ -1,0 +1,11 @@
+description: "log.md date groups must contain markdown list entries"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "log date group contains non-list entry: \"plain paragraph\""

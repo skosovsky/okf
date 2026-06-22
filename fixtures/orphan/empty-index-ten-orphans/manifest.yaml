@@ -1,0 +1,29 @@
+description: "An empty nested local index with ten concepts reports ten orphan warnings"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in sub/index.md)"

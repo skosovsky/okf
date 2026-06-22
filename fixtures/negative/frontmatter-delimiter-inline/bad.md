@@ -1,0 +1,4 @@
+--- type: Note
+---
+
+Body.

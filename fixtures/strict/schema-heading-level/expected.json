@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "BigQuery Table concepts should include a '# Schema' section"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

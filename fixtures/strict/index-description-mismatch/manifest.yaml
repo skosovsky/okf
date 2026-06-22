@@ -1,0 +1,11 @@
+description: "Strict mode validates index entry descriptions"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "index.md description for \"a.md\" does not match target frontmatter"

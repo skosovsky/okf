@@ -1,0 +1,11 @@
+description: "Strict mode warns when timestamp is present but not a scalar string"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "'timestamp' should be an RFC3339 string"

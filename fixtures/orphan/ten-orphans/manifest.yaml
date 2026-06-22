@@ -1,0 +1,29 @@
+description: "A valid local index that omits ten concepts reports ten orphan warnings"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"

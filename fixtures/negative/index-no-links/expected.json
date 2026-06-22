@@ -1,0 +1,26 @@
+{
+  "exit_code": 1,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "file": "index.md",
+      "severity": "ERROR",
+      "message": "index.md list entry should contain a Markdown link"
+    },
+    {
+      "file": "index.md",
+      "severity": "ERROR",
+      "message": "index.md section has no entries: \"Concepts\""
+    },
+    {
+      "file": "index.md",
+      "severity": "ERROR",
+      "message": "index.md should contain at least one linked list entry"
+    }
+  ],
+  "counts": {
+    "errors": 3,
+    "warnings": 0,
+    "info": 0
+  }
+}

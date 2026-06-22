@@ -1,0 +1,10 @@
+{
+  "exit_code": 0,
+  "scanned_files": 2,
+  "diagnostics": [],
+  "counts": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 0
+  }
+}

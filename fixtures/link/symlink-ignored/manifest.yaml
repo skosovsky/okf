@@ -1,0 +1,9 @@
+description: "Symlinked markdown files are ignored by the scanner and as link targets"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

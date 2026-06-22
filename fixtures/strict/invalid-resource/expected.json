@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "'resource' is not a valid URI: \"not a uri\""
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

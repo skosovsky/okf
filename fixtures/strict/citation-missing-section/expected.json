@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "claim.md",
+      "severity": "WARN",
+      "message": "citation markers require a bottom '# Citations' section"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

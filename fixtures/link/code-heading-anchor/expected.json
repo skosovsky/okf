@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "file": "a.md",
+      "severity": "WARN",
+      "message": "anchor not found in target file: ./b.md#fake-heading"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

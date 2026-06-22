@@ -1,0 +1,9 @@
+description: "Reserved index.md and log.md are excluded from orphan checks"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics: []

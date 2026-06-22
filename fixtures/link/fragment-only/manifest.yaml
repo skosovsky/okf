@@ -1,0 +1,9 @@
+description: "Fragment-only links resolve inside the current document"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

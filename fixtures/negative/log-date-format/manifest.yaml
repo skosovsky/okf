@@ -1,0 +1,11 @@
+description: "log.md date headings must use YYYY-MM-DD"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "log date heading is not ISO-8601 YYYY-MM-DD: \"June 21, 2026\""

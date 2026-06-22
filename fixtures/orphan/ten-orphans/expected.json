@@ -1,0 +1,61 @@
+{
+  "exit_code": 0,
+  "scanned_files": 11,
+  "diagnostics": [
+    {
+      "file": "c01.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c02.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c03.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c04.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c05.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c06.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c07.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c08.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c09.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    },
+    {
+      "file": "c10.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 0
+  }
+}

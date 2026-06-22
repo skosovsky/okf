@@ -1,0 +1,15 @@
+description: "index.md list entries must contain Markdown links"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "index.md list entry should contain a Markdown link"
+    - severity: "ERROR"
+      message_contains: "index.md section has no entries: \"Concepts\""
+    - severity: "ERROR"
+      message_contains: "index.md should contain at least one linked list entry"

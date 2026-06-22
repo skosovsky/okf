@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "index.md",
+      "severity": "INFO",
+      "message": "broken link to \"missing/\" (target not found)"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 1
+  }
+}

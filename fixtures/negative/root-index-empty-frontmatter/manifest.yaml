@@ -1,0 +1,11 @@
+description: "Root index.md frontmatter must declare a non-empty okf_version string"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "root index.md okf_version should be a non-empty string"

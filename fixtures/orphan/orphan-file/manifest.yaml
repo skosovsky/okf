@@ -1,0 +1,11 @@
+description: "Concept omitted from local index is an orphan warning"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "orphan file (not linked in index.md)"

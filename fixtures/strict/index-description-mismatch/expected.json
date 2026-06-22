@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "file": "index.md",
+      "severity": "WARN",
+      "message": "index.md description for \"a.md\" does not match target frontmatter"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

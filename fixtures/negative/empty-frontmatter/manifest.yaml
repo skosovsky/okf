@@ -1,0 +1,11 @@
+description: "An empty frontmatter block without type is a conformance error"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "missing or empty 'type' field"

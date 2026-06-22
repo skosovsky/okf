@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 3,
+  "diagnostics": [
+    {
+      "file": "b.md",
+      "severity": "WARN",
+      "message": "orphan file (not linked in index.md)"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 1,
+    "info": 0
+  }
+}

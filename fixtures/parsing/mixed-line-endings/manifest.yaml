@@ -1,0 +1,9 @@
+description: "CRLF markdown files parse the same as LF files"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

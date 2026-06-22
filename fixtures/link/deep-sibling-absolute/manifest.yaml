@@ -1,0 +1,9 @@
+description: "Deep source resolves an absolute bundle-relative link into a sibling branch"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

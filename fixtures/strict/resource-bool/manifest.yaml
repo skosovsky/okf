@@ -1,0 +1,11 @@
+description: "Strict mode warns when resource is a scalar but not a URI"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "'resource' is not a valid URI: \"false\""

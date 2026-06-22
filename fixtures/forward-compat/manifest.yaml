@@ -1,0 +1,9 @@
+description: "Unknown type, unknown keys, and concept okf_version do not break conformance"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

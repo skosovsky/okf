@@ -1,0 +1,16 @@
+{
+  "exit_code": 1,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "file": "log.md",
+      "severity": "ERROR",
+      "message": "log.md should not contain frontmatter"
+    }
+  ],
+  "counts": {
+    "errors": 1,
+    "warnings": 0,
+    "info": 0
+  }
+}

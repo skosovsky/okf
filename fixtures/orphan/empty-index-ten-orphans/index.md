@@ -1,0 +1,3 @@
+# Directories
+
+- [Sub](./sub/) - Subdirectory.

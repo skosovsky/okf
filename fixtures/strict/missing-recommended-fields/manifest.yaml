@@ -1,0 +1,17 @@
+description: "Strict mode warns on missing recommended metadata except resource"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "missing recommended frontmatter field 'description'"
+    - severity: "WARN"
+      message_contains: "missing recommended frontmatter field 'tags'"
+    - severity: "WARN"
+      message_contains: "missing recommended frontmatter field 'timestamp'"
+    - severity: "WARN"
+      message_contains: "missing recommended frontmatter field 'title'"

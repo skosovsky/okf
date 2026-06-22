@@ -1,0 +1,7 @@
+---
+type: Note
+---
+
+# Unix
+
+Body.

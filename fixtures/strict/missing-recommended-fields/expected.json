@@ -1,0 +1,31 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "missing recommended frontmatter field 'description'"
+    },
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "missing recommended frontmatter field 'tags'"
+    },
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "missing recommended frontmatter field 'timestamp'"
+    },
+    {
+      "file": "bad.md",
+      "severity": "WARN",
+      "message": "missing recommended frontmatter field 'title'"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 4,
+    "info": 0
+  }
+}

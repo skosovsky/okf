@@ -1,0 +1,11 @@
+description: "Nested index.md must not declare okf_version frontmatter"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "index.md should not contain frontmatter"

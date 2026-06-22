@@ -1,0 +1,11 @@
+description: "Strict mode warns when tags contains non-string items"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "'tags' should be a YAML list of strings"

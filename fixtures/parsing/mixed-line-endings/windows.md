@@ -1,0 +1,7 @@
+---
+type: Note
+---
+
+# Windows
+
+Body.

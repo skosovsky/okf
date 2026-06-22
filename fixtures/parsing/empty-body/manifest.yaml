@@ -1,0 +1,9 @@
+description: "A concept with valid frontmatter and an empty body is valid"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

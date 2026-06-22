@@ -1,0 +1,9 @@
+description: "Self-reference with existing anchor is valid"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

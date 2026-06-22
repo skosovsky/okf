@@ -1,0 +1,9 @@
+description: "SPEC §4.4 abstract concept passes strict validation without resource"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

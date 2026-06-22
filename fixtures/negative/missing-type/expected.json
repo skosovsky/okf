@@ -1,0 +1,16 @@
+{
+  "exit_code": 1,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "ERROR",
+      "message": "missing or empty 'type' field"
+    }
+  ],
+  "counts": {
+    "errors": 1,
+    "warnings": 0,
+    "info": 0
+  }
+}

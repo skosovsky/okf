@@ -1,0 +1,32 @@
+{
+  "name": "okf",
+  "version": "0.1.0",
+  "description": "Open Knowledge Format CLI, Go library, and Russian-language agent skill.",
+  "author": {
+    "name": "Sergey Kosovsky"
+  },
+  "keywords": [
+    "okf",
+    "knowledge-format",
+    "agent-skill",
+    "markdown",
+    "frontmatter"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Open Knowledge Format",
+    "shortDescription": "Create, consult on, and validate OKF bundles.",
+    "longDescription": "Provides the open-knowledge-format skill plus Go module CLI guidance for creating, converting, enriching, and validating Open Knowledge Format bundles.",
+    "developerName": "Sergey Kosovsky",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Use $open-knowledge-format to validate this OKF bundle.",
+      "Use $open-knowledge-format to design an OKF bundle.",
+      "Use $open-knowledge-format to convert these notes to OKF."
+    ]
+  }
+}

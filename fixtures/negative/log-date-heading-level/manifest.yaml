@@ -1,0 +1,11 @@
+description: "log.md date headings must use level 2 headings"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "log date heading should use level 2: \"### 2026-06-21\""

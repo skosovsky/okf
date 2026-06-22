@@ -1,0 +1,11 @@
+description: "Frontmatter delimiter must be on its own line"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "missing YAML frontmatter block"

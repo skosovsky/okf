@@ -1,0 +1,11 @@
+description: "Broken directory link is informational"
+run:
+  path: "."
+  strict: false
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "INFO"
+      message_contains: "broken link to \"missing/\" (target not found)"

@@ -1,0 +1,9 @@
+description: "Root okf_version 0.1 is accepted"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

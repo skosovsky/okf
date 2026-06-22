@@ -1,0 +1,16 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": ".",
+      "severity": "INFO",
+      "message": "missing index.md, skipping orphan check for this directory"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 1
+  }
+}

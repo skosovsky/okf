@@ -1,0 +1,11 @@
+description: "log.md date groups must be newest first"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "log date headings should be newest first: \"2026-06-22\""

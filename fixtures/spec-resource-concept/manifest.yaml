@@ -1,0 +1,9 @@
+description: "SPEC §4.3 resource-bound concept passes strict validation"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

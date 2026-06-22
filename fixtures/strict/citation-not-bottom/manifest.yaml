@@ -1,0 +1,11 @@
+description: "Citations section must be the bottom section when citation markers are present"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "citation markers require a bottom '# Citations' section"

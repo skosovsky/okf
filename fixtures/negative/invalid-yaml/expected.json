@@ -1,0 +1,16 @@
+{
+  "exit_code": 1,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "file": "bad.md",
+      "severity": "ERROR",
+      "message": "unparseable concept document: invalid frontmatter: yaml: line 1: did not find expected ',' or ']'"
+    }
+  ],
+  "counts": {
+    "errors": 1,
+    "warnings": 0,
+    "info": 0
+  }
+}
