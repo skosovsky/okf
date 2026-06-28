@@ -173,18 +173,19 @@ curl -X POST https://api.acme.com/v2/orders \
 
 ## Инструменты {#tools}
 
-В этом репозитории три публичные поверхности:
+В этом репозитории четыре публичные поверхности:
 
 1. **CLI toolkit** - `cmd/okf` для validation, summaries, index generation, graph output (`text`, Graphviz DOT, Mermaid, JSON-LD, N-Triples), parsing и formatting.
 2. **Go library** - domain packages `bundle`, `validator` и `graph` для встраивания OKF loading, validation и graph export в Go.
-3. **Agent skill** - `skills/open-knowledge-format` для создания, конвертации, обогащения и проверки OKF bundles.
+3. **MCP server** - `cmd/okf-mcp` для MCP-capable agents: читать, проверять, строить graph и безопасно редактировать local OKF bundles через stdio tools.
+4. **Agent skill** - `skills/open-knowledge-format` для создания, конвертации, обогащения, проверки и работы с OKF bundles.
 
 Graph output имеет два слоя: Markdown links для human navigation и YAML
 `relations` для строгих semantic dependencies. Targets в `relations` - OKF
 concept refs вроде `tables/orders#col-status`; для nested field-level sources
 нужен явный `id` или `anchor`.
 
-Смотри отдельные разделы: [Toolkit](toolkit/) и [Skill](skill/).
+Смотри отдельные разделы: [Toolkit](toolkit/) и [Skill](skill/), включая MCP setup.
 
 ## FAQ {#faq}
 

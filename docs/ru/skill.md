@@ -17,6 +17,7 @@ permalink: /ru/skill/
 - Конвертировать Markdown, Notion, Obsidian, CSV или spreadsheet materials в OKF.
 - Обогатить existing concepts metadata, `# Schema`, `# Examples`, citations, cross-links, indexes и logs.
 - Проверить bundle через CLI этого репозитория.
+- Работать с локальными bundles через `okf-mcp`, если host поддерживает MCP tools.
 - Просмотреть, визуализировать или экспортировать graph output для Markdown links и YAML semantic relations.
 
 ## Процесс работы с CLI toolkit
@@ -48,6 +49,45 @@ go run ./cmd/okf info <bundle>
 go run ./cmd/okf index <bundle>
 go run ./cmd/okf fmt <file>
 ```
+
+## Процесс работы с MCP server
+
+Skill остается одним skill в `skills/open-knowledge-format/SKILL.md`. Если
+agent host поддерживает MCP, настрой отдельную stdio server command:
+
+```sh
+go run ./cmd/okf-mcp
+```
+
+или установи binary:
+
+```sh
+go install github.com/skosovsky/okf/cmd/okf-mcp@latest
+```
+
+Пример client configuration:
+
+```json
+{
+  "mcpServers": {
+    "okf": {
+      "command": "okf-mcp"
+    }
+  }
+}
+```
+
+`stdout` зарезервирован под MCP JSON-RPC protocol; diagnostics идут в `stderr`.
+
+Сервер предоставляет `list_concepts`, `read_concept`, `validate_bundle`,
+`get_semantic_graph` и `write_concept`. Все tools требуют absolute
+`bundle_path`; concept tools требуют canonical concept id без `.md`.
+`write_concept` сначала проверяет staged copy со strict/link/orphan validation,
+и только затем атомарно записывает реальный файл. Rejected writes возвращают
+diagnostics и не меняют bundle. Перед изменениями получать контекст через
+`get_semantic_graph` и `read_concept`; проверять через `validate_bundle`;
+редактировать concepts через `write_concept`, не обходя MCP прямыми filesystem
+writes, когда MCP доступен.
 
 ## Процесс вывода graph
 

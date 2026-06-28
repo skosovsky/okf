@@ -17,6 +17,7 @@ The repository includes `skills/open-knowledge-format`: a portable agent skill f
 - Convert Markdown, Notion, Obsidian, CSV, or spreadsheet material into OKF.
 - Enrich existing concepts with metadata, `# Schema`, `# Examples`, citations, cross-links, indexes, and logs.
 - Validate bundles through this repository's CLI.
+- Operate on local bundles through the `okf-mcp` server when the host supports MCP tools.
 - Inspect, visualize, or export graph output for Markdown links and YAML semantic relations.
 
 ## CLI toolkit workflow
@@ -49,6 +50,45 @@ go run ./cmd/okf info <bundle>
 go run ./cmd/okf index <bundle>
 go run ./cmd/okf fmt <file>
 ```
+
+## MCP server workflow
+
+The skill remains a single skill at `skills/open-knowledge-format/SKILL.md`.
+When an agent host supports MCP, configure the separate stdio server command:
+
+```sh
+go run ./cmd/okf-mcp
+```
+
+or install it:
+
+```sh
+go install github.com/skosovsky/okf/cmd/okf-mcp@latest
+```
+
+Example client configuration:
+
+```json
+{
+  "mcpServers": {
+    "okf": {
+      "command": "okf-mcp"
+    }
+  }
+}
+```
+
+`stdout` is reserved for the MCP JSON-RPC protocol; diagnostics go to `stderr`.
+
+The server exposes `list_concepts`, `read_concept`, `validate_bundle`,
+`get_semantic_graph`, and `write_concept`. All tools require an absolute
+`bundle_path`; concept tools require canonical concept ids without `.md`.
+`write_concept` stages the bundle, runs strict/link/orphan validation, and only
+then atomically writes the real file. Rejected writes return diagnostics and
+leave the bundle unchanged. Before changes, inspect context with
+`get_semantic_graph` and `read_concept`; validate with `validate_bundle`; use
+`write_concept` for concept edits instead of direct filesystem writes when MCP
+is available.
 
 ## Graph output workflow
 

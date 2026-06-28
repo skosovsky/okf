@@ -22,7 +22,7 @@ OKF фиксирует минимальный интероперабельный
 
 ## Что должен уметь skill
 
-Использовать skill в семи режимах:
+Использовать skill в восьми режимах:
 
 1. **Консультировать по OKF** - объяснять модель bundle/concept/frontmatter/body/link/citation, границу hard conformance и soft guidance, применимость OKF и отличия от Obsidian/Notion/metadata-as-code.
 2. **Проектировать bundle** - выбрать структуру директорий без навязывания taxonomy, определить concept types, reserved files, cross-links, политику `index.md`/`log.md` и объявление версии.
@@ -30,7 +30,8 @@ OKF фиксирует минимальный интероперабельный
 4. **Конвертировать sources в OKF** - переносить Notion, Obsidian, CSV/spreadsheets и произвольные Markdown-директории в conformant bundle; подробности в [references/conversion.md](references/conversion.md).
 5. **Обогащать existing bundles** - добавлять обоснованные recommended fields, schemas, examples, citations, links, indexes и logs без выдумывания данных.
 6. **Выполнять deterministic CLI pipeline** - использовать OKF CLI из Go module для quality gate, summary, maintenance и graph extraction; разделять errors/warnings/info и не отклонять bundles по soft guidance.
-7. **Поддерживать consumption workflow** - помогать агенту читать bundle через `index.md`, затем нужные concepts, links/citations, YAML `relations` и только потом deep files.
+7. **Работать через MCP, если host это поддерживает** - использовать `okf-mcp` как отдельный stdio MCP server для tool-based чтения, проверки, graph extraction и безопасного редактирования local OKF bundles.
+8. **Поддерживать consumption workflow** - помогать агенту читать bundle через `index.md`, затем нужные concepts, links/citations, YAML `relations` и только потом deep files.
 
 Не привязывать workflow к конкретному provider, IDE или cloud. OKF - формат, не платформа.
 
@@ -135,6 +136,56 @@ go run github.com/skosovsky/okf/cmd/okf@latest graph <bundle> -format ntriples
 - `okf info <bundle>` - получить summary по concepts, types, links и version.
 - `okf index <bundle>` - регенерировать `index.md` surfaces.
 - `okf fmt <file>` - нормализовать один concept document.
+
+## OKF MCP server
+
+Skill entrypoint остается `skills/open-knowledge-format/SKILL.md`. Для MCP-capable hosts настраивать отдельную stdio command `okf-mcp`.
+
+Установка:
+
+```sh
+go install github.com/skosovsky/okf/cmd/okf-mcp@latest
+```
+
+Из checkout репозитория:
+
+```sh
+go run ./cmd/okf-mcp
+```
+
+Пример client configuration:
+
+```json
+{
+  "mcpServers": {
+    "okf": {
+      "command": "okf-mcp"
+    }
+  }
+}
+```
+
+`stdout` зарезервирован под MCP JSON-RPC protocol. Diagnostics и startup errors писать только в `stderr`.
+
+Tools:
+
+- `list_concepts` - загрузить bundle и вернуть deterministic JSON с `concepts[]`: `id`, `type`, `title`, `path`.
+- `read_concept` - прочитать raw Markdown одного concept по canonical concept id.
+- `validate_bundle` - вернуть JSON validation report; conformance errors остаются normal report, а preflight/load failures возвращаются как tool error.
+- `get_semantic_graph` - вернуть JSON-LD graph, byte-compatible с `okf graph -format json-ld`.
+- `write_concept` - создать или обновить один concept через staged copy, strict/link/orphan validation и atomic rename.
+
+Rules for MCP usage:
+
+1. Всегда передавать absolute `bundle_path`.
+2. `concept_id` должен быть canonical OKF concept id: `tables/orders`, без leading slash, `./`, `../`, `.md`, URI scheme, empty segment или surrounding whitespace.
+3. `read_concept` и `write_concept` отклоняют symlink target/ancestor внутри bundle.
+4. `write_concept` принимает YAML frontmatter без delimiters `---` и Markdown body; serialized document добавляет frontmatter delimiters сам.
+5. Если staged validation нашла hard errors, считать write rejected: не пытаться повторять запись напрямую в файловую систему, сначала исправить diagnostics.
+6. `write_concept` не регенерирует indexes. Если задача требует updated `index.md`, явно запускать `okf index <bundle>` после успешного write.
+7. Перед изменениями вызвать `get_semantic_graph` и при необходимости `read_concept`, чтобы понять impact и текущий source text.
+8. Для проверки использовать `validate_bundle`.
+9. Если MCP server доступен в IDE-сценарии, concept edits делать через `write_concept`, не обходить MCP обычными filesystem writes, если только пользователь явно не попросил low-level repair.
 
 ### Knowledge Extraction
 

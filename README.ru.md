@@ -7,11 +7,14 @@
 Go-библиотеку с минимальным числом зависимостей и portable agent skill для OKF
 workflows.
 
-Проект предоставляет три публичных способа использования:
+Проект предоставляет четыре публичных способа использования:
 
 1. CLI-toolkit `okf` для работы с OKF-bundle.
 2. Go library packages `github.com/skosovsky/okf/bundle`, `github.com/skosovsky/okf/validator` и `github.com/skosovsky/okf/graph` для встраивания OKF в Go-программы.
-3. Agent skill `open-knowledge-format` для консультаций, создания, конвертации,
+3. Stdio MCP server `okf-mcp` для agent clients, которым нужно через tools
+   читать, проверять, строить graph и безопасно редактировать локальные
+   OKF-bundle.
+4. Agent skill `open-knowledge-format` для консультаций, создания, конвертации,
    обогащения, проверки и экспорта OKF-bundle.
 
 English documentation: [README.md](README.md).
@@ -214,7 +217,46 @@ if err != nil {
 fmt.Println(written)
 ```
 
-## Способ 3: Agent Skill
+## Способ 3: MCP Server
+
+Установка команды `okf-mcp`:
+
+```sh
+go install github.com/skosovsky/okf/cmd/okf-mcp@latest
+```
+
+Настрой MCP client на запуск `okf-mcp` через stdio. Сервер предоставляет tools:
+
+```json
+{
+  "mcpServers": {
+    "okf": {
+      "command": "okf-mcp"
+    }
+  }
+}
+```
+
+`stdout` зарезервирован под MCP JSON-RPC protocol. Diagnostics и startup errors
+пишутся в `stderr`.
+
+- Перед изменением bundle получить контекст через `get_semantic_graph` и, если
+  нужно, `read_concept`.
+- `list_concepts` - загрузить bundle и вернуть детерминированный список concepts.
+- `read_concept` - прочитать Markdown одного concept по canonical concept id.
+- `validate_bundle` - вернуть JSON validation report.
+- `get_semantic_graph` - вернуть тот же JSON-LD graph, что и `okf graph -format json-ld`.
+- `write_concept` - создать или обновить один concept через staged strict validation, затем атомарно записать файл.
+
+Все tools требуют absolute `bundle_path`. Concept tools используют canonical OKF
+concept ids вроде `tables/orders`, без leading slash и без suffix `.md`.
+Read/write paths отклоняют symlinks внутри bundle path. `write_concept`
+проверяет временную staged copy со strict, link и orphan checks до изменения
+реального bundle; rejected writes возвращают diagnostics и не меняют файлы. В
+MCP-driven IDE workflow редактируй concepts через `write_concept`, не обходя
+server прямыми filesystem writes.
+
+## Способ 4: Agent Skill
 
 В репозитории есть универсальный русскоязычный skill:
 `skills/open-knowledge-format`. Используй его, когда агенту нужно:
@@ -225,6 +267,8 @@ fmt.Println(written)
 - обогатить existing OKF concepts metadata, sections `# Schema` и `# Examples`,
   citations, cross-links, indexes и logs;
 - проверить OKF bundle через OKF CLI из Go module;
+- работать с локальным OKF bundle через `okf-mcp`, если host поддерживает MCP
+  tools;
 - извлечь graph output для impact analysis и agent harnesses.
 
 Для runtime, который поддерживает local skills, зарегистрируй или скопируй
