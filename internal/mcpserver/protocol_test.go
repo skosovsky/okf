@@ -2,11 +2,15 @@ package mcpserver
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/mcptest"
+	"github.com/skosovsky/okf/bundle"
 )
 
 func TestMCPServerListsExpectedToolsAndSchemas(t *testing.T) {
@@ -39,13 +43,47 @@ func TestMCPServerListsExpectedToolsAndSchemas(t *testing.T) {
 	}
 
 	assertToolSchema(t, got, "list_concepts", []string{"bundle_path"}, true)
+	assertToolProperties(t, got["list_concepts"], []string{"bundle_path"})
 	assertToolSchema(t, got, "read_concept", []string{"bundle_path", "concept_id"}, true)
+	assertToolProperties(t, got["read_concept"], []string{"bundle_path", "concept_id"})
 	assertToolSchema(t, got, "validate_bundle", []string{"bundle_path"}, true)
+	assertToolProperties(t, got["validate_bundle"], []string{"bundle_path", "check_links", "check_orphans", "strict"})
 	assertBooleanDefault(t, got["validate_bundle"], "strict", false)
 	assertBooleanDefault(t, got["validate_bundle"], "check_links", false)
 	assertBooleanDefault(t, got["validate_bundle"], "check_orphans", false)
 	assertToolSchema(t, got, "get_semantic_graph", []string{"bundle_path"}, true)
+	assertToolProperties(t, got["get_semantic_graph"], []string{"bundle_path"})
 	assertToolSchema(t, got, "write_concept", []string{"bundle_path", "concept_id", "frontmatter", "body"}, false)
+	assertToolProperties(t, got["write_concept"], []string{"body", "bundle_path", "concept_id", "frontmatter"})
+}
+
+func TestWriteConceptReplayPreservesDurableDiagnosticsAfterLaterCommit(t *testing.T) {
+	root := t.TempDir()
+	id, err := bundle.ParseConceptID("replayed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := writeConcept(t.Context(), root, id, "type: Note\n", "Replay body.\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(first.Diagnostics) == 0 {
+		t.Fatal("write must exercise non-empty warning/info diagnostics")
+	}
+	other, err := bundle.ParseConceptID("later")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writeConcept(t.Context(), root, other, "type: Note\n", "Later body.\n"); err != nil {
+		t.Fatal(err)
+	}
+	replay, err := writeConcept(t.Context(), root, id, "type: Note\n", "Replay body.\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(replay, first) {
+		t.Fatalf("replay response = %#v, want durable original %#v", replay, first)
+	}
 }
 
 func TestMCPServerCallToolRoundTrip(t *testing.T) {
@@ -79,6 +117,34 @@ func TestMCPServerCallToolRoundTrip(t *testing.T) {
 	}
 	if got := readTestFile(t, root, "b.md"); got != "---\ntype: Note\ntitle: B\n---\n\nB.\n" {
 		t.Fatalf("written file = %q", got)
+	}
+
+	// An identical protocol retry must replay the existing store receipt rather
+	// than publish a second write.
+	replayResult := callMCPTool(t, srv, "write_concept", map[string]any{
+		"bundle_path": root,
+		"concept_id":  "b",
+		"frontmatter": "type: Note\ntitle: B\n",
+		"body":        "B.\n",
+	})
+	if replayResult.IsError {
+		t.Fatalf("write_concept replay returned error: %s", resultText(t, replayResult))
+	}
+	receipts, err := os.ReadDir(filepath.Join(root, ".okf", "receipts"))
+	if err != nil || len(receipts) != 1 {
+		t.Fatalf("receipt files = %d, err=%v; want one publication", len(receipts), err)
+	}
+}
+
+func assertToolProperties(t *testing.T, tool mcp.Tool, want []string) {
+	t.Helper()
+	got := make([]string, 0, len(tool.InputSchema.Properties))
+	for name := range tool.InputSchema.Properties {
+		got = append(got, name)
+	}
+	slices.Sort(got)
+	if !slices.Equal(got, want) {
+		t.Fatalf("tool %s properties = %#v, want %#v", tool.Name, got, want)
 	}
 }
 

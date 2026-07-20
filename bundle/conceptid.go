@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 )
 
 // ConceptID identifies a concept by its bundle-relative path without ".md".
@@ -73,6 +74,21 @@ func (id ConceptID) String() string {
 	return strings.Join(id.segments, "/")
 }
 
+// ValidateConceptID validates a constructed concept identifier for use in a
+// public semantic contract. It is deliberately separate from ParseConceptID:
+// the latter accepts cosmetic extra slashes for loader compatibility.
+func ValidateConceptID(id ConceptID) error {
+	if len(id.segments) == 0 {
+		return fmt.Errorf("%w: empty concept id", ErrInvalidConceptID)
+	}
+	for _, segment := range id.segments {
+		if err := ValidateConceptSegment(segment); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ToPath resolves the concept id to a Markdown file path under bundleRoot.
 func (id ConceptID) ToPath(bundleRoot string) string {
 	if len(id.segments) == 0 {
@@ -103,11 +119,20 @@ func ConceptIDFromPath(bundleRoot, filePath string) (ConceptID, error) {
 
 // ValidateConceptSegment validates one concept id path segment.
 //
-// OKF v0.1 does not impose an ASCII slug grammar. Validation only rejects
-// empty and traversal segments so concept ids remain bundle-relative paths.
+// OKF v0.1 does not impose a filename character grammar. Validation rejects
+// path semantics and control characters that cannot safely identify a source
+// path. Ordinary punctuation and Unicode remain valid.
 func ValidateConceptSegment(segment string) error {
-	if segment == "" || segment == "." || segment == ".." {
+	if segment == "" || segment == "." || segment == ".." || strings.ContainsAny(segment, "\\/") {
 		return fmt.Errorf("%w: invalid segment %q", ErrInvalidConceptID, segment)
+	}
+	if !utf8.ValidString(segment) {
+		return fmt.Errorf("%w: invalid segment %q", ErrInvalidConceptID, segment)
+	}
+	for _, r := range segment {
+		if r <= 0x1F || r == 0x7F {
+			return fmt.Errorf("%w: invalid segment %q", ErrInvalidConceptID, segment)
+		}
 	}
 	return nil
 }

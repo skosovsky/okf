@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -24,6 +25,14 @@ type ValidatorConfig struct {
 	Strict       bool
 	CheckLinks   bool
 	CheckOrphans bool
+	// CheckRelations projects semantic relation diagnostics into the validation
+	// report. It is deliberately opt-in: OKF v0.1 base conformance does not
+	// require semantic relation policy. Mutation paths enforce blocking relation
+	// diagnostics independently of this reporting policy.
+	CheckRelations bool
+	// checkpoint is a package-private deterministic test seam. Production
+	// callers cannot configure it; validation still checks ctx at every pass.
+	checkpoint func()
 }
 
 // FileRole classifies bundle files for validation.
@@ -84,18 +93,54 @@ func (s Severity) String() string {
 
 // Diagnostic is one validation finding.
 type Diagnostic struct {
+	// Code is an optional stable machine-readable identifier. Most validator
+	// findings predate semantic relation diagnostics and intentionally leave it
+	// empty; callers must continue to use Message for their human-facing text.
+	Code     string
 	File     string
 	Severity Severity
 	Message  string
+	// Source, RelationType and RawTarget preserve the semantic relation that
+	// produced this finding. Refs contains Source for relation diagnostics and
+	// leaves room for validators which can identify further affected resources.
+	// They are empty for legacy document validation diagnostics.
+	Source       bundle.RelationRef
+	RelationType string
+	RawTarget    string
+	Refs         []bundle.RelationRef
 }
 
 // String returns a human-readable diagnostic.
 func (d Diagnostic) String() string {
 	prefix := fmt.Sprintf("[%s] ", d.Severity)
-	if d.File != "" {
-		return prefix + d.File + ": " + d.Message
+	message := d.Message
+	if d.Code != "" || d.Source.String() != "" || d.RelationType != "" || d.RawTarget != "" || len(d.Refs) != 0 {
+		parts := make([]string, 0, 5)
+		if d.Code != "" {
+			parts = append(parts, "code="+d.Code)
+		}
+		if d.Source.String() != "" {
+			parts = append(parts, "source="+d.Source.String())
+		}
+		if d.RelationType != "" {
+			parts = append(parts, "relation_type="+d.RelationType)
+		}
+		if d.RawTarget != "" {
+			parts = append(parts, "raw_target="+d.RawTarget)
+		}
+		if len(d.Refs) != 0 {
+			refs := make([]string, len(d.Refs))
+			for i, ref := range d.Refs {
+				refs[i] = ref.String()
+			}
+			parts = append(parts, "refs="+strings.Join(refs, ","))
+		}
+		message += " (" + strings.Join(parts, ", ") + ")"
 	}
-	return prefix + d.Message
+	if d.File != "" {
+		return prefix + d.File + ": " + message
+	}
+	return prefix + message
 }
 
 // Report is the result of validating a bundle.
@@ -155,6 +200,7 @@ func (r Report) InfoCount() int {
 }
 
 type validator struct {
+	ctx          context.Context
 	root         string
 	cfg          ValidatorConfig
 	bundle       *bundle.Bundle
@@ -165,6 +211,16 @@ type validator struct {
 
 // ValidateBundle validates a loaded bundle against OKF v0.1.
 func ValidateBundle(b *bundle.Bundle, cfg *ValidatorConfig) Report {
+	report, _ := ValidateBundleContext(context.Background(), b, cfg)
+	return report
+}
+
+// ValidateBundleContext validates a loaded bundle and stops promptly when ctx
+// is cancelled. A cancelled validation has no partial-report contract.
+func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *ValidatorConfig) (Report, error) {
+	if err := ctx.Err(); err != nil {
+		return Report{}, err
+	}
 	config := ValidatorConfig{}
 	if cfg != nil {
 		config = *cfg
@@ -174,10 +230,11 @@ func ValidateBundle(b *bundle.Bundle, cfg *ValidatorConfig) Report {
 		return Report{Diagnostics: []Diagnostic{{
 			Severity: SeverityError,
 			Message:  "nil bundle",
-		}}}
+		}}}, nil
 	}
 
 	v := &validator{
+		ctx:          ctx,
 		root:         b.Root(),
 		cfg:          config,
 		bundle:       b,
@@ -185,9 +242,14 @@ func ValidateBundle(b *bundle.Bundle, cfg *ValidatorConfig) Report {
 		headingCache: make(map[string]map[string]struct{}),
 	}
 	v.report.ScannedFiles = len(v.files)
-	v.validate()
+	if err := v.validate(); err != nil {
+		return Report{}, err
+	}
+	if config.CheckRelations {
+		v.addRelationDiagnostics(b.RelationDiagnostics())
+	}
 	v.sortDiagnostics()
-	return v.report
+	return v.report, nil
 }
 
 // ValidatePath loads and validates a bundle path against OKF v0.1.
@@ -204,29 +266,78 @@ func ValidatePath(bundlePath string, cfg *ValidatorConfig) Report {
 	return ValidateBundle(b, cfg)
 }
 
-func (v *validator) validate() {
-	v.validateConceptParseErrors()
-	v.validateConcepts()
-	v.validateReservedFiles()
+// ValidateSource loads and validates source using ctx for every validation pass.
+// If ctx is cancelled, it returns ctx.Err and no partial-report contract exists.
+func ValidateSource(ctx context.Context, source bundle.Source, cfg *ValidatorConfig) (Report, error) {
+	if err := ctx.Err(); err != nil {
+		return Report{}, err
+	}
+	b, err := bundle.Load(ctx, source)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return Report{}, ctxErr
+		}
+		return Report{Diagnostics: []Diagnostic{{Severity: SeverityError, Message: err.Error()}}}, nil
+	}
+	return ValidateBundleContext(ctx, b, cfg)
+}
+
+// ValidateSourceBackground is the report-only compatibility wrapper.
+func ValidateSourceBackground(source bundle.Source, cfg *ValidatorConfig) Report {
+	report, _ := ValidateSource(context.Background(), source, cfg)
+	return report
+}
+
+func (v *validator) check() error {
+	if v.cfg.checkpoint != nil {
+		v.cfg.checkpoint()
+	}
+	return v.ctx.Err()
+}
+
+func (v *validator) validate() error {
+	if err := v.validateConceptParseErrors(); err != nil {
+		return err
+	}
+	if err := v.validateConcepts(); err != nil {
+		return err
+	}
+	if err := v.validateReservedFiles(); err != nil {
+		return err
+	}
 	if v.cfg.Strict {
-		v.validateStrict()
+		if err := v.validateStrict(); err != nil {
+			return err
+		}
 	}
 	if v.cfg.CheckLinks {
-		v.validateLinks()
+		if err := v.validateLinks(); err != nil {
+			return err
+		}
 	}
 	if v.cfg.CheckOrphans {
-		v.validateOrphans()
+		if err := v.validateOrphans(); err != nil {
+			return err
+		}
 	}
+	return v.check()
 }
 
-func (v *validator) validateConceptParseErrors() {
+func (v *validator) validateConceptParseErrors() error {
 	for _, parseError := range v.bundle.ParseErrors() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, parseError.Path, "unparseable concept document: "+parseError.Err.Error())
 	}
+	return nil
 }
 
-func (v *validator) validateConcepts() {
+func (v *validator) validateConcepts() error {
 	for _, concept := range v.bundle.Concepts() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		if !concept.Document.HasFrontmatter {
 			v.add(SeverityError, concept.Path, "missing YAML frontmatter block")
 			continue
@@ -235,12 +346,16 @@ func (v *validator) validateConcepts() {
 			v.add(SeverityError, concept.Path, "missing or empty 'type' field")
 		}
 	}
+	return nil
 }
 
-func (v *validator) validateReservedFiles() {
+func (v *validator) validateReservedFiles() error {
 	rootIndex := filepath.Join(v.root, "index.md")
 
 	for _, path := range v.bundle.IndexFiles() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		document, ok := v.readDocument(path, true)
 		if !ok {
 			continue
@@ -252,6 +367,9 @@ func (v *validator) validateReservedFiles() {
 			}
 			keys := document.Frontmatter.Keys()
 			for _, key := range keys {
+				if err := v.check(); err != nil {
+					return err
+				}
 				if key != "okf_version" {
 					v.add(SeverityError, path, "root index.md frontmatter should declare only 'okf_version'")
 					break
@@ -271,10 +389,15 @@ func (v *validator) validateReservedFiles() {
 		if v.cfg.CheckOrphans && !samePath(path, rootIndex) && strings.TrimSpace(document.Body) == "" {
 			continue
 		}
-		v.validateIndexBody(path, document.Body)
+		if err := v.validateIndexBody(path, document.Body); err != nil {
+			return err
+		}
 	}
 
 	for _, path := range v.bundle.LogFiles() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		document, ok := v.readDocument(path, true)
 		if !ok {
 			continue
@@ -283,11 +406,14 @@ func (v *validator) validateReservedFiles() {
 			v.add(SeverityError, path, "log.md should not contain frontmatter")
 			continue
 		}
-		v.validateLog(path, document.Body)
+		if err := v.validateLog(path, document.Body); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (v *validator) validateIndexBody(path, body string) {
+func (v *validator) validateIndexBody(path, body string) error {
 	lines := strings.Split(body, "\n")
 	seenHeading := false
 	seenEntry := false
@@ -295,6 +421,9 @@ func (v *validator) validateIndexBody(path, body string) {
 	sectionHasEntry := false
 
 	for _, line := range lines {
+		if err := v.check(); err != nil {
+			return err
+		}
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			continue
@@ -326,7 +455,7 @@ func (v *validator) validateIndexBody(path, body string) {
 
 	if !seenHeading {
 		v.add(SeverityError, path, "index.md should contain at least one heading")
-		return
+		return nil
 	}
 	if !sectionHasEntry {
 		v.add(SeverityError, path, fmt.Sprintf("index.md section has no entries: %q", sectionHeading))
@@ -334,11 +463,12 @@ func (v *validator) validateIndexBody(path, body string) {
 	if !seenEntry {
 		v.add(SeverityError, path, "index.md should contain at least one linked list entry")
 	}
+	return nil
 }
 
-func (v *validator) validateLog(path, body string) {
+func (v *validator) validateLog(path, body string) error {
 	if strings.TrimSpace(body) == "" {
-		return
+		return nil
 	}
 
 	log := bundle.ParseLog(body)
@@ -347,37 +477,69 @@ func (v *validator) validateLog(path, body string) {
 		v.add(SeverityError, path, "log.md should contain ISO-8601 date headings")
 	}
 	for _, badDate := range log.InvalidDates() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, path, fmt.Sprintf("log date heading is not ISO-8601 YYYY-MM-DD: %q", badDate))
 	}
 	for _, badLevel := range badDateLevels {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, path, fmt.Sprintf("log date heading should use level 2: %q", badLevel))
 	}
 	for _, emptyDay := range log.EmptyDates() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, path, fmt.Sprintf("log date heading has no entries: %q", emptyDay))
 	}
 	for _, outOfOrder := range log.OutOfOrderDates() {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, path, fmt.Sprintf("log date headings should be newest first: %q", outOfOrder))
 	}
 	for _, line := range nonListLogLines(body) {
+		if err := v.check(); err != nil {
+			return err
+		}
 		v.add(SeverityError, path, fmt.Sprintf("log date group contains non-list entry: %q", line))
 	}
+	return nil
 }
 
-func (v *validator) validateStrict() {
+func (v *validator) validateStrict() error {
 	for _, concept := range v.bundle.Concepts() {
-		v.validateStrictFrontmatter(concept)
-		v.validateConventionalSections(concept)
-	}
-	for _, path := range v.bundle.IndexFiles() {
-		document, ok := v.readDocument(path, true)
-		if ok {
-			v.validateIndexDescriptions(path, document.Body)
+		if err := v.check(); err != nil {
+			return err
+		}
+		if err := v.validateStrictFrontmatter(concept); err != nil {
+			return err
+		}
+		if err := v.validateConventionalSections(concept); err != nil {
+			return err
 		}
 	}
+	for _, path := range v.bundle.IndexFiles() {
+		if err := v.check(); err != nil {
+			return err
+		}
+		document, ok := v.readDocument(path, true)
+		if ok {
+			if err := v.validateIndexDescriptions(path, document.Body); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
-func (v *validator) validateStrictFrontmatter(concept bundle.Concept) {
+func (v *validator) validateStrictFrontmatter(concept bundle.Concept) error {
 	for _, field := range []string{"title", "description", "tags", "timestamp"} {
+		if err := v.check(); err != nil {
+			return err
+		}
 		value, ok := concept.Document.Frontmatter.Get(field)
 		if !ok || isEmptyYAMLValue(value) {
 			v.add(SeverityWarning, concept.Path, fmt.Sprintf("missing recommended frontmatter field '%s'", field))
@@ -389,6 +551,9 @@ func (v *validator) validateStrictFrontmatter(concept bundle.Concept) {
 			v.add(SeverityWarning, concept.Path, "'tags' should be a YAML list of strings")
 		} else {
 			for _, item := range node.Content {
+				if err := v.check(); err != nil {
+					return err
+				}
 				if item.Kind != yaml.ScalarNode || item.Tag != "!!str" {
 					v.add(SeverityWarning, concept.Path, "'tags' should be a YAML list of strings")
 					break
@@ -416,9 +581,10 @@ func (v *validator) validateStrictFrontmatter(concept bundle.Concept) {
 			v.add(SeverityWarning, concept.Path, "'resource' should be a URI string")
 		}
 	}
+	return nil
 }
 
-func (v *validator) validateConventionalSections(concept bundle.Concept) {
+func (v *validator) validateConventionalSections(concept bundle.Concept) error {
 	body := concept.Document.Body
 	codeFreeBody := strings.Join(codeFreeLines(body), "\n")
 	if citationMarkerRE.MatchString(codeFreeBody) {
@@ -430,6 +596,9 @@ func (v *validator) validateConventionalSections(concept bundle.Concept) {
 				v.add(SeverityWarning, concept.Path, "'# Citations' should contain numbered citation entries")
 			}
 			for i, citation := range citations {
+				if err := v.check(); err != nil {
+					return err
+				}
 				want := i + 1
 				if citation.Number != want {
 					v.add(SeverityWarning, concept.Path, fmt.Sprintf("citation numbering should be contiguous starting at 1: got %d, want %d", citation.Number, want))
@@ -448,10 +617,14 @@ func (v *validator) validateConventionalSections(concept bundle.Concept) {
 	if typ, ok := concept.Document.Frontmatter.Type(); ok && strings.EqualFold(typ, "BigQuery Table") && !hasTopLevelHeading(body, "Schema") {
 		v.add(SeverityWarning, concept.Path, "BigQuery Table concepts should include a '# Schema' section")
 	}
+	return nil
 }
 
-func (v *validator) validateIndexDescriptions(path, body string) {
+func (v *validator) validateIndexDescriptions(path, body string) error {
 	for _, line := range strings.Split(body, "\n") {
+		if err := v.check(); err != nil {
+			return err
+		}
 		trimmed := strings.TrimSpace(line)
 		bullet, ok := bulletBody(trimmed)
 		if !ok {
@@ -479,10 +652,14 @@ func (v *validator) validateIndexDescriptions(path, body string) {
 			v.add(SeverityWarning, path, fmt.Sprintf("index.md description for %q does not match target frontmatter", link.Target))
 		}
 	}
+	return nil
 }
 
-func (v *validator) validateLinks() {
+func (v *validator) validateLinks() error {
 	for _, path := range v.files {
+		if err := v.check(); err != nil {
+			return err
+		}
 		document, ok := v.readDocument(path, true)
 		if !ok {
 			continue
@@ -492,40 +669,60 @@ func (v *validator) validateLinks() {
 			body = document.Body
 		}
 		for _, link := range bundle.ExtractLinks(body) {
-			v.validateLink(path, link)
+			if err := v.check(); err != nil {
+				return err
+			}
+			if err := v.validateLink(path, link); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (v *validator) validateLink(sourcePath string, link bundle.Link) {
+func (v *validator) validateLink(sourcePath string, link bundle.Link) error {
+	if err := v.check(); err != nil {
+		return err
+	}
 	if link.Kind == bundle.LinkExternal || link.Kind == bundle.LinkOther {
-		return
+		return nil
 	}
 
 	targetPath, targetKind, fragment, ok := v.resolveLinkTarget(sourcePath, link.Target)
 	if !ok {
 		v.add(SeverityInfo, sourcePath, fmt.Sprintf("broken link to %q (target not found)", link.Target))
-		return
+		return nil
 	}
 	if targetKind == RoleAsset {
-		return
+		return nil
 	}
 	if fragment == "" {
-		return
+		return nil
 	}
 
 	headingPath := targetPath
 	if targetKind == RoleIndex && isDirectoryLink(link.Target) {
 		headingPath = filepath.Join(targetPath, "index.md")
 	}
-	if !v.headingExists(headingPath, fragment) {
+	if err := v.check(); err != nil {
+		return err
+	}
+	exists, err := v.headingExists(headingPath, fragment)
+	if err != nil {
+		return err
+	}
+	if !exists {
 		v.add(SeverityWarning, sourcePath, fmt.Sprintf("anchor not found in target file: %s", link.Target))
 	}
+	return nil
 }
 
-func (v *validator) validateOrphans() {
+func (v *validator) validateOrphans() error {
 	byDir := make(map[string][]string)
 	for _, path := range v.files {
+		if err := v.check(); err != nil {
+			return err
+		}
 		if DetermineFileRole(path) == RoleConcept {
 			byDir[filepath.Dir(path)] = append(byDir[filepath.Dir(path)], path)
 		}
@@ -533,12 +730,34 @@ func (v *validator) validateOrphans() {
 
 	dirs := make([]string, 0, len(byDir))
 	for dir := range byDir {
+		if err := v.check(); err != nil {
+			return err
+		}
 		dirs = append(dirs, dir)
 	}
 	sort.Strings(dirs)
 
 	for _, dir := range dirs {
+		if err := v.check(); err != nil {
+			return err
+		}
 		indexPath := filepath.Join(dir, "index.md")
+		if v.root == "" {
+			if _, ok := v.bundle.ReadFile(indexPath); !ok {
+				v.add(SeverityInfo, dir, "missing index.md, skipping orphan check for this directory")
+				continue
+			}
+			covered := v.indexCoveredConcepts(indexPath)
+			for _, conceptPath := range byDir[dir] {
+				if err := v.check(); err != nil {
+					return err
+				}
+				if !covered[filepath.Clean(conceptPath)] {
+					v.add(SeverityWarning, conceptPath, fmt.Sprintf("orphan file (not linked in %s)", v.rel(indexPath)))
+				}
+			}
+			continue
+		}
 		if _, err := os.Stat(indexPath); err != nil {
 			if os.IsNotExist(err) {
 				v.add(SeverityInfo, dir, "missing index.md, skipping orphan check for this directory")
@@ -547,11 +766,15 @@ func (v *validator) validateOrphans() {
 		}
 		covered := v.indexCoveredConcepts(indexPath)
 		for _, conceptPath := range byDir[dir] {
+			if err := v.check(); err != nil {
+				return err
+			}
 			if !covered[filepath.Clean(conceptPath)] {
 				v.add(SeverityWarning, conceptPath, fmt.Sprintf("orphan file (not linked in %s)", v.rel(indexPath)))
 			}
 		}
 	}
+	return nil
 }
 
 func (v *validator) indexCoveredConcepts(indexPath string) map[string]bool {
@@ -561,6 +784,9 @@ func (v *validator) indexCoveredConcepts(indexPath string) map[string]bool {
 		return covered
 	}
 	for _, link := range bundle.ExtractLinks(document.Body) {
+		if v.check() != nil {
+			return covered
+		}
 		targetPath, ok := v.resolveLinkPath(indexPath, link.Target)
 		if !ok || DetermineFileRole(targetPath) != RoleConcept {
 			continue
@@ -573,8 +799,8 @@ func (v *validator) indexCoveredConcepts(indexPath string) map[string]bool {
 }
 
 func (v *validator) readDocument(path string, allowReservedNoFrontmatter bool) (bundle.Document, bool) {
-	data, err := os.ReadFile(path)
-	if err != nil {
+	data, ok := v.bundle.ReadFile(path)
+	if !ok {
 		return bundle.Document{}, false
 	}
 	if !utf8.Valid(data) {
@@ -610,8 +836,20 @@ func (v *validator) resolveLinkTarget(sourcePath, target string) (string, FileRo
 		candidate = filepath.Join(filepath.Dir(sourcePath), rawPath)
 	}
 	candidate = filepath.Clean(candidate)
-	if !isInside(v.root, candidate) {
+	if v.root == "" && (candidate == ".." || strings.HasPrefix(candidate, ".."+string(filepath.Separator))) {
 		return "", RoleAsset, fragment, false
+	}
+	if v.root != "" && !isInside(v.root, candidate) {
+		return "", RoleAsset, fragment, false
+	}
+	if _, ok := v.bundle.ReadFile(candidate); ok {
+		return candidate, DetermineFileRole(candidate), fragment, true
+	}
+	if _, ok := v.bundle.ReadFile(filepath.Join(candidate, "index.md")); ok {
+		return candidate, RoleIndex, fragment, true
+	}
+	if v.root == "" {
+		return candidate, DetermineFileRole(candidate), fragment, false
 	}
 
 	info, err := os.Lstat(candidate)
@@ -630,20 +868,26 @@ func (v *validator) resolveLinkTarget(sourcePath, target string) (string, FileRo
 	return candidate, DetermineFileRole(candidate), fragment, false
 }
 
-func (v *validator) headingExists(path, fragment string) bool {
+func (v *validator) headingExists(path, fragment string) (bool, error) {
+	if err := v.check(); err != nil {
+		return false, err
+	}
 	headings, ok := v.headingCache[path]
 	if !ok {
 		headings = make(map[string]struct{})
 		document, ok := v.readDocument(path, true)
 		if !ok {
 			v.headingCache[path] = headings
-			return false
+			return false, nil
+		}
+		if err := v.check(); err != nil {
+			return false, err
 		}
 		headings = markdownHeadingIDs(document.Body)
 		v.headingCache[path] = headings
 	}
 	_, ok = headings[strings.TrimPrefix(fragment, "#")]
-	return ok
+	return ok, v.check()
 }
 
 func (v *validator) add(severity Severity, path string, message string) {
@@ -652,6 +896,37 @@ func (v *validator) add(severity Severity, path string, message string) {
 		File:     v.rel(path),
 		Message:  message,
 	})
+}
+
+// addRelationDiagnostics projects every semantic bundle finding onto the
+// opt-in validator contract. Semantic errors are conformance errors;
+// recognized aliases remain informational. Projection is sorted and
+// de-duplicated here rather than relying on bundle construction order.
+func (v *validator) addRelationDiagnostics(relations []bundle.RelationDiagnostic) {
+	diagnostics := make([]Diagnostic, 0, len(relations))
+	for _, relation := range relations {
+		severity := SeverityError
+		if !relation.BlocksMutation() {
+			severity = SeverityInfo
+		}
+		source := bundle.RelationRef{ID: relation.Source, Fragment: relation.SourceFragment}
+		diagnostics = append(diagnostics, Diagnostic{
+			Code:         relation.Code,
+			File:         v.rel(relation.File),
+			Severity:     severity,
+			Message:      relation.Message,
+			Source:       source,
+			RelationType: relation.RelationType,
+			RawTarget:    relation.RawTarget,
+			Refs:         []bundle.RelationRef{source},
+		})
+	}
+	sort.Slice(diagnostics, func(i, j int) bool { return diagnosticKey(diagnostics[i]) < diagnosticKey(diagnostics[j]) })
+	for i, diagnostic := range diagnostics {
+		if i == 0 || diagnosticKey(diagnostic) != diagnosticKey(diagnostics[i-1]) {
+			v.report.Diagnostics = append(v.report.Diagnostics, diagnostic)
+		}
+	}
 }
 
 func (v *validator) rel(path string) string {
@@ -675,8 +950,18 @@ func (v *validator) sortDiagnostics() {
 		if a.File != b.File {
 			return a.File < b.File
 		}
-		return a.Message < b.Message
+		return diagnosticKey(a) < diagnosticKey(b)
 	})
+}
+
+func diagnosticKey(d Diagnostic) string {
+	refs := append([]bundle.RelationRef(nil), d.Refs...)
+	sort.Slice(refs, func(i, j int) bool { return refs[i].String() < refs[j].String() })
+	parts := make([]string, len(refs))
+	for i, ref := range refs {
+		parts[i] = ref.String()
+	}
+	return string(rune(d.Severity)) + "\x00" + d.File + "\x00" + d.Code + "\x00" + d.Source.String() + "\x00" + d.RelationType + "\x00" + d.RawTarget + "\x00" + d.Message + "\x00" + strings.Join(parts, "\x00")
 }
 
 func samePath(a, b string) bool {

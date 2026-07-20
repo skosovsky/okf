@@ -173,7 +173,7 @@ Tools:
 - `read_concept` - прочитать raw Markdown одного concept по canonical concept id.
 - `validate_bundle` - вернуть JSON validation report; conformance errors остаются normal report, а preflight/load failures возвращаются как tool error.
 - `get_semantic_graph` - вернуть JSON-LD graph, byte-compatible с `okf graph -format json-ld`.
-- `write_concept` - создать или обновить один concept через staged copy, strict/link/orphan validation и atomic rename.
+- `write_concept` - создать или обновить один concept через in-memory staged strict/link/orphan validation, bundle-wide advisory lease, fresh-revision CAS, Journal v5/recovery, cleanup и receipt.
 
 Rules for MCP usage:
 
@@ -181,11 +181,12 @@ Rules for MCP usage:
 2. `concept_id` должен быть canonical OKF concept id: `tables/orders`, без leading slash, `./`, `../`, `.md`, URI scheme, empty segment или surrounding whitespace.
 3. `read_concept` и `write_concept` отклоняют symlink target/ancestor внутри bundle.
 4. `write_concept` принимает YAML frontmatter без delimiters `---` и Markdown body; serialized document добавляет frontmatter delimiters сам.
-5. Если staged validation нашла hard errors, считать write rejected: не пытаться повторять запись напрямую в файловую систему, сначала исправить diagnostics.
+5. Если in-memory staged validation нашла hard errors, считать write rejected: не пытаться повторять запись напрямую в файловую систему, сначала исправить diagnostics. При CAS conflict допустимы максимум две свежие попытки replan/revalidate. Идентичный retry `write_concept` использует тот же server-side idempotent pipeline без повторной публикации; не добавлять transport-only поля для повтора. Fixed MCP success schema остаётся `status`, `path`, `diagnostics`: receipt DTO или commit evidence не раскрываются.
 6. `write_concept` не регенерирует indexes. Если задача требует updated `index.md`, явно запускать `okf index <bundle>` после успешного write.
 7. Перед изменениями вызвать `get_semantic_graph` и при необходимости `read_concept`, чтобы понять impact и текущий source text.
 8. Для проверки использовать `validate_bundle`.
 9. Если MCP server доступен в IDE-сценарии, concept edits делать через `write_concept`, не обходить MCP обычными filesystem writes, если только пользователь явно не попросил low-level repair.
+10. Lease advisory: raw editors не координируются, а raw readers могут увидеть non-atomic multi-file rename во время публикации; journal гарантирует recovery, не isolation. Journal v5 хранит compact bounded base/result manifests и durable staged payloads и фиксирует canonical request/result/replay/base binding; перед apply/recovery проверяются safe no-follow path, declared size и SHA-256 digest, затем journal и stage cleanup. `fs.Config` ограничивает staged payloads: по умолчанию 256 MiB на payload и 1 GiB на transaction, а recovery отклоняет oversized manifest до allocation. Persisted receipt envelope использует v2. Revision по умолчанию — `sha256:<lowercase-hex>`, но `fs.Config.HashAlgorithm` может заменить алгоритм; Journal v5 фиксирует его, поэтому recovery требует ту же configured algorithm. Revision-visible set: каждый regular file под bundle root, включая non-Markdown и reserved index/log files, кроме `.okf/**`; symlinks никогда не читаются и не хешируются, а internal journal, receipts и lease исключены.
 
 ### Knowledge Extraction
 
@@ -224,8 +225,9 @@ Rules:
 - `target` в `relations` - OKF concept ref, не Markdown path: `tables/orders#col-status`, не `tables/orders.md#col-status`.
 - Для field-level traceability всегда использовать URL fragments/subresources: API field, database column, metric input field.
 - Nested source должен иметь явный `id` или `anchor`; не выводить anchor из display `name`.
+- Только nested mapping определяют fragment identity; top-level frontmatter `id` и `anchor` — metadata concept. `id` — canonical fragment identity nested mapping. Отличающийся валидный `anchor` — noncanonical alias только для информации и навигации; semantic mutations и relation refs всегда адресуют canonical `id`.
 - Для impact analysis сначала анализировать `relations`, затем Markdown links как навигационный/контекстный слой.
-- `okf validate --check-links` проверяет только Markdown links; graph export сохраняет semantic edges даже при missing target concept.
+- `okf validate` и MCP `validate_bundle` проверяют только base conformance v0.1; `--check-links` дополнительно проверяет только Markdown links. Go-клиент может включить semantic relation reporting через `ValidatorConfig.CheckRelations`. Некорректные или неразрешенные semantic relations остаются structured diagnostics, а noncanonical anchor aliases — informational; mutation и write paths всегда отклоняют blocking relation diagnostics. Semantic failures исключаются из resolved outgoing, incoming и reverse indexes, а также из всех semantic graph exporters. Dangling Markdown links — отдельный навигационный слой и могут отображаться как missing.
 
 Детерминированный CLI toolkit - `okf`.
 
@@ -636,3 +638,7 @@ saas-metrics/
 2. Relevant SPEC rule.
 3. Практический пример или command, если применимо.
 4. Риски/gaps, если данных недостаточно.
+
+## Filesystem durability limits
+
+`fs.Config.MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow repair до 0700; private files и lease до 0600 либо Open fail-closed.

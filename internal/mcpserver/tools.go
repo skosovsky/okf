@@ -5,14 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/graph"
+	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
 )
 
@@ -31,6 +35,99 @@ type diagnosticDTO struct {
 	Severity string `json:"severity"`
 	File     string `json:"file,omitempty"`
 	Message  string `json:"message"`
+}
+
+// diagnosticProjection retains the full internal diagnostic identity while
+// projecting the fixed MCP wire contract. The transaction/store boundary owns
+// structured relation context; MCP write_concept deliberately does not extend
+// its long-standing diagnostic payload with it.
+type diagnosticProjection struct {
+	wire diagnosticDTO
+	key  string
+}
+
+func diagnosticDTOFromStore(root string, diagnostic store.Diagnostic) diagnosticProjection {
+	refs := make([]string, len(diagnostic.Refs))
+	for i, ref := range diagnostic.Refs {
+		refs[i] = ref.String()
+	}
+	source := ""
+	if len(refs) > 0 {
+		source = refs[0]
+	}
+	return diagnosticProjection{
+		wire: diagnosticDTO{
+			Severity: string(diagnostic.Severity),
+			File:     relativeSlashPath(root, diagnostic.File),
+			Message:  diagnostic.Message,
+		},
+		key: diagnosticProjectionKey(
+			string(diagnostic.Severity), relativeSlashPath(root, diagnostic.File),
+			diagnostic.RelationType, diagnostic.RawTarget, diagnostic.Code,
+			diagnostic.Message, source, refs,
+		),
+	}
+}
+
+func diagnosticDTOFromValidator(root string, diagnostic validator.Diagnostic) diagnosticProjection {
+	refs := make([]string, len(diagnostic.Refs))
+	for i, ref := range diagnostic.Refs {
+		refs[i] = ref.String()
+	}
+	return diagnosticProjection{
+		wire: diagnosticDTO{
+			Severity: diagnostic.Severity.String(),
+			File:     relativeSlashPath(root, diagnostic.File),
+			Message:  diagnostic.Message,
+		},
+		key: diagnosticProjectionKey(
+			diagnostic.Severity.String(), relativeSlashPath(root, diagnostic.File),
+			diagnostic.RelationType, diagnostic.RawTarget, diagnostic.Code,
+			diagnostic.Message, diagnostic.Source.String(), refs,
+		),
+	}
+}
+
+// diagnosticProjectionKey identifies one logical diagnostic without leaking
+// its structured context onto the MCP wire. Matching store and validator
+// relation diagnostics share source/ref identity and therefore deduplicate.
+func diagnosticProjectionKey(severity, file, relationType, rawTarget, code, message, source string, refs []string) string {
+	var key strings.Builder
+	write := func(value string) {
+		key.WriteString(strconv.Itoa(len(value)))
+		key.WriteByte(':')
+		key.WriteString(value)
+	}
+	// Store uses lower-case severity values while validator emits upper-case
+	// labels. They are one public severity domain for this projection.
+	write(strings.ToLower(severity))
+	write(file)
+	write(relationType)
+	write(rawTarget)
+	write(code)
+	write(message)
+	write(source)
+	for _, ref := range refs {
+		write(ref)
+	}
+	return key.String()
+}
+
+// uniqueDiagnosticDTOs retains the first wire projection of each logical
+// diagnostic. Callers pass store projections before validator projections.
+func uniqueDiagnosticDTOs(groups ...[]diagnosticProjection) []diagnosticDTO {
+	seen := make(map[string]struct{})
+	var diagnostics []diagnosticDTO
+	for _, group := range groups {
+		for _, diagnostic := range group {
+			if _, ok := seen[diagnostic.key]; ok {
+				continue
+			}
+			seen[diagnostic.key] = struct{}{}
+			diagnostics = append(diagnostics, diagnostic.wire)
+		}
+	}
+	return diagnostics
 }
 
 type validateBundleResponse struct {
@@ -81,7 +178,7 @@ func handleListConcepts(_ context.Context, request mcp.CallToolRequest) (*mcp.Ca
 	return jsonTextResult(response), nil
 }
 
-func handleReadConcept(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleReadConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	root, result := requireBundlePath(request)
 	if result != nil {
 		return result, nil
@@ -94,29 +191,124 @@ func handleReadConcept(_ context.Context, request mcp.CallToolRequest) (*mcp.Cal
 		return result, nil
 	}
 
-	path := id.ToPath(root)
-	if !isInside(root, path) {
-		return toolError("concept path escapes bundle root"), nil
-	}
-	if err := rejectReadSymlinks(root, path); err != nil {
-		return toolError(err.Error()), nil
-	}
-	info, err := os.Lstat(path)
+	data, err := readPinnedConcept(ctx, root, id.String()+".md")
 	if err != nil {
 		if os.IsNotExist(err) {
 			return toolErrorf("concept not found: %s", id.String()), nil
 		}
-		return toolErrorf("read concept metadata: %v", err), nil
-	}
-	if info.IsDir() {
-		return toolErrorf("concept path is a directory: %s", id.String()), nil
-	}
-
-	data, err := os.ReadFile(path)
-	if err != nil {
 		return toolErrorf("read concept: %v", err), nil
 	}
 	return mcp.NewToolResultText(string(data)), nil
+}
+
+// readPinnedConcept opens each path component relative to a pinned directory
+// descriptor. The Lstat/identity checks reject a symlink even if it is swapped
+// in after a directory listing or prior validation.
+// readPinnedConceptBeforeOpen is a test seam for the Lstat-to-open race.
+// Production code leaves it nil.
+var readPinnedConceptBeforeOpen func()
+
+func readPinnedConcept(ctx context.Context, rootPath, name string) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	beforeRoot, err := os.Lstat(rootPath)
+	if err != nil {
+		return nil, err
+	}
+	root, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	openedRoot, err := root.Lstat(".")
+	if err != nil {
+		return nil, err
+	}
+	if !os.SameFile(beforeRoot, openedRoot) {
+		return nil, fmt.Errorf("bundle root changed while opening")
+	}
+
+	parts := strings.Split(name, "/")
+	current := root
+	var opened []*os.Root
+	defer func() {
+		for i := len(opened) - 1; i >= 0; i-- {
+			_ = opened[i].Close()
+		}
+	}()
+	for i, part := range parts {
+		before, err := current.Lstat(part)
+		if err != nil {
+			return nil, err
+		}
+		rel := strings.Join(parts[:i+1], "/")
+		if before.Mode()&os.ModeSymlink != 0 {
+			return nil, fmt.Errorf("path contains symlink: %s", rel)
+		}
+		if i == len(parts)-1 {
+			if before.IsDir() {
+				return nil, fmt.Errorf("concept path is a directory: %s", strings.TrimSuffix(name, ".md"))
+			}
+			if !before.Mode().IsRegular() {
+				return nil, fmt.Errorf("concept path is not a regular file: %s", strings.TrimSuffix(name, ".md"))
+			}
+			if readPinnedConceptBeforeOpen != nil {
+				readPinnedConceptBeforeOpen()
+			}
+			file, err := openPinnedConceptFile(current, part)
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+			after, err := file.Stat()
+			if err != nil {
+				return nil, err
+			}
+			if !os.SameFile(before, after) || !after.Mode().IsRegular() {
+				return nil, fmt.Errorf("concept path changed while opening")
+			}
+			return readPinnedConceptContents(ctx, file)
+		}
+		if !before.IsDir() {
+			return nil, fmt.Errorf("concept path component is not a directory: %s", rel)
+		}
+		next, err := current.OpenRoot(part)
+		if err != nil {
+			return nil, err
+		}
+		after, err := next.Lstat(".")
+		if err != nil || !os.SameFile(before, after) {
+			next.Close()
+			if err != nil {
+				return nil, err
+			}
+			return nil, fmt.Errorf("path contains symlink: %s", rel)
+		}
+		opened = append(opened, next)
+		current = next
+	}
+	return nil, fmt.Errorf("invalid concept path")
+}
+
+func readPinnedConceptContents(ctx context.Context, file *os.File) ([]byte, error) {
+	var out []byte
+	buf := make([]byte, 64<<10)
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		n, err := file.Read(buf)
+		if n > 0 {
+			out = append(out, buf[:n]...)
+		}
+		if err == io.EOF {
+			return out, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
 }
 
 func handleValidateBundle(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -124,7 +316,8 @@ func handleValidateBundle(_ context.Context, request mcp.CallToolRequest) (*mcp.
 	if result != nil {
 		return result, nil
 	}
-	if _, err := bundle.LoadBundle(root); err != nil {
+	loaded, err := bundle.LoadBundle(root)
+	if err != nil {
 		return toolErrorf("load bundle: %v", err), nil
 	}
 
@@ -145,7 +338,10 @@ func handleValidateBundle(_ context.Context, request mcp.CallToolRequest) (*mcp.
 		CheckLinks:   checkLinks,
 		CheckOrphans: checkOrphans,
 	}
-	report := validator.ValidatePath(root, &cfg)
+	// Validate the same no-follow snapshot already loaded for this request.
+	// Reopening by pathname here would turn the earlier path validation into a
+	// TOCTOU preflight rather than a boundary for the validator's input.
+	report := validator.ValidateBundle(loaded, &cfg)
 	return jsonTextResult(reportResponse(root, report)), nil
 }
 
@@ -170,7 +366,7 @@ func handleSemanticGraph(_ context.Context, request mcp.CallToolRequest) (*mcp.C
 	return mcp.NewToolResultText(out.String()), nil
 }
 
-func handleWriteConcept(_ context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func handleWriteConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	root, result := requireBundlePath(request)
 	if result != nil {
 		return result, nil
@@ -190,8 +386,7 @@ func handleWriteConcept(_ context.Context, request mcp.CallToolRequest) (*mcp.Ca
 	if err != nil {
 		return toolError(err.Error()), nil
 	}
-
-	response, writeErr := writeConcept(root, id, frontmatterText, body)
+	response, writeErr := writeConcept(ctx, root, id, frontmatterText, body)
 	if writeErr != nil {
 		return toolError(writeErr.Error()), nil
 	}
@@ -231,21 +426,95 @@ func normalizeBundleRoot(raw string) (string, error) {
 		return "", fmt.Errorf("bundle_path must be absolute")
 	}
 	clean := filepath.Clean(raw)
-	info, err := os.Lstat(clean)
+	if raw != clean {
+		return "", fmt.Errorf("bundle_path must be clean")
+	}
+	clean = canonicalMCPBundlePath(clean)
+	if err := validateBundleRootPath(clean); err != nil {
+		return "", err
+	}
+	return clean, nil
+}
+
+// canonicalMCPBundlePath recognizes only Darwin's kernel-owned aliases. It
+// intentionally does not resolve arbitrary links: callers must receive their
+// requested path (or this fixed canonical spelling), never an attacker-chosen
+// resolved target.
+func canonicalMCPBundlePath(path string) string {
+	if runtime.GOOS != "darwin" {
+		return path
+	}
+	for alias, physical := range map[string]string{
+		"/etc": "/private/etc",
+		"/tmp": "/private/tmp",
+		"/var": "/private/var",
+	} {
+		if path == alias {
+			return physical
+		}
+		if strings.HasPrefix(path, alias+string(filepath.Separator)) {
+			return physical + strings.TrimPrefix(path, alias)
+		}
+	}
+	return path
+}
+
+// validateBundleRootPath checks every requested component while descending
+// through directory descriptors. The returned bundle pathname is never a
+// symlink target; later source/store opens must independently pin that path.
+func validateBundleRootPath(path string) error {
+	volumeRoot := filepath.VolumeName(path) + string(filepath.Separator)
+	relative, err := filepath.Rel(volumeRoot, path)
 	if err != nil {
-		return "", fmt.Errorf("bundle_path is not accessible: %w", err)
+		return fmt.Errorf("bundle_path is not accessible: %w", err)
 	}
-	if info.Mode()&os.ModeSymlink != 0 {
-		return "", fmt.Errorf("bundle_path must not be a symlink")
-	}
-	if !info.IsDir() {
-		return "", fmt.Errorf("bundle_path must be a directory")
-	}
-	evaluated, err := filepath.EvalSymlinks(clean)
+	root, err := os.OpenRoot(volumeRoot)
 	if err != nil {
-		return "", fmt.Errorf("bundle_path symlink evaluation failed: %w", err)
+		return fmt.Errorf("bundle_path is not accessible: %w", err)
 	}
-	return filepath.Clean(evaluated), nil
+	defer root.Close()
+	if relative == "." {
+		return nil
+	}
+
+	current := root
+	var opened []*os.Root
+	defer func() {
+		for i := len(opened) - 1; i >= 0; i-- {
+			_ = opened[i].Close()
+		}
+	}()
+	components := strings.Split(relative, string(filepath.Separator))
+	for index, component := range components {
+		before, err := current.Lstat(component)
+		if err != nil {
+			return fmt.Errorf("bundle_path is not accessible: %w", err)
+		}
+		if before.Mode()&os.ModeSymlink != 0 {
+			if index == len(components)-1 {
+				return fmt.Errorf("bundle_path must not be a symlink")
+			}
+			return fmt.Errorf("bundle_path must not contain a symlink")
+		}
+		if !before.IsDir() {
+			return fmt.Errorf("bundle_path must be a directory")
+		}
+		next, err := current.OpenRoot(component)
+		if err != nil {
+			return fmt.Errorf("bundle_path is not accessible: %w", err)
+		}
+		after, err := next.Lstat(".")
+		if err != nil || !os.SameFile(before, after) {
+			_ = next.Close()
+			if err != nil {
+				return fmt.Errorf("bundle_path is not accessible: %w", err)
+			}
+			return fmt.Errorf("bundle_path changed while opening")
+		}
+		opened = append(opened, next)
+		current = next
+	}
+	return nil
 }
 
 func requireConceptID(request mcp.CallToolRequest) (bundle.ConceptID, *mcp.CallToolResult) {
@@ -330,11 +599,7 @@ func parseErrorsResult(root string, errors []bundle.ParseError) *mcp.CallToolRes
 func reportResponse(root string, report validator.Report) validateBundleResponse {
 	diagnostics := make([]diagnosticDTO, 0, len(report.Diagnostics))
 	for _, diagnostic := range report.Diagnostics {
-		diagnostics = append(diagnostics, diagnosticDTO{
-			Severity: diagnostic.Severity.String(),
-			File:     relativeSlashPath(root, diagnostic.File),
-			Message:  diagnostic.Message,
-		})
+		diagnostics = append(diagnostics, diagnosticDTOFromValidator(root, diagnostic).wire)
 	}
 	return validateBundleResponse{
 		ScannedFiles: report.ScannedFiles,

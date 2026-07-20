@@ -3,9 +3,38 @@ package validator
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestValidatePathRejectsRootAndAncestorSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink assertions require Unix-style symlink support")
+	}
+
+	// Arrange.
+	realRoot := t.TempDir()
+	writeValidationFile(t, realRoot, "note.md", "---\ntype: Note\n---\ninside\n")
+	container := t.TempDir()
+	rootLink := filepath.Join(container, "root-link")
+	if err := os.Symlink(realRoot, rootLink); err != nil {
+		t.Fatalf("create root symlink: %v", err)
+	}
+	ancestorLink := filepath.Join(container, "ancestor-link")
+	if err := os.Symlink(filepath.Dir(realRoot), ancestorLink); err != nil {
+		t.Fatalf("create ancestor symlink: %v", err)
+	}
+	ancestorPath := filepath.Join(ancestorLink, filepath.Base(realRoot))
+
+	// Act + Assert.
+	for _, path := range []string{rootLink, ancestorPath} {
+		report := ValidatePath(path, nil)
+		if report.IsConformant() || report.ErrorCount() == 0 {
+			t.Fatalf("ValidatePath(%q) = %#v, want loading error", path, report)
+		}
+	}
+}
 
 func TestBrokenLinksAreReportedAsInfo(t *testing.T) {
 	t.Parallel()

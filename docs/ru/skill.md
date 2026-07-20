@@ -82,12 +82,30 @@ go install github.com/skosovsky/okf/cmd/okf-mcp@latest
 Сервер предоставляет `list_concepts`, `read_concept`, `validate_bundle`,
 `get_semantic_graph` и `write_concept`. Все tools требуют absolute
 `bundle_path`; concept tools требуют canonical concept id без `.md`.
-`write_concept` сначала проверяет staged copy со strict/link/orphan validation,
-и только затем атомарно записывает реальный файл. Rejected writes возвращают
-diagnostics и не меняют bundle. Перед изменениями получать контекст через
+`write_concept` проверяет in-memory staged bundle со strict/link/orphan
+validation, затем публикует через bundle-wide advisory lease, fresh-revision
+CAS, Journal v5/recovery, cleanup и receipt. Journal v5 использует compact
+bounded manifest, который фиксирует algorithm и canonical request/result/replay
+data, с отдельно durable staged payloads; перед apply recovery проверяет safe
+no-follow path, declared size и SHA-256 digest. Persisted receipt envelope
+использует v2. При conflict он максимум два раза
+заново планирует и валидирует изменения; rejected writes возвращают diagnostics
+и не меняют bundle. Lease advisory: raw editors не координируются, а raw readers
+могут увидеть non-atomic multi-file rename во время публикации.
+Revisions по умолчанию используют `sha256:<lowercase-hex>`, но
+`fs.Config.HashAlgorithm` может заменить алгоритм; Journal v5 фиксирует его,
+Durable staged payloads ограничены `fs.Config`: по умолчанию 256 MiB на payload
+и 1 GiB на transaction; recovery отклоняет oversized manifest до allocation.
+поэтому recovery требует ту же configured algorithm. Revision-visible set —
+каждый regular file под bundle root, включая non-Markdown и reserved index/log
+files, кроме `.okf/**`; symlinks никогда не читаются и не хешируются, а internal
+journal, receipts и lease исключены. Перед изменениями получать контекст через
 `get_semantic_graph` и `read_concept`; проверять через `validate_bundle`;
 редактировать concepts через `write_concept`, не обходя MCP прямыми filesystem
-writes, когда MCP доступен.
+writes, когда MCP доступен. Идентичный retry использует тот же server-side
+idempotent pipeline без повторной публикации; не добавлять transport-only поля
+для повтора. MCP success содержит только `status`, `path` и `diagnostics`, без
+receipt DTO или commit evidence.
 
 ## Процесс вывода graph
 
@@ -133,9 +151,20 @@ schema:
           - target: tables/orders#col-customer_id
 ```
 
-Не выводи anchors из display `name`. `okf validate --check-links` проверяет
-только Markdown links; graph export все равно сохраняет semantic edges, даже
-если target concept отсутствует.
+Не выводи anchors из display `name`. `okf validate` и MCP `validate_bundle`
+проверяют base conformance v0.1; `--check-links` добавляет только проверку
+Markdown links. Go-клиент может включить semantic relation reporting через
+`ValidatorConfig.CheckRelations`; mutation и write paths всегда отклоняют
+blocking relation diagnostics. Noncanonical anchor aliases остаются
+informational. Semantic failures
+исключаются из resolved outgoing, incoming и reverse indexes, а также из всех
+semantic graph exporters. Dangling Markdown links — отдельный навигационный
+слой и могут по-прежнему отображаться как missing.
+
+Fragments определяют только nested mapping; top-level frontmatter `id` и
+`anchor` — metadata concept. Для nested mapping frontmatter `id` — canonical. Валидный отличающийся
+`anchor` — noncanonical alias для информации и навигации; semantic mutations и
+relation refs должны адресовать canonical `id`.
 
 Grammar relation ref: `<concept-id>[#<fragment>]`. Invalid refs:
 `/tables/orders.md`, `tables/orders.md`, `#local-section`,
@@ -183,3 +212,5 @@ skills/open-knowledge-format/SKILL.md
 | `references/conversion.md` | Notion, Obsidian, CSV и spreadsheet conversion guidance. |
 
 У skill нет bundled validation script. Детерминированные checks и graph extraction идут через `cmd/okf`.
+
+Filesystem store: `MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow 0700, private files и lease 0600 либо fail-closed.

@@ -25,13 +25,7 @@ func RenderDOT(w io.Writer, b *bundle.Bundle) error {
 			}
 		}
 		for _, relation := range b.SemanticLinksFrom(concept.ID) {
-			if relation.TargetExists {
-				if err := writef(w, "  %q -> %q [label=%q];\n", relation.Source.String(), relation.Target.String(), relation.Type); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := writef(w, "  %q -> %q [label=%q, style=dashed, color=red];\n", relation.Source.String(), relation.Target.String(), relation.Type); err != nil {
+			if err := writef(w, "  %q -> %q [label=%q];\n", relation.Source.String(), relation.Target.String(), relation.Type); err != nil {
 				return err
 			}
 		}

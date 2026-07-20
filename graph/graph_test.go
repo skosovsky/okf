@@ -32,7 +32,7 @@ func TestRenderGraphSemanticOutputs(t *testing.T) {
 		"  impacts:\n"+
 		"    - target: missing#col\n"+
 		"---\nSee [B](b.md).\n")
-	writeGraphFile(t, root, "b.md", "---\ntype: Note\n---\nBody.\n")
+	writeGraphFile(t, root, "b.md", "---\ntype: Note\nfields:\n  - id: col-2\n  - id: section-1\n---\nBody.\n")
 	b := loadGraphBundle(t, root)
 
 	// Act.
@@ -60,14 +60,8 @@ func TestRenderGraphSemanticOutputs(t *testing.T) {
 	if strings.Count(dotOut.String(), `"a#field1" -> "b#col-2" [label="writes_to"];`) != 2 {
 		t.Fatalf("RenderDOT() =\n%s\nwant duplicate writes_to edges", dotOut.String())
 	}
-	if !strings.Contains(dotOut.String(), `"a" -> "missing#col" [label="impacts", style=dashed, color=red];`) {
-		t.Fatalf("RenderDOT() =\n%s\nwant missing semantic target edge", dotOut.String())
-	}
-	if strings.Count(mermaidOut.String(), `n2["a#field1"] -->|"writes_to"| n3["b#col-2"]`) != 2 {
+	if strings.Count(mermaidOut.String(), `n3["a#field1"] -->|"writes_to"| n4["b#col-2"]`) != 2 {
 		t.Fatalf("RenderMermaid() =\n%s\nwant duplicate writes_to edges", mermaidOut.String())
-	}
-	if !strings.Contains(mermaidOut.String(), `n0["a"] -.->|"impacts 404"| n5["missing#col"]`) {
-		t.Fatalf("RenderMermaid() =\n%s\nwant missing semantic target edge", mermaidOut.String())
 	}
 	document := decodeGraphJSONLD(t, jsonldOut.String())
 	if _, ok := document.Context["writes_to"]; !ok {
@@ -84,8 +78,8 @@ func TestRenderGraphSemanticOutputs(t *testing.T) {
 		t.Fatalf("field writes_to = %#v, want duplicate relations", field["writes_to"])
 	}
 	a := jsonldNode(t, document, "bundle:a")
-	if countRawJSONLDRelation(t, a, "impacts", "bundle:missing#col", false) != 1 {
-		t.Fatalf("a impacts = %#v, want missing semantic target", a["impacts"])
+	if _, ok := a["impacts"]; ok {
+		t.Fatalf("a impacts = %#v, want unresolved relation omitted", a["impacts"])
 	}
 	ntriples := ntriplesOut.String()
 	if strings.Count(ntriples, `<local:bundle:a#field1> <https://okf.io/ontology/v0.1#writes_to> <local:bundle:b#col-2> .`) != 2 {
@@ -110,7 +104,7 @@ func TestRenderNTriplesRelationIRIEncoding(t *testing.T) {
 		"        writes_to:\n"+
 		"          - target: tables/orders#col customer\n"+
 		"---\nBody.\n")
-	writeGraphFile(t, root, "tables/orders.md", "---\ntype: BigQuery Table\n---\nBody.\n")
+	writeGraphFile(t, root, "tables/orders.md", "---\ntype: BigQuery Table\nfields:\n  - id: col customer\n---\nBody.\n")
 	b := loadGraphBundle(t, root)
 
 	// Act.
@@ -126,6 +120,60 @@ func TestRenderNTriplesRelationIRIEncoding(t *testing.T) {
 	}
 	if strings.Contains(got, "api/checkout#payload user") || strings.Contains(got, "tables/orders#col customer") {
 		t.Fatalf("RenderNTriples() contains raw slash/space relation IRI:\n%s", got)
+	}
+}
+
+func TestRenderNTriplesRelationExistenceContract(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	root := t.TempDir()
+	writeGraphFile(t, root, "a.md", "---\n"+
+		"relations:\n"+
+		"  existing_concept:\n"+
+		"    - target: b\n"+
+		"  existing_fragment:\n"+
+		"    - target: b#present\n"+
+		"  missing_concept:\n"+
+		"    - target: missing\n"+
+		"  missing_fragment:\n"+
+		"    - target: b#missing\n"+
+		"---\nBody.\n")
+	writeGraphFile(t, root, "b.md", "---\nfields:\n  - id: present\n---\nBody.\n")
+	b := loadGraphBundle(t, root)
+	const want = "" +
+		"<local:bundle:a> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#Concept> .\n" +
+		"<local:bundle:a> <https://okf.io/ontology/v0.1#existing_concept> <local:bundle:b> .\n" +
+		"<local:bundle:a> <https://okf.io/ontology/v0.1#existing_fragment> <local:bundle:b#present> .\n" +
+		"<local:bundle:b#present> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#SubResource> .\n" +
+		"<local:bundle:b#present> <https://okf.io/ontology/v0.1#is_part_of> <local:bundle:b> .\n" +
+		"<local:bundle:b> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#Concept> .\n" +
+		"<local:bundle:relation:000000> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <local:bundle:b> .\n" +
+		"<local:bundle:relation:000000> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <https://okf.io/ontology/v0.1#existing_concept> .\n" +
+		"<local:bundle:relation:000000> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <local:bundle:a> .\n" +
+		"<local:bundle:relation:000000> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#Relation> .\n" +
+		"<local:bundle:relation:000000> <https://okf.io/ontology/v0.1#exists> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n" +
+		"<local:bundle:relation:000001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> <local:bundle:b#present> .\n" +
+		"<local:bundle:relation:000001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <https://okf.io/ontology/v0.1#existing_fragment> .\n" +
+		"<local:bundle:relation:000001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <local:bundle:a> .\n" +
+		"<local:bundle:relation:000001> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#Relation> .\n" +
+		"<local:bundle:relation:000001> <https://okf.io/ontology/v0.1#exists> \"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n"
+
+	// Act.
+	var first, second strings.Builder
+	if err := RenderNTriples(&first, b); err != nil {
+		t.Fatalf("RenderNTriples(first) error = %v", err)
+	}
+	if err := RenderNTriples(&second, b); err != nil {
+		t.Fatalf("RenderNTriples(second) error = %v", err)
+	}
+
+	// Assert.
+	if got := first.String(); got != want {
+		t.Fatalf("RenderNTriples() =\n%s\nwant:\n%s", got, want)
+	}
+	if got := second.String(); got != want {
+		t.Fatalf("RenderNTriples() second render =\n%s\nwant:\n%s", got, want)
 	}
 }
 

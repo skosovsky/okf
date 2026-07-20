@@ -38,11 +38,7 @@ func RenderText(w io.Writer, b *bundle.Bundle) error {
 				}
 				lastHeader = source
 			}
-			mark := "=>"
-			if !relation.TargetExists {
-				mark = "=x"
-			}
-			if err := writef(w, "  %s %s %s\n", mark, relation.Type, relation.Target); err != nil {
+			if err := writef(w, "  => %s %s\n", relation.Type, relation.Target); err != nil {
 				return err
 			}
 		}

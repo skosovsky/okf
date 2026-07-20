@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -91,6 +92,8 @@ func cmdValidate(args []string, stdout io.Writer) (int, error) {
 	strict := flags.Bool("strict", false, "enable strict OKF guidance checks")
 	checkLinks := flags.Bool("check-links", false, "check internal links")
 	checkOrphans := flags.Bool("check-orphans", false, "check local index.md orphan coverage")
+	format := flags.String("format", "text", "output format: text or json")
+	jsonOutput := flags.Bool("json", false, "output the validation report as JSON")
 	if err := flags.Parse(args); err != nil {
 		return 0, err
 	}
@@ -104,6 +107,15 @@ func cmdValidate(args []string, stdout io.Writer) (int, error) {
 		CheckOrphans: *checkOrphans,
 	}
 	report := validator.ValidatePath(*path, &cfg)
+	if *jsonOutput {
+		*format = "json"
+	}
+	if *format != "text" && *format != "json" {
+		return 0, fmt.Errorf("unsupported validate format: %s", *format)
+	}
+	if *format == "json" {
+		return report.ExitCode(), writeValidationJSON(stdout, report)
+	}
 
 	fmt.Fprintf(stdout, "Validating bundle: %s\n\n", *path)
 	for _, diagnostic := range report.Diagnostics {
@@ -120,6 +132,40 @@ func cmdValidate(args []string, stdout io.Writer) (int, error) {
 	fmt.Fprintf(stdout, "Scanned %d files.\n", report.ScannedFiles)
 	fmt.Fprintf(stdout, "Result: %s (%d errors, %d warnings, %d info)\n", result, errors, warnings, infos)
 	return report.ExitCode(), nil
+}
+
+type validationJSONDiagnostic struct {
+	Code         string   `json:"code,omitempty"`
+	Severity     string   `json:"severity"`
+	File         string   `json:"file,omitempty"`
+	Message      string   `json:"message"`
+	Source       string   `json:"source,omitempty"`
+	RelationType string   `json:"relation_type,omitempty"`
+	RawTarget    string   `json:"raw_target,omitempty"`
+	Refs         []string `json:"refs,omitempty"`
+}
+
+func writeValidationJSON(stdout io.Writer, report validator.Report) error {
+	diagnostics := make([]validationJSONDiagnostic, 0, len(report.Diagnostics))
+	for _, diagnostic := range report.Diagnostics {
+		refs := make([]string, len(diagnostic.Refs))
+		for i, ref := range diagnostic.Refs {
+			refs[i] = ref.String()
+		}
+		diagnostics = append(diagnostics, validationJSONDiagnostic{
+			Code: diagnostic.Code, Severity: diagnostic.Severity.String(), File: diagnostic.File,
+			Message: diagnostic.Message, Source: diagnostic.Source.String(), RelationType: diagnostic.RelationType,
+			RawTarget: diagnostic.RawTarget, Refs: refs,
+		})
+	}
+	return json.NewEncoder(stdout).Encode(struct {
+		ScannedFiles int                        `json:"scanned_files"`
+		Conformant   bool                       `json:"conformant"`
+		Errors       int                        `json:"errors"`
+		Warnings     int                        `json:"warnings"`
+		Info         int                        `json:"info"`
+		Diagnostics  []validationJSONDiagnostic `json:"diagnostics"`
+	}{report.ScannedFiles, report.IsConformant(), report.ErrorCount(), report.WarningCount(), report.InfoCount(), diagnostics})
 }
 
 func cmdInfo(args []string, stdout io.Writer) (int, error) {

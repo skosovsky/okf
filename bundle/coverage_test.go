@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -45,7 +46,6 @@ func TestLoadBundleErrorPaths(t *testing.T) {
 	// Act.
 	_, missingErr := LoadBundle(missing)
 	_, fileErr := LoadBundle(filePath)
-	_, collectErr := collectMarkdownFiles(missing)
 
 	// Assert.
 	if missingErr == nil {
@@ -53,9 +53,6 @@ func TestLoadBundleErrorPaths(t *testing.T) {
 	}
 	if !errors.Is(fileErr, ErrNotDirectory) {
 		t.Fatalf("LoadBundle(file) error = %v, want ErrNotDirectory", fileErr)
-	}
-	if collectErr == nil {
-		t.Fatal("collectMarkdownFiles(missing) error = nil, want error")
 	}
 }
 
@@ -247,21 +244,15 @@ func TestBundleOKFVersionMissingMalformedAndNoKey(t *testing.T) {
 	}
 }
 
-func TestBundleLoadConceptFileErrorPaths(t *testing.T) {
+func TestBundleLoadConceptBytesErrorPaths(t *testing.T) {
 	t.Parallel()
 
 	// Arrange.
-	root := t.TempDir()
-	bundle := &Bundle{root: root}
-	missing := filepath.Join(root, "missing.md")
-	outsideRoot := filepath.Join(t.TempDir(), "outside.md")
-	if err := os.WriteFile(outsideRoot, []byte("---\ntype: Note\n---\nbody\n"), 0o644); err != nil {
-		t.Fatalf("WriteFile(outsideRoot) error = %v", err)
-	}
+	bundle := &Bundle{}
 
 	// Act.
-	bundle.loadConceptFile(missing)
-	bundle.loadConceptFile(outsideRoot)
+	bundle.loadConceptBytes("missing.md", []byte{0xff})
+	bundle.loadConceptBytes("outside.md", []byte("---\ntype: Note\n"))
 
 	// Assert.
 	if got, want := len(bundle.parseErrors), 2; got != want {
@@ -466,10 +457,13 @@ func TestIndexEdgePaths(t *testing.T) {
 	defaultEmpty := DefaultSynthesizeDescription("", nil)
 	defaultText := DefaultSynthesizeDescription("", []IndexChild{{Title: "A"}, {Title: "B"}})
 	written, err := RegenerateIndexesWith(root, nil)
-	missingEntries, missingEntriesErr := indexEntriesForDirectory(root, filepath.Join(root, "missing"), nil)
-	missingDoc, missingDocOK := loadIndexDocument(filepath.Join(root, "missing.md"))
-	badDoc, badDocOK := loadIndexDocument(filepath.Join(root, "docs", "bad.md"))
-	_, missingDirsErr := directoriesToIndex(filepath.Join(root, "missing"))
+	source := &FileSystemSource{Root: root}
+	t.Cleanup(func() { _ = source.Close() })
+	paths, pathsErr := source.Paths(context.Background())
+	missingEntries, missingEntriesErr := indexEntriesForDirectory(source, "missing", paths, nil)
+	missingDoc, missingDocOK := loadIndexDocument(source, "missing.md")
+	badDoc, badDocOK := loadIndexDocument(source, "docs/bad.md")
+	missingDirs, missingDirsErr := directoriesToIndex(filepath.Join(root, "missing"), nil)
 
 	// Assert.
 	if emptyText != "" {
@@ -491,8 +485,11 @@ func TestIndexEdgePaths(t *testing.T) {
 	if !strings.Contains(docsIndex, "[no-title](no-title.md)") {
 		t.Fatalf("docs/index.md = %q, want file-stem title fallback", docsIndex)
 	}
-	if missingEntriesErr == nil || missingEntries != nil {
-		t.Fatalf("indexEntriesForDirectory(missing) = %#v, %v; want nil error", missingEntries, missingEntriesErr)
+	if pathsErr != nil {
+		t.Fatalf("source.Paths() error = %v", pathsErr)
+	}
+	if missingEntriesErr != nil || len(missingEntries) != 0 {
+		t.Fatalf("indexEntriesForDirectory(missing) = %#v, %v; want empty", missingEntries, missingEntriesErr)
 	}
 	if missingDocOK || missingDoc.Body != "" {
 		t.Fatalf("loadIndexDocument(missing) = %#v, %v; want false", missingDoc, missingDocOK)
@@ -500,8 +497,8 @@ func TestIndexEdgePaths(t *testing.T) {
 	if badDocOK || badDoc.Body != "" {
 		t.Fatalf("loadIndexDocument(bad) = %#v, %v; want false", badDoc, badDocOK)
 	}
-	if missingDirsErr == nil {
-		t.Fatal("directoriesToIndex(missing) error = nil, want error")
+	if missingDirsErr != nil || len(missingDirs) != 0 {
+		t.Fatalf("directoriesToIndex(missing) = %#v, %v; want empty", missingDirs, missingDirsErr)
 	}
 }
 
@@ -550,8 +547,8 @@ func TestRegenerateIndexesDirectoryRemovedDuringProcessing(t *testing.T) {
 	_, err := RegenerateIndexesWith(root, synth)
 
 	// Assert.
-	if err == nil {
-		t.Fatal("RegenerateIndexesWith(removed directory) error = nil, want error")
+	if err != nil {
+		t.Fatalf("RegenerateIndexesWith(removed directory) error = %v", err)
 	}
 }
 

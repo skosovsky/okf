@@ -3,6 +3,7 @@ package bundle
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 const frontmatterDelimiter = "---"
@@ -30,6 +31,13 @@ func NewDocument(frontmatter Frontmatter, body string) Document {
 // If the text does not start with a frontmatter delimiter, the entire input is
 // treated as the body and the frontmatter is empty.
 func ParseDocument(text string) (Document, error) {
+	// strings and yaml.v3 can otherwise accept malformed input after replacing
+	// invalid byte sequences with U+FFFD. The source bytes are part of the OKF
+	// document contract, so reject them before inspecting delimiters or YAML.
+	if !utf8.ValidString(text) {
+		return Document{}, fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)
+	}
+
 	lines := strings.Split(text, "\n")
 	if len(lines) == 0 || strings.TrimSpace(lines[0]) != frontmatterDelimiter {
 		return Document{Frontmatter: NewFrontmatter(), Body: text}, nil
@@ -61,6 +69,10 @@ func ParseDocument(text string) (Document, error) {
 // Serialize renders the document as frontmatter delimited by "---" followed by
 // a blank line and a newline-terminated Markdown body.
 func (d Document) Serialize() (string, error) {
+	if !utf8.ValidString(d.Body) {
+		return "", fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)
+	}
+
 	frontmatter, err := d.Frontmatter.YAMLString()
 	if err != nil {
 		return "", err

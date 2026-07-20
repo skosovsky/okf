@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 )
@@ -42,6 +43,12 @@ func NewFrontmatterFromNode(node *yaml.Node) (Frontmatter, error) {
 
 // ParseFrontmatter parses a YAML frontmatter mapping.
 func ParseFrontmatter(text string) (Frontmatter, error) {
+	// yaml.v3 accepts malformed UTF-8 after normalizing it. Frontmatter is a
+	// public text format, therefore parsing must preserve the encoding boundary.
+	if !utf8.ValidString(text) {
+		return Frontmatter{}, fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)
+	}
+
 	if strings.TrimSpace(text) == "" {
 		return NewFrontmatter(), nil
 	}

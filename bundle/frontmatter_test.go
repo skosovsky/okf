@@ -27,6 +27,18 @@ func TestFrontmatterZeroValueIsUsable(t *testing.T) {
 	}
 }
 
+func TestParseFrontmatterRejectsInvalidUTF8BeforeYAML(t *testing.T) {
+	t.Parallel()
+
+	// Act.
+	_, err := ParseFrontmatter("title: " + string([]byte{0xff}) + "\n")
+
+	// Assert.
+	if !errors.Is(err, ErrInvalidEncoding) {
+		t.Fatalf("ParseFrontmatter() error = %v, want ErrInvalidEncoding", err)
+	}
+}
+
 func TestFrontmatterPreservesKeyOrderAndExtensions(t *testing.T) {
 	t.Parallel()
 

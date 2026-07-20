@@ -171,14 +171,44 @@ curl -X POST https://api.acme.com/v2/orders \
 This repository provides four public surfaces:
 
 1. **CLI toolkit** - `cmd/okf`, used for validation, bundle summaries, index generation, graph output (`text`, Graphviz DOT, Mermaid, JSON-LD, N-Triples), parsing, and formatting.
-2. **Go library** - domain packages `bundle`, `validator`, and `graph`, used for embedding OKF loading, validation, and graph export into Go programs.
-3. **MCP server** - `cmd/okf-mcp`, used by MCP-capable agents to inspect, validate, graph, and safely edit local OKF bundles through stdio tools.
+2. **Go library** - domain packages `bundle`, `validator`, `graph`, `store`, and `store/fs`, including snapshot-based transactional mutation for local bundles.
+3. **MCP server** - `cmd/okf-mcp`, used by MCP-capable agents to inspect, validate, graph, and safely edit local OKF bundles through stdio tools. `write_concept` uses staged validation and the durable cooperating-writer commit path.
 4. **Agent skill** - `skills/open-knowledge-format`, used by agents to create, convert, enrich, validate, and operate on OKF bundles.
 
 Graph output has two layers: Markdown links for human navigation and YAML
 `relations` for strict semantic dependencies. Relation targets are OKF concept
 refs such as `tables/orders#col-status`; nested field-level sources require an
-explicit `id` or `anchor`.
+explicit `id` or `anchor`. A fragment target exists only when its concept and a
+unique matching fragment exist.
+
+Malformed or unresolved semantic relations remain structured diagnostics. CLI
+and MCP baseline validation remains limited to v0.1 conformance; Go callers can
+opt into relation reporting with `ValidatorConfig.CheckRelations`, while mutation
+and write paths always reject blocking relation diagnostics. They
+are excluded from resolved outgoing, incoming, and reverse indexes and from
+all semantic graph exporters. Dangling Markdown links are a separate navigation
+layer and may still be rendered as missing.
+
+Only nested mappings define fragments; top-level frontmatter `id` and `anchor`
+are concept metadata. For a nested mapping, `id` is canonical. A differing valid `anchor` is a
+noncanonical alias for information and navigation; semantic edits and relation
+refs use the canonical `id`.
+
+The transactional API uses algorithm-qualified revisions, preview, and CAS
+commits. The default revision is `sha256:<lowercase-hex>`;
+`fs.Config.HashAlgorithm` can replace the algorithm. It covers every regular
+file below the bundle root, including non-Markdown and reserved index/log files,
+except `.okf/**`; symlinks are never read or hashed, and the internal journal,
+receipts, and lease are excluded. Journal v5 binds its algorithm and canonical
+request/result/replay data in a compact, bounded manifest; durable staged
+payloads hold post-state bytes. Recovery verifies each payload's safe no-follow
+path, declared size, and SHA-256 digest before apply, then cleans up and
+requires the same configured algorithm. The persisted receipt envelope is v2. Its
+filesystem backend has advisory locks and single-filesystem scope. MCP
+`write_concept` uses the same idempotent pipeline without republishing an
+identical retry, but preserves its fixed success schema (`status`, `path`,
+`diagnostics`) and exposes no receipt or commit evidence. See
+[Toolkit](toolkit/) for the API, idempotency, and limits.
 
 See [Toolkit](toolkit/) and [Skill](skill/) for the repo-local details,
 including MCP setup.
@@ -200,3 +230,5 @@ No. `type` is free-form: `PostgreSQL Table`, `Kafka Topic`, `Metric`, `Runbook`,
 ### What is the difference from AGENTS.md?
 
 AGENTS.md tells a coding agent how to behave in a project. OKF tells an agent what exists in a domain: tables, metrics, APIs, playbooks, processes, and relationships.
+
+Filesystem durability: `MaxStagedFiles` defaults to and is capped at 100,000 (`payload-00000`…`payload-99999`). Case-folding and Unicode-normalization aliases are independently detected. `.okf` directories are no-follow 0700; private files and lease are 0600 or Open fails closed.

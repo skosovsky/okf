@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +27,29 @@ func TestLoadBundleLoadsAllConcepts(t *testing.T) {
 	assertBundleContains(t, bundle, "datasets/sales")
 	if got := len(bundle.ParseErrors()); got != 0 {
 		t.Fatalf("len(ParseErrors()) = %d, want 0", got)
+	}
+}
+
+func TestLoadBundleReportsInvalidUTF8WithoutNormalization(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	root := t.TempDir()
+	writeFile(t, root, "bad.md", "---\ntitle: "+string([]byte{0xff})+"\n---\nbody\n")
+
+	// Act.
+	loaded, err := LoadBundle(root)
+
+	// Assert.
+	if err != nil {
+		t.Fatalf("LoadBundle() error = %v", err)
+	}
+	if loaded.Len() != 0 {
+		t.Fatalf("LoadBundle() loaded %d concepts, want 0", loaded.Len())
+	}
+	parseErrors := loaded.ParseErrors()
+	if len(parseErrors) != 1 || !errors.Is(parseErrors[0].Err, ErrInvalidEncoding) {
+		t.Fatalf("ParseErrors() = %#v, want one ErrInvalidEncoding", parseErrors)
 	}
 }
 

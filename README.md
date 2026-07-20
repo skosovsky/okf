@@ -10,7 +10,7 @@ a minimal-dependency Go library and a portable agent skill for OKF workflows.
 The project provides four public surfaces:
 
 1. `okf` command-line toolkit for working with OKF bundles.
-2. Go library packages `github.com/skosovsky/okf/bundle`, `github.com/skosovsky/okf/validator`, and `github.com/skosovsky/okf/graph` for embedding OKF support in Go programs.
+2. Go library packages `github.com/skosovsky/okf/bundle`, `github.com/skosovsky/okf/validator`, `github.com/skosovsky/okf/graph`, `github.com/skosovsky/okf/store`, and `github.com/skosovsky/okf/store/fs` for embedding OKF support and transactional mutations in Go programs.
 3. `okf-mcp` stdio MCP server for agent clients that should inspect,
    validate, graph, and safely edit local OKF bundles through tools.
 4. `open-knowledge-format` agent skill for consulting on, creating,
@@ -79,8 +79,16 @@ relations:
 Relation targets are OKF concept refs, not Markdown paths: use
 `tables/orders#col-status`, not `tables/orders.md#col-status`. Nested semantic
 sources require an explicit `id` or `anchor`; display `name` is not inferred.
-`okf validate --check-links` still checks Markdown links only. Graph export
-preserves semantic edges even when the target concept is missing.
+For a fragment target, `exists` is true only when both the concept and that
+fragment exist and the fragment is unique.
+Malformed or unresolved semantic relations remain structured diagnostics. The
+default CLI and MCP validation reports cover base v0.1 conformance only; Go
+callers may opt into relation policy with `ValidatorConfig.CheckRelations`.
+Mutation and write paths still reject blocking relation diagnostics. They are excluded from
+resolved outgoing, incoming, and reverse indexes and from all semantic graph
+exporters. Non-canonical anchor aliases are informational only. This is
+separate from dangling Markdown links: they remain navigation data and may be
+rendered as missing.
 
 Relation ref grammar is `<concept-id>[#<fragment>]`. The concept id must match
 the bundle concept id exactly, with no leading `/`, `./`, `../`, `.md` suffix,
@@ -215,6 +223,82 @@ if err != nil {
 fmt.Println(written)
 ```
 
+### Transactional mutations
+
+`store` provides immutable snapshots, previewable declarative changes, and CAS
+commits. `store/fs` is the durable single-filesystem backend.
+
+```go
+package example
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/store"
+	"github.com/skosovsky/okf/store/fs"
+)
+
+func update(ctx context.Context) (err error) {
+	s, err := fs.Open("./knowledge", fs.DefaultConfig())
+	if err != nil { return err }
+	defer func() { if closeErr := s.Close(); closeErr != nil && err == nil { err = closeErr } }()
+	base, err := s.Snapshot(ctx)
+	if err != nil { return err }
+	source, err := bundle.ParseRelationRef("api/orders")
+	if err != nil { return err }
+	target, err := bundle.ParseRelationRef("tables/orders")
+	if err != nil { return err }
+	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "add-order-dependency", Actor: "agent", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: source, Type: "depends_on", Target: target}}}
+	preview, err := s.Preview(ctx, change)
+	if err != nil { return err }
+	_ = preview
+	_, err = s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "request-42"})
+	var conflict *store.Conflict
+	if errors.As(err, &conflict) { return fmt.Errorf("refresh and retry from %s", conflict.Actual) }
+	return err
+}
+```
+
+The operations express desired state: `EnsureRelation` makes one semantic edge
+present exactly once; `MoveConcept` moves a concept and rewrites statically
+resolvable canonical references; `RenameFragment` renames one explicit, unique
+fragment and its incoming canonical references. A revision is an
+algorithm-qualified digest of the canonical sorted manifest. The default is
+`sha256:<lowercase-hex>`; `fs.Config.HashAlgorithm` can replace the algorithm.
+`fs.Config` also bounds durable staged payloads: defaults are 256 MiB per
+payload and 1 GiB per transaction; recovery rejects persisted manifests beyond
+those limits before reading payload bytes.
+Its visible set is every regular file below the bundle root, including
+non-Markdown files and reserved index/log files, except `.okf/**`. Symlinks are
+never read or hashed; the internal journal, receipts, and lease are excluded.
+Journal v5 binds its algorithm, canonical request/result/replay data, and the
+canonical base manifest used to distinguish safe crash recovery from editor drift in a
+compact, bounded manifest; durable staged payloads hold post-state bytes.
+Recovery verifies each payload's safe no-follow path, declared size, and
+SHA-256 digest before apply, then cleans up the journal and stage. It requires
+the same configured algorithm. The persisted receipt envelope is v2.
+`Commit` compares `BaseRevision` under a cooperating-writer lease and returns a
+structured `*store.Conflict` on CAS mismatch. `Commit` returns a
+`store.CommitReceipt` and `ReplaceConcept` returns one in its result; both
+replay the identical receipt for the same canonical request and idempotency
+key. By default receipts remain for 24 hours and at
+least the newest 1000 are retained.
+
+Only nested mappings participate in the fragment namespace: top-level
+frontmatter `id` and `anchor` remain concept metadata. For nested mappings,
+`id` is the canonical fragment identity. A different
+valid `anchor` is a noncanonical alias for information and navigation only;
+semantic mutations and relation refs address the canonical `id`.
+
+The filesystem backend is deliberately scoped: leases are advisory, so raw
+editors do not participate; raw readers can observe a multi-rename commit while
+it is being published. The journal provides recovery, not distributed
+isolation. It covers one filesystem; distributed deployments need another
+`store.Store` backend.
+
 ## Usage 3: MCP Server
 
 Install the `okf-mcp` command:
@@ -244,15 +328,19 @@ errors are written to `stderr`.
 - `read_concept` - read one concept Markdown file by canonical concept id.
 - `validate_bundle` - return a JSON validation report.
 - `get_semantic_graph` - return the same JSON-LD graph as `okf graph -format json-ld`.
-- `write_concept` - create or update one concept through a staged strict validation pass, then atomically write the file.
+- `write_concept` - create or update one concept through staged strict validation and the durable cooperating-writer commit path.
 
 All tools require an absolute `bundle_path`. Concept tools use canonical OKF
 concept ids such as `tables/orders`, without a leading slash or `.md` suffix.
 Read and write paths reject symlinks under the bundle path. `write_concept`
-validates a temporary staged copy with strict, link, and orphan checks before it
-touches the real bundle; rejected writes return diagnostics and leave files
-unchanged. In MCP-driven IDE workflows, use `write_concept` for concept edits
-instead of bypassing the server with direct filesystem writes.
+validates staged content with strict, link, and orphan checks, then commits via
+the same lease, CAS, Journal v5, receipt, recovery, and cleanup path as
+`store/fs`. It uses a server-generated idempotency identity from the canonical
+write request, so an identical MCP retry does not republish. MCP keeps its
+fixed success schema (`status`, `path`, `diagnostics`) and never exposes a
+receipt DTO or commit evidence.
+Rejected writes leave files unchanged. It coordinates cooperating writers only;
+it does not provide distributed isolation from raw filesystem editors.
 
 ## Usage 4: Agent Skill
 
@@ -377,3 +465,7 @@ Check coverage:
 go test -coverprofile=/tmp/okf-cover.out ./...
 go tool cover -func=/tmp/okf-cover.out
 ```
+
+### Filesystem durability bounds
+
+`fs.Config.MaxStagedFiles` defaults to and is capped at 100,000 (`payload-00000`…`payload-99999`). Case-folding and Unicode-normalization aliases are detected independently. `.okf` directories are no-follow 0700; private files and the lease are 0600 or Open fails closed.

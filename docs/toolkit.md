@@ -54,6 +54,11 @@ CI jobs can parse it without guessing.
 | Link graph | `--check-links` | bundle-relative and relative Markdown links, target files, heading anchors | `[INFO]` for missing files, `[WARN]` for missing anchors |
 | Orphan coverage | `--check-orphans` | local `index.md` coverage for concept files | `[WARN]` for orphans, `[INFO]` for missing local indexes |
 
+Semantic relation diagnostics are retained for graph and mutation workflows but
+are not a CLI validation layer. `--strict` and `--check-links` do not change
+that policy. Go callers may opt into them with `ValidatorConfig.CheckRelations`;
+mutation and write paths independently reject blocking relation diagnostics.
+
 For a successfully parsed validation invocation, the report exit code is
 non-zero if and only if it contains `[ERROR]` diagnostics. Warnings and info are
 visible review signals; they do not make a bundle non-conformant. CLI
@@ -162,9 +167,11 @@ relations:
 Relation targets are OKF concept refs, not Markdown paths. Use
 `tables/orders#col-status`; do not use `tables/orders.md#col-status`.
 Nested sources require explicit `id` or `anchor`; `name` is display metadata
-only. `okf validate --check-links` does not validate semantic relations,
-missing semantic targets, or target fragments. Graph export preserves semantic
-edges even when the target concept is missing.
+only. `okf validate --check-links` checks Markdown links only. Malformed or
+unresolved semantic relations remain structured diagnostics; they are excluded
+from resolved outgoing, incoming, and reverse indexes and from all semantic
+graph exporters. Dangling Markdown links are a separate navigation layer and
+may still be rendered as missing.
 
 Relation ref grammar is `<concept-id>[#<fragment>]`. The concept id must match
 the bundle concept id exactly: no leading `/`, `./`, `../`, `.md` suffix,
@@ -196,8 +203,93 @@ debugging frontmatter/body parsing without loading a full bundle.
 `okf fmt <file>` normalizes one document to stdout. `okf fmt <file> -w`
 rewrites it in place.
 
+## Transactional mutation API
+
+The Go library's `store` package defines immutable `Snapshot`, versioned
+`ChangeSet`, `Preview`, and `Commit`; `store/fs` implements durable commits for
+one local filesystem. A revision is an algorithm-qualified digest of the
+canonical sorted manifest. The default is `sha256:<lowercase-hex>`;
+`fs.Config.HashAlgorithm` can replace the algorithm. The revision-visible set
+is every regular file below the bundle root, including non-Markdown files and
+reserved index/log files, except `.okf/**`. Symlinks are never read or hashed;
+the internal journal, receipts, and lease are excluded. Journal v5 binds its
+algorithm and canonical request/result/replay data in a compact, bounded
+manifest; durable staged payloads contain the post-state bytes. Before apply or
+recovery, every payload is verified through a safe no-follow path against its
+declared size and SHA-256 digest. Recovery then cleans up the transaction and
+stage, and requires the same configured algorithm. The persisted receipt
+envelope is v2.
+
+```go
+package example
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/store"
+	"github.com/skosovsky/okf/store/fs"
+)
+
+func update(ctx context.Context) (err error) {
+	s, err := fs.Open("./knowledge", fs.DefaultConfig())
+	if err != nil { return err }
+	defer func() { if closeErr := s.Close(); closeErr != nil && err == nil { err = closeErr } }()
+	base, err := s.Snapshot(ctx)
+	if err != nil { return err }
+	source, err := bundle.ParseRelationRef("api/orders")
+	if err != nil { return err }
+	target, err := bundle.ParseRelationRef("tables/orders")
+	if err != nil { return err }
+	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "add-order-dependency", Actor: "agent", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: source, Type: "depends_on", Target: target}}}
+	preview, err := s.Preview(ctx, change)
+	if err != nil { return err }
+	_ = preview
+	_, err = s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "request-42"})
+	var conflict *store.Conflict
+	if errors.As(err, &conflict) { return fmt.Errorf("refresh and retry from %s", conflict.Actual) }
+	return err
+}
+```
+
+`EnsureRelation` is desired-state: it makes the semantic edge present exactly
+once. `MoveConcept` moves a concept and rewrites statically resolvable canonical
+references. `RenameFragment` renames one explicit, unique fragment and rewrites
+its incoming canonical references. A fragment ref exists only if the concept
+and a unique matching fragment exist.
+
+Only nested mappings define fragments; top-level frontmatter `id` and `anchor`
+are concept metadata. `id` is the canonical fragment identity for a nested mapping. When a valid
+`anchor` differs, it is a noncanonical alias for information and navigation;
+semantic mutations and relation refs address the canonical `id`.
+
+`Preview` stages and validates without writing. `Commit` rechecks the base
+revision under an advisory cooperating-writer lease; a changed base returns
+`*store.Conflict`, recognizable with `errors.As`. Idempotency receipts key off
+the canonical versioned request digest: `Commit` returns a
+`store.CommitReceipt` and `ReplaceConcept` returns one in its result; both
+replay the identical receipt for the same key and request, while a different
+request returns `*store.IdempotencyConflict`.
+Defaults retain receipts for 24 hours and never fewer than the newest 1000.
+
+The guarantees stop at one filesystem. Locks are advisory, so raw editors do
+not coordinate; raw readers may observe a multi-file rename while it is being
+published. The journal guarantees recovery, not distributed isolation. Use a
+different `store.Store` backend for distributed deployments.
+
+`okf-mcp`'s `write_concept` uses staged strict/link/orphan validation and this
+durable cooperating-writer commit path. It does not claim distributed locking
+or isolation from raw filesystem edits. It derives a deterministic server-side
+idempotency identity from each canonical write request, so an identical MCP
+retry does not publish again. Its fixed success response remains `status`,
+`path`, and `diagnostics`; MCP does not expose a receipt DTO or commit evidence.
+
 ## Out of scope
 
 The Go quality gate does not make semantic or editorial judgments. Claim
 discovery, type representativeness, writing style, content generation, and link
 repair are delegated to agents, skills, or custom policies.
+
+Filesystem store contract: `MaxStagedFiles` defaults to and is capped at 100,000 (`payload-00000`…`payload-99999`); case-folding and Unicode-normalization capabilities are independently probed. `.okf` directories are no-follow 0700; private files and lease are 0600 or fail closed.

@@ -1,21 +1,59 @@
 package mcpserver
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/store"
+	storefs "github.com/skosovsky/okf/store/fs"
 	"github.com/skosovsky/okf/validator"
 )
 
-func writeConcept(root string, id bundle.ConceptID, frontmatterText, body string) (writeConceptResponse, error) {
+const maxWriteConceptConflictRetries = 2
+
+// transactionalStore is deliberately the small part of the filesystem store
+// used by this transport adapter. It lets lifecycle tests prove that every
+// successful Open is paired with Close without putting test hooks in fs.
+type transactionalStore interface {
+	Snapshot(context.Context) (store.Snapshot, error)
+	ReplaceConcept(context.Context, storefs.ReplaceConceptRequest, store.CommitOptions) (storefs.ReplaceConceptResult, error)
+	Close() error
+}
+
+var openTransactionalStore = func(root string, cfg storefs.Config) (transactionalStore, error) {
+	return storefs.Open(root, cfg)
+}
+
+// writeConcept is a cooperating writer: validation and publication both run
+// through the filesystem store's snapshot, lease, journal and CAS pipeline.
+func writeConcept(ctx context.Context, root string, id bundle.ConceptID, frontmatterText, body string) (writeConceptResponse, error) {
+	return writeConceptCommit(ctx, root, id, frontmatterText, body)
+}
+
+func writeConceptCommit(ctx context.Context, root string, id bundle.ConceptID, frontmatterText, body string) (response writeConceptResponse, err error) {
+	// MCP strings usually originate in JSON, whose decoder replaces malformed
+	// UTF-8. Keep the programmatic transport entry point equally strict before
+	// serializing a document to the filesystem store.
+	if !utf8.ValidString(body) {
+		return writeConceptResponse{}, fmt.Errorf("%w: invalid UTF-8", bundle.ErrInvalidEncoding)
+	}
+
 	targetPath := id.ToPath(root)
 	if !isInside(root, targetPath) {
 		return writeConceptResponse{}, fmt.Errorf("concept path escapes bundle root")
 	}
+	// Keep the transport-level error contract for a directly addressed symlink.
+	// The store independently rejects every revision-visible symlink while
+	// capturing its snapshot, closing the time-of-check/time-of-use gap here.
 	if err := rejectWriteSymlinks(root, targetPath); err != nil {
 		return writeConceptResponse{}, err
 	}
@@ -25,158 +63,101 @@ func writeConcept(root string, id bundle.ConceptID, frontmatterText, body string
 		return writeConceptResponse{}, err
 	}
 	document := bundle.NewDocument(frontmatter, body)
-	serialized, err := document.Serialize()
+	if _, err := document.Serialize(); err != nil {
+		return writeConceptResponse{}, err
+	}
+
+	cfg := validator.ValidatorConfig{Strict: true, CheckLinks: true, CheckOrphans: true}
+	transactionalStore, err := openTransactionalStore(root, storefs.Config{ValidatorConfig: &cfg})
 	if err != nil {
 		return writeConceptResponse{}, err
 	}
-
-	stagingRoot, err := os.MkdirTemp("", "okf-mcp-*")
-	if err != nil {
-		return writeConceptResponse{}, err
-	}
-	defer os.RemoveAll(stagingRoot)
-
-	if err := copyBundleTree(root, stagingRoot); err != nil {
-		return writeConceptResponse{}, err
-	}
-	stagedTarget := id.ToPath(stagingRoot)
-	if err := os.MkdirAll(filepath.Dir(stagedTarget), 0o755); err != nil {
-		return writeConceptResponse{}, err
-	}
-	if err := os.WriteFile(stagedTarget, []byte(serialized), 0o644); err != nil {
-		return writeConceptResponse{}, err
-	}
-
-	cfg := validator.ValidatorConfig{
-		Strict:       true,
-		CheckLinks:   true,
-		CheckOrphans: true,
-	}
-	report := validator.ValidatePath(stagingRoot, &cfg)
-	response := writeConceptResponse{
-		Status:      "success",
-		Path:        relativeSlashPath(root, targetPath),
-		Diagnostics: reportResponse(stagingRoot, report).Diagnostics,
-	}
-	if !report.IsConformant() {
-		response.Status = "rejected"
-		return response, nil
-	}
-
-	if err := atomicWriteFile(root, targetPath, []byte(serialized)); err != nil {
-		return writeConceptResponse{}, err
-	}
-	return response, nil
-}
-
-func copyBundleTree(root, stagingRoot string) error {
-	return filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if path == root {
-			return nil
-		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(stagingRoot, rel)
-		if entry.Type()&os.ModeSymlink != 0 {
-			if entry.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		info, err := entry.Info()
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			return os.MkdirAll(target, info.Mode().Perm())
-		}
-		if !entry.Type().IsRegular() {
-			return nil
-		}
-		return copyRegularFile(path, target, info.Mode().Perm())
-	})
-}
-
-func copyRegularFile(source, target string, mode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		return err
-	}
-	in, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
-	if err != nil {
-		return err
-	}
-	_, copyErr := io.Copy(out, in)
-	closeErr := out.Close()
-	if copyErr != nil {
-		return copyErr
-	}
-	return closeErr
-}
-
-func atomicWriteFile(root, targetPath string, data []byte) error {
-	parent := filepath.Dir(targetPath)
-	if err := rejectWriteSymlinks(root, targetPath); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(parent, 0o755); err != nil {
-		return err
-	}
-	if err := rejectWriteSymlinks(root, targetPath); err != nil {
-		return err
-	}
-
-	mode := os.FileMode(0o644)
-	if info, err := os.Lstat(targetPath); err == nil {
-		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("target path is a symlink")
-		}
-		if info.IsDir() {
-			return fmt.Errorf("target path is a directory")
-		}
-		mode = info.Mode().Perm()
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-
-	tmp, err := os.CreateTemp(parent, ".okf-mcp-*")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	cleanup := true
 	defer func() {
-		if cleanup {
-			_ = os.Remove(tmpPath)
+		if closeErr := transactionalStore.Close(); closeErr != nil {
+			if err != nil {
+				err = errors.Join(err, closeErr)
+				return
+			}
+			response = writeConceptResponse{}
+			err = closeErr
 		}
 	}()
 
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		return err
+	changeSetID := writeConceptChangeSetID(id, frontmatterText, body)
+	// MCP does not accept a caller-supplied idempotency key. The canonical
+	// ChangeSetID is stable for an identical write request and is therefore the
+	// server-generated identity used by the store receipt protocol.
+	idempotencyKey := store.IdempotencyKey(changeSetID)
+	request := storefs.ReplaceConceptRequest{
+		ChangeSetID: changeSetID,
+		Actor:       store.Actor("okf-mcp"),
+		ConceptID:   id,
+		Document:    document,
 	}
-	if err := tmp.Chmod(mode); err != nil {
-		_ = tmp.Close()
-		return err
+	for attempt := 0; attempt <= maxWriteConceptConflictRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return writeConceptResponse{}, err
+		}
+		snapshot, err := transactionalStore.Snapshot(ctx)
+		if err != nil {
+			return writeConceptResponse{}, err
+		}
+		request.BaseRevision = snapshot.Revision()
+
+		result, err := transactionalStore.ReplaceConcept(ctx, request, store.CommitOptions{IdempotencyKey: idempotencyKey})
+		if err == nil {
+			return writeConceptSuccess(root, targetPath, result.Validation), nil
+		}
+		var invalid *store.InvalidChangeSet
+		if errors.As(err, &invalid) {
+			return writeConceptRejected(root, targetPath, result.Validation, invalid.Diagnostics), nil
+		}
+		var conflict *store.Conflict
+		if errors.As(err, &conflict) && attempt < maxWriteConceptConflictRetries {
+			continue
+		}
+		return writeConceptResponse{}, err
 	}
-	if err := tmp.Close(); err != nil {
-		return err
+	panic("unreachable")
+}
+
+func writeConceptSuccess(root, targetPath string, report validator.Report) writeConceptResponse {
+	return writeConceptResponse{
+		Status:      "success",
+		Path:        relativeSlashPath(root, targetPath),
+		Diagnostics: reportResponse(root, report).Diagnostics,
 	}
-	if err := os.Rename(tmpPath, targetPath); err != nil {
-		return err
+}
+
+func writeConceptRejected(root, targetPath string, report validator.Report, rejected []store.Diagnostic) writeConceptResponse {
+	structured := make([]diagnosticProjection, 0, len(rejected))
+	for _, diagnostic := range rejected {
+		structured = append(structured, diagnosticDTOFromStore(root, diagnostic))
 	}
-	cleanup = false
-	return nil
+	validated := make([]diagnosticProjection, 0, len(report.Diagnostics))
+	for _, diagnostic := range report.Diagnostics {
+		validated = append(validated, diagnosticDTOFromValidator(root, diagnostic))
+	}
+	return writeConceptResponse{
+		Status:      "rejected",
+		Path:        relativeSlashPath(root, targetPath),
+		Diagnostics: uniqueDiagnosticDTOs(structured, validated),
+	}
+}
+
+// writeConceptChangeSetID binds a retried MCP request to its semantic input
+// with an unambiguous, ordered, length-prefixed encoding. The v2 domain
+// separates this corrected representation from the previous delimiter-based
+// identity format.
+func writeConceptChangeSetID(id bundle.ConceptID, frontmatterText, body string) store.ChangeSetID {
+	h := sha256.New()
+	for _, field := range []string{"okf-mcp:write-concept:v2", id.String(), frontmatterText, body} {
+		var length [8]byte
+		binary.BigEndian.PutUint64(length[:], uint64(len(field)))
+		_, _ = h.Write(length[:])
+		_, _ = h.Write([]byte(field))
+	}
+	return store.ChangeSetID("mcp-replace-" + hex.EncodeToString(h.Sum(nil)))
 }
 
 func rejectReadSymlinks(root, targetPath string) error {

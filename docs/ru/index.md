@@ -176,14 +176,44 @@ curl -X POST https://api.acme.com/v2/orders \
 В этом репозитории четыре публичные поверхности:
 
 1. **CLI toolkit** - `cmd/okf` для validation, summaries, index generation, graph output (`text`, Graphviz DOT, Mermaid, JSON-LD, N-Triples), parsing и formatting.
-2. **Go library** - domain packages `bundle`, `validator` и `graph` для встраивания OKF loading, validation и graph export в Go.
-3. **MCP server** - `cmd/okf-mcp` для MCP-capable agents: читать, проверять, строить graph и безопасно редактировать local OKF bundles через stdio tools.
+2. **Go library** - domain packages `bundle`, `validator`, `graph`, `store` и `store/fs`, включая snapshot-based transactional mutation для local bundles.
+3. **MCP server** - `cmd/okf-mcp` для MCP-capable agents: читать, проверять, строить graph и безопасно редактировать local OKF bundles через stdio tools. `write_concept` использует staged validation и durable cooperating-writer commit path.
 4. **Agent skill** - `skills/open-knowledge-format` для создания, конвертации, обогащения, проверки и работы с OKF bundles.
 
 Graph output имеет два слоя: Markdown links для human navigation и YAML
 `relations` для строгих semantic dependencies. Targets в `relations` - OKF
 concept refs вроде `tables/orders#col-status`; для nested field-level sources
-нужен явный `id` или `anchor`.
+нужен явный `id` или `anchor`. Target с fragment существует, только если
+существуют его concept и один уникальный matching fragment.
+
+Некорректные или неразрешенные semantic relations остаются structured
+diagnostics. Baseline validation в CLI и MCP ограничен conformance v0.1;
+Go-клиент может включить relation reporting через `ValidatorConfig.CheckRelations`,
+а mutation и write paths всегда отклоняют blocking relation diagnostics. Они
+исключаются из resolved outgoing, incoming и reverse indexes,
+а также из всех semantic graph exporters. Dangling Markdown links — отдельный
+навигационный слой и могут по-прежнему отображаться как missing.
+
+Только nested mapping определяют fragments; top-level frontmatter `id` и
+`anchor` — metadata concept. Для nested mapping `id` canonical. Отличающийся валидный `anchor` —
+noncanonical alias для информации и навигации; semantic edits и relation refs
+используют canonical `id`.
+
+Transactional API использует algorithm-qualified revisions, preview и CAS
+commits. По умолчанию revision — `sha256:<lowercase-hex>`;
+`fs.Config.HashAlgorithm` может заменить алгоритм. Она включает каждый regular
+file под bundle root, включая non-Markdown и reserved index/log files, кроме
+`.okf/**`; symlinks никогда не читаются и не хешируются, а internal journal,
+receipts и lease исключены. Journal v5 фиксирует алгоритм и canonical
+request/result/replay data в compact bounded manifest; durable staged payloads
+хранят post-state bytes. Перед apply recovery проверяет safe no-follow path,
+declared size и SHA-256 digest каждого payload, затем очищает данные и требует
+ту же configured algorithm. Persisted receipt envelope использует v2. Filesystem backend
+имеет advisory locks и scope одного filesystem. MCP `write_concept` использует
+тот же idempotent pipeline без повторной публикации идентичного retry, но
+сохраняет fixed success schema (`status`, `path`, `diagnostics`) и не раскрывает
+receipt или commit evidence. API,
+idempotency и ограничения — в [Toolkit](toolkit/).
 
 Смотри отдельные разделы: [Toolkit](toolkit/) и [Skill](skill/), включая MCP setup.
 
@@ -204,3 +234,5 @@ concept refs вроде `tables/orders#col-status`; для nested field-level so
 ### Чем отличается от AGENTS.md?
 
 AGENTS.md говорит coding agent, как вести себя в проекте. OKF говорит агенту, что существует в домене: tables, metrics, APIs, playbooks, processes и relationships.
+
+Filesystem durability: `MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow 0700, private files и lease 0600 либо Open fail-closed.

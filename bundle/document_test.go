@@ -27,6 +27,70 @@ func TestNewDocument(t *testing.T) {
 	}
 }
 
+func TestParseDocumentRejectsInvalidUTF8BeforeSplittingOrYAML(t *testing.T) {
+	t.Parallel()
+
+	invalid := string([]byte{0xff})
+	tests := []struct {
+		name string
+		text string
+	}{
+		{name: "body", text: "plain " + invalid},
+		{name: "frontmatter key", text: "---\n" + invalid + ": value\n---\nbody\n"},
+		{name: "frontmatter value", text: "---\ntitle: " + invalid + "\n---\nbody\n"},
+		{name: "relation reference", text: "---\nrelations:\n  uses:\n    - target: item#" + invalid + "\n---\nbody\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Act.
+			_, err := ParseDocument(tt.text)
+
+			// Assert.
+			if !errors.Is(err, ErrInvalidEncoding) {
+				t.Fatalf("ParseDocument() error = %v, want ErrInvalidEncoding", err)
+			}
+		})
+	}
+}
+
+func TestDocumentUnicodeRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	src := "---\ntitle: Привет 👋\nrelations:\n  uses:\n    - target: café#раздел\n---\n\nТело документа — без замен.\n"
+
+	// Act.
+	document, err := ParseDocument(src)
+	if err != nil {
+		t.Fatalf("ParseDocument() error = %v", err)
+	}
+	serialized, err := document.Serialize()
+	if err != nil {
+		t.Fatalf("Serialize() error = %v", err)
+	}
+	reparsed, err := ParseDocument(serialized)
+	if err != nil {
+		t.Fatalf("ParseDocument(serialized) error = %v", err)
+	}
+
+	// Assert.
+	if reparsed.Body != document.Body {
+		t.Fatalf("reparsed body = %q, want %q", reparsed.Body, document.Body)
+	}
+}
+
+func TestDocumentSerializeRejectsInvalidUTF8Body(t *testing.T) {
+	t.Parallel()
+
+	// Act.
+	_, err := NewDocument(NewFrontmatter(), string([]byte{0xff})).Serialize()
+
+	// Assert.
+	if !errors.Is(err, ErrInvalidEncoding) {
+		t.Fatalf("Serialize() error = %v, want ErrInvalidEncoding", err)
+	}
+}
+
 func TestParseDocumentRoundtripPreservesFrontmatterAndBody(t *testing.T) {
 	t.Parallel()
 

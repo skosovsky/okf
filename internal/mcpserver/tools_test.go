@@ -4,17 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/graph"
+	"github.com/skosovsky/okf/store"
+	storefs "github.com/skosovsky/okf/store/fs"
+	"github.com/skosovsky/okf/validator"
 )
 
 func TestListConceptsReturnsDeterministicSummaries(t *testing.T) {
@@ -188,6 +193,56 @@ func TestAllToolsRejectInvalidBundlePaths(t *testing.T) {
 	}
 }
 
+func TestBundlePathRejectsAncestorSymlinkForEachMCPTool(t *testing.T) {
+	skipIfSymlinkUnsupported(t)
+
+	// Arrange: the final bundle directory is ordinary, but one requested
+	// ancestor is a link. Resolving it would let callers choose an unrelated
+	// filesystem location behind a path accepted as a bundle_path.
+	container := t.TempDir()
+	realAncestor := filepath.Join(container, "real")
+	realRoot := filepath.Join(realAncestor, "bundle")
+	if err := os.MkdirAll(realRoot, 0o755); err != nil {
+		t.Fatalf("mkdir real bundle: %v", err)
+	}
+	writeTestFile(t, realRoot, "a.md", "---\ntype: Note\n---\nA.\n")
+	linkedAncestor := filepath.Join(container, "linked")
+	if err := os.Symlink(realAncestor, linkedAncestor); err != nil {
+		t.Fatalf("create ancestor symlink: %v", err)
+	}
+	requestedRoot := filepath.Join(linkedAncestor, "bundle")
+
+	tools := []toolHandlerCase{
+		{name: "read_concept", handler: handleReadConcept, args: map[string]any{"bundle_path": requestedRoot, "concept_id": "a"}},
+		{name: "list_concepts", handler: handleListConcepts, args: map[string]any{"bundle_path": requestedRoot}},
+		{name: "validate_bundle", handler: handleValidateBundle, args: map[string]any{"bundle_path": requestedRoot}},
+		{name: "write_concept", handler: handleWriteConcept, args: map[string]any{
+			"bundle_path": requestedRoot, "concept_id": "b", "frontmatter": "type: Note\n", "body": "B.\n",
+		}},
+	}
+	for _, tool := range tools {
+		t.Run(tool.name, func(t *testing.T) {
+			result := callHandler(t, tool.handler, tool.args)
+			if !result.IsError || !strings.Contains(resultText(t, result), "bundle_path must not contain a symlink") {
+				t.Fatalf("%s result = error %v text %q, want ancestor symlink rejection", tool.name, result.IsError, resultText(t, result))
+			}
+		})
+	}
+}
+
+func TestBundlePathRejectsUncleanAbsolutePath(t *testing.T) {
+	root := t.TempDir()
+	unclean := root + string(filepath.Separator) + "."
+	for _, tool := range toolHandlerCases(unclean) {
+		t.Run(tool.name, func(t *testing.T) {
+			result := callHandler(t, tool.handler, tool.args)
+			if !result.IsError || !strings.Contains(resultText(t, result), "bundle_path must be clean") {
+				t.Fatalf("%s result = error %v text %q, want clean path rejection", tool.name, result.IsError, resultText(t, result))
+			}
+		})
+	}
+}
+
 func TestAllToolsRejectUnloadableBundlePaths(t *testing.T) {
 	root, ok := makeUnloadableBundleRoot(t)
 	if !ok {
@@ -263,6 +318,22 @@ func TestValidateBundleReturnsNormalReportForConformanceErrors(t *testing.T) {
 	}
 	if got.Diagnostics[0].File != "bad.md" {
 		t.Fatalf("diagnostic file = %q, want bad.md", got.Diagnostics[0].File)
+	}
+	assertValidateBundleWireContract(t, []byte(resultText(t, result)))
+}
+
+func TestValidateBundleKeepsRelationDiagnosticsOutOfBaselineReport(t *testing.T) {
+	root := t.TempDir()
+	writeTestFile(t, root, "a.md", "---\ntype: Note\nrelations:\n  uses:\n    - target: missing#part\n---\nBody.\n")
+
+	result := callHandler(t, handleValidateBundle, map[string]any{"bundle_path": root})
+	if result.IsError {
+		t.Fatalf("handleValidateBundle() returned tool error: %s", resultText(t, result))
+	}
+	var got validateBundleResponse
+	decodeResult(t, result, &got)
+	if !got.Conformant || got.Errors != 0 || len(got.Diagnostics) != 0 {
+		t.Fatalf("validation response = %#v, want conformant base-only report", got)
 	}
 }
 
@@ -355,6 +426,7 @@ func TestWriteConceptStagesValidatesAndWritesAtomically(t *testing.T) {
 	if createdResponse.Status != "success" || createdResponse.Path != "nested/created.md" {
 		t.Fatalf("create response = %#v", createdResponse)
 	}
+	assertWriteConceptWireContract(t, []byte(resultText(t, created)))
 	if got := readTestFile(t, root, "nested/created.md"); got != "---\ntype: Note\ntitle: Created\n---\n\nCreated body.\n" {
 		t.Fatalf("created file = %q", got)
 	}
@@ -468,6 +540,24 @@ func TestWriteConceptRejectsInvalidInputWithoutChangingBundle(t *testing.T) {
 	}
 }
 
+func TestWriteConceptRejectsInvalidUTF8BodyBeforeOpeningStore(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	id, err := bundle.ParseConceptID("note")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	_, err = writeConcept(t.Context(), t.TempDir(), id, "type: Note\n", string([]byte{0xff}))
+
+	// Assert.
+	if !errors.Is(err, bundle.ErrInvalidEncoding) {
+		t.Fatalf("writeConcept() error = %v, want ErrInvalidEncoding", err)
+	}
+}
+
 func TestWriteConceptDoesNotFollowSymlinks(t *testing.T) {
 	skipIfSymlinkUnsupported(t)
 
@@ -488,8 +578,8 @@ func TestWriteConceptDoesNotFollowSymlinks(t *testing.T) {
 		"frontmatter": "type: Note\n",
 		"body":        "New.\n",
 	})
-	if result.IsError {
-		t.Fatalf("write with unrelated symlink returned error: %s", resultText(t, result))
+	if !result.IsError || !strings.Contains(resultText(t, result), "symlink revision-visible path linked-dir") {
+		t.Fatalf("visible symlink write result = error %v text %q", result.IsError, resultText(t, result))
 	}
 
 	targetResult := callHandler(t, handleWriteConcept, map[string]any{
@@ -512,6 +602,432 @@ func TestWriteConceptDoesNotFollowSymlinks(t *testing.T) {
 		t.Fatalf("symlink parent write result = error %v text %q", parentResult.IsError, resultText(t, parentResult))
 	}
 }
+
+func TestWriteConceptRelationDiagnosticsPreserveCodesAndPublication(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		frontmatter string
+	}{
+		{
+			name:        "missing target",
+			frontmatter: "type: Note\nrelations:\n  depends_on:\n    - {}\n",
+		},
+		{
+			name:        "malformed relation block",
+			frontmatter: "type: Note\nrelations: invalid\n",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange.
+			root := t.TempDir()
+			original := "---\ntype: Note\n---\nOriginal.\n"
+			writeTestFile(t, root, "a.md", original)
+
+			// Act.
+			result := callHandler(t, handleWriteConcept, map[string]any{
+				"bundle_path": root,
+				"concept_id":  "a",
+				"frontmatter": tc.frontmatter,
+				"body":        "Rejected.\n",
+			})
+			var response writeConceptResponse
+			decodeResult(t, result, &response)
+
+			// Assert.
+			if !result.IsError || response.Status != "rejected" || response.Path != "a.md" {
+				t.Fatalf("response = %#v, isError=%t; want rejected a.md", response, result.IsError)
+			}
+			if len(response.Diagnostics) == 0 || response.Diagnostics[0].File != "a.md" || response.Diagnostics[0].Message == "" {
+				t.Fatalf("diagnostics = %#v, want a fixed wire diagnostic for a.md", response.Diagnostics)
+			}
+			assertWriteConceptWireContract(t, []byte(resultText(t, result)))
+			if got := readTestFile(t, root, "a.md"); got != original {
+				t.Fatalf("rejected write changed bytes = %q, want %q", got, original)
+			}
+		})
+	}
+
+	// Arrange.
+	root := t.TempDir()
+	writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nOriginal.\n")
+
+	// Act.
+	result := callHandler(t, handleWriteConcept, map[string]any{
+		"bundle_path": root,
+		"concept_id":  "a",
+		"frontmatter": "type: Note\nparts:\n  - id: canonical\n    anchor: legacy\n",
+		"body":        "Published.\n",
+	})
+	var response writeConceptResponse
+	decodeResult(t, result, &response)
+
+	// Assert.
+	if result.IsError || response.Status != "success" || readTestFile(t, root, "a.md") == "---\ntype: Note\n---\nOriginal.\n" {
+		t.Fatalf("anchor alias response = %#v, isError=%t; want published success", response, result.IsError)
+	}
+}
+
+func TestWriteConceptRejectedPreservesDistinctStructuredRelationDiagnostics(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		frontmatter string
+		wantCode    string
+		wantMessage string
+		wantType    string
+		wantTarget  string
+	}{
+		{
+			name:        "missing fragments from separate files",
+			frontmatter: "type: Note\nrelations:\n  uses:\n    - target: target#missing\n",
+			wantCode:    "missing_or_ambiguous_target_fragment",
+			wantMessage: "target fragment does not exist or is ambiguous",
+			wantType:    "uses",
+			wantTarget:  "target#missing",
+		},
+		{
+			name:        "malformed relation shape from separate files",
+			frontmatter: "type: Note\nrelations:\n  depends_on: malformed\n",
+			wantCode:    "relation_not_sequence",
+			wantMessage: "relation value must be a sequence",
+			wantType:    "depends_on",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange.
+			root := t.TempDir()
+			writeTestFile(t, root, "target.md", "---\ntype: Note\nparts:\n  - id: canonical\n---\nTarget.\n")
+			writeTestFile(t, root, "b.md", "---\n"+tc.frontmatter+"---\nExisting.\n")
+
+			// Act.
+			result := callHandler(t, handleWriteConcept, map[string]any{
+				"bundle_path": root,
+				"concept_id":  "a",
+				"frontmatter": tc.frontmatter,
+				"body":        "Rejected.\n",
+			})
+			var response writeConceptResponse
+			decodeResult(t, result, &response)
+
+			// Assert.
+			if !result.IsError || response.Status != "rejected" {
+				t.Fatalf("response = %#v, isError=%t; want rejected response", response, result.IsError)
+			}
+			projected := make([]diagnosticDTO, 0, 2)
+			for _, diagnostic := range response.Diagnostics {
+				if diagnostic.Severity == string(store.DiagnosticError) && diagnostic.Message == tc.wantMessage {
+					projected = append(projected, diagnostic)
+				}
+			}
+			if got, want := len(projected), 2; got != want {
+				t.Fatalf("relation diagnostics count = %d, want %d: %#v", got, want, response.Diagnostics)
+			}
+			for i, file := range []string{"a.md", "b.md"} {
+				diagnostic := projected[i]
+				if diagnostic.Severity != string(store.DiagnosticError) || diagnostic.File != file || diagnostic.Message != tc.wantMessage {
+					t.Fatalf("diagnostic[%d] = %#v, want fixed wire projection for file=%q", i, diagnostic, file)
+				}
+			}
+			assertWriteConceptWireContract(t, []byte(resultText(t, result)))
+		})
+	}
+}
+
+func TestWriteConceptRejectedDeduplicatesLogicalRelationDiagnostics(t *testing.T) {
+	makeRelation := func(file, source string) (validator.Diagnostic, store.Diagnostic) {
+		ref, err := bundle.ParseRelationRef(source)
+		if err != nil {
+			t.Fatalf("ParseRelationRef(%q): %v", source, err)
+		}
+		validatorDiagnostic := validator.Diagnostic{
+			Code:         "missing_target",
+			Severity:     validator.SeverityError,
+			File:         file,
+			Message:      "relation item requires target",
+			RelationType: "depends_on",
+			Source:       ref,
+			Refs:         []bundle.RelationRef{ref},
+		}
+		storeDiagnostic := store.Diagnostic{
+			Kind:         store.DiagnosticRelation,
+			Severity:     store.DiagnosticError,
+			Code:         validatorDiagnostic.Code,
+			File:         file,
+			Message:      validatorDiagnostic.Message,
+			RelationType: validatorDiagnostic.RelationType,
+			Refs:         []bundle.RelationRef{ref},
+		}
+		return validatorDiagnostic, storeDiagnostic
+	}
+
+	for _, tc := range []struct {
+		name    string
+		sources []string
+	}{
+		{name: "single finding", sources: []string{"a"}},
+		{name: "same code different sources", sources: []string{"a", "b"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Arrange.
+			report := validator.Report{}
+			rejected := make([]store.Diagnostic, 0, len(tc.sources))
+			for _, source := range tc.sources {
+				validatorDiagnostic, storeDiagnostic := makeRelation(source+".md", source)
+				report.Diagnostics = append(report.Diagnostics, validatorDiagnostic)
+				rejected = append(rejected, storeDiagnostic)
+			}
+
+			// Act.
+			response := writeConceptRejected("", "a.md", report, rejected)
+
+			// Assert.
+			if got, want := len(response.Diagnostics), len(tc.sources); got != want {
+				t.Fatalf("diagnostics count = %d, want %d: %#v", got, want, response.Diagnostics)
+			}
+			for i, source := range tc.sources {
+				diagnostic := response.Diagnostics[i]
+				if diagnostic.Severity != string(store.DiagnosticError) || diagnostic.File != source+".md" || diagnostic.Message != "relation item requires target" {
+					t.Fatalf("diagnostic[%d] = %#v, want fixed wire projection for %q", i, diagnostic, source)
+				}
+			}
+			data, err := json.Marshal(response)
+			if err != nil {
+				t.Fatalf("marshal response: %v", err)
+			}
+			assertWriteConceptWireContract(t, data)
+		})
+	}
+}
+
+func TestWriteConceptResponseWireContract(t *testing.T) {
+	// Arrange. These source diagnostics intentionally carry fields that belong
+	// to the internal graph/store contract, not to MCP.
+	ref, err := bundle.ParseRelationRef("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := validator.Report{Diagnostics: []validator.Diagnostic{{
+		Code: "relation_not_sequence", Severity: validator.SeverityError,
+		File: "a.md", Message: "relation value must be a sequence",
+		RelationType: "depends_on", Source: ref, Refs: []bundle.RelationRef{ref},
+	}}}
+	rejected := []store.Diagnostic{{
+		Kind: store.DiagnosticRelation, Severity: store.DiagnosticError,
+		Code: "relation_not_sequence", File: "a.md", Message: "relation value must be a sequence",
+		RelationType: "depends_on", RawTarget: "not-a-sequence", Refs: []bundle.RelationRef{ref},
+	}}
+
+	// Act.
+	successData, err := json.Marshal(writeConceptSuccess("", "a.md", report))
+	if err != nil {
+		t.Fatalf("marshal success: %v", err)
+	}
+	rejectedData, err := json.Marshal(writeConceptRejected("", "a.md", report, rejected))
+	if err != nil {
+		t.Fatalf("marshal rejected: %v", err)
+	}
+
+	// Assert.
+	assertWriteConceptWireContract(t, successData)
+	assertWriteConceptWireContract(t, rejectedData)
+}
+
+func assertWriteConceptWireContract(t *testing.T, data []byte) {
+	t.Helper()
+	var topLevel map[string]json.RawMessage
+	if err := json.Unmarshal(data, &topLevel); err != nil {
+		t.Fatalf("decode write response: %v\n%s", err, data)
+	}
+	if len(topLevel) != 3 {
+		t.Fatalf("write response = %#v, want only status/path/diagnostics: %s", topLevel, data)
+	}
+	for _, key := range []string{"status", "path", "diagnostics"} {
+		if _, ok := topLevel[key]; !ok {
+			t.Fatalf("write response lacks %q: %s", key, data)
+		}
+	}
+	assertDiagnosticWireContract(t, data)
+}
+
+func assertValidateBundleWireContract(t *testing.T, data []byte) {
+	t.Helper()
+	var topLevel map[string]json.RawMessage
+	if err := json.Unmarshal(data, &topLevel); err != nil {
+		t.Fatalf("decode validation response: %v\n%s", err, data)
+	}
+	for _, key := range []string{"scanned_files", "conformant", "errors", "warnings", "info", "diagnostics"} {
+		if _, ok := topLevel[key]; !ok {
+			t.Fatalf("validation response lacks %q: %s", key, data)
+		}
+	}
+	if len(topLevel) != 6 {
+		t.Fatalf("validation response = %#v, want fixed response keys: %s", topLevel, data)
+	}
+	assertDiagnosticWireContract(t, data)
+}
+
+// assertDiagnosticWireContract guards the established MCP diagnostic schema:
+// diagnostics expose only severity, optional file, and message. Full relation
+// diagnostics remain internal to bundle/store/validator APIs.
+func assertDiagnosticWireContract(t *testing.T, data []byte) {
+	t.Helper()
+	var response struct {
+		Diagnostics []map[string]json.RawMessage `json:"diagnostics"`
+	}
+	if err := json.Unmarshal(data, &response); err != nil {
+		t.Fatalf("decode diagnostic wire response: %v\n%s", err, data)
+	}
+	for i, diagnostic := range response.Diagnostics {
+		for key := range diagnostic {
+			if key != "severity" && key != "file" && key != "message" {
+				t.Fatalf("diagnostic[%d] leaked non-contract key %q: %s", i, key, data)
+			}
+		}
+		if _, ok := diagnostic["severity"]; !ok {
+			t.Fatalf("diagnostic[%d] lacks severity: %s", i, data)
+		}
+		if _, ok := diagnostic["message"]; !ok {
+			t.Fatalf("diagnostic[%d] lacks message: %s", i, data)
+		}
+	}
+}
+
+func TestWriteConceptConcurrentCreatesDoNotLoseEitherUpdate(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	start := make(chan struct{})
+	type outcome struct {
+		id       string
+		response writeConceptResponse
+		err      error
+	}
+	results := make(chan outcome, 2)
+	var writers sync.WaitGroup
+	for _, id := range []string{"first", "second"} {
+		writers.Add(1)
+		go func(id string) {
+			defer writers.Done()
+			<-start
+			conceptID, err := parseCanonicalConceptID(id)
+			if err != nil {
+				results <- outcome{id: id, err: err}
+				return
+			}
+			response, err := writeConcept(context.Background(), root, conceptID, "type: Note\n", id+" body.\n")
+			results <- outcome{id: id, response: response, err: err}
+		}(id)
+	}
+
+	// Act.
+	close(start)
+	writers.Wait()
+	close(results)
+	gotResults := make([]outcome, 0, 2)
+	for result := range results {
+		gotResults = append(gotResults, result)
+	}
+
+	// Assert.
+	for _, result := range gotResults {
+		if result.err != nil || result.response.Status != "success" {
+			t.Fatalf("concurrent write %s = %#v, err=%v", result.id, result.response, result.err)
+		}
+		if got := readTestFile(t, root, result.id+".md"); !strings.Contains(got, result.id+" body.") {
+			t.Fatalf("%s content = %q", result.id, got)
+		}
+	}
+}
+
+func TestWriteConceptReplaysDeterministicRequestIdentity(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	args := map[string]any{
+		"bundle_path": root, "concept_id": "entry", "frontmatter": "type: Note\n", "body": "First.\n",
+	}
+
+	// Act.
+	first := callHandler(t, handleWriteConcept, args)
+	replay := callHandler(t, handleWriteConcept, args)
+	receipts, err := os.ReadDir(filepath.Join(root, ".okf", "receipts"))
+
+	// Assert.
+	if first.IsError || replay.IsError {
+		t.Fatalf("first error=%v replay error=%v; first=%s replay=%s", first.IsError, replay.IsError, resultText(t, first), resultText(t, replay))
+	}
+	if err != nil || len(receipts) != 1 {
+		t.Fatalf("receipt files = %d, err=%v; want one publication", len(receipts), err)
+	}
+	if got := readTestFile(t, root, "entry.md"); !strings.Contains(got, "First.") {
+		t.Fatalf("entry content = %q, want first payload", got)
+	}
+}
+
+func TestWriteConceptChangeSetIDUsesUnambiguousCanonicalEncoding(t *testing.T) {
+	// Arrange. These inputs produce the same bytes with the former NUL-delimited
+	// encoding because a field value can contain the delimiter.
+	id, err := parseCanonicalConceptID("entry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstFrontmatter := "type: Note\nlabel: café\x00next"
+	firstBody := "body\n"
+	secondFrontmatter := "type: Note\nlabel: café"
+	secondBody := "next\x00body\n"
+
+	// Act.
+	first := writeConceptChangeSetID(id, firstFrontmatter, firstBody)
+	firstReplay := writeConceptChangeSetID(id, firstFrontmatter, firstBody)
+	second := writeConceptChangeSetID(id, secondFrontmatter, secondBody)
+	boundaryA := writeConceptChangeSetID(id, "type: Note\nlabel: ab\n", "c")
+	boundaryB := writeConceptChangeSetID(id, "type: Note\nlabel: a\n", "bc")
+
+	// Assert.
+	if first != firstReplay {
+		t.Fatalf("deterministic identity = %q then %q", first, firstReplay)
+	}
+	if first == second {
+		t.Fatalf("NUL-containing distinct requests share identity %q", first)
+	}
+	if boundaryA == boundaryB {
+		t.Fatalf("distinct field boundaries share identity %q", boundaryA)
+	}
+}
+
+func TestWriteConceptClosesStoreWhenSnapshotFails(t *testing.T) {
+	// Arrange.
+	original := openTransactionalStore
+	opened := &closeTrackingStore{snapshotErr: errors.New("snapshot failed"), closeErr: errors.New("close failed")}
+	openTransactionalStore = func(string, storefs.Config) (transactionalStore, error) { return opened, nil }
+	t.Cleanup(func() { openTransactionalStore = original })
+	id, err := parseCanonicalConceptID("entry")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	_, writeErr := writeConcept(t.Context(), t.TempDir(), id, "type: Note\n", "Body.\n")
+
+	// Assert.
+	if !opened.closed {
+		t.Fatal("store Close was not called")
+	}
+	if !errors.Is(writeErr, opened.snapshotErr) || !errors.Is(writeErr, opened.closeErr) {
+		t.Fatalf("write error = %v, want joined snapshot and close errors", writeErr)
+	}
+}
+
+type closeTrackingStore struct {
+	snapshotErr error
+	closeErr    error
+	closed      bool
+}
+
+func (s *closeTrackingStore) Snapshot(context.Context) (store.Snapshot, error) {
+	return nil, s.snapshotErr
+}
+func (s *closeTrackingStore) ReplaceConcept(context.Context, storefs.ReplaceConceptRequest, store.CommitOptions) (storefs.ReplaceConceptResult, error) {
+	return storefs.ReplaceConceptResult{}, errors.New("ReplaceConcept must not be called")
+}
+func (s *closeTrackingStore) Close() error { s.closed = true; return s.closeErr }
 
 type toolHandlerCase struct {
 	name    string

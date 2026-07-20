@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -91,14 +92,16 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 		synthesize = DefaultSynthesizeDescription
 	}
 
-	if _, err := os.Stat(bundleRoot); err != nil {
+	source := &FileSystemSource{Root: bundleRoot}
+	defer source.Close()
+	files, err := source.Paths(context.Background())
+	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-
-	directories, err := directoriesToIndex(bundleRoot)
+	directories, err := directoriesToIndex(bundleRoot, files)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +117,11 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 	var written []string
 	dirDescriptions := make(map[string]string)
 	for _, directory := range directories {
-		entries, err := indexEntriesForDirectory(bundleRoot, directory, dirDescriptions)
+		directoryRel, err := filepath.Rel(bundleRoot, directory)
+		if err != nil {
+			return nil, err
+		}
+		entries, err := indexEntriesForDirectory(source, filepath.ToSlash(directoryRel), files, dirDescriptions)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +133,7 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 		text := BuildIndexText(entries)
 		if samePath(directory, bundleRoot) {
 			var err error
-			text, err = preserveRootIndexVersion(indexPath, text)
+			text, err = preserveRootIndexVersion(source, text)
 			if err != nil {
 				return nil, err
 			}
@@ -151,14 +158,14 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 			rel, _ := filepath.Rel(bundleRoot, directory)
 			description = synthesize(filepath.ToSlash(rel), children)
 		}
-		dirDescriptions[directory] = description
+		dirDescriptions[pathJoin("", strings.TrimPrefix(filepath.ToSlash(directoryRel), "./"))] = description
 	}
 
 	return written, nil
 }
 
-func preserveRootIndexVersion(indexPath, body string) (string, error) {
-	document, ok := loadIndexDocument(indexPath)
+func preserveRootIndexVersion(source Source, body string) (string, error) {
+	document, ok := loadIndexDocument(source, indexFilename)
 	if !ok {
 		return body, nil
 	}
@@ -176,29 +183,43 @@ func preserveRootIndexVersion(indexPath, body string) (string, error) {
 	return updated.Serialize()
 }
 
-func indexEntriesForDirectory(bundleRoot, directory string, dirDescriptions map[string]string) ([]IndexEntry, error) {
-	children, err := os.ReadDir(directory)
-	if err != nil {
-		return nil, err
+func indexEntriesForDirectory(source Source, directory string, files []string, dirDescriptions map[string]string) ([]IndexEntry, error) {
+	directory = strings.TrimPrefix(directory, "./")
+	if directory == "." {
+		directory = ""
 	}
-	sort.SliceStable(children, func(i, j int) bool {
-		return children[i].Name() < children[j].Name()
-	})
-
+	children := make(map[string]bool)
+	prefix := directory
+	if prefix != "" {
+		prefix += "/"
+	}
+	for _, file := range files {
+		if !strings.HasPrefix(file, prefix) {
+			continue
+		}
+		remainder := strings.TrimPrefix(file, prefix)
+		part := strings.SplitN(remainder, "/", 2)[0]
+		if part != "" {
+			children[part] = strings.Contains(remainder, "/")
+		}
+	}
+	names := make([]string, 0, len(children))
+	for name := range children {
+		names = append(names, name)
+	}
+	sort.Strings(names)
 	var entries []IndexEntry
-	for _, child := range children {
-		name := child.Name()
+	for _, name := range names {
 		if isReservedFilename(name) {
 			continue
 		}
-
-		childPath := filepath.Join(directory, name)
-		if child.IsDir() {
+		childRel := pathJoin(directory, name)
+		if children[name] {
 			entries = append(entries, IndexEntry{
 				Type:        "Subdirectories",
 				Title:       name,
 				Link:        filepath.ToSlash(filepath.Join(name, indexFilename)),
-				Description: dirDescriptions[childPath],
+				Description: dirDescriptions[childRel],
 			})
 			continue
 		}
@@ -206,7 +227,7 @@ func indexEntriesForDirectory(bundleRoot, directory string, dirDescriptions map[
 			continue
 		}
 
-		document, ok := loadIndexDocument(childPath)
+		document, ok := loadIndexDocument(source, childRel)
 		if !ok {
 			continue
 		}
@@ -227,8 +248,8 @@ func indexEntriesForDirectory(bundleRoot, directory string, dirDescriptions map[
 	return entries, nil
 }
 
-func loadIndexDocument(path string) (Document, bool) {
-	text, err := os.ReadFile(path)
+func loadIndexDocument(source Source, path string) (Document, bool) {
+	text, err := source.ReadFile(context.Background(), path)
 	if err != nil {
 		return Document{}, false
 	}
@@ -239,15 +260,13 @@ func loadIndexDocument(path string) (Document, bool) {
 	return document, true
 }
 
-func directoriesToIndex(bundleRoot string) ([]string, error) {
-	files, err := collectMarkdownFiles(bundleRoot)
-	if err != nil {
-		return nil, err
-	}
-
+func directoriesToIndex(bundleRoot string, files []string) ([]string, error) {
 	seen := make(map[string]struct{})
 	for _, file := range files {
-		dir := filepath.Dir(file)
+		if filepath.Ext(file) != ".md" {
+			continue
+		}
+		dir := filepath.Join(bundleRoot, filepath.FromSlash(filepath.Dir(file)))
 		for {
 			seen[dir] = struct{}{}
 			if samePath(dir, bundleRoot) {
@@ -264,6 +283,13 @@ func directoriesToIndex(bundleRoot string) ([]string, error) {
 	}
 	sort.Strings(directories)
 	return directories, nil
+}
+
+func pathJoin(dir, name string) string {
+	if dir == "" {
+		return name
+	}
+	return dir + "/" + name
 }
 
 func pathDepth(root, dir string) int {

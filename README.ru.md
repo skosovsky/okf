@@ -10,7 +10,7 @@ workflows.
 Проект предоставляет четыре публичных способа использования:
 
 1. CLI-toolkit `okf` для работы с OKF-bundle.
-2. Go library packages `github.com/skosovsky/okf/bundle`, `github.com/skosovsky/okf/validator` и `github.com/skosovsky/okf/graph` для встраивания OKF в Go-программы.
+2. Go library packages `github.com/skosovsky/okf/bundle`, `github.com/skosovsky/okf/validator`, `github.com/skosovsky/okf/graph`, `github.com/skosovsky/okf/store` и `github.com/skosovsky/okf/store/fs` для встраивания OKF и транзакционных мутаций в Go-программы.
 3. Stdio MCP server `okf-mcp` для agent clients, которым нужно через tools
    читать, проверять, строить graph и безопасно редактировать локальные
    OKF-bundle.
@@ -80,9 +80,17 @@ relations:
 Targets в `relations` - это OKF concept refs, а не Markdown paths: используй
 `tables/orders#col-status`, а не `tables/orders.md#col-status`. Для nested
 semantic sources нужен явный `id` или `anchor`; display `name` не
-интерпретируется как anchor. `okf validate --check-links` по-прежнему проверяет
-только Markdown links. Graph export сохраняет semantic edges даже если target
-concept отсутствует.
+интерпретируется как anchor. Для target с fragment `exists` равно true, только
+если существуют и concept, и сам fragment, причем fragment уникален.
+Некорректные или неразрешенные semantic relations остаются structured
+diagnostics с контекстом source, target и refs. CLI и MCP validation по
+умолчанию покрывают только base conformance v0.1; Go-клиент может включить
+relation policy через `ValidatorConfig.CheckRelations`. Mutation и write paths
+всё равно отклоняют blocking relation diagnostics. Они исключаются из resolved
+outgoing, incoming и reverse indexes, а также из всех semantic graph exporters.
+Non-canonical anchor aliases остаются только informational. Это отдельный слой
+от dangling Markdown links: они остаются навигационными данными и могут
+отображаться как missing.
 
 Grammar relation ref: `<concept-id>[#<fragment>]`. Concept id должен точно
 совпадать с bundle concept id: без leading `/`, `./`, `../`, `.md` suffix,
@@ -217,6 +225,80 @@ if err != nil {
 fmt.Println(written)
 ```
 
+### Транзакционные мутации
+
+`store` дает immutable snapshots, preview декларативных изменений и CAS commit.
+`store/fs` — durable backend для одного filesystem.
+
+```go
+package example
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/store"
+	"github.com/skosovsky/okf/store/fs"
+)
+
+func update(ctx context.Context) (err error) {
+	s, err := fs.Open("./knowledge", fs.DefaultConfig())
+	if err != nil { return err }
+	defer func() { if closeErr := s.Close(); closeErr != nil && err == nil { err = closeErr } }()
+	base, err := s.Snapshot(ctx)
+	if err != nil { return err }
+	source, err := bundle.ParseRelationRef("api/orders")
+	if err != nil { return err }
+	target, err := bundle.ParseRelationRef("tables/orders")
+	if err != nil { return err }
+	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "add-order-dependency", Actor: "agent", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: source, Type: "depends_on", Target: target}}}
+	preview, err := s.Preview(ctx, change)
+	if err != nil { return err }
+	_ = preview
+	_, err = s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "request-42"})
+	var conflict *store.Conflict
+	if errors.As(err, &conflict) { return fmt.Errorf("refresh and retry from %s", conflict.Actual) }
+	return err
+}
+```
+
+Операции описывают desired state: `EnsureRelation` оставляет ровно одно
+semantic edge; `MoveConcept` переносит concept и переписывает statically
+resolvable canonical references; `RenameFragment` переименовывает один явный
+уникальный fragment и входящие canonical references. Revision —
+algorithm-qualified digest от canonical sorted manifest. По умолчанию это
+`sha256:<lowercase-hex>`; `fs.Config.HashAlgorithm` может заменить алгоритм.
+`fs.Config` также ограничивает durable staged payloads: по умолчанию 256 MiB
+на payload и 1 GiB на transaction; recovery отклоняет превышающий лимиты
+persisted manifest до чтения payload bytes.
+Visible set ревизии — каждый regular file под bundle root, включая non-Markdown
+files и reserved index/log files, кроме `.okf/**`. Symlinks никогда не читаются
+и не хешируются; internal journal, receipts и lease исключены. Journal v5
+фиксирует алгоритм и canonical request/result/replay data в compact bounded
+manifest; durable staged payloads хранят post-state bytes. Перед
+apply/recovery проверяются safe no-follow path, declared size и SHA-256 digest
+каждого payload, затем очищаются journal и stage. Recovery требует ту же
+configured algorithm. Persisted receipt envelope использует v2.
+`Commit` сверяет `BaseRevision` под lease cooperating writers и при CAS mismatch
+возвращает structured `*store.Conflict`. `Commit` возвращает
+`store.CommitReceipt`, а `ReplaceConcept` возвращает его в result; оба replay
+идентичный receipt для того же canonical request и idempotency key. По умолчанию
+receipts хранятся 24 часа и всегда сохраняются
+как минимум 1000 самых новых.
+
+В fragment namespace входят только nested mapping: top-level frontmatter `id`
+и `anchor` остаются metadata concept. Для nested mapping `id` — canonical
+identity fragment. Отличающийся валидный
+`anchor` — только noncanonical alias для информации и навигации; semantic
+mutations и relation refs адресуют canonical `id`.
+
+Filesystem backend намеренно ограничен: lease advisory, поэтому raw editors не
+участвуют; raw readers могут увидеть multi-rename commit во время публикации.
+Journal дает recovery, а не distributed isolation. Backend покрывает один
+filesystem; для distributed deployment нужен другой `store.Store` backend.
+
 ## Способ 3: MCP Server
 
 Установка команды `okf-mcp`:
@@ -246,15 +328,19 @@ go install github.com/skosovsky/okf/cmd/okf-mcp@latest
 - `read_concept` - прочитать Markdown одного concept по canonical concept id.
 - `validate_bundle` - вернуть JSON validation report.
 - `get_semantic_graph` - вернуть тот же JSON-LD graph, что и `okf graph -format json-ld`.
-- `write_concept` - создать или обновить один concept через staged strict validation, затем атомарно записать файл.
+- `write_concept` - создать или обновить один concept через staged strict validation и durable cooperating-writer commit path.
 
 Все tools требуют absolute `bundle_path`. Concept tools используют canonical OKF
 concept ids вроде `tables/orders`, без leading slash и без suffix `.md`.
 Read/write paths отклоняют symlinks внутри bundle path. `write_concept`
-проверяет временную staged copy со strict, link и orphan checks до изменения
-реального bundle; rejected writes возвращают diagnostics и не меняют файлы. В
-MCP-driven IDE workflow редактируй concepts через `write_concept`, не обходя
-server прямыми filesystem writes.
+проверяет staged content через strict, link и orphan checks, затем commit'ит
+через тот же lease, CAS, Journal v5, receipt, recovery и cleanup path, что и
+`store/fs`. Он использует server-generated idempotency identity из canonical
+write request, поэтому идентичный MCP retry не публикует повторно. MCP сохраняет
+fixed success schema (`status`, `path`, `diagnostics`) и не раскрывает receipt
+DTO или commit evidence.
+Rejected writes не меняют файлы. Это координация только cooperating writers, без
+distributed isolation от raw filesystem editors.
 
 ## Способ 4: Agent Skill
 
@@ -380,3 +466,7 @@ go test ./...
 go test -coverprofile=/tmp/okf-cover.out ./...
 go tool cover -func=/tmp/okf-cover.out
 ```
+
+### Границы filesystem durability
+
+`fs.Config.MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow 0700, private files и lease 0600 либо Open fail-closed.

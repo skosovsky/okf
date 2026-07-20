@@ -39,13 +39,7 @@ func RenderMermaid(w io.Writer, b *bundle.Bundle) error {
 		for _, relation := range relations {
 			source := nodes.node(relation.Source.String())
 			target := nodes.node(relation.Target.String())
-			if relation.TargetExists {
-				if err := writef(w, "  %s -->|\"%s\"| %s\n", source, mermaidLabel(relation.Type), target); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := writef(w, "  %s -.->|\"%s\"| %s\n", source, mermaidLabel(relation.Type+" 404"), target); err != nil {
+			if err := writef(w, "  %s -->|\"%s\"| %s\n", source, mermaidLabel(relation.Type), target); err != nil {
 				return err
 			}
 		}

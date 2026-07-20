@@ -176,6 +176,33 @@ func TestRunValidateInfoAndGraph(t *testing.T) {
 	assertContains(t, mermaidOut, `n0["a"] -.->|"404"| n2["missing"]`)
 }
 
+func TestRunValidateKeepsRelationDiagnosticsOutOfBaselineReport(t *testing.T) {
+	root := t.TempDir()
+	writeTestFile(t, root, "a.md", "---\ntype: Note\nrelations:\n  uses:\n    - target: missing#part\n---\nBody.\n")
+
+	code, stdout, stderr := runCommand("validate", "-path", root, "-format=json")
+	if code != 0 || stderr != "" {
+		t.Fatalf("validate code/stderr = %d/%q, want 0/empty", code, stderr)
+	}
+	var got struct {
+		Conformant  bool                       `json:"conformant"`
+		Diagnostics []validationJSONDiagnostic `json:"diagnostics"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("validate JSON = %q: %v", stdout, err)
+	}
+	if !got.Conformant || len(got.Diagnostics) != 0 {
+		t.Fatalf("validate response = %#v, want conformant base-only report", got)
+	}
+	textCode, textOutput, textErr := runCommand("validate", "-path", root)
+	if textCode != 0 || textErr != "" {
+		t.Fatalf("text validate code/stderr = %d/%q, want 0/empty", textCode, textErr)
+	}
+	for _, field := range []string{"code=missing_target_concept", "source=a", "relation_type=uses", "raw_target=missing#part", "refs=a"} {
+		assertNotContains(t, textOutput, field)
+	}
+}
+
 func TestRunGraphArgumentOrder(t *testing.T) {
 	// Arrange.
 	root := sampleBundle(t)
@@ -303,7 +330,7 @@ func TestRunGraphFormatErrors(t *testing.T) {
 func TestRunGraphMermaidEscapesLabels(t *testing.T) {
 	// Arrange.
 	root := t.TempDir()
-	writeTestFile(t, root, "complex & \"name]\t.md", "---\ntype: Note\n---\nSee [Target](/target.md) and [Missing](/missing&]\t.md).\n")
+	writeTestFile(t, root, "complex & \"name].md", "---\ntype: Note\n---\nSee [Target](/target.md) and [Missing](/missing&].md).\n")
 	writeTestFile(t, root, "target.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
@@ -317,9 +344,6 @@ func TestRunGraphMermaidEscapesLabels(t *testing.T) {
 	assertContains(t, stdout, "&quot;")
 	assertContains(t, stdout, "&#93;")
 	assertContains(t, stdout, "missing&amp;&#93;")
-	if strings.Contains(stdout, "\t") {
-		t.Fatalf("mermaid output contains raw tab:\n%s", stdout)
-	}
 	if strings.Contains(stdout, `["complex & "name]`) {
 		t.Fatalf("mermaid output contains raw unescaped label:\n%s", stdout)
 	}
@@ -378,9 +402,15 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	if textCode != 0 {
 		t.Fatalf("graph -format text code = %d, stderr = %q", textCode, textErr)
 	}
-	assertContains(t, textOut, "a\n  -> b\n")
-	assertContains(t, textOut, "a#field1\n  => writes_to b#col-2\n  => writes_to b#col-2\n")
-	assertContains(t, textOut, "a\n  => depends_on b#section-1\n  =x impacts missing#col\n")
+	const wantText = "a\n" +
+		"  -> b\n" +
+		"  => depends_on b#section-1\n" +
+		"a#field1\n" +
+		"  => writes_to b#col-2\n" +
+		"  => writes_to b#col-2\n"
+	if textOut != wantText {
+		t.Fatalf("graph -format text stdout =\n%s\nwant:\n%s", textOut, wantText)
+	}
 
 	if dotCode != 0 {
 		t.Fatalf("graph -format dot code = %d, stderr = %q", dotCode, dotErr)
@@ -390,23 +420,23 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 		t.Fatalf("dot writes_to count = %d, want 2; stdout:\n%s", strings.Count(dotOut, `"a#field1" -> "b#col-2" [label="writes_to"];`), dotOut)
 	}
 	assertContains(t, dotOut, `"a" -> "b#section-1" [label="depends_on"];`)
-	assertContains(t, dotOut, `"a" -> "missing#col" [label="impacts", style=dashed, color=red];`)
+	assertNotContains(t, dotOut, `"a" -> "missing#col"`)
 
 	if mermaidCode != 0 {
 		t.Fatalf("graph -format mermaid code = %d, stderr = %q", mermaidCode, mermaidErr)
 	}
 	assertContains(t, mermaidOut, `n0["a"] --> n1["b"]`)
-	if strings.Count(mermaidOut, `n2["a#field1"] -->|"writes_to"| n3["b#col-2"]`) != 2 {
-		t.Fatalf("mermaid writes_to count = %d, want 2; stdout:\n%s", strings.Count(mermaidOut, `n2["a#field1"] -->|"writes_to"| n3["b#col-2"]`), mermaidOut)
+	if strings.Count(mermaidOut, `n3["a#field1"] -->|"writes_to"| n4["b#col-2"]`) != 2 {
+		t.Fatalf("mermaid writes_to count = %d, want 2; stdout:\n%s", strings.Count(mermaidOut, `n3["a#field1"] -->|"writes_to"| n4["b#col-2"]`), mermaidOut)
 	}
-	assertContains(t, mermaidOut, `n0["a"] -->|"depends_on"| n4["b#section-1"]`)
-	assertContains(t, mermaidOut, `n0["a"] -.->|"impacts 404"| n5["missing#col"]`)
+	assertContains(t, mermaidOut, `n0["a"] -->|"depends_on"| n2["b#section-1"]`)
+	assertNotContains(t, mermaidOut, "missing#col")
 
 	if jsonldCode != 0 {
 		t.Fatalf("graph -format json-ld code = %d, stderr = %q", jsonldCode, jsonldErr)
 	}
 	document := decodeRawJSONLD(t, jsonldOut)
-	for _, key := range []string{"depends_on", "writes_to", "impacts", "is_part_of"} {
+	for _, key := range []string{"depends_on", "writes_to", "is_part_of"} {
 		if _, ok := document.Context[key]; !ok {
 			t.Fatalf("@context = %#v, want key %q", document.Context, key)
 		}
@@ -425,8 +455,8 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	if countRawJSONLDRelation(t, a, "depends_on", "bundle:b#section-1", true) != 1 {
 		t.Fatalf("bundle:a depends_on = %#v, want bundle:b#section-1", a["depends_on"])
 	}
-	if countRawJSONLDRelation(t, a, "impacts", "bundle:missing#col", false) != 1 {
-		t.Fatalf("bundle:a impacts = %#v, want missing target exists=false", a["impacts"])
+	if _, ok := a["impacts"]; ok {
+		t.Fatalf("bundle:a impacts = %#v, want unresolved relation omitted", a["impacts"])
 	}
 	if field["@type"] != "okf:SubResource" {
 		t.Fatalf("bundle:a#field1 @type = %q, want okf:SubResource", field["@type"])
@@ -441,7 +471,7 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	if ntriplesCode != 0 {
 		t.Fatalf("graph -format ntriples code = %d, stderr = %q", ntriplesCode, ntriplesErr)
 	}
-	_ = parseNTriples(t, ntriplesOut)
+	triples := parseNTriples(t, ntriplesOut, "depends_on", "writes_to")
 	assertContains(t, ntriplesOut, `<local:bundle:a> <https://okf.io/ontology/v0.1#references> <local:bundle:b> .`)
 	assertContains(t, ntriplesOut, `<local:bundle:a#field1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#SubResource> .`)
 	if strings.Count(ntriplesOut, `<local:bundle:a#field1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#SubResource> .`) != 1 {
@@ -452,7 +482,10 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 		t.Fatalf("ntriples writes_to count mismatch; stdout:\n%s", ntriplesOut)
 	}
 	assertContains(t, ntriplesOut, `<local:bundle:a> <https://okf.io/ontology/v0.1#depends_on> <local:bundle:b#section-1> .`)
-	assertContains(t, ntriplesOut, `<local:bundle:a> <https://okf.io/ontology/v0.1#impacts> <local:bundle:missing#col> .`)
+	assertNotContains(t, ntriplesOut, "missing#col")
+	assertNTriplesRelationReification(t, triples, 0, "<local:bundle:a>", "depends_on", "<local:bundle:b#section-1>", true)
+	assertNTriplesRelationReification(t, triples, 1, "<local:bundle:a#field1>", "writes_to", "<local:bundle:b#col-2>", true)
+	assertNTriplesRelationReification(t, triples, 2, "<local:bundle:a#field1>", "writes_to", "<local:bundle:b#col-2>", true)
 }
 
 func TestRunGraphSemanticRelationsNTriplesIRIEncoding(t *testing.T) {
@@ -467,7 +500,7 @@ func TestRunGraphSemanticRelationsNTriplesIRIEncoding(t *testing.T) {
 		"        writes_to:\n"+
 		"          - target: tables/orders#col customer\n"+
 		"---\nBody.\n")
-	writeTestFile(t, root, "tables/orders.md", "---\ntype: BigQuery Table\n---\nBody.\n")
+	writeTestFile(t, root, "tables/orders.md", "---\ntype: BigQuery Table\nfields:\n  - id: col customer\n---\nBody.\n")
 
 	// Act.
 	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
@@ -476,8 +509,9 @@ func TestRunGraphSemanticRelationsNTriplesIRIEncoding(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
 	}
-	_ = parseNTriples(t, stdout)
+	triples := parseNTriples(t, stdout, "writes_to")
 	assertContains(t, stdout, `<local:bundle:api%2Fcheckout#payload%20user> <https://okf.io/ontology/v0.1#writes_to> <local:bundle:tables%2Forders#col%20customer> .`)
+	assertNTriplesRelationReification(t, triples, 0, "<local:bundle:api%2Fcheckout#payload%20user>", "writes_to", "<local:bundle:tables%2Forders#col%20customer>", true)
 	if strings.Contains(stdout, `<local:bundle:api/checkout#payload user>`) {
 		t.Fatalf("ntriples output contains raw slash/space relation IRI:\n%s", stdout)
 	}
@@ -500,7 +534,7 @@ func TestRunGraphSemanticRelationsRejectsControlFragments(t *testing.T) {
 		"  reads_from:\n"+
 		"    - target: b#ok\n"+
 		"---\nBody.\n")
-	writeTestFile(t, root, "b.md", "---\ntype: Note\n---\nBody.\n")
+	writeTestFile(t, root, "b.md", "---\ntype: Note\nfields:\n  - id: ok\n---\nBody.\n")
 
 	// Act.
 	textCode, textOut, textErr := runCommand("graph", root, "-format", "text")
@@ -533,7 +567,8 @@ func TestRunGraphSemanticRelationsRejectsControlFragments(t *testing.T) {
 		}
 		assertContains(t, output.stdout, "b#ok")
 	}
-	_ = parseNTriples(t, ntriplesOut)
+	triples := parseNTriples(t, ntriplesOut, "reads_from")
+	assertNTriplesRelationReification(t, triples, 0, "<local:bundle:a>", "reads_from", "<local:bundle:b#ok>", true)
 }
 
 func TestRunGraphJSONLDContract(t *testing.T) {
@@ -748,7 +783,7 @@ func TestRunGraphJSONLDLinkFiltering(t *testing.T) {
 func TestRunGraphJSONLDEscapesViaJSON(t *testing.T) {
 	// Arrange.
 	root := t.TempDir()
-	rel := "complex & \"name]\t.md"
+	rel := "complex & \"name].md"
 	writeTestFile(t, root, rel, "---\n"+
 		"type: \"Type & \\\"quoted\\\"\"\n"+
 		"title: \"Title & \\\"quote\\\" ]\"\n"+
@@ -766,7 +801,7 @@ func TestRunGraphJSONLDEscapesViaJSON(t *testing.T) {
 		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
 	}
 	document := decodeJSONLD(t, stdout)
-	node, ok := jsonldNodeByID(document, "bundle:complex & \"name]\t")
+	node, ok := jsonldNodeByID(document, "bundle:complex & \"name]")
 	if !ok {
 		t.Fatalf("@graph = %#v, want escaped-name concept", document.Graph)
 	}
@@ -1306,7 +1341,7 @@ func semanticRelationsBundle(t *testing.T) string {
 		"  impacts:\n"+
 		"    - target: missing#col\n"+
 		"---\nSee [B](b.md).\n")
-	writeTestFile(t, root, "b.md", "---\ntype: Note\n---\nBody.\n")
+	writeTestFile(t, root, "b.md", "---\ntype: Note\nfields:\n  - id: col-2\n  - id: section-1\n---\nBody.\n")
 	return root
 }
 
@@ -1417,6 +1452,13 @@ func assertContains(t *testing.T, got, fragment string) {
 	t.Helper()
 	if !strings.Contains(got, fragment) {
 		t.Fatalf("got:\n%s\nwant fragment:\n%s", got, fragment)
+	}
+}
+
+func assertNotContains(t *testing.T, got, fragment string) {
+	t.Helper()
+	if strings.Contains(got, fragment) {
+		t.Fatalf("got:\n%s\nunexpected fragment:\n%s", got, fragment)
 	}
 }
 
@@ -1566,7 +1608,12 @@ const (
 	ntriplesTestOntologyPrefix = "https://okf.io/ontology/v0.1#"
 	ntriplesTestBundlePrefix   = "local:bundle:"
 	ntriplesTestRDFType        = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+	ntriplesTestRDFSubject     = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject"
+	ntriplesTestRDFPredicate   = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate"
+	ntriplesTestRDFObject      = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object"
+	ntriplesTestXSDBoolean     = "http://www.w3.org/2001/XMLSchema#boolean"
 	ntriplesTestSubResource    = ntriplesTestOntologyPrefix + "SubResource"
+	ntriplesTestRelation       = ntriplesTestOntologyPrefix + "Relation"
 )
 
 func ntriplesTestIRI(value string) string {
@@ -1577,14 +1624,16 @@ func ntriplesTestPredicate(name string) string {
 	return ntriplesTestOntologyPrefix + name
 }
 
-func parseNTriples(t *testing.T, stdout string) []ntripleTestTriple {
+func parseNTriples(t *testing.T, stdout string, semanticPredicates ...string) []ntripleTestTriple {
 	t.Helper()
 	if stdout == "" {
 		return nil
 	}
+	allowedPredicates := ntriplesAllowedPredicates(semanticPredicates)
 
 	lines := strings.SplitAfter(stdout, "\n")
 	triples := make([]ntripleTestTriple, 0, len(lines))
+	previous := ""
 	for i, line := range lines {
 		if line == "" {
 			if i == len(lines)-1 {
@@ -1598,12 +1647,33 @@ func parseNTriples(t *testing.T, stdout string) []ntripleTestTriple {
 		if !strings.HasSuffix(line, "\n") {
 			t.Fatalf("ntriples line does not end with newline: %q", line)
 		}
-		triples = append(triples, parseNTripleLine(t, strings.TrimSuffix(line, "\n")))
+		line = strings.TrimSuffix(line, "\n")
+		if previous != "" && line < previous {
+			t.Fatalf("ntriples output is not in canonical lexical order: %q before %q", previous, line)
+		}
+		previous = line
+		triples = append(triples, parseNTripleLine(t, line, allowedPredicates))
 	}
 	return triples
 }
 
-func parseNTripleLine(t *testing.T, line string) ntripleTestTriple {
+func ntriplesAllowedPredicates(semanticPredicates []string) map[string]struct{} {
+	allowed := map[string]struct{}{
+		ntriplesTestRDFType:      {},
+		ntriplesTestRDFSubject:   {},
+		ntriplesTestRDFPredicate: {},
+		ntriplesTestRDFObject:    {},
+	}
+	for _, name := range []string{"type", "title", "description", "resource", "timestamp", "tags", "references", "is_part_of", "exists"} {
+		allowed[ntriplesTestPredicate(name)] = struct{}{}
+	}
+	for _, name := range semanticPredicates {
+		allowed[ntriplesTestPredicate(name)] = struct{}{}
+	}
+	return allowed
+}
+
+func parseNTripleLine(t *testing.T, line string, allowedPredicates map[string]struct{}) ntripleTestTriple {
 	t.Helper()
 	if !strings.HasSuffix(line, " .") {
 		t.Fatalf("ntriples line = %q, want final space-dot", line)
@@ -1619,8 +1689,8 @@ func parseNTripleLine(t *testing.T, line string) ntripleTestTriple {
 		t.Fatalf("ntriples line %q missing space after predicate", line)
 	}
 	predicateValue := strings.TrimSuffix(strings.TrimPrefix(predicate, "<"), ">")
-	if predicateValue != ntriplesTestRDFType && !strings.HasPrefix(predicateValue, ntriplesTestOntologyPrefix) {
-		t.Fatalf("ntriples line %q has unexpected predicate namespace %q", line, predicate)
+	if _, ok := allowedPredicates[predicateValue]; !ok {
+		t.Fatalf("ntriples line %q has unexpected predicate %q", line, predicate)
 	}
 	object := rest[1:]
 	switch {
@@ -1628,7 +1698,7 @@ func parseNTripleLine(t *testing.T, line string) ntripleTestTriple {
 		t.Fatalf("ntriples line %q missing object", line)
 	case strings.HasPrefix(object, "<"):
 		validateNTriplesIRI(t, object, "object")
-	case isValidNTriplesLiteral(object):
+	case isValidNTriplesLiteral(object), isValidNTriplesBoolean(object):
 	default:
 		t.Fatalf("ntriples line %q has invalid object %q", line, object)
 	}
@@ -1699,6 +1769,8 @@ func allowsRelationFragment(predicateValue, object string) bool {
 	switch predicateValue {
 	case ntriplesTestRDFType:
 		return object == ntriplesTestIRI(ntriplesTestSubResource)
+	case ntriplesTestRDFSubject, ntriplesTestRDFObject:
+		return true
 	case ntriplesTestPredicate("is_part_of"):
 		return true
 	default:
@@ -1713,6 +1785,39 @@ func allowsRelationFragment(predicateValue, object string) bool {
 		}
 		return false
 	}
+}
+
+func isValidNTriplesBoolean(literal string) bool {
+	return literal == `"true"^^<`+ntriplesTestXSDBoolean+`>` || literal == `"false"^^<`+ntriplesTestXSDBoolean+`>`
+}
+
+func assertNTriplesRelationReification(t *testing.T, triples []ntripleTestTriple, ordinal int, source, relationType, target string, exists bool) {
+	t.Helper()
+	relation := ntriplesTestIRI(fmt.Sprintf("%srelation:%06d", ntriplesTestBundlePrefix, ordinal))
+	predicate := ntriplesTestIRI(ntriplesTestPredicate(relationType))
+	want := map[string]int{
+		source + " " + predicate + " " + target: 1,
+		relation + " " + ntriplesTestIRI(ntriplesTestRDFType) + " " + ntriplesTestIRI(ntriplesTestRelation):   1,
+		relation + " " + ntriplesTestIRI(ntriplesTestRDFSubject) + " " + source:                               1,
+		relation + " " + ntriplesTestIRI(ntriplesTestRDFPredicate) + " " + predicate:                          1,
+		relation + " " + ntriplesTestIRI(ntriplesTestRDFObject) + " " + target:                                1,
+		relation + " " + ntriplesTestIRI(ntriplesTestPredicate("exists")) + " " + ntriplesTestBoolean(exists): 1,
+	}
+	for _, triple := range triples {
+		key := triple.Subject + " " + triple.Predicate + " " + triple.Object
+		if want[key] > 0 {
+			want[key]--
+		}
+	}
+	for key, count := range want {
+		if count != 0 {
+			t.Fatalf("ntriples relation %06d missing %q", ordinal, key)
+		}
+	}
+}
+
+func ntriplesTestBoolean(value bool) string {
+	return fmt.Sprintf(`"%t"^^<%s>`, value, ntriplesTestXSDBoolean)
 }
 
 func isValidNTriplesLiteral(literal string) bool {

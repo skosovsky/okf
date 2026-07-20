@@ -83,12 +83,31 @@ Example client configuration:
 The server exposes `list_concepts`, `read_concept`, `validate_bundle`,
 `get_semantic_graph`, and `write_concept`. All tools require an absolute
 `bundle_path`; concept tools require canonical concept ids without `.md`.
-`write_concept` stages the bundle, runs strict/link/orphan validation, and only
-then atomically writes the real file. Rejected writes return diagnostics and
-leave the bundle unchanged. Before changes, inspect context with
+`write_concept` validates an in-memory staged bundle with strict/link/orphan
+checks, then publishes through a bundle-wide advisory lease, fresh-revision
+CAS, Journal v5/recovery, cleanup, and receipt. Journal v5 uses a compact,
+bounded manifest that binds algorithm and canonical request/result/replay data,
+with separately durable staged payloads; recovery verifies a safe no-follow
+path, declared size, and SHA-256 digest before apply. The persisted receipt
+envelope is v2. It replans and revalidates a
+conflict at most twice; rejected writes return diagnostics and leave the bundle
+unchanged. The lease is advisory: raw editors do not coordinate, and raw
+readers can observe non-atomic multi-file renames during publication.
+Revisions default to `sha256:<lowercase-hex>`, but `fs.Config.HashAlgorithm`
+Staged durable payloads are bounded by `fs.Config`: 256 MiB per payload and
+1 GiB per transaction by default; recovery rejects an oversized manifest
+before allocating payload bytes.
+can replace the algorithm; Journal v5 binds it, so recovery requires the same
+configured algorithm. Every regular file under the bundle root is revision
+visible, including non-Markdown and reserved index/log files, except `.okf/**`;
+symlinks are never read or hashed, and the internal journal, receipts, and
+lease are excluded. Before changes, inspect context with
 `get_semantic_graph` and `read_concept`; validate with `validate_bundle`; use
 `write_concept` for concept edits instead of direct filesystem writes when MCP
-is available.
+is available. An identical retry uses the same server-side idempotent pipeline
+without republishing; do not add transport-only retry fields. MCP success still
+contains only `status`, `path`, and `diagnostics`, never a receipt DTO or commit
+evidence.
 
 ## Graph output workflow
 
@@ -134,9 +153,20 @@ schema:
           - target: tables/orders#col-customer_id
 ```
 
-Do not infer anchors from display `name`. `okf validate --check-links` checks
-Markdown links only; graph export still preserves semantic edges whose target
-concept is missing.
+Do not infer anchors from display `name`. `okf validate` and MCP
+`validate_bundle` check base v0.1 conformance; `--check-links` only adds
+Markdown-link checks. Go callers can opt into semantic relation reporting with
+`ValidatorConfig.CheckRelations`; mutation and write paths always reject
+blocking relation diagnostics. Noncanonical anchor aliases are informational.
+Semantic failures are excluded from resolved
+outgoing, incoming, and reverse indexes and from all semantic graph exporters.
+Dangling Markdown links are a separate navigation layer and may still be
+rendered as missing.
+
+Only nested mappings define fragments; top-level frontmatter `id` and `anchor`
+are concept metadata. For a nested mapping, frontmatter `id` is canonical. A valid, differing
+`anchor` is a noncanonical alias for information and navigation; semantic
+mutations and relation refs must address the canonical `id`.
 
 Relation ref grammar is `<concept-id>[#<fragment>]`. Invalid refs include
 `/tables/orders.md`, `tables/orders.md`, `#local-section`,
@@ -184,3 +214,5 @@ For runtimes that support local skills, register or copy `skills/open-knowledge-
 | `references/conversion.md` | Notion, Obsidian, CSV, and spreadsheet conversion guidance. |
 
 The skill intentionally has no bundled validation script. Deterministic checks and graph extraction go through `cmd/okf`.
+
+Filesystem store: `MaxStagedFiles` defaults to and is capped at 100,000 (`payload-00000`…`payload-99999`). Case-folding and Unicode-normalization aliases are independently detected. `.okf` directories are no-follow 0700; private files and lease are 0600 or fail closed.
