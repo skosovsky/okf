@@ -36,15 +36,16 @@ jobs:
         run: go mod verify
       - name: Verify go.mod and go.sum are tidy
         run: go mod tidy -diff
+      - name: Test whitespace gate
+        run: bash .github/scripts/check-whitespace_test.sh
       - name: Check whitespace errors
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          git diff --check
-          if [[ -n "$BASE_SHA" && "$BASE_SHA" != "0000000000000000000000000000000000000000" ]] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
-            git diff --check "$BASE_SHA" "$HEAD_SHA"
-          fi
+          MAIN_REF: refs/remotes/origin/main
+          REF_TYPE: ${{ github.ref_type }}
+        run: bash .github/scripts/check-whitespace.sh
       - name: Vet packages
         run: go vet ./...
       - name: Test packages

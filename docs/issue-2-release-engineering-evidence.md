@@ -16,7 +16,7 @@ post-tag release-engineering hardening in
 
 | Requirement | Executable or reviewable evidence |
 | --- | --- |
-| PR, `main`, and tag CI triggers | [CI workflow](https://github.com/skosovsky/okf/blob/main/.github/workflows/ci.yml) and [PR #3 checks](https://github.com/skosovsky/okf/pull/3/checks) |
+| PR, `main`, and tag CI triggers | [CI workflow](https://github.com/skosovsky/okf/blob/main/.github/workflows/ci.yml) and [PR #3 checks](https://github.com/skosovsky/okf/pull/3/checks); version tags must resolve to `main`, and zero-base events scan the complete committed tree for whitespace errors |
 | Test, race, vet, modules, tidy, and diff gates | `quality` and `race` jobs in the CI workflow |
 | Linux durable backend | Linux test/build jobs plus the full local test matrix below |
 | Darwin durable backend | Native `macos-latest` `store/fs` test and repository build |

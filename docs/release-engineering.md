@@ -25,6 +25,11 @@ The normal workflow runs:
 - Android cross-build plus Android/iOS source-selection assertions proving that
   derived Go tags do not accidentally select the Darwin/Linux backend.
 
+For a version-tag push, CI additionally requires the tagged commit to be
+reachable from `main`. Because GitHub supplies a zero `before` SHA when a tag is
+created, the whitespace gate compares the complete tagged tree with Git's empty
+tree instead of silently reducing the range check to a clean-worktree no-op.
+
 Long fuzz campaigns and 10,000-concept profiles remain reproducible manual
 gates documented in the parser-backed mutation evidence. They are deliberately
 not placed on the latency-sensitive pull-request path.
