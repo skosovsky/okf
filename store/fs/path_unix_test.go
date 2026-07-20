@@ -21,6 +21,11 @@ func TestSnapshotRejectsInvalidUTF8VisibleFilenameBeforePublication(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() {
+		if err := s.Close(); err != nil {
+			t.Errorf("Close() error = %v", err)
+		}
+	})
 
 	// Act.
 	_, snapshotErr := s.Snapshot(context.Background())
@@ -33,11 +38,21 @@ func TestSnapshotRejectsInvalidUTF8VisibleFilenameBeforePublication(t *testing.T
 	if entriesErr != nil {
 		t.Fatal(entriesErr)
 	}
-	if len(entries) != 2 {
-		t.Fatalf("root entries after rejected snapshot = %#v", entries)
+	visible := make(map[string]bool, 2)
+	for _, entry := range entries {
+		if entry.Name() != internalDirectory {
+			visible[entry.Name()] = true
+		}
 	}
-	if _, err := os.Stat(filepath.Join(root, internalDirectory, "transactions")); !os.IsNotExist(err) {
-		t.Fatalf("journal exists after rejected snapshot: %v", err)
+	if len(visible) != 2 || !visible["valid.md"] || !visible[filepath.Base(bad)] {
+		t.Fatalf("revision-visible root entries after rejected snapshot = %#v, want valid and invalid source files", visible)
+	}
+	transactions, err := os.ReadDir(filepath.Join(root, internalDirectory, "transactions"))
+	if err != nil {
+		t.Fatalf("ReadDir(transactions) error = %v", err)
+	}
+	if len(transactions) != 0 {
+		t.Fatalf("journals after rejected snapshot = %#v, want none", transactions)
 	}
 }
 
