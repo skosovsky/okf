@@ -210,6 +210,12 @@ identical retry, but preserves its fixed success schema (`status`, `path`,
 `diagnostics`) and exposes no receipt or commit evidence. See
 [Toolkit](toolkit/) for the API, idempotency, and limits.
 
+The durable `store/fs` runtime backend is supported only on Darwin and Linux,
+subject to its filesystem capability checks. Windows, Android, iOS, and other
+targets remain compile-safe but `Open`/`OpenContext` return the typed
+`fs.ErrUnsupportedPlatform` path; backend-neutral packages remain buildable.
+See [Release engineering](release-engineering/) for the enforced matrix.
+
 Parser-backed mutations preserve presentation instead of normalizing it:
 Goldmark proves eligible Markdown body destinations and an exact collector maps
 their byte spans to the full file; `yaml.v3` proves the supported block scalar

@@ -277,6 +277,20 @@ base revision под advisory lease cooperating writers; changed base возвр
 Journal гарантирует recovery, а не distributed isolation. Для distributed
 deployments нужен другой `store.Store` backend.
 
+### Поддерживаемые платформы
+
+`store/fs` предоставляет durable backend на Darwin и Linux. Он использует
+descriptor-relative no-follow traversal, advisory lease, atomic rename, file и
+directory sync и journal recovery с обязательными runtime capability checks
+filesystem.
+
+На Windows и других targets package остаётся compile-safe, но `Open` и
+`OpenContext` возвращают `*fs.UnsupportedPlatformError`. Для классификации
+используй `errors.Is(err, fs.ErrUnsupportedPlatform)`, для чтения выбранных
+`GOOS` и `GOARCH` — `errors.As`. Backend-neutral packages остаются buildable.
+Полная исполняемая matrix описана в
+[Release engineering](../release-engineering.md).
+
 `write_concept` в `okf-mcp` делает staged strict/link/orphan validation и
 использует этот durable cooperating-writer commit path. Distributed locking и
 isolation от raw filesystem edits он не обещает. Server-side idempotency

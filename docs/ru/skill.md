@@ -92,11 +92,16 @@ no-follow path, declared size и SHA-256 digest. Persisted receipt envelope
 заново планирует и валидирует изменения; rejected writes возвращают diagnostics
 и не меняют bundle. Lease advisory: raw editors не координируются, а raw readers
 могут увидеть non-atomic multi-file rename во время публикации.
+Durable backend `store/fs` имеет runtime contract только для Darwin/Linux. На
+Windows, Android, iOS и других targets он compile-safe, а
+`Open`/`OpenContext` возвращают `fs.ErrUnsupportedPlatform`; не заявляй там
+durable filesystem support.
 Revisions по умолчанию используют `sha256:<lowercase-hex>`, но
 `fs.Config.HashAlgorithm` может заменить алгоритм; Journal v5 фиксирует его,
+поэтому recovery требует ту же configured algorithm.
 Durable staged payloads ограничены `fs.Config`: по умолчанию 256 MiB на payload
 и 1 GiB на transaction; recovery отклоняет oversized manifest до allocation.
-поэтому recovery требует ту же configured algorithm. Revision-visible set —
+Revision-visible set —
 каждый regular file под bundle root, включая non-Markdown и reserved index/log
 files, кроме `.okf/**`; symlinks никогда не читаются и не хешируются, а internal
 journal, receipts и lease исключены. Перед изменениями получать контекст через

@@ -1,13 +1,16 @@
 ---
-title: Issue 002 implementation evidence
+title: Parser-backed lossless mutations implementation evidence
 description: Verification commands and performance evidence for parser-backed lossless mutations.
-permalink: /issue-002-evidence/
+permalink: /parser-backed-lossless-mutations-evidence/
 ---
 
-# Issue 002 implementation evidence
+# Parser-backed lossless mutations implementation evidence
 
-This record supplements the normative acceptance matrix in the Issue 002 task;
-it does not relax it.
+This record covers the parser-backed lossless mutation phase implemented by
+commit [`bb9c169`](https://github.com/skosovsky/okf/commit/bb9c169). That phase
+continued the transactional mutation design from
+[GitHub issue #1](https://github.com/skosovsky/okf/issues/1). This record
+supplements that phase's normative acceptance matrix; it does not relax it.
 
 ## Verification commands
 
@@ -16,13 +19,13 @@ Run from the repository root after all implementation files are present:
 ```sh
 go test ./bundle ./mutation
 go test ./...
-go test -race ./mutation -run '^(TestIssue002MarkdownCorpus|TestIssue002YAMLPresentationCorpus|TestPlan_InvalidYAMLReturnsPresentationErrorWithoutStage)$' -count=1
+go test -race ./mutation -run '^(TestParserBackedMarkdownCorpus|TestParserBackedYAMLPresentationCorpus|TestPlan_InvalidYAMLReturnsPresentationErrorWithoutStage)$' -count=1
 go test -race ./...
 go vet ./...
 go mod verify
 go mod tidy -diff
 go test ./mutation -run '^TestPlannerRepeatedPreviewAndValidationSemanticMatrix$' -count=1
-go test -run '^$' -bench 'Benchmark(Overlay(Clone|Rename|Paths|ManifestDeltaRevision)|Issue002OverlayComparison|PlannerRepresentativeTransaction)$' -benchtime=1x -benchmem ./mutation
+go test -run '^$' -bench 'Benchmark(Overlay(Clone|Rename|Paths|ManifestDeltaRevision)|ParserBackedOverlayComparison|PlannerRepresentativeTransaction)$' -benchtime=1x -benchmem ./mutation
 go test -run '^$' -fuzz=FuzzYAMLResolver -fuzztime=20s -parallel=1 ./mutation
 go test -run '^$' -fuzz=FuzzRewriteMarkdownDestinations -fuzztime=20s -parallel=1 ./mutation
 git diff --check
@@ -35,9 +38,9 @@ three consecutive 20-second runs; the unrestricted Markdown target passed its
 separate 20-second run.
 
 The fuzz targets are intentionally separate commands: Go permits one fuzz
-target per `go test` invocation. There is no repository CI workflow at this
-revision, so these are reproducible local/CI commands rather than an invented
-workflow step.
+target per `go test` invocation. The deterministic subset now runs in the
+repository `CI` workflow. Fuzz and profile commands remain reproducible manual
+evidence because they are not on the latency-sensitive pull-request path.
 
 Committed fuzz inputs are present in Go's native corpus encoding and are read
 automatically by their corresponding targets:
@@ -170,11 +173,11 @@ allocations, keeps fixture construction outside its timed region, and consumes
 the produced result with semantic assertions.
 
 The durable
-[`overlay baseline vs result`](issue-002-profiles/overlay-baseline-vs-result-2026-07-20.md)
+[`overlay baseline vs result`](parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md)
 uses one self-contained 10,000-file fixture on commit `43f7214` and the result
 tree with the same Go version, hardware, `-benchmem`, `-benchtime=3x`, and
 three samples. The separate
-[`planner profile`](issue-002-profiles/planner-10000-2026-07-20.md) records the
+[`planner profile`](parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md) records the
 complete 10,000-concept result transaction plus CPU and allocation profiles.
 
 The 10,000-concept planner semantic case contains 10,001 visible files including
@@ -200,7 +203,7 @@ thresholds:
 `TestOverlayPerformanceGates_NoPayloadCopiesOrUnchangedHashes` proves
 backing-array identity through clone plus staged rename and asserts that the
 injected hash algorithm receives zero new calls after `Put`.
-`TestIssue002AllocationBaseline` derives its allocation baseline with
+`TestParserBackedAllocationBaseline` derives its allocation baseline with
 `testing.AllocsPerRun(100)`: 64 B and 1 MiB payloads must be exactly equal
 (zero payload-size slack) and must remain at or below eight allocations. The
 recorded clone baseline is five; the three-allocation metadata slack avoids a
@@ -210,7 +213,7 @@ captured `hash.Hash.Size()`; short/long/non-canonical digests and `Size`/`Sum`
 disagreement fail closed, while `Valid` and overlay composition do not
 construct hashes for unchanged content.
 
-`TestIssue002MarkdownCorpus` is the deterministic Markdown table (exact raw
+`TestParserBackedMarkdownCorpus` is the deterministic Markdown table (exact raw
 spans, sorted/non-overlapping union, reparse, and unchanged bytes outside
 patches), including multiline reference-definition destinations covered by
 `TestRewriteMarkdownDestinations_MultilineReferenceDefinition` and
@@ -231,7 +234,7 @@ relative to the new path. Non-self targets and query/fragment suffixes therefore
 retain semantics across directory changes. Invalid UTF-8 in a Markdown body is
 reported by `TestPlanMoveConcept_ReportsInvalidUTF8MarkdownBodyLocation` as a
 Markdown `invalid_encoding` error at the exact full-file byte, with no stage.
-`TestIssue002YAMLPresentationCorpus` is the deterministic YAML
+`TestParserBackedYAMLPresentationCorpus` is the deterministic YAML
 parser/resolver/planner table (style preservation, quoted structural keys,
 block-context punctuation and multiline plain-scalar boundaries, explicit
 non-specific tag provenance,
@@ -296,11 +299,11 @@ Run the benchmark command with `-benchmem` and record Go version, CPU, and
 complete output in review. The result is hardware-specific evidence, not a
 hard nanosecond target. It is used to detect material regressions and to
 justify any future separate proposal for a HAMT or parent chain; neither
-belongs to Issue 002.
+belongs to the parser-backed mutation phase.
 
 The durable representative benchmark and full 40-node CPU/alloc-space textual
 profiles are tracked at
-[`issue-002-profiles/planner-10000-2026-07-20.md`](issue-002-profiles/planner-10000-2026-07-20.md).
+[`parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md`](parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md).
 The binary `/private/tmp` profiles are reproducible scratch inputs to that
 report, not the delivery artifact.
 
@@ -309,7 +312,7 @@ report, not the delivery artifact.
 Command (2026-07-20, local workspace):
 
 ```sh
-go test -run '^$' -bench 'Benchmark(Overlay(Clone|Rename|Paths|ManifestDeltaRevision)|Issue002OverlayComparison|PlannerRepresentativeTransaction)$' -benchtime=1x -benchmem ./mutation
+go test -run '^$' -bench 'Benchmark(Overlay(Clone|Rename|Paths|ManifestDeltaRevision)|ParserBackedOverlayComparison|PlannerRepresentativeTransaction)$' -benchtime=1x -benchmem ./mutation
 ```
 
 `go version go1.26.5 darwin/arm64`; host `darwin/arm64`, Apple M1 Max, macOS
@@ -339,9 +342,9 @@ controlled baseline/result comparison is the separately linked durable report.
 For an updated textual profile summary, run:
 
 ```sh
-go test -run '^$' -bench 'BenchmarkOverlay(Clone|Rename|Paths|ManifestDeltaRevision)$' -benchtime=1x -benchmem -cpuprofile /private/tmp/okf-issue-002-cpu.pprof -memprofile /private/tmp/okf-issue-002-heap.pprof ./mutation
-go tool pprof -top /private/tmp/okf-issue-002-cpu.pprof
-go tool pprof -alloc_space -top /private/tmp/okf-issue-002-heap.pprof
+go test -run '^$' -bench 'BenchmarkOverlay(Clone|Rename|Paths|ManifestDeltaRevision)$' -benchtime=1x -benchmem -cpuprofile /private/tmp/okf-parser-backed-cpu.pprof -memprofile /private/tmp/okf-parser-backed-heap.pprof ./mutation
+go tool pprof -top /private/tmp/okf-parser-backed-cpu.pprof
+go tool pprof -alloc_space -top /private/tmp/okf-parser-backed-heap.pprof
 ```
 
 The commands keep binary profiles under `/private/tmp`; their durable textual

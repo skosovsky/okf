@@ -28,7 +28,7 @@ func (s comparisonOverlaySource) ReadFile(_ context.Context, name string) ([]byt
 	return append([]byte(nil), data...), nil
 }
 
-func BenchmarkIssue002OverlayComparison(b *testing.B) {
+func BenchmarkParserBackedOverlayComparison(b *testing.B) {
 	const (
 		files        = 10_000
 		payloadBytes = 256

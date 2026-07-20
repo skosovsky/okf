@@ -299,6 +299,20 @@ Filesystem backend намеренно ограничен: lease advisory, поэ
 Journal дает recovery, а не distributed isolation. Backend покрывает один
 filesystem; для distributed deployment нужен другой `store.Store` backend.
 
+### Поддерживаемые платформы
+
+Durable backend `store/fs` поддерживается на Darwin и Linux. На этих платформах
+используются descriptor-relative no-follow traversal, advisory file lease,
+atomic rename, file sync, directory sync и journal recovery; runtime capability
+checks всё равно отклоняют filesystem, который не даёт требуемых гарантий.
+
+Windows и остальные targets compile-safe, но не поддерживают durable backend.
+`fs.Open` и `fs.OpenContext` возвращают `*fs.UnsupportedPlatformError`, который
+распознаётся через `errors.Is(err, fs.ErrUnsupportedPlatform)` и раскрывается
+через `errors.As`. Backend-neutral packages (`bundle`, `graph`, `validator`,
+`store` и `mutation`) остаются buildable. Исполняемая CI matrix и traceability
+policy описаны в [release-engineering contract](docs/release-engineering.md).
+
 ### Lossless presentation contract
 
 Mutation planner один раз загружает и валидирует staged source до записи:

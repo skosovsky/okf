@@ -187,6 +187,7 @@ Rules for MCP usage:
 8. Для проверки использовать `validate_bundle`.
 9. Если MCP server доступен в IDE-сценарии, concept edits делать через `write_concept`, не обходить MCP обычными filesystem writes, если только пользователь явно не попросил low-level repair.
 10. Lease advisory: raw editors не координируются, а raw readers могут увидеть non-atomic multi-file rename во время публикации; journal гарантирует recovery, не isolation. Journal v5 хранит compact bounded base/result manifests и durable staged payloads и фиксирует canonical request/result/replay/base binding; перед apply/recovery проверяются safe no-follow path, declared size и SHA-256 digest, затем journal и stage cleanup. `fs.Config` ограничивает staged payloads: по умолчанию 256 MiB на payload и 1 GiB на transaction, а recovery отклоняет oversized manifest до allocation. Persisted receipt envelope использует v2. Revision по умолчанию — `sha256:<lowercase-hex>`, но `fs.Config.HashAlgorithm` может заменить алгоритм; Journal v5 фиксирует его, поэтому recovery требует ту же configured algorithm. Revision-visible set: каждый regular file под bundle root, включая non-Markdown и reserved index/log files, кроме `.okf/**`; symlinks никогда не читаются и не хешируются, а internal journal, receipts и lease исключены.
+11. Durable runtime backend `store/fs` поддерживается только на Darwin/Linux и только после filesystem capability checks. На Windows, Android, iOS и других targets package compile-safe, но `Open`/`OpenContext` возвращают `fs.ErrUnsupportedPlatform`; backend-neutral packages остаются buildable. Не заявлять durable guarantees на unsupported target.
 
 ### Knowledge Extraction
 
@@ -669,3 +670,7 @@ saas-metrics/
 ## Filesystem durability limits
 
 `fs.Config.MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow repair до 0700; private files и lease до 0600 либо Open fail-closed.
+
+Durable `store/fs` runtime support ограничен Darwin/Linux. Остальные targets
+compile-safe и возвращают typed `fs.ErrUnsupportedPlatform` из `Open` и
+`OpenContext`; эти targets не получают filesystem durability guarantees.
