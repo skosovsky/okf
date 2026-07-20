@@ -215,6 +215,12 @@ declared size и SHA-256 digest каждого payload, затем очищае�
 receipt или commit evidence. API,
 idempotency и ограничения — в [Toolkit](toolkit/).
 
+Durable runtime backend `store/fs` поддерживается только на Darwin и Linux с
+обязательными filesystem capability checks. Windows, Android, iOS и другие
+targets остаются compile-safe, но `Open`/`OpenContext` возвращают typed path
+`fs.ErrUnsupportedPlatform`; backend-neutral packages остаются buildable.
+Исполняемая matrix описана в [Release engineering](../release-engineering/).
+
 Parser-backed mutations сохраняют presentation вместо нормализации: Goldmark
 доказывает eligible Markdown body destinations, а exact collector отображает
 их byte spans в полный файл; `yaml.v3` доказывает supported block scalar subset

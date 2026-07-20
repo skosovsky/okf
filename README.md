@@ -299,6 +299,22 @@ it is being published. The journal provides recovery, not distributed
 isolation. It covers one filesystem; distributed deployments need another
 `store.Store` backend.
 
+### Supported platforms
+
+The durable `store/fs` backend is supported on Darwin and Linux. Those targets
+use descriptor-relative no-follow traversal, advisory file leases, atomic
+rename, file sync, directory sync, and journal recovery; runtime capability
+checks may still reject a filesystem that cannot provide the required
+guarantees.
+
+Windows and other targets are compile-safe but are not durable-backend targets.
+`fs.Open` and `fs.OpenContext` return `*fs.UnsupportedPlatformError`, which is
+recognizable with `errors.Is(err, fs.ErrUnsupportedPlatform)` and inspectable
+with `errors.As`. Backend-neutral packages (`bundle`, `graph`, `validator`,
+`store`, and `mutation`) remain buildable there. See the
+[release-engineering contract](docs/release-engineering.md) for the enforced CI
+matrix and traceability policy.
+
 ### Lossless presentation contract
 
 Mutation planning loads and validates the staged source once before a write; an

@@ -1,4 +1,4 @@
-//go:build !windows
+//go:build (darwin && !ios) || (linux && !android)
 
 package fs
 

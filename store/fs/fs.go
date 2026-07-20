@@ -1,8 +1,14 @@
-// Package fs implements the durable, single-filesystem store backend.
+// Package fs implements the durable, single-filesystem store backend on Darwin
+// and Linux.
 //
 // It deliberately uses an advisory lease: editors which bypass this package can
 // observe a multi-file transaction in progress.  On the next Open, an unfinished
 // journal is deterministically completed to its recorded post-state.
+//
+// The package is compile-safe on other platforms, but Open and OpenContext
+// return *UnsupportedPlatformError there. No durable filesystem guarantees are
+// provided unless both GOOS and the backing filesystem satisfy the documented
+// capability checks.
 package fs
 
 import (
@@ -23,7 +29,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unicode/utf8"
 
@@ -37,6 +42,29 @@ import (
 )
 
 const internalDirectory = ".okf"
+
+// ErrUnsupportedPlatform identifies a platform for which this package has no
+// durable filesystem backend. Callers can use errors.Is without parsing error
+// text and errors.As to inspect GOOS and GOARCH.
+var ErrUnsupportedPlatform = errors.New("fs store: unsupported platform")
+
+// UnsupportedPlatformError reports the target selected when the durable
+// filesystem backend is unavailable.
+type UnsupportedPlatformError struct {
+	GOOS   string
+	GOARCH string
+}
+
+// Error implements error.
+func (e *UnsupportedPlatformError) Error() string {
+	if e == nil {
+		return ErrUnsupportedPlatform.Error()
+	}
+	return fmt.Sprintf("%s: %s/%s (supported: darwin, linux)", ErrUnsupportedPlatform, e.GOOS, e.GOARCH)
+}
+
+// Unwrap makes UnsupportedPlatformError recognizable with errors.Is.
+func (e *UnsupportedPlatformError) Unwrap() error { return ErrUnsupportedPlatform }
 
 // maxMetadataRead bounds untrusted durable metadata before decoding it. Journal
 // and receipt files are an integrity boundary, not revision-visible content.
@@ -949,6 +977,9 @@ func Open(root string, config Config) (*Store, error) {
 // OpenContext is Open with a cancellation boundary before recovery starts.
 func OpenContext(ctx context.Context, root string, config Config) (*Store, error) {
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := platformOpenError(); err != nil {
 		return nil, err
 	}
 	config = config.withDefaults()
@@ -3407,9 +3438,9 @@ func (s *Store) acquire(ctx context.Context) (func(), error) {
 		if err := s.enforcePrivateFileMode(f); err != nil {
 			return nil, errors.Join(err, f.Close())
 		}
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		err = lockExclusive(f)
 		if err == nil {
-			return func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN); _ = f.Close() }, nil
+			return func() { _ = unlockFile(f); _ = f.Close() }, nil
 		}
 		_ = f.Close()
 		if !leaseRetryable(err) {
@@ -3443,9 +3474,9 @@ func (s *Store) acquireRead(ctx context.Context) (func(), error) {
 		if err := s.enforcePrivateFileMode(f); err != nil {
 			return nil, errors.Join(err, f.Close())
 		}
-		err = syscall.Flock(int(f.Fd()), syscall.LOCK_SH|syscall.LOCK_NB)
+		err = lockShared(f)
 		if err == nil {
-			return func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN); _ = f.Close() }, nil
+			return func() { _ = unlockFile(f); _ = f.Close() }, nil
 		}
 		_ = f.Close()
 		if !leaseRetryable(err) {
@@ -3460,10 +3491,6 @@ func (s *Store) acquireRead(ctx context.Context) (func(), error) {
 		case <-time.After(10 * time.Millisecond):
 		}
 	}
-}
-
-func leaseRetryable(err error) bool {
-	return errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK)
 }
 
 type receiptFile struct {
