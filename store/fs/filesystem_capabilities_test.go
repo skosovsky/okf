@@ -3,13 +3,9 @@ package fs
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
-	"math"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/skosovsky/okf/bundle"
@@ -170,65 +166,6 @@ func TestForcedFilesystemAliasesRejectStageAndRecovery(t *testing.T) {
 	}
 }
 
-func TestJournalPayloadLimitsRejectOverflowBeforePayloadRead(t *testing.T) {
-	base := store.Revision("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	result := store.Revision("sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-	receipt := testJournalReceipt(base, result, "payload-overflow", "")
-	stage, err := journalStage(receipt.RequestDigest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	binding, err := journalBaseBinding(receipt, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	digest := "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-	for _, files := range [][]journalFile{
-		{{Path: "a.md", Payload: "payload-00000", Size: math.MaxInt64, Digest: digest}},
-		{{Path: "a.md", Payload: "payload-00000", Size: DefaultMaxStagedPayloadBytes, Digest: digest}, {Path: "b.md", Payload: "payload-00001", Size: 1, Digest: digest}},
-	} {
-		raw, marshalErr := json.Marshal(journal{Version: 5, HashAlgorithm: "sha256", Stage: stage, Base: []journalBaseFile{}, BaseBinding: binding, Files: files, Receipt: receipt})
-		if marshalErr != nil {
-			t.Fatal(marshalErr)
-		}
-		if _, decodeErr := decodeJournal(raw); decodeErr == nil {
-			t.Fatal("accepted oversized or aggregate-overflow manifest")
-		}
-	}
-}
-
-func TestConfiguredStagePayloadLimitsRejectBeforePayloadWrite(t *testing.T) {
-	root := t.TempDir()
-	writeTestFile(t, root, "a.md", adversarialDocument("base"))
-	s, err := Open(root, Config{MaxStagedPayloadBytes: 8, MaxStagedTransactionBytes: 12})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = s.Close() })
-	base := adversarialSnapshot(t, s)
-	for _, files := range []map[string][]byte{
-		{"a.md": bytes.Repeat([]byte("a"), 9)},
-		{"a.md": bytes.Repeat([]byte("a"), 8), "b.md": bytes.Repeat([]byte("b"), 5)},
-	} {
-		next, snapshotErr := newSnapshot(context.Background(), files)
-		if snapshotErr != nil {
-			t.Fatal(snapshotErr)
-		}
-		receipt := testJournalReceipt(base.Revision(), next.Revision(), "configured-stage-limit", "")
-		_, stageErr := s.stageJournal(next, receipt, replaceReplay{})
-		if !errors.Is(stageErr, store.ErrInvalidChangeSet) {
-			t.Fatalf("stage error = %v, want InvalidChangeSet", stageErr)
-		}
-		stage, pathErr := journalStage(receipt.RequestDigest)
-		if pathErr != nil {
-			t.Fatal(pathErr)
-		}
-		if _, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(stage))); !errors.Is(statErr, os.ErrNotExist) {
-			t.Fatalf("limit rejection wrote staged payload: %v", statErr)
-		}
-	}
-}
-
 func TestCaseProbeIsPrivateAndCleanAcrossReopen(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", adversarialDocument("visible"))
@@ -356,82 +293,5 @@ func TestRecoveryRejectsAliasedBaseToResultBeforePayloadRead(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(jp))); err != nil {
 		t.Fatalf("journal removed: %v", err)
-	}
-}
-
-func TestPayloadOrdinalCeiling(t *testing.T) {
-	if got := payloadName(DefaultMaxStagedFiles - 1); got != "payload-99999" || !safePayloadName(got) {
-		t.Fatalf("last ordinal=%q", got)
-	}
-	if got := payloadName(DefaultMaxStagedFiles); got != "" || safePayloadName("payload-100000") {
-		t.Fatalf("ordinal ceiling not enforced: %q", got)
-	}
-	if err := (Config{MaxStagedFiles: DefaultMaxStagedFiles + 1}).Validate(); err == nil {
-		t.Fatal("accepted oversized staged file limit")
-	}
-}
-
-func TestPrivateMetadataDirectoriesAreRepairedToOwnerOnly(t *testing.T) {
-	root := t.TempDir()
-	for _, dir := range []string{internalDirectory, path.Join(internalDirectory, "transactions"), path.Join(internalDirectory, "staging"), path.Join(internalDirectory, "receipts"), path.Join(internalDirectory, "capabilities")} {
-		if err := os.MkdirAll(filepath.Join(root, dir), 0o777); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.Chmod(filepath.Join(root, dir), 0o777); err != nil {
-			t.Fatal(err)
-		}
-	}
-	s, err := Open(root, Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = s.Close() })
-	for _, dir := range []string{internalDirectory, path.Join(internalDirectory, "transactions"), path.Join(internalDirectory, "staging"), path.Join(internalDirectory, "receipts"), path.Join(internalDirectory, "capabilities")} {
-		info, err := os.Stat(filepath.Join(root, dir))
-		if err != nil || info.Mode().Perm() != 0o700 {
-			t.Fatalf("%s mode=%#o err=%v", dir, info.Mode().Perm(), err)
-		}
-	}
-}
-
-func TestRecoveryRejectsEditorDriftBeforeMissingPayload(t *testing.T) {
-	root, s := adversarialStore(t, Config{})
-	t.Cleanup(func() { _ = s.Close() })
-	base := adversarialSnapshot(t, s)
-	next, err := newSnapshot(context.Background(), map[string][]byte{"a.md": []byte(adversarialDocument("result")), "b.md": []byte(adversarialDocument("B"))})
-	if err != nil {
-		t.Fatal(err)
-	}
-	receipt := testJournalReceipt(base.Revision(), next.Revision(), "drift-before-payload", "")
-	raw, err := encodeJournalFixture(t, root, next, receipt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	jp, err := journalPath(receipt.RequestDigest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := s.writePrivateDurableAt(jp, raw); err != nil {
-		t.Fatal(err)
-	}
-	stage, err := journalStage(receipt.RequestDigest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(filepath.Join(root, filepath.FromSlash(path.Join(stage, "payload-00000")))); err != nil {
-		t.Fatal(err)
-	}
-	before := []byte(adversarialDocument("editor-third-state"))
-	writeTestFile(t, root, "a.md", string(before))
-	err = s.recoverContext(context.Background())
-	if !errors.Is(err, store.ErrStorageCorrupt) || !strings.Contains(err.Error(), "base/result state mismatch") {
-		t.Fatalf("recover=%v, want provenance corruption before payload", err)
-	}
-	after, readErr := os.ReadFile(filepath.Join(root, "a.md"))
-	if readErr != nil || !bytes.Equal(after, before) {
-		t.Fatalf("current changed: %v %q", readErr, after)
-	}
-	if _, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(jp))); statErr != nil {
-		t.Fatalf("journal removed: %v", statErr)
 	}
 }

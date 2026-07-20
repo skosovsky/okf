@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -105,5 +106,47 @@ func makeSparse(t *testing.T, name string) {
 	}
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRecoveryRejectsEditorDriftBeforeMissingPayload(t *testing.T) {
+	root, s := adversarialStore(t, Config{})
+	t.Cleanup(func() { _ = s.Close() })
+	base := adversarialSnapshot(t, s)
+	next, err := newSnapshot(context.Background(), map[string][]byte{"a.md": []byte(adversarialDocument("result")), "b.md": []byte(adversarialDocument("B"))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt := testJournalReceipt(base.Revision(), next.Revision(), "drift-before-payload", "")
+	raw, err := encodeJournalFixture(t, root, next, receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jp, err := journalPath(receipt.RequestDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.writePrivateDurableAt(jp, raw); err != nil {
+		t.Fatal(err)
+	}
+	stage, err := journalStage(receipt.RequestDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, filepath.FromSlash(path.Join(stage, "payload-00000")))); err != nil {
+		t.Fatal(err)
+	}
+	before := []byte(adversarialDocument("editor-third-state"))
+	writeTestFile(t, root, "a.md", string(before))
+	err = s.recoverContext(context.Background())
+	if !errors.Is(err, store.ErrStorageCorrupt) || !strings.Contains(err.Error(), "base/result state mismatch") {
+		t.Fatalf("recover=%v, want provenance corruption before payload", err)
+	}
+	after, readErr := os.ReadFile(filepath.Join(root, "a.md"))
+	if readErr != nil || !bytes.Equal(after, before) {
+		t.Fatalf("current changed: %v %q", readErr, after)
+	}
+	if _, statErr := os.Stat(filepath.Join(root, filepath.FromSlash(jp))); statErr != nil {
+		t.Fatalf("journal removed: %v", statErr)
 	}
 }
