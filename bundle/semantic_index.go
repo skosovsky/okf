@@ -1,16 +1,34 @@
 package bundle
 
 import (
+	"context"
+
 	"gopkg.in/yaml.v3"
 	"sort"
 )
 
 // RelationDiagnostics returns stable, defensive copies of semantic diagnostics.
 func (b *Bundle) RelationDiagnostics() []RelationDiagnostic {
-	if b == nil {
-		return nil
+	out, _ := b.RelationDiagnosticsContext(context.Background())
+	return out
+}
+
+// RelationDiagnosticsContext returns a cancellation-aware defensive copy.
+func (b *Bundle) RelationDiagnosticsContext(ctx context.Context) ([]RelationDiagnostic, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
-	return append([]RelationDiagnostic(nil), b.diagnostics...)
+	if b == nil {
+		return nil, nil
+	}
+	out := make([]RelationDiagnostic, 0, len(b.diagnostics))
+	for _, diagnostic := range b.diagnostics {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		out = append(out, diagnostic)
+	}
+	return out, ctx.Err()
 }
 
 // TargetExists reports whether a concept or an unambiguous explicit fragment exists.

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("relations:\n A:\n  - target: b")

@@ -215,6 +215,32 @@ declared size и SHA-256 digest каждого payload, затем очищае�
 receipt или commit evidence. API,
 idempotency и ограничения — в [Toolkit](toolkit/).
 
+Parser-backed mutations сохраняют presentation вместо нормализации: Goldmark
+доказывает eligible Markdown body destinations, а exact collector отображает
+их byte spans в полный файл; `yaml.v3` доказывает supported block scalar subset
+во frontmatter. Autolinks, raw HTML, invalid UTF-8 и unsupported или ambiguous
+presentation fail-closed, а не переписываются. Flat overlay делит immutable
+staged payloads и результат только успешного `Paths` discovery; HAMT и parent
+chain отсутствуют. `bundle.SourceFromFS` — non-owning adapter и требует stable
+snapshot `fs.FS`. Эти внутренние детали сохраняют CLI и MCP schemas.
+
+Граница edit точная: parsing идёт только по body, а collector offsets
+отображаются в полный файл. Переписываются только Goldmark AST inline
+links/images и reference definitions; semantic link/image внутри inline-HTML
+container остаётся eligible, если Goldmark создаёт `Link`/`Image`. Autolinks,
+raw-HTML `href`/URLs, code spans, fenced/indented code и unresolved/malformed
+references исключены. Touched YAML принимает доказанные plain/single/double-
+quoted scalar keys и values и fail-closed для flow mapping/sequence,
+literal/folded block scalar, explicit/custom tag, direct anchor или complex key
+(Unsupported); alias/merge provenance и duplicate semantic
+relations/type/target/id/anchor (Ambiguous); остальные duplicate touched mapping
+keys (Unsupported); `%YAML`/`%TAG`, inner
+document/end markers или multidoc frontmatter и
+unprovable comment/range; unrelated nonintersecting extension bytes могут
+остаться. Invalid UTF-8 и любой unsupported/ambiguous случай возвращают typed
+error и не создают stage. YAML задают только recognized outer frontmatter
+delimiters: body thematic `---` и setext underline — Markdown, не YAML multi-doc.
+
 Смотри отдельные разделы: [Toolkit](toolkit/) и [Skill](skill/), включая MCP setup.
 
 ## FAQ {#faq}

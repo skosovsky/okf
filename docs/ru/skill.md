@@ -195,6 +195,36 @@ codex plugin add okf@okf-local
 После установки вызови `/okf:open-knowledge-format` или дай Claude Code
 использовать skill автоматически, когда задача связана с OKF.
 
+## Безопасные semantic edits
+
+Skill обязан считать rejected semantic mutation результатом без записи. Go
+mutation path один раз валидирует staged source, использует Goldmark и exact
+source spans для eligible Markdown body destinations и `yaml.v3` только для
+поддерживаемого lossless frontmatter subset. Autolinks и raw HTML не
+переписываются; invalid UTF-8, unsupported и ambiguous presentation fail-closed.
+Это не добавляет MCP fields или CLI flags. `bundle.SourceFromFS` — non-owning
+adapter, которому нужен stable snapshot `fs.FS`; `bundle.Source` остается
+контрактом.
+
+Граница строгая: parsing идёт только по body, offsets отображаются в полный
+файл. Изменяться могут лишь Goldmark AST inline links/images и reference
+definitions; semantic link/image внутри inline-HTML container остаётся eligible,
+если Goldmark создаёт `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code
+spans, fenced/indented code и unresolved/malformed references не
+переписываются. Touched YAML принимает доказанные plain/single/double-quoted
+scalar keys и values и fail-closed для flow mapping/sequence, literal/folded
+block scalar, explicit/custom tag, direct anchor или complex key (Unsupported);
+alias/merge provenance и duplicate semantic relations/type/target/id/anchor
+(Ambiguous); остальные duplicate touched mapping keys (Unsupported);
+`%YAML`/`%TAG`, inner
+document/end markers или multidoc frontmatter и
+unprovable comment/range; unrelated nonintersecting extension bytes могут
+остаться. Invalid UTF-8 и все unsupported/ambiguous случаи — typed error
+(`errors.Is(..., mutation.ErrUnsupportedPresentation)` /
+`mutation.ErrAmbiguousPresentation`) без
+stage. YAML задают только recognized outer frontmatter delimiters; body
+thematic `---` и setext underline — Markdown, не YAML multi-doc.
+
 ## Portable skill path
 
 ```text

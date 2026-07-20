@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("base: &base\n  label: keep\n? [opaque, key]\n: {nested: [one, two]}\nmerged:\n  <<: *base\nunknown: |\n  keep\nplain: abc[\n")

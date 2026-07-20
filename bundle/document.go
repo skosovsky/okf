@@ -1,9 +1,12 @@
 package bundle
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/skosovsky/okf/internal/documentlayout"
 )
 
 const frontmatterDelimiter = "---"
@@ -30,6 +33,11 @@ func NewDocument(frontmatter Frontmatter, body string) Document {
 //
 // If the text does not start with a frontmatter delimiter, the entire input is
 // treated as the body and the frontmatter is empty.
+//
+// Frontmatter bytes between the opening and closing --- lines are passed to
+// yaml.v3 unchanged, including the newline that precedes the closing delimiter.
+// Split/Join must not reconstruct that slice: literal and folded scalars treat
+// a missing final newline as a different semantic Value.
 func ParseDocument(text string) (Document, error) {
 	// strings and yaml.v3 can otherwise accept malformed input after replacing
 	// invalid byte sequences with U+FFFD. The source bytes are part of the OKF
@@ -38,30 +46,36 @@ func ParseDocument(text string) (Document, error) {
 		return Document{}, fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)
 	}
 
-	lines := strings.Split(text, "\n")
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) != frontmatterDelimiter {
+	data := []byte(text)
+	layout, ok, err := documentlayout.Split(data)
+	if errors.Is(err, documentlayout.ErrUnterminatedFrontmatter) {
+		return Document{}, ErrUnterminatedFrontmatter
+	}
+	if err != nil {
+		return Document{}, err
+	}
+	if !ok {
 		return Document{Frontmatter: NewFrontmatter(), Body: text}, nil
 	}
 
-	end := -1
-	for i := 1; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == frontmatterDelimiter {
-			end = i
-			break
-		}
-	}
-	if end == -1 {
-		return Document{}, ErrUnterminatedFrontmatter
-	}
-
-	frontmatter, err := ParseFrontmatter(strings.Join(lines[1:end], "\n"))
+	frontmatter, err := ParseFrontmatter(string(data[layout.YAMLStart:layout.YAMLEnd]))
 	if err != nil {
 		return Document{}, err
 	}
 
-	body := strings.Join(lines[end+1:], "\n")
-	body = strings.TrimPrefix(body, "\n")
-	body = trimSplitTrailingNewline(body)
+	body := string(data[layout.BodyStart:])
+	switch {
+	case strings.HasPrefix(body, "\r\n"):
+		body = body[len("\r\n"):]
+	case strings.HasPrefix(body, "\n"):
+		body = body[len("\n"):]
+	}
+	switch {
+	case strings.HasSuffix(body, "\r\n"):
+		body = strings.TrimSuffix(body, "\r\n")
+	case strings.HasSuffix(body, "\n"):
+		body = strings.TrimSuffix(body, "\n")
+	}
 
 	return NewDocument(frontmatter, body), nil
 }
@@ -102,8 +116,4 @@ func (d Document) ValidateConformance() error {
 		return fmt.Errorf("%w: type", ErrMissingFrontmatterKeys)
 	}
 	return nil
-}
-
-func trimSplitTrailingNewline(text string) string {
-	return strings.TrimSuffix(text, "\n")
 }

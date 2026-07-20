@@ -299,6 +299,50 @@ it is being published. The journal provides recovery, not distributed
 isolation. It covers one filesystem; distributed deployments need another
 `store.Store` backend.
 
+### Lossless presentation contract
+
+Mutation planning loads and validates the staged source once before a write; an
+invalid or unsupported edit is never staged or written. Markdown destinations
+use Goldmark as the semantic oracle and a separate exact byte-span collector.
+Only the Markdown body is parsed (with body-only offsets mapped back to the
+full file); inline links, images, and each reference definition are eligible.
+Autolinks, raw-HTML `href`/URLs, code spans, fenced or indented code, and
+unresolved or malformed references are not rewritten. A semantic Markdown
+link or image inside an inline-HTML container is still eligible when Goldmark
+emits an AST `Link` or `Image`. Reference uses never duplicate a definition
+span; duplicate normalized definitions are Ambiguous. Escaped/entity source
+tokens are compared as semantic destinations, and replacements preserve the
+angle style or switch to a safely escaped angle destination when required.
+No Markdown or YAML is re-rendered.
+
+YAML mutations use `yaml.v3` as semantic authority and support only the proven
+block-style subset of plain, single-quoted, and double-quoted touched scalar
+keys and values.
+Unsupported or ambiguous touched presentation includes flow mappings or
+sequences; literal or folded block scalars; explicit or custom tags; direct
+anchors or complex keys (Unsupported); alias/merge provenance and duplicate
+semantic relations, types, targets, ids, or anchors (Ambiguous); other duplicate
+touched mapping keys (Unsupported); directives `%YAML`/`%TAG`; inner document/end markers
+or multi-document content within frontmatter; and comments or source ranges
+that cannot be proved. Unrelated nonintersecting extension bytes may remain
+losslessly. Invalid UTF-8 and these cases return typed errors, create no stage,
+and are distinguishable with
+`errors.Is(err, mutation.ErrUnsupportedPresentation)` or
+`mutation.ErrAmbiguousPresentation`; they fail closed. There is no goccy or
+tree-sitter dependency.
+
+Only recognized outer frontmatter delimiters define the YAML document. A
+Markdown-body thematic `---` or setext underline is Markdown, not YAML
+multi-document syntax.
+
+`mutation.Overlay` is deliberately flat: clones shallow-share immutable staged
+payloads, the manifest is a delta over the base, public reads remain defensive,
+and its shared `Paths` cache is populated only after a successful enumeration.
+It has no parent chain or HAMT. `bundle.SourceFromFS(fsys fs.FS)` is a
+non-owning adapter; supply a stable filesystem snapshot for its whole
+`Paths`/`ReadFile` lifetime. `bundle.Source` remains the core loading contract.
+These implementation details do not change CLI flags or MCP wire schemas.
+
 ## Usage 3: MCP Server
 
 Install the `okf-mcp` command:

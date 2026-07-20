@@ -53,6 +53,23 @@ func TestParseDocumentRejectsInvalidUTF8BeforeSplittingOrYAML(t *testing.T) {
 	}
 }
 
+func TestParseDocumentDoesNotTrimOuterDelimiterLines(t *testing.T) {
+	t.Parallel()
+
+	for _, prefix := range []string{" ---\n", "--- \n", "\t---\n"} {
+		// Arrange.
+		source := prefix + "type: thing\n---\nunknown: [A](a.md)\n"
+
+		// Act.
+		document, err := ParseDocument(source)
+
+		// Assert.
+		if err != nil || document.HasFrontmatter || document.Body != source {
+			t.Fatalf("ParseDocument(%q) = HasFrontmatter %t, Body %q, error %v", prefix, document.HasFrontmatter, document.Body, err)
+		}
+	}
+}
+
 func TestDocumentUnicodeRoundtrip(t *testing.T) {
 	t.Parallel()
 
@@ -76,6 +93,88 @@ func TestDocumentUnicodeRoundtrip(t *testing.T) {
 	// Assert.
 	if reparsed.Body != document.Body {
 		t.Fatalf("reparsed body = %q, want %q", reparsed.Body, document.Body)
+	}
+}
+
+func TestParseDocument_PreservesBlockScalarTrailingNewlineBeforeClosingDelimiter(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name, text, want string
+	}{
+		{name: "lf keep", text: "---\nid: |\n      old\n---\nbody\n", want: "old\n"},
+		{name: "crlf keep", text: "---\r\nid: |\r\n      old\r\n---\r\nbody\r\n", want: "old\n"},
+		{name: "lf strip", text: "---\nid: |-\n      old\n---\nbody\n", want: "old"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			document, err := ParseDocument(tt.text)
+			if err != nil {
+				t.Fatal(err)
+			}
+			node, ok := document.Frontmatter.Get("id")
+			if !ok || node.Value != tt.want {
+				t.Fatalf("id Value = %q, ok=%v; want %q", node.Value, ok, tt.want)
+			}
+		})
+	}
+}
+
+func TestParseDocument_PreservesCRLFBody(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name, text, wantBody string
+	}{
+		{name: "crlf no blank", text: "---\r\ntype: X\r\n---\r\nbody\r\n", wantBody: "body"},
+		{name: "crlf blank line", text: "---\r\ntype: X\r\n---\r\n\r\n# Title\r\n", wantBody: "# Title"},
+		{name: "lf blank line", text: "---\ntype: X\n---\n\n# Title\n", wantBody: "# Title"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			document, err := ParseDocument(tt.text)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if document.Body != tt.wantBody {
+				t.Fatalf("Body = %q, want %q", document.Body, tt.wantBody)
+			}
+		})
+	}
+}
+
+func TestParseDocumentTrimsExactlyOneBodyTerminator(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name, separator, suffix, want string
+	}{
+		{name: "one LF", separator: "\n", suffix: "\n", want: "body"},
+		{name: "two LF", separator: "\n", suffix: "\n\n", want: "body\n"},
+		{name: "three LF", separator: "\n", suffix: "\n\n\n", want: "body\n\n"},
+		{name: "one CRLF", separator: "\r\n", suffix: "\r\n", want: "body"},
+		{name: "two CRLF", separator: "\r\n", suffix: "\r\n\r\n", want: "body\r\n"},
+		{name: "three CRLF", separator: "\r\n", suffix: "\r\n\r\n\r\n", want: "body\r\n\r\n"},
+		{name: "blank after delimiter LF", separator: "\n\n", suffix: "\n\n", want: "body\n"},
+		{name: "blank after delimiter CRLF", separator: "\r\n\r\n", suffix: "\r\n\r\n", want: "body\r\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange.
+			newline := "\n"
+			if strings.Contains(tt.separator, "\r\n") {
+				newline = "\r\n"
+			}
+			source := "---" + newline + "type: X" + newline + "---" + tt.separator + "body" + tt.suffix
+
+			// Act.
+			document, err := ParseDocument(source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Assert.
+			if document.Body != tt.want {
+				t.Fatalf("body = %q; want %q", document.Body, tt.want)
+			}
+		})
 	}
 }
 

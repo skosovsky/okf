@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("type: thing\nrelations:\n  uses:\n    - target: a\n      # ambiguous owner\nother: keep\n")

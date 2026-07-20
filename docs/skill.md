@@ -197,6 +197,34 @@ Use the repository's Claude plugin manifest:
 After installation, invoke `/okf:open-knowledge-format` or let Claude Code use
 the skill automatically when the task matches OKF.
 
+## Safe semantic edits
+
+The skill must treat a rejected semantic mutation as a no-write result. The Go
+mutation path validates the staged source once, uses Goldmark plus exact source
+spans for eligible Markdown body destinations, and uses `yaml.v3` only for its
+supported lossless frontmatter subset. Autolinks and raw HTML are not rewritten;
+invalid UTF-8 and unsupported or ambiguous presentation fail closed. This does
+not add MCP fields or CLI flags. `bundle.SourceFromFS` is a non-owning adapter
+that requires a stable `fs.FS` snapshot; `bundle.Source` remains the contract.
+
+The boundary is strict: parsing is body-only and offsets map to the full file.
+Only Goldmark AST inline links/images and reference definitions can change;
+semantic links/images inside inline-HTML containers still qualify if Goldmark
+emits `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code spans,
+fenced/indented code, and unresolved/malformed references are not rewritten.
+Touched YAML accepts proven plain/single/double-quoted scalar keys and values,
+and fails closed for flow mapping/sequence, literal/folded block scalar,
+explicit/custom tag, direct anchor or complex key (Unsupported); alias/merge
+provenance and duplicate semantic relations/type/target/id/anchor (Ambiguous);
+other duplicate touched mapping keys (Unsupported); `%YAML`/`%TAG`, inner
+document/end markers or multidoc frontmatter, and unprovable comment/range;
+unrelated nonintersecting extension bytes may remain. Invalid UTF-8 and all
+unsupported/ambiguous cases are typed errors
+(`errors.Is(..., mutation.ErrUnsupportedPresentation)` /
+`mutation.ErrAmbiguousPresentation`) with no stage. Only recognized
+outer frontmatter delimiters define YAML; body thematic `---` and setext
+underlines are Markdown, not YAML multi-documents.
+
 ## Portable skill path
 
 ```text

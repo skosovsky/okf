@@ -835,25 +835,24 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return ReplaceConceptResult{}, err
 	}
-	o := mutation.NewOverlay(base)
+	o, err := mutation.NewOverlayContext(ctx, base)
+	if err != nil {
+		return ReplaceConceptResult{}, err
+	}
 	if !safePath(targetPath) || strings.HasPrefix(filepath.Base(targetPath), ".") {
 		return ReplaceConceptResult{}, fmt.Errorf("%w: invalid concept path", store.ErrInvalidChangeSet)
 	}
 	if err := o.PutContext(ctx, targetPath, []byte(serialized)); err != nil {
 		return ReplaceConceptResult{}, err
 	}
-	report, blockedRelations, err := s.validateStagedSource(ctx, o)
+	report, blockedRelations, stagedBundle, err := s.validateStagedSource(ctx, o)
 	if err != nil {
 		return ReplaceConceptResult{}, err
 	}
 	if !report.IsConformant() || blockedRelations {
-		b, loadErr := bundle.Load(ctx, o)
-		if loadErr != nil {
-			return ReplaceConceptResult{}, loadErr
-		}
 		return ReplaceConceptResult{Validation: report}, &store.InvalidChangeSet{
 			Code:        "staged_validation_failed",
-			Diagnostics: relationStoreDiagnostics(b.RelationDiagnostics()),
+			Diagnostics: relationStoreDiagnostics(stagedBundle.RelationDiagnostics()),
 		}
 	}
 	next, err := snapshotFromSource(ctx, o, s.config.HashAlgorithm)
@@ -1287,8 +1286,18 @@ func newSnapshot(ctx context.Context, files map[string][]byte) (*snapshot, error
 	return newSnapshotWithAlgorithm(ctx, files, nil)
 }
 func newSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algorithm store.HashAlgorithm) (*snapshot, error) {
+	owned, err := cloneFilesContext(ctx, files)
+	if err != nil {
+		return nil, err
+	}
+	return newOwnedSnapshotWithAlgorithm(ctx, owned, algorithm)
+}
+func newOwnedSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algorithm store.HashAlgorithm) (*snapshot, error) {
 	entries := make([]store.ManifestEntry, 0, len(files))
 	for p, b := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		entries = append(entries, store.ManifestEntry{Path: p, Content: b})
 	}
 	manifest, err := store.NewManifestContext(ctx, entries, algorithm)
@@ -1299,7 +1308,7 @@ func newSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algo
 	if err != nil {
 		return nil, err
 	}
-	s := &snapshot{files: cloneFiles(files), revision: r, manifest: manifest}
+	s := &snapshot{files: files, revision: r, manifest: manifest}
 	b, err := bundle.Load(ctx, s)
 	if err != nil {
 		return nil, err
@@ -1313,10 +1322,13 @@ func snapshotFromSource(ctx context.Context, source bundle.Source, algorithm sto
 		return nil, err
 	}
 	if cached, ok := source.(*mutation.Overlay); ok {
-		manifest := cached.Manifest()
-		if manifest.Valid() && len(manifest.Digests()) == len(files) {
+		manifest, manifestErr := cached.ManifestContext(ctx)
+		if manifestErr == nil && manifest.AlgorithmName() == algorithmName(algorithm) && manifest.Len() == len(files) {
 			pathsMatch := true
 			for p := range files {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
 				if _, exists := manifest.Digest(p); !exists {
 					pathsMatch = false
 					break
@@ -1325,7 +1337,7 @@ func snapshotFromSource(ctx context.Context, source bundle.Source, algorithm sto
 			if pathsMatch {
 				r, revisionErr := manifest.RevisionContext(ctx)
 				if revisionErr == nil {
-					s := &snapshot{files: cloneFiles(files), revision: r, manifest: manifest.Clone()}
+					s := &snapshot{files: files, revision: r, manifest: manifest}
 					b, loadErr := bundle.Load(ctx, s)
 					if loadErr != nil {
 						return nil, loadErr
@@ -1336,19 +1348,28 @@ func snapshotFromSource(ctx context.Context, source bundle.Source, algorithm sto
 			}
 		}
 	}
-	return newSnapshotWithAlgorithm(ctx, files, algorithm)
+	return newOwnedSnapshotWithAlgorithm(ctx, files, algorithm)
 }
 func (s *snapshot) Revision() store.Revision { return s.revision }
 func (s *snapshot) Manifest() store.Manifest { return s.manifest.Clone() }
+func (s *snapshot) ManifestContext(ctx context.Context) (store.Manifest, error) {
+	return s.manifest.CloneContext(ctx)
+}
 func (s *snapshot) Paths(ctx context.Context) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	out := make([]string, 0, len(s.files))
 	for p := range s.files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		out = append(out, p)
 	}
 	sort.Strings(out)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 func (s *snapshot) ReadFile(ctx context.Context, name string) ([]byte, error) {
@@ -1362,7 +1383,22 @@ func (s *snapshot) ReadFile(ctx context.Context, name string) ([]byte, error) {
 	if !ok {
 		return nil, os.ErrNotExist
 	}
-	return append([]byte(nil), b...), nil
+	out := make([]byte, len(b))
+	const chunk = 64 << 10
+	for at := 0; at < len(b); at += chunk {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		end := at + chunk
+		if end > len(b) {
+			end = len(b)
+		}
+		copy(out[at:end], b[at:end])
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 func (s *snapshot) OpenConcept(id bundle.ConceptID) (bundle.Concept, error) {
 	c, ok := s.concepts.Get(id)
@@ -1690,26 +1726,28 @@ func relationStoreDiagnostics(diagnostics []bundle.RelationDiagnostic) []store.D
 }
 
 // validateStagedSource is the one arbitration point for revision-visible
-// post-states. ValidatorConfig determines base conformance; independently,
-// blocking semantic relation diagnostics veto publication. Recovery uses this
-// same gate before it can touch a visible path.
-func (s *Store) validateStagedSource(ctx context.Context, source bundle.Source) (validator.Report, bool, error) {
+// post-states. It loads source once, then validates that exact bundle and
+// projects its relation diagnostics. ValidatorConfig determines base
+// conformance; independently, blocking semantic relation diagnostics veto
+// publication. Recovery uses this same gate before it can touch a visible
+// path. The returned bundle is the same immutable bundle used for validation.
+func (s *Store) validateStagedSource(ctx context.Context, source bundle.Source) (validator.Report, bool, *bundle.Bundle, error) {
 	if err := ctx.Err(); err != nil {
-		return validator.Report{}, false, err
-	}
-	report, err := validator.ValidateSource(ctx, source, s.config.ValidatorConfig)
-	if err != nil {
-		return validator.Report{}, false, err
-	}
-	if err := ctx.Err(); err != nil {
-		return validator.Report{}, false, err
+		return validator.Report{}, false, nil, err
 	}
 	b, err := bundle.Load(ctx, source)
 	if err != nil {
-		return validator.Report{}, false, err
+		return validator.Report{}, false, nil, err
+	}
+	report, err := validator.ValidateBundleContext(ctx, b, s.config.ValidatorConfig)
+	if err != nil {
+		return validator.Report{}, false, nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return validator.Report{}, false, nil, err
 	}
 	report, blocked := appendBlockingRelationDiagnostics(report, b.RelationDiagnostics())
-	return report, blocked, nil
+	return report, blocked, b, nil
 }
 
 // readMetadata opens metadata through the inode inspected by Lstat. os.Root
@@ -1840,16 +1878,38 @@ func readSource(ctx context.Context, source bundle.Source) (map[string][]byte, e
 		if err != nil {
 			return nil, err
 		}
-		out[p] = append([]byte(nil), b...)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		// Source transfers ownership of every returned slice to this snapshot.
+		out[p] = b
 	}
 	return out, nil
 }
-func cloneFiles(in map[string][]byte) map[string][]byte {
+func cloneFilesContext(ctx context.Context, in map[string][]byte) (map[string][]byte, error) {
 	out := make(map[string][]byte, len(in))
 	for p, b := range in {
-		out[p] = append([]byte(nil), b...)
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		owned := make([]byte, len(b))
+		const chunk = 64 << 10
+		for at := 0; at < len(b); at += chunk {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			end := at + chunk
+			if end > len(b) {
+				end = len(b)
+			}
+			copy(owned[at:end], b[at:end])
+		}
+		out[p] = owned
 	}
-	return out
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 func safePath(p string) bool {
 	return bundle.ValidateRevisionPath(p) == nil
@@ -2234,7 +2294,7 @@ func (s *Store) apply(ctx context.Context, j journal) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	report, blocked, err := s.validateStagedSource(ctx, staged)
+	report, blocked, _, err := s.validateStagedSource(ctx, staged)
 	if err != nil {
 		return false, err
 	}

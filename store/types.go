@@ -54,6 +54,13 @@ type ManifestSource interface {
 	Manifest() Manifest
 }
 
+// ContextManifestSource is the request-path form of ManifestSource. Sources
+// whose manifest retrieval or defensive materialization is O(N) implement it
+// so cancellation can interrupt that work.
+type ContextManifestSource interface {
+	ManifestContext(context.Context) (Manifest, error)
+}
+
 // Store atomically previews and commits semantic changes. All methods honor
 // context cancellation until their implementation's documented durable commit
 // boundary. A Commit cancelled after that boundary may return ctx.Err and a

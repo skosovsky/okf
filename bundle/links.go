@@ -132,7 +132,7 @@ func isExternalLink(target string) bool {
 }
 
 func resolveAbsoluteLink(target string) (ConceptID, bool) {
-	trimmed := stripAnchor(target)
+	trimmed := stripLinkSuffix(target)
 	if strings.HasSuffix(trimmed, "/") {
 		return ConceptID{}, false
 	}
@@ -141,7 +141,7 @@ func resolveAbsoluteLink(target string) (ConceptID, bool) {
 }
 
 func resolveRelativeLink(target string, source ConceptID) (ConceptID, bool) {
-	trimmed := stripAnchor(target)
+	trimmed := stripLinkSuffix(target)
 	if trimmed == "" || strings.HasSuffix(trimmed, "/") {
 		return ConceptID{}, false
 	}
@@ -153,8 +153,8 @@ func resolveRelativeLink(target string, source ConceptID) (ConceptID, bool) {
 	return conceptIDFromNormalizedSegments(segments)
 }
 
-func stripAnchor(target string) string {
-	if i := strings.Index(target, "#"); i >= 0 {
+func stripLinkSuffix(target string) string {
+	if i := strings.IndexAny(target, "?#"); i >= 0 {
 		return target[:i]
 	}
 	return target

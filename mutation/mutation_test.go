@@ -1,6 +1,7 @@
 package mutation
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -35,12 +36,40 @@ func (a *countedAlgorithm) New() hash.Hash {
 	return sha256.New()
 }
 
+type cancellingContextHashAlgorithm struct {
+	calls  int
+	cancel context.CancelFunc
+}
+
+func (*cancellingContextHashAlgorithm) Name() string   { return "cancel-sha256" }
+func (*cancellingContextHashAlgorithm) New() hash.Hash { return sha256.New() }
+func (a *cancellingContextHashAlgorithm) NewContext(context.Context) (hash.Hash, error) {
+	a.calls++
+	a.cancel()
+	return sha256.New(), nil
+}
+
 type manifestMemorySource struct {
 	memorySource
 	manifest store.Manifest
 }
 
+type unverifiedManifestSource struct {
+	memorySource
+	manifest store.Manifest
+}
+
+func (s unverifiedManifestSource) Manifest() store.Manifest { return s.manifest.Clone() }
+
 func (s manifestMemorySource) Manifest() store.Manifest { return s.manifest.Clone() }
+func (s manifestMemorySource) verifiedManifestContext(ctx context.Context) (store.Manifest, []string, bool, error) {
+	manifest, err := s.manifest.CloneContext(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	paths, err := s.Paths(ctx)
+	return manifest, paths, true, err
+}
 
 func (m memorySource) Paths(context.Context) ([]string, error) {
 	out := make([]string, 0, len(m))
@@ -226,6 +255,47 @@ func TestOverlay_ManifestReusesUnchangedDigest(t *testing.T) {
 	}
 }
 
+func TestPlannerDoesNotTrustArbitraryManifestSource(t *testing.T) {
+	// Arrange. ManifestSource is an optimization hint, not proof that its path
+	// set or digests describe the immutable Source snapshot.
+	files := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\n---\nB\n"),
+	}
+	actual := revisionFor(t, files)
+	tests := []struct {
+		name    string
+		entries []store.ManifestEntry
+	}{
+		{name: "omitted path", entries: []store.ManifestEntry{{Path: "a.md", Content: files["a.md"]}}},
+		{name: "extra path", entries: []store.ManifestEntry{{Path: "a.md", Content: files["a.md"]}, {Path: "b.md", Content: files["b.md"]}, {Path: "ghost.md", Content: []byte("ghost")}}},
+		{name: "wrong digest", entries: []store.ManifestEntry{{Path: "a.md", Content: []byte("forged")}, {Path: "b.md", Content: files["b.md"]}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			manifest, err := store.NewManifest(tt.entries)
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := unverifiedManifestSource{memorySource: files, manifest: manifest}
+
+			// Act.
+			overlay, overlayErr := NewOverlayContext(context.Background(), source)
+			gotRevision, revisionErr := revision(context.Background(), source)
+			result, planErr := Plan(context.Background(), source, store.ChangeSet{
+				Version: store.ChangeSetFormatVersion, ID: "unverified-manifest", Actor: "tester", BaseRevision: actual,
+				Operations: []store.Operation{store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}},
+			})
+
+			// Assert. Both revision and CAS use actual Source bytes. The overlay
+			// may stage normally, but cannot carry the forged manifest fast path.
+			if overlayErr != nil || overlay.hasManifest || revisionErr != nil || gotRevision != actual || planErr != nil || result.Staged == nil || result.Preview.BaseRevision != actual {
+				t.Fatalf("overlay=%#v revision=%q/%v plan=%#v/%v", overlay, gotRevision, revisionErr, result, planErr)
+			}
+		})
+	}
+}
+
 func TestOverlay_RenameMovesCachedDigestWithoutContentHash(t *testing.T) {
 	// Arrange.
 	algorithm := &countedAlgorithm{}
@@ -250,6 +320,31 @@ func TestOverlay_RenameMovesCachedDigestWithoutContentHash(t *testing.T) {
 	// single manifest hash.
 	if got := algorithm.calls - before; got != 1 {
 		t.Fatalf("hash constructions = %d, want manifest only", got)
+	}
+}
+
+func TestOverlayPutContextCancelsCustomHashWithoutStagingPayload(t *testing.T) {
+	// Arrange.
+	ctx, cancel := context.WithCancel(context.Background())
+	algorithm := &cancellingContextHashAlgorithm{cancel: cancel}
+	manifest, err := store.NewManifestWithAlgorithm([]store.ManifestEntry{{Path: "a.md", Content: []byte("old")}}, algorithm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	o := NewOverlay(manifestMemorySource{memorySource: memorySource{"a.md": []byte("old")}, manifest: manifest})
+
+	// Act.
+	err = o.PutContext(ctx, "a.md", []byte("new"))
+
+	// Assert.
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("PutContext() error = %v, want context.Canceled", err)
+	}
+	if algorithm.calls != 1 {
+		t.Fatalf("context hash calls = %d, want 1", algorithm.calls)
+	}
+	if _, staged := o.changed["a.md"]; staged {
+		t.Fatal("PutContext() staged payload after cancelled hash")
 	}
 }
 
@@ -408,10 +503,10 @@ func TestPlanEnsureRelation_IsIdempotentAndPreservesUnknownField(t *testing.T) {
 	}
 }
 
-func TestPresentationPatches_PreserveExactBytes(t *testing.T) {
-	// Arrange. The fields and body deliberately exercise presentation that the
-	// YAML encoder cannot round-trip: CRLF, comments, quotes, flow values, and
-	// no final newline.
+func TestPresentationPatches_RejectsTouchedFlowCanonicalFragmentWithoutStage(t *testing.T) {
+	// Arrange. A canonical fragment inside a flow mapping has no supported
+	// lossless structural proof, even though unrelated flow extension bytes are
+	// otherwise allowed in the document.
 	s := memorySource{
 		"a.md": []byte("---\r\ntype: 'thing' # keep\r\nunknown: {future: [one, two]}\r\nparts: [{id: \"old\", note: keep}]\r\n---\r\n\r\nBody  "),
 		"b.md": []byte("---\r\ntype: thing\r\nrelations:\r\n  uses:\r\n    - target: 'a#old' # keep\r\n---\r\n\r\nB"),
@@ -420,18 +515,17 @@ func TestPresentationPatches_PreserveExactBytes(t *testing.T) {
 
 	// Act.
 	result, err := Plan(context.Background(), s, change(t, s, op))
-	if err != nil {
-		t.Fatal(err)
-	}
-	a, _ := result.Staged.ReadFile(context.Background(), "a.md")
-	b, _ := result.Staged.ReadFile(context.Background(), "b.md")
 
 	// Assert.
-	if want := "---\r\ntype: 'thing' # keep\r\nunknown: {future: [one, two]}\r\nparts: [{id: \"new\", note: keep}]\r\n---\r\n\r\nBody  "; string(a) != want {
-		t.Fatalf("a bytes changed:\n%q\nwant:\n%q", a, want)
+	if !errors.Is(err, ErrUnsupportedPresentation) {
+		t.Fatalf("Plan() error = %v, want ErrUnsupportedPresentation", err)
 	}
-	if want := "---\r\ntype: thing\r\nrelations:\r\n  uses:\r\n    - target: 'a#new' # keep\r\n---\r\n\r\nB"; string(b) != want {
-		t.Fatalf("b bytes changed:\n%q\nwant:\n%q", b, want)
+	var presentationErr *PresentationError
+	if !errors.As(err, &presentationErr) || presentationErr.Format != "yaml" || presentationErr.Code != "canonical_fragment_flow_mapping" {
+		t.Fatalf("presentation error = %#v", presentationErr)
+	}
+	if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Renames) != 0 {
+		t.Fatalf("Plan() returned partial stage: %#v", result)
 	}
 }
 
@@ -444,22 +538,22 @@ func TestFragmentPatch_UsesSemanticCanonicalIdentity(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "invalid id before valid id",
-			input: "---\r\nparts:\r\n  - id: 17\r\n    id: 'old' # keep\r\n---\r\nBody",
-			from:  "old",
-			want:  "---\r\nparts:\r\n  - id: 17\r\n    id: 'new' # keep\r\n---\r\nBody",
+			name:    "invalid id before valid id",
+			input:   "---\r\nparts:\r\n  - id: 17\r\n    id: 'old' # keep\r\n---\r\nBody",
+			from:    "old",
+			wantErr: true,
 		},
 		{
-			name:  "valid id before invalid id",
-			input: "---\nparts:\n  - id: \"old\"\n    id: 17\n---\nBody\n",
-			from:  "old",
-			want:  "---\nparts:\n  - id: \"new\"\n    id: 17\n---\nBody\n",
+			name:    "valid id before invalid id",
+			input:   "---\nparts:\n  - id: \"old\"\n    id: 17\n---\nBody\n",
+			from:    "old",
+			wantErr: true,
 		},
 		{
-			name:  "invalid id falls back to valid anchor",
-			input: "---\nparts:\n  - id: 17\n    anchor: old\n---\nBody\n",
-			from:  "old",
-			want:  "---\nparts:\n  - id: 17\n    anchor: new\n---\nBody\n",
+			name:    "invalid id next to valid anchor is unsupported",
+			input:   "---\nparts:\n  - id: 17\n    anchor: old\n---\nBody\n",
+			from:    "old",
+			wantErr: true,
 		},
 		{
 			name:    "duplicate valid ids with anchor are ambiguous",
@@ -494,7 +588,10 @@ func TestFragmentPatch_UsesSemanticCanonicalIdentity(t *testing.T) {
 			// Assert.
 			if tt.wantErr {
 				if err == nil {
-					t.Fatal("fragmentPatch() error = nil, want ambiguity error")
+					t.Fatal("fragmentPatch() error = nil, want typed presentation error")
+				}
+				if !errors.Is(err, ErrUnsupportedPresentation) && !errors.Is(err, ErrAmbiguousPresentation) {
+					t.Fatalf("fragmentPatch() error = %v, want Unsupported or Ambiguous", err)
 				}
 				return
 			}
@@ -528,32 +625,334 @@ func TestEnsureRelation_RejectsDuplicateMappingKeys(t *testing.T) {
 	}
 }
 
-func TestEnsureRelation_NormalizesDuplicateTargets(t *testing.T) {
+func TestRenameFragment_PreservesDuplicateUnrelatedKeys(t *testing.T) {
+	s := memorySource{"a.md": []byte("---\ntype: thing\nparts:\n  - anchor: old\n    label: one\n    label: two\n---\nA\n")}
+	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, readErr := result.Staged.ReadFile(context.Background(), "a.md")
+	if readErr != nil || !bytes.Contains(updated, []byte("- anchor: new\n    label: one\n    label: two")) {
+		t.Fatalf("updated = %q, error=%v", updated, readErr)
+	}
+}
+
+func TestMoveConcept_PreservesDuplicateUnrelatedRelationExtensions(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n      note: one\n      note: two\n---\nB\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, readErr := result.Staged.ReadFile(context.Background(), "b.md")
+	if readErr != nil || !bytes.Contains(updated, []byte("target: moved/a\n      note: one\n      note: two")) {
+		t.Fatalf("updated = %q, error=%v", updated, readErr)
+	}
+}
+
+func TestRelationUpdatesRejectDuplicateRelationTypesAsAmbiguous(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		source memorySource
+		op     store.Operation
+	}{
+		{
+			name: "move concept",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n  uses:\n    - target: c\n---\nB\n"),
+				"c.md": []byte("---\ntype: thing\n---\nC\n"),
+			},
+			op: store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID},
+		},
+		{
+			name: "rename fragment",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a#old\n  uses:\n    - target: c\n---\nB\n"),
+				"c.md": []byte("---\ntype: thing\n---\nC\n"),
+			},
+			op: store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			before := make(memorySource, len(tt.source))
+			for path, data := range tt.source {
+				before[path] = append([]byte(nil), data...)
+			}
+			result, err := Plan(context.Background(), tt.source, change(t, tt.source, tt.op))
+			if !errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
+				t.Fatalf("result/error = %#v / %v", result, err)
+			}
+			var presentation *PresentationError
+			if !errors.As(err, &presentation) || presentation.Code != "duplicate_relation_type" {
+				t.Fatalf("presentation = %#v", presentation)
+			}
+			if !reflect.DeepEqual(tt.source, before) {
+				t.Fatalf("source mutated: got=%#v want=%#v", tt.source, before)
+			}
+		})
+	}
+}
+
+func TestPresentationInvalid_DoesNotNestPresentationError(t *testing.T) {
+	s := memorySource{"a.md": []byte("---\ntype: thing\nparts: [{id: old}]\n---\nA\n")}
+	_, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	var presentation *PresentationError
+	if !errors.As(err, &presentation) {
+		t.Fatalf("error = %v", err)
+	}
+	var nested *PresentationError
+	if errors.As(presentation.Err, &nested) {
+		t.Fatalf("PresentationError.Err nested another PresentationError: %#v", presentation.Err)
+	}
+	if !errors.Is(presentation.Err, ErrUnsupportedPresentation) {
+		t.Fatalf("Err = %v, want sentinel", presentation.Err)
+	}
+}
+
+func TestEnsureRelation_RejectsDuplicateTargetsAsAmbiguous(t *testing.T) {
 	// Arrange.
 	s := memorySource{"a.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: b\n    - target: b\n---\n\nA\n"), "b.md": []byte("---\ntype: thing\n---\n\nB\n")}
 	op := store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}
 
 	// Act.
 	result, err := Plan(context.Background(), s, change(t, s, op))
-	if err != nil {
-		t.Fatal(err)
-	}
-	loaded, err := bundle.Load(context.Background(), result.Staged)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Assert.
-	if got := len(loaded.SemanticLinksFrom(ref(t, "a").ID)); got != 1 {
-		t.Fatalf("resolved relation count = %d", got)
-	}
-	data, _ := result.Staged.ReadFile(context.Background(), "a.md")
-	if got := strings.Count(string(data), "target: b"); got != 1 {
-		t.Fatalf("target count = %d: %s", got, data)
+	if !errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
+		t.Fatalf("result/error = %#v / %v", result, err)
 	}
 }
 
-func TestEnsureRelation_RejectsLossyDuplicateTargetNormalization(t *testing.T) {
+func TestUpdateRoutesRejectDuplicateSemanticCandidatesWithoutStage(t *testing.T) {
+	tests := []struct {
+		name, code string
+		files      memorySource
+		op         store.Operation
+	}{
+		{
+			name: "move duplicate relation targets", code: "duplicate_target",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\n---\nA\n"),
+				"c.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n    - target: 'a'\n---\nC\n"),
+			},
+			op: store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID},
+		},
+		{
+			name: "rename duplicate relation targets", code: "duplicate_target",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+				"c.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a#old\n    - target: \"a#old\"\n---\nC\n"),
+			},
+			op: store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+		},
+		{
+			name: "rename duplicate source fragments", code: "duplicate_canonical_fragment",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n  - anchor: old\n---\nA\n"),
+			},
+			op: store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+		},
+		{
+			name: "rename ambiguous destination fragment", code: "duplicate_canonical_fragment",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n  - id: new\n  - anchor: new\n---\nA\n"),
+			},
+			op: store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Arrange / Act.
+			result, err := Plan(context.Background(), test.files, change(t, test.files, test.op))
+
+			// Assert.
+			var presentation *PresentationError
+			if !errors.Is(err, ErrAmbiguousPresentation) || !errors.As(err, &presentation) || presentation.Code != test.code {
+				t.Fatalf("Plan() error = %#v, want %s ambiguity", err, test.code)
+			}
+			if presentation.Location.Start >= presentation.Location.End {
+				t.Fatalf("PresentationError.Location = %#v", presentation.Location)
+			}
+			if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Renames) != 0 || len(result.Preview.Plan) != 0 {
+				t.Fatalf("rejected update exposed stage: %#v", result)
+			}
+		})
+	}
+}
+
+func TestUnrelatedMergeProvenanceDoesNotBlockMutationRoutes(t *testing.T) {
+	unrelated := []byte("---\ntype: thing\nbase: &base\n  cites:\n    - target: b\nrelations:\n  <<: *base\n---\nC\n")
+	tests := []struct {
+		name  string
+		files memorySource
+		op    store.Operation
+	}{
+		{
+			name: "move ignores unrelated merged relation",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\n---\nB\n"),
+				"c.md": unrelated,
+			},
+			op: store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID},
+		},
+		{
+			name: "rename ignores unrelated merged relation",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\n---\nB\n"),
+				"c.md": unrelated,
+			},
+			op: store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+		},
+		{
+			name: "ensure selector ignores unrelated merged identity",
+			files: memorySource{
+				"a.md": []byte("---\ntype: thing\nbase: &base\n  id: other\nparts:\n  - id: source\n  - <<: *base\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\n---\nB\n"),
+			},
+			op: store.EnsureRelation{Source: ref(t, "a#source"), Type: "uses", Target: ref(t, "b")},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Arrange / Act.
+			result, err := Plan(context.Background(), test.files, change(t, test.files, test.op))
+
+			// Assert.
+			if err != nil || result.Staged == nil {
+				t.Fatalf("Plan() = %#v, %v", result, err)
+			}
+			if before, ok := test.files["c.md"]; ok {
+				after, readErr := result.Staged.ReadFile(context.Background(), "c.md")
+				if readErr != nil || !bytes.Equal(after, before) {
+					t.Fatalf("unrelated merge changed: %q, %v", after, readErr)
+				}
+			}
+		})
+	}
+}
+
+func TestEnsureRelation_ClassifiesCanonicalEndpointAmbiguityBeforeMissing(t *testing.T) {
+	tests := []struct {
+		name   string
+		source memorySource
+		op     store.EnsureRelation
+		path   string
+	}{
+		{
+			name: "duplicate source ids in one mapping",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: part\n    id: part\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\n---\nB\n"),
+			},
+			op: store.EnsureRelation{Source: ref(t, "a#part"), Type: "uses", Target: ref(t, "b")}, path: "a.md",
+		},
+		{
+			name: "duplicate source fragment across mappings",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: part\n  - id: part\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\n---\nB\n"),
+			},
+			op: store.EnsureRelation{Source: ref(t, "a#part"), Type: "uses", Target: ref(t, "b")}, path: "a.md",
+		},
+		{
+			name: "duplicate target anchors in one mapping",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\nparts:\n  - anchor: part\n    anchor: part\n---\nB\n"),
+			},
+			op: store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b#part")}, path: "b.md",
+		},
+		{
+			name: "duplicate target fragment across mappings",
+			source: memorySource{
+				"a.md": []byte("---\ntype: thing\n---\nA\n"),
+				"b.md": []byte("---\ntype: thing\nparts:\n  - anchor: part\n  - anchor: part\n---\nB\n"),
+			},
+			op: store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b#part")}, path: "b.md",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange.
+			before := make(memorySource, len(tt.source))
+			for path, data := range tt.source {
+				before[path] = append([]byte(nil), data...)
+			}
+
+			// Act.
+			result, err := Plan(context.Background(), tt.source, change(t, tt.source, tt.op))
+
+			// Assert.
+			if !errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
+				t.Fatalf("result/error = %#v / %v", result, err)
+			}
+			var presentation *PresentationError
+			if !errors.As(err, &presentation) || presentation.Code != "duplicate_canonical_fragment" || presentation.Path != tt.path || presentation.Operation != "ensure_relation" {
+				t.Fatalf("presentation = %#v", presentation)
+			}
+			if !reflect.DeepEqual(tt.source, before) {
+				t.Fatalf("source mutated: got=%#v want=%#v", tt.source, before)
+			}
+		})
+	}
+}
+
+func TestEnsureRelation_IDWinsOverAnchorForEndpointLookup(t *testing.T) {
+	// Arrange.
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\nparts:\n  - id: canonical\n    anchor: alias\n---\nB\n"),
+	}
+	op := store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b#alias")}
+
+	// Act.
+	result, err := Plan(context.Background(), s, change(t, s, op))
+
+	// Assert.
+	if err == nil || errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
+		t.Fatalf("result/error = %#v / %v", result, err)
+	}
+	var invalidChange *store.InvalidChangeSet
+	if !errors.As(err, &invalidChange) || invalidChange.Code != "missing_relation_endpoint" {
+		t.Fatalf("invalid change = %#v", invalidChange)
+	}
+}
+
+func TestPlanNeverPublishesNonCanonicalFrontmatterDelimiterRewrite(t *testing.T) {
+	for _, tt := range []struct {
+		name, open, newline string
+	}{
+		{name: "leading space lf", open: " ---", newline: "\n"},
+		{name: "trailing space lf", open: "--- ", newline: "\n"},
+		{name: "leading tab crlf", open: "\t---", newline: "\r\n"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange.
+			data := []byte(tt.open + tt.newline + "type: thing" + tt.newline + "unknown: \"[A](a.md)\"" + tt.newline + "---" + tt.newline + "A" + tt.newline)
+			s := memorySource{"a.md": data}
+			before := append([]byte(nil), data...)
+
+			// Act.
+			result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+
+			// Assert.
+			if err == nil || result.Staged != nil {
+				t.Fatalf("result/error = %#v / %v", result, err)
+			}
+			if !bytes.Equal(s["a.md"], before) {
+				t.Fatalf("source changed: %q", s["a.md"])
+			}
+		})
+	}
+}
+
+func TestEnsureRelation_RejectsPresentedDuplicateTargets(t *testing.T) {
 	tests := []struct {
 		name  string
 		items string
@@ -610,10 +1009,14 @@ func TestEnsureRelation_RejectsLossyDuplicateTargetNormalization(t *testing.T) {
 
 			// Assert.
 			var invalidChange *store.InvalidChangeSet
-			if !errors.As(err, &invalidChange) || invalidChange.Code != "lossy_relation_deduplication" {
+			var presentation *PresentationError
+			if !errors.As(err, &invalidChange) || invalidChange.Code != "ambiguous_relation_presentation" || !errors.As(err, &presentation) || !errors.Is(err, ErrAmbiguousPresentation) {
 				t.Fatalf("error = %#v", err)
 			}
-			if len(invalidChange.Diagnostics) != 1 || invalidChange.Diagnostics[0].Code != "lossy_relation_deduplication" {
+			if presentation.Code == "" || presentation.Format != "yaml" || presentation.Path != "a.md" || presentation.Operation != "ensure_relation" {
+				t.Fatalf("PresentationError = %#v", presentation)
+			}
+			if len(invalidChange.Diagnostics) != 1 || invalidChange.Diagnostics[0].Code != "ambiguous_relation_presentation" {
 				t.Fatalf("diagnostics = %#v", invalidChange.Diagnostics)
 			}
 			if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Plan) != 0 {
@@ -679,7 +1082,7 @@ func TestRelationTargetPatches_RejectDuplicateSemanticKeysBeforeMutation(t *test
 
 			// Assert.
 			var invalidChange *store.InvalidChangeSet
-			if !errors.As(err, &invalidChange) || invalidChange.Code != "invalid_presentation" {
+			if !errors.As(err, &invalidChange) || invalidChange.Code != "ambiguous_presentation" || !errors.Is(err, ErrAmbiguousPresentation) {
 				t.Fatalf("error = %#v", err)
 			}
 			if result.Staged != nil || len(result.Preview.Writes) != 0 {
@@ -689,46 +1092,186 @@ func TestRelationTargetPatches_RejectDuplicateSemanticKeysBeforeMutation(t *test
 	}
 }
 
+func TestPlanYAML_TouchedFlowRelationNeverStages(t *testing.T) {
+	for _, op := range []store.Operation{
+		store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID},
+		store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"},
+	} {
+		t.Run(fmt.Sprintf("%T", op), func(t *testing.T) {
+			// Arrange.
+			relation := "a"
+			if _, ok := op.(store.RenameFragment); ok {
+				relation = "a#old"
+			}
+			raw := []byte("---\ntype: thing\nrelations: {uses: [{target: " + relation + "}]}\n---\nB\n")
+			s := memorySource{
+				"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+				"b.md": raw,
+			}
+
+			// Act.
+			result, err := Plan(context.Background(), s, change(t, s, op))
+
+			// Assert.
+			var invalidChange *store.InvalidChangeSet
+			if !errors.As(err, &invalidChange) || invalidChange.Code != "invalid_presentation" || result.Staged != nil {
+				t.Fatalf("result/error = %#v / %v", result, err)
+			}
+			got, _ := s.ReadFile(context.Background(), "b.md")
+			if !bytes.Equal(got, raw) {
+				t.Fatalf("source changed: %q", got)
+			}
+		})
+	}
+}
+
+func TestPlanYAML_UnrelatedFlowRelationDoesNotVetoMove(t *testing.T) {
+	// Arrange.
+	raw := []byte("---\ntype: thing\nrelations: {uses: [{target: c}]}\n---\nB\n")
+	p, err := parsePresentation(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	patches, err := relationTargetPatches(p, ref(t, "a").ID, ref(t, "moved/a").ID, "", "")
+	updated, patchErr := p.patchYAML(patches)
+
+	// Assert.
+	if err != nil || patchErr != nil || len(patches) != 0 || !bytes.Equal(updated, raw) {
+		t.Fatalf("patches/bytes = %#v / %q / %v / %v", patches, updated, err, patchErr)
+	}
+}
+
+func TestMoveConcept_UnrelatedUnsupportedYAMLDoesNotVeto(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\n...\nextra: 1\n---\nB\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Staged == nil {
+		t.Fatal("expected staged move")
+	}
+	got, err := result.Staged.ReadFile(context.Background(), "b.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "---\ntype: thing\n...\nextra: 1\n---\nB\n" {
+		t.Fatalf("unrelated file changed: %q", got)
+	}
+}
+
+func TestMoveConcept_RelatedUnsupportedYAMLStillFailsClosed(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n...\nextra: 1\n---\nB\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	if !errors.Is(err, ErrUnsupportedPresentation) || result.Staged != nil {
+		t.Fatalf("result/error = %#v / %v", result, err)
+	}
+}
+
+func TestRenameFragment_UnrelatedUnsupportedYAMLDoesNotVeto(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\n...\nextra: 1\n---\nB\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Staged == nil {
+		t.Fatal("expected staged rename")
+	}
+	got, err := result.Staged.ReadFile(context.Background(), "b.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "---\ntype: thing\n...\nextra: 1\n---\nB\n" {
+		t.Fatalf("unrelated file changed: %q", got)
+	}
+}
+
+func TestRenameFragment_RelatedUnsupportedYAMLStillFailsClosed(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a#old\n...\nextra: 1\n---\nB\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	if !errors.Is(err, ErrUnsupportedPresentation) || result.Staged != nil {
+		t.Fatalf("result/error = %#v / %v", result, err)
+	}
+}
+
+func TestPlanMoveConcept_AmbiguousMarkdownLocationIsFullFile(t *testing.T) {
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": []byte("---\ntype: thing\n---\n[use][r]\n\n[r]: a.md\n[r]: a.md\n"),
+	}
+	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	if !errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
+		t.Fatalf("result/error = %#v / %v", result, err)
+	}
+	var presentation *PresentationError
+	if !errors.As(err, &presentation) || presentation.Code != "duplicate_reference_definition" || presentation.Path != "b.md" {
+		t.Fatalf("presentation = %#v", presentation)
+	}
+	data := s["b.md"]
+	bodyStart := bytes.Index(data, []byte("[use]"))
+	if presentation.Location.Start < bodyStart || presentation.Location.End > len(data) || presentation.Location.Start >= presentation.Location.End {
+		t.Fatalf("Location %#v bodyStart=%d len=%d", presentation.Location, bodyStart, len(data))
+	}
+	if !bytes.Contains(data[presentation.Location.Start:presentation.Location.End], []byte("a.md")) {
+		t.Fatalf("Location %#v does not cover candidates in %q", presentation.Location, data)
+	}
+}
+
 func TestApplyBytePatches_RejectsOverlap(t *testing.T) {
 	// Arrange / Act.
 	_, err := applyBytePatches([]byte("abcd"), []bytePatch{{Start: 1, End: 3}, {Start: 2, End: 4}})
 
 	// Assert.
-	if err == nil {
-		t.Fatal("overlapping patches accepted")
+	if !errors.Is(err, ErrUnsupportedPresentation) {
+		t.Fatalf("error = %v, want ErrUnsupportedPresentation", err)
+	}
+	var presentation *PresentationError
+	if !errors.As(err, &presentation) || presentation.Code != "invalid_patch" {
+		t.Fatalf("presentation = %#v", presentation)
 	}
 }
 
 func TestRelationTargetPatchesPropagatesInvalidSourceRange(t *testing.T) {
 	// Arrange.
-	target := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "b", Line: 99, Column: 1}
-	p := &presentation{
-		yaml: []byte("relations:\n  uses:\n    - target: b\n"),
-		root: &yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{
-			{Kind: yaml.ScalarNode, Tag: "!!str", Value: "relations"},
-			{Kind: yaml.MappingNode, Content: []*yaml.Node{
-				{Kind: yaml.ScalarNode, Tag: "!!str", Value: "uses"},
-				{Kind: yaml.SequenceNode, Content: []*yaml.Node{{Kind: yaml.MappingNode, Content: []*yaml.Node{
-					{Kind: yaml.ScalarNode, Tag: "!!str", Value: "target"}, target,
-				}}}},
-			}},
-		}},
+	p, err := parsePresentation([]byte("---\nrelations:\n  uses:\n    - target: b\n---\n"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	target := mappingValues(mappingValues(mappingValues(p.root, "relations")[0], "uses")[0].Content[0], "target")[0]
+	target.Line = 99
 
 	// Act.
-	_, err := relationTargetPatches(p, ref(t, "b").ID, ref(t, "moved").ID, "", "")
+	_, err = relationTargetPatches(p, ref(t, "b").ID, ref(t, "moved").ID, "", "")
 
 	// Assert.
-	if err == nil || !strings.Contains(err.Error(), "line outside source") {
-		t.Fatalf("relationTargetPatches() error = %v, want source-range error", err)
+	if !errors.Is(err, ErrUnsupportedPresentation) {
+		t.Fatalf("relationTargetPatches() error = %v, want ErrUnsupportedPresentation", err)
+	}
+	var presentationErr *PresentationError
+	if !errors.As(err, &presentationErr) || presentationErr.Code != "invalid_coordinate" || presentationErr.Location.Start >= presentationErr.Location.End {
+		t.Fatalf("presentation error = %#v", presentationErr)
 	}
 }
 
 func TestPlanMoveConceptPresentationFailureReturnsNoStage(t *testing.T) {
-	// Arrange.
+	// Arrange. Impacted file carries a semantic relation to the moved concept and
+	// unsupported presentation that the lossless YAML path must reject before stage.
 	s := memorySource{
 		"a.md": []byte("---\ntype: Note\n---\nA\n"),
-		"b.md": []byte("---\ntype: Note\nrelations:\n"),
+		"b.md": []byte("---\ntype: Note\nrelations:\n  uses:\n    - target: a\n...\nextra: 1\n---\nB\n"),
 	}
 	changeSet := change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved").ID})
 
@@ -737,7 +1280,7 @@ func TestPlanMoveConceptPresentationFailureReturnsNoStage(t *testing.T) {
 
 	// Assert.
 	var invalidChange *store.InvalidChangeSet
-	if !errors.As(err, &invalidChange) || invalidChange.Code != "invalid_presentation" {
+	if !errors.As(err, &invalidChange) || invalidChange.Code != "invalid_presentation" || !errors.Is(err, ErrUnsupportedPresentation) {
 		t.Fatalf("Plan() error = %#v, want invalid_presentation", err)
 	}
 	if result.Staged != nil || len(result.Preview.Renames) != 0 {
@@ -863,7 +1406,7 @@ func TestPlanMoveConcept_RewritesMarkdownDestinationsWithoutTouchingCode(t *test
 	// Arrange
 	s := memorySource{
 		"a.md":            []byte("---\ntype: thing\n---\n\nA\n"),
-		"c.md":            []byte("---\ntype: thing\n---\n\n[A](a.md) ![image](a.md#cover) [titled](a.md#part \"A title\") [angle](<a.md?view=1#part>)\n[ref]: a.md#fragment \"Reference title\"\n[external](https://example.test/a.md) [protocol](//example.test/a.md) [absolute](/a.md) [suffix](other-a.md)\n`[inline](a.md)`\n```md\n[fenced](a.md)\n```\n    [indented](a.md)\n"),
+		"c.md":            []byte("---\ntype: thing\n---\n\n[A](a.md) ![image](a.md#cover) [titled](a.md#part \"A title\") [angle](<a.md?view=1#part>)\n\n[ref]: a.md#fragment \"Reference title\"\n\n[external](https://example.test/a.md) [protocol](//example.test/a.md) [absolute](/a.md) [suffix](other-a.md)\n`[inline](a.md)`\n```md\n[fenced](a.md)\n```\n    [indented](a.md)\n"),
 		"index.md":        []byte("---\nokf_version: \"0.1\"\n---\n\n# Root\n\n- [A](a.md)\n- [C](c.md)\n- [Nested](nested/index.md)\n"),
 		"nested/index.md": []byte("# Nested\n\n- [up](../a.md)\n"),
 	}
@@ -887,7 +1430,7 @@ func TestPlanMoveConcept_RewritesMarkdownDestinationsWithoutTouchingCode(t *test
 		"[titled](nested/a.md#part \"A title\")",
 		"[angle](<nested/a.md?view=1#part>)",
 		"[ref]: nested/a.md#fragment \"Reference title\"",
-		"[external](https://example.test/a.md) [protocol](//example.test/a.md) [absolute](/a.md) [suffix](other-a.md)",
+		"[external](https://example.test/a.md) [protocol](//example.test/a.md) [absolute](/nested/a.md) [suffix](other-a.md)",
 		"`[inline](a.md)`",
 		"[fenced](a.md)",
 		"    [indented](a.md)",
@@ -935,11 +1478,114 @@ func TestPlanMoveConcept_RewritesLinksWhenMovingOutOfNestedDirectory(t *testing.
 	}
 }
 
+func TestPlanMoveConcept_PreservesOutgoingTargetsOfMovedDocument(t *testing.T) {
+	// Arrange. Every relative destination in a moved document is interpreted
+	// from its old path, then emitted relative to its new path. This applies to
+	// non-self targets as well as links, images, and reference definitions.
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\n\n[B](b.md) ![B](b.md?raw=1#image) [self](a.md#part) [via-ref][b]\n\n[b]: b.md#section \"B\"\n"),
+		"b.md": []byte("---\ntype: thing\n---\n\nB\n"),
+	}
+	op := store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "nested/a").ID}
+
+	// Act.
+	result, err := Plan(context.Background(), s, change(t, s, op))
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved, err := result.Staged.ReadFile(context.Background(), "nested/a.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"[B](../b.md)",
+		"![B](../b.md?raw=1#image)",
+		"[self](a.md#part)",
+		"[b]: ../b.md#section \"B\"",
+	} {
+		if !bytes.Contains(moved, []byte(want)) {
+			t.Fatalf("moved document = %q, want %q", moved, want)
+		}
+	}
+}
+
+func TestPlanMoveConcept_ReportsInvalidUTF8MarkdownBodyLocation(t *testing.T) {
+	// Arrange.
+	invalid := []byte("---\ntype: thing\n---\nbody ")
+	invalid = append(invalid, 0xff)
+	s := memorySource{
+		"a.md": []byte("---\ntype: thing\n---\nA\n"),
+		"b.md": invalid,
+	}
+	op := store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}
+
+	// Act.
+	result, err := Plan(context.Background(), s, change(t, s, op))
+
+	// Assert.
+	var presentation *PresentationError
+	if !errors.Is(err, bundle.ErrInvalidEncoding) || !errors.Is(err, ErrUnsupportedPresentation) || !errors.As(err, &presentation) {
+		t.Fatalf("Plan() error = %#v, want typed invalid encoding presentation error", err)
+	}
+	if presentation.Format != "markdown" || presentation.Code != "invalid_encoding" || presentation.Path != "b.md" || presentation.Operation != "move_concept" {
+		t.Fatalf("PresentationError = %#v", presentation)
+	}
+	if presentation.Location != (SourceSpan{Start: len(invalid) - 1, End: len(invalid)}) {
+		t.Fatalf("Location = %#v, want invalid body byte", presentation.Location)
+	}
+	if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Renames) != 0 || len(result.Preview.Plan) != 0 {
+		t.Fatalf("rejected plan exposed staged mutation: %#v", result)
+	}
+}
+
+func TestPlanMoveConcept_RewritesEveryPubliclyResolvableInternalDestination(t *testing.T) {
+	tests := []struct {
+		name, oldID, newID, sourcePath, destination, want string
+	}{
+		{name: "absolute", oldID: "a", newID: "moved/a", sourcePath: "c.md", destination: "/a.md", want: "/moved/a.md"},
+		{name: "colon segment", oldID: "a:b", newID: "moved/a:b", sourcePath: "c.md", destination: "a:b.md", want: "moved/a:b.md"},
+		{name: "nested colon", oldID: "dir:x/a", newID: "moved/a", sourcePath: "c.md", destination: "dir:x/a.md", want: "moved/a.md"},
+		{name: "query fragment", oldID: "a", newID: "moved/a", sourcePath: "c.md", destination: "a.md?view=1#part", want: "moved/a.md?view=1#part"},
+		{name: "excess parent", oldID: "a", newID: "moved/a", sourcePath: "nested/c.md", destination: "../../../a.md?view=1", want: "../moved/a.md?view=1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange.
+			old, err := bundle.ParseConceptID(tt.oldID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			moved, err := bundle.ParseConceptID(tt.newID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := memorySource{
+				conceptPath(old): []byte("---\ntype: thing\n---\nOld\n"),
+				tt.sourcePath:    []byte("---\ntype: thing\n---\n[x](" + tt.destination + ")\n"),
+			}
+
+			// Act.
+			result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: old, To: moved}))
+
+			// Assert.
+			if err != nil {
+				t.Fatal(err)
+			}
+			updated, err := result.Staged.ReadFile(context.Background(), tt.sourcePath)
+			if err != nil || !bytes.Contains(updated, []byte("[x]("+tt.want+")")) {
+				t.Fatalf("updated = %q, error=%v; want destination %q", updated, err, tt.want)
+			}
+		})
+	}
+}
+
 func TestPlanMoveConcept_MarkdownRewriteIsDeterministic(t *testing.T) {
 	// Arrange
 	s := memorySource{
 		"a.md":       []byte("---\ntype: thing\n---\n\nA\n"),
-		"notes/c.md": []byte("---\ntype: thing\n---\n\n[inline](../a.md#part)\n[reference]: ../a.md \"Title\"\n"),
+		"notes/c.md": []byte("---\ntype: thing\n---\n\n[inline](../a.md#part)\n\n[reference]: ../a.md \"Title\"\n"),
 		"index.md":   []byte("---\nokf_version: \"0.1\"\n---\n\n# Root\n\n- [A](a.md)\n- [Notes](notes/c.md)\n"),
 	}
 	op := store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "nested/a").ID}

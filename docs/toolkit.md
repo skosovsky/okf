@@ -286,6 +286,50 @@ idempotency identity from each canonical write request, so an identical MCP
 retry does not publish again. Its fixed success response remains `status`,
 `path`, and `diagnostics`; MCP does not expose a receipt DTO or commit evidence.
 
+### Lossless parser-backed edits
+
+Planning is a one-load staged-validation path: validation finishes before any
+filesystem write, and an invalid, unsupported, or ambiguous mutation never
+stages a partial result. The CLI and MCP wire schemas are unchanged.
+
+Markdown destinations are proved with Goldmark semantic parsing plus a separate
+exact byte-span collector. The parser sees only the body, while collector spans
+are mapped to the full source file. Inline links, images, and a reference
+definition's destination are eligible; a definition is patched once regardless
+of use sites, while duplicate normalized definitions are Ambiguous. Escapes and
+entities are decoded for semantic matching; replacement tokens retain angle
+style or use a safe escaped angle form when needed. Autolinks and raw HTML are deliberately excluded. There is no
+AST re-render: bytes outside proven spans stay byte-identical.
+
+For frontmatter, `yaml.v3` is the semantic authority. The resolver permits only
+the documented block-style subset and proves each touched plain, single-quoted,
+or double-quoted scalar key and value against raw bytes. Invalid UTF-8, unsupported syntax,
+and multiple candidate spans fail closed as inspectable
+`mutation.PresentationError` values with `ErrUnsupportedPresentation` or
+`ErrAmbiguousPresentation`; goccy and tree-sitter are not dependencies.
+
+The flat `mutation.Overlay` shallow-shares immutable staged payloads, keeps a
+manifest delta over its immutable base, gives callers defensive reads, and
+shares a `Paths` cache only after successful enumeration. It intentionally has
+no parent chain or HAMT. `bundle.SourceFromFS(fsys fs.FS)` is a non-owning
+adapter to the core `bundle.Source` contract; callers must provide a stable
+filesystem snapshot for its entire use.
+
+The precise boundary is: parsing is body-only and offsets map to the full file.
+Only Goldmark AST inline links/images and reference definitions are rewritten;
+semantic links/images inside an inline-HTML container still qualify when
+Goldmark emits `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code spans,
+fenced/indented code, and unresolved/malformed references are excluded. Touched
+YAML fails closed for flow mapping/sequence, literal/folded block scalar,
+explicit/custom tag, direct anchor or complex key (Unsupported); alias/merge
+provenance and duplicate semantic relations/type/target/id/anchor (Ambiguous);
+other duplicate touched mapping keys (Unsupported); `%YAML`/`%TAG`, inner
+document/end markers or multidoc frontmatter, and unprovable comment/range;
+unrelated nonintersecting extension bytes may remain. Invalid UTF-8 and all
+unsupported/ambiguous cases return typed errors and create no stage. Only
+recognized outer frontmatter delimiters define YAML; body thematic `---` and
+setext underlines are Markdown, not YAML multi-documents.
+
 ## Out of scope
 
 The Go quality gate does not make semantic or editorial judgments. Claim

@@ -20,8 +20,9 @@ import (
 const revisionAlgorithm = "sha256"
 
 // HashAlgorithm supplies the content and manifest hash used to form a revision.
-// Implementations must return a fresh hash on every New call. SHA-256 is the
-// default; the algorithm name is part of every produced digest and revision.
+// Implementations must be immutable after they are supplied to a store API and
+// return a fresh, size-consistent hash on every New call. SHA-256 is the default;
+// the algorithm name is part of every produced digest and revision.
 type HashAlgorithm interface {
 	Name() string
 	New() hash.Hash
@@ -94,8 +95,9 @@ type ManifestEntry struct {
 // Manifest is an immutable, copyable path-to-qualified-content-digest cache.
 // Its accessors never expose its internal map.
 type Manifest struct {
-	algorithm HashAlgorithm
-	digests   map[string]string
+	algorithm  HashAlgorithm
+	digestSize int
+	digests    map[string]string
 }
 
 func NewManifest(entries []ManifestEntry) (Manifest, error) {
@@ -108,8 +110,9 @@ func NewManifestContext(ctx context.Context, entries []ManifestEntry, algorithm 
 	if algorithm == nil {
 		algorithm = defaultHashAlgorithm
 	}
-	if err := validateHashAlgorithm(algorithm); err != nil {
-		return Manifest{}, err
+	name, err := hashAlgorithmName(algorithm)
+	if err != nil {
+		return Manifest{}, manifestHashError(err)
 	}
 	m := Manifest{algorithm: algorithm, digests: make(map[string]string, len(entries))}
 	for _, e := range entries {
@@ -126,7 +129,24 @@ func NewManifestContext(ctx context.Context, entries []ManifestEntry, algorithm 
 		if err != nil {
 			return Manifest{}, manifestHashError(err)
 		}
+		parts := strings.Split(digest, ":")
+		if len(parts) != 2 || parts[0] != name || !validHexDigest(parts[1]) {
+			return Manifest{}, fmt.Errorf("%w: inconsistent digest size", ErrInvalidHashAlgorithm)
+		}
+		digestSize := len(parts[1]) / 2
+		if m.digestSize == 0 {
+			m.digestSize = digestSize
+		} else if digestSize != m.digestSize {
+			return Manifest{}, fmt.Errorf("%w: inconsistent digest size", ErrInvalidHashAlgorithm)
+		}
 		m.digests[e.Path] = digest
+	}
+	if len(entries) == 0 {
+		_, digestSize, err := hashAlgorithmDigestSpec(ctx, algorithm)
+		if err != nil {
+			return Manifest{}, manifestHashError(err)
+		}
+		m.digestSize = digestSize
 	}
 	return m, nil
 }
@@ -136,6 +156,13 @@ func digestContentContext(ctx context.Context, algorithm HashAlgorithm, content 
 	}
 	h, err := newHashContext(ctx, algorithm)
 	if err != nil {
+		return "", err
+	}
+	digestSize, err := safeHashSize(h)
+	if err != nil || digestSize <= 0 {
+		if err == nil {
+			err = fmt.Errorf("%w: non-positive digest size", ErrInvalidHashAlgorithm)
+		}
 		return "", err
 	}
 	const chunk = 64 << 10
@@ -160,23 +187,158 @@ func digestContentContext(ctx context.Context, algorithm HashAlgorithm, content 
 	if err != nil {
 		return "", err
 	}
+	if len(sum) != digestSize {
+		return "", fmt.Errorf("%w: Size and Sum disagree", ErrInvalidHashAlgorithm)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	return name + ":" + hex.EncodeToString(sum), nil
 }
 func (m Manifest) Clone() Manifest {
-	return Manifest{algorithm: m.algorithm, digests: cloneDigests(m.digests)}
+	cloned, _ := m.CloneContext(context.Background())
+	return cloned
 }
-func (m Manifest) Digests() map[string]string { return cloneDigests(m.digests) }
-func cloneDigests(in map[string]string) map[string]string {
+
+// CloneContext returns an independent manifest value while honoring ctx.
+func (m Manifest) CloneContext(ctx context.Context) (Manifest, error) {
+	digests, err := cloneDigestsContext(ctx, m.digests)
+	if err != nil {
+		return Manifest{}, err
+	}
+	return Manifest{algorithm: m.algorithm, digestSize: m.digestSize, digests: digests}, nil
+}
+func (m Manifest) Digests() map[string]string {
+	digests, _ := m.DigestsContext(context.Background())
+	return digests
+}
+
+// DigestsContext returns an owned digest map while honoring ctx.
+func (m Manifest) DigestsContext(ctx context.Context) (map[string]string, error) {
+	return cloneDigestsContext(ctx, m.digests)
+}
+func cloneDigestsContext(ctx context.Context, in map[string]string) (map[string]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	out := make(map[string]string, len(in))
 	for p, d := range in {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		out[p] = d
 	}
-	return out
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 func (m Manifest) Digest(path string) (string, bool) { d, ok := m.digests[path]; return d, ok }
+
+// Len returns the number of cached content digests.
+func (m Manifest) Len() int { return len(m.digests) }
+
+// AlgorithmName returns the qualified digest algorithm used by m.  The empty
+// string reports an invalid manifest.  It is deliberately a name rather than
+// the algorithm object so callers cannot mutate the manifest's hash policy.
+func (m Manifest) AlgorithmName() string {
+	name, err := hashAlgorithmName(m.algorithm)
+	if err != nil {
+		return ""
+	}
+	return name
+}
+
+// DigestContentContext computes a qualified content digest using m's
+// algorithm. It does not mutate m or expose its internal map.
+func (m Manifest) DigestContentContext(ctx context.Context, content []byte) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	name, err := hashAlgorithmName(m.algorithm)
+	if err != nil || m.digests == nil || m.digestSize <= 0 {
+		return "", fmt.Errorf("%w: invalid manifest digest specification", ErrInvalidManifest)
+	}
+	digest, err := digestContentContext(ctx, m.algorithm, content)
+	if err != nil {
+		return "", manifestHashError(err)
+	}
+	if !qualifiedDigestValid(digest, name, m.digestSize) {
+		return "", errors.Join(ErrInvalidManifest, ErrInvalidHashAlgorithm)
+	}
+	return digest, nil
+}
+
+// WithDigests returns a manifest with the same algorithm and the supplied
+// already-qualified digests. It is for immutable digest-cache composition;
+// content is deliberately not rehashed. The input map is never retained.
+func (m Manifest) WithDigests(digests map[string]string) (Manifest, error) {
+	return m.WithDigestsContext(context.Background(), digests)
+}
+
+// WithDigestsContext composes an immutable validated digest cache while
+// honoring ctx at every input-map boundary.
+func (m Manifest) WithDigestsContext(ctx context.Context, digests map[string]string) (Manifest, error) {
+	if err := ctx.Err(); err != nil {
+		return Manifest{}, err
+	}
+	name, err := hashAlgorithmName(m.algorithm)
+	if err != nil || m.digests == nil || m.digestSize <= 0 {
+		return Manifest{}, fmt.Errorf("%w: invalid manifest digest specification", ErrInvalidManifest)
+	}
+	digestSize := m.digestSize
+	out := Manifest{algorithm: m.algorithm, digestSize: digestSize, digests: make(map[string]string, len(digests))}
+	for path, digest := range digests {
+		if err := ctx.Err(); err != nil {
+			return Manifest{}, err
+		}
+		if err := validateManifestPath(path); err != nil {
+			return Manifest{}, err
+		}
+		if !qualifiedDigestValid(digest, name, digestSize) {
+			return Manifest{}, fmt.Errorf("%w: invalid digest for %q", ErrInvalidManifest, path)
+		}
+		out.digests[path] = digest
+	}
+	if err := ctx.Err(); err != nil {
+		return Manifest{}, err
+	}
+	return out, nil
+}
 func (m Manifest) Valid() bool {
-	_, err := hashAlgorithmName(m.algorithm)
-	return err == nil && m.digests != nil
+	return m.ValidateContext(context.Background()) == nil
+}
+
+// ValidateContext verifies every cached path and digest while honoring ctx.
+func (m Manifest) ValidateContext(ctx context.Context) error {
+	_, err := m.PathsContext(ctx)
+	return err
+}
+
+// PathsContext validates and returns the exact lexical manifest path set.
+func (m Manifest) PathsContext(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	name, err := hashAlgorithmName(m.algorithm)
+	if err != nil || m.digests == nil || m.digestSize <= 0 {
+		return nil, fmt.Errorf("%w: invalid manifest digest specification", ErrInvalidManifest)
+	}
+	paths := make([]string, 0, len(m.digests))
+	for path, digest := range m.digests {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if validateManifestPath(path) != nil || !qualifiedDigestValid(digest, name, m.digestSize) {
+			return nil, fmt.Errorf("%w: invalid digest for %q", ErrInvalidManifest, path)
+		}
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return paths, nil
 }
 func (m Manifest) Put(path string, content []byte) (Manifest, error) {
 	return m.PutContext(context.Background(), path, content)
@@ -185,33 +347,38 @@ func (m Manifest) Put(path string, content []byte) (Manifest, error) {
 // PutContext returns a manifest with content cached under path. It propagates
 // cancellation to ContextHashAlgorithm implementations and while hashing data.
 func (m Manifest) PutContext(ctx context.Context, path string, content []byte) (Manifest, error) {
-	if err := validateHashAlgorithm(m.algorithm); err != nil {
-		return Manifest{}, fmt.Errorf("%w: %w", ErrInvalidManifest, err)
-	}
-	if m.digests == nil {
-		return Manifest{}, fmt.Errorf("%w: invalid manifest", ErrInvalidManifest)
-	}
 	if err := ctx.Err(); err != nil {
+		return Manifest{}, err
+	}
+	if err := m.ValidateContext(ctx); err != nil {
 		return Manifest{}, err
 	}
 	if err := validateManifestPath(path); err != nil {
 		return Manifest{}, err
 	}
-	n := m.Clone()
+	n, err := m.CloneContext(ctx)
+	if err != nil {
+		return Manifest{}, err
+	}
 	digest, err := digestContentContext(ctx, n.algorithm, content)
 	if err != nil {
 		return Manifest{}, manifestHashError(err)
+	}
+	if !qualifiedDigestValid(digest, n.AlgorithmName(), n.digestSize) {
+		return Manifest{}, errors.Join(ErrInvalidManifest, ErrInvalidHashAlgorithm)
 	}
 	n.digests[path] = digest
 	return n, nil
 }
 func (m Manifest) Delete(path string) Manifest { n := m.Clone(); delete(n.digests, path); return n }
 func (m Manifest) Rename(from, to string) (Manifest, error) {
-	if err := validateHashAlgorithm(m.algorithm); err != nil {
-		return Manifest{}, fmt.Errorf("%w: %w", ErrInvalidManifest, err)
-	}
-	if m.digests == nil {
-		return Manifest{}, fmt.Errorf("%w: invalid manifest", ErrInvalidManifest)
+	return m.RenameContext(context.Background(), from, to)
+}
+
+// RenameContext returns a manifest with one cached path renamed.
+func (m Manifest) RenameContext(ctx context.Context, from, to string) (Manifest, error) {
+	if err := m.ValidateContext(ctx); err != nil {
+		return Manifest{}, err
 	}
 	if err := validateManifestPath(to); err != nil {
 		return Manifest{}, err
@@ -220,58 +387,111 @@ func (m Manifest) Rename(from, to string) (Manifest, error) {
 	if !ok {
 		return Manifest{}, fmt.Errorf("%w: missing path %q", ErrInvalidManifest, from)
 	}
-	n := m.Delete(from)
+	n, err := m.CloneContext(ctx)
+	if err != nil {
+		return Manifest{}, err
+	}
+	delete(n.digests, from)
 	n.digests[to] = d
+	if err := ctx.Err(); err != nil {
+		return Manifest{}, err
+	}
 	return n, nil
 }
 func (m Manifest) Revision() (Revision, error) {
 	return m.RevisionContext(context.Background())
 }
 func (m Manifest) RevisionContext(ctx context.Context) (Revision, error) {
-	if err := validateHashAlgorithm(m.algorithm); err != nil {
-		return "", fmt.Errorf("%w: %w", ErrInvalidManifest, err)
+	revision, _, err := m.RevisionPathsContext(ctx)
+	return revision, err
+}
+
+// RevisionPathsContext computes the revision and returns the exact sorted
+// manifest dependency set from the same cancellable traversal.
+func (m Manifest) RevisionPathsContext(ctx context.Context) (Revision, []string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", nil, err
 	}
 	if m.digests == nil {
-		return "", fmt.Errorf("%w: invalid manifest", ErrInvalidManifest)
+		return "", nil, fmt.Errorf("%w: invalid manifest", ErrInvalidManifest)
 	}
-	name, err := hashAlgorithmName(m.algorithm)
+	name, digestSize, h, err := newHashDigestSpec(ctx, m.algorithm)
 	if err != nil {
-		return "", fmt.Errorf("%w: %w", ErrInvalidManifest, err)
+		return "", nil, manifestHashError(err)
 	}
-	paths := make([]string, 0, len(m.digests))
-	for p := range m.digests {
-		paths = append(paths, p)
+	if m.digestSize <= 0 || digestSize != m.digestSize {
+		return "", nil, fmt.Errorf("%w: inconsistent digest size", ErrInvalidManifest)
 	}
-	sort.Strings(paths)
-	h, err := newHashContext(ctx, m.algorithm)
+	paths, err := m.PathsContext(ctx)
 	if err != nil {
-		return "", manifestHashError(err)
+		return "", nil, err
 	}
 	for _, p := range paths {
 		if err := ctx.Err(); err != nil {
-			return "", err
-		}
-		if err := validateManifestPath(p); err != nil {
-			return "", err
+			return "", nil, err
 		}
 		d := m.digests[p]
-		parts := strings.Split(d, ":")
-		if len(parts) != 2 || parts[0] != name || !validHexDigest(parts[1]) {
-			return "", fmt.Errorf("%w: invalid digest for %q", ErrInvalidManifest, p)
-		}
-		raw, _ := hex.DecodeString(parts[1])
+		raw, _ := hex.DecodeString(d[len(name)+1:])
 		if err := writeHashLengthPrefixed(h, []byte(p)); err != nil {
-			return "", manifestHashError(err)
+			return "", nil, manifestHashError(err)
 		}
 		if err := writeHashLengthPrefixed(h, raw); err != nil {
-			return "", manifestHashError(err)
+			return "", nil, manifestHashError(err)
 		}
 	}
 	sum, err := sumHash(h)
 	if err != nil {
-		return "", manifestHashError(err)
+		return "", nil, manifestHashError(err)
 	}
-	return Revision(name + ":" + hex.EncodeToString(sum)), nil
+	if len(sum) != digestSize {
+		return "", nil, errors.Join(ErrInvalidManifest, ErrInvalidHashAlgorithm)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", nil, err
+	}
+	return Revision(name + ":" + hex.EncodeToString(sum)), paths, nil
+}
+
+func qualifiedDigestValid(digest, name string, size int) bool {
+	if size <= 0 || len(digest) <= len(name) || digest[:len(name)] != name || digest[len(name)] != ':' {
+		return false
+	}
+	raw := digest[len(name)+1:]
+	return len(raw) == size*2 && validHexDigest(raw)
+}
+
+func hashAlgorithmDigestSpec(ctx context.Context, algorithm HashAlgorithm) (string, int, error) {
+	name, size, _, err := newHashDigestSpec(ctx, algorithm)
+	return name, size, err
+}
+
+func newHashDigestSpec(ctx context.Context, algorithm HashAlgorithm) (string, int, hash.Hash, error) {
+	name, err := hashAlgorithmName(algorithm)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	h, err := newHashContextValidated(ctx, algorithm)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	size, err := safeHashSize(h)
+	if err != nil {
+		return "", 0, nil, err
+	}
+	if size <= 0 {
+		return "", 0, nil, fmt.Errorf("%w: non-positive digest size", ErrInvalidHashAlgorithm)
+	}
+	return name, size, h, nil
+}
+
+func safeHashSize(h hash.Hash) (size int, err error) {
+	defer func() {
+		if recover() != nil {
+			size = 0
+			err = fmt.Errorf("%w: Size panicked", ErrInvalidHashAlgorithm)
+		}
+	}()
+	return h.Size(), nil
 }
 
 func RevisionFromManifest(entries []ManifestEntry) (Revision, error) {

@@ -36,7 +36,7 @@ func TestPlanPreviewContract_DiagnosticsAndReads(t *testing.T) {
 	for i, read := range result.Preview.Reads {
 		paths[i] = read.Path
 	}
-	if want := []string{"a.md", "asset.bin", "b.md", "c.md", "digest", "nested/a.md"}; !reflect.DeepEqual(paths, want) {
+	if want := []string{"a.md", "asset.bin", "b.md", "c.md", "digest"}; !reflect.DeepEqual(paths, want) {
 		t.Fatalf("preview reads = %#v, want %#v", paths, want)
 	}
 	if !sort.StringsAreSorted(paths) {

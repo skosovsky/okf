@@ -1,0 +1,2 @@
+go test fuzz v1
+string("[a](one.md) ![b](two.md) [use][r]\n\n[r]: <three.md> \"title\"\n")

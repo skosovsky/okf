@@ -5,54 +5,138 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/store"
 )
 
-// Overlay is an immutable-base, copy-on-write bundle.Source.  Every mutating
-// method copies its input, and every read returns a fresh copy.  In particular,
-// Rename installs a tombstone at From so it can never fall back to the base.
+// Overlay is an immutable-base, copy-on-write bundle.Source. Staged payloads
+// are private and immutable: PutContext owns exactly one copy, Clone shares
+// that copy, and ReadFile always returns a defensive copy. It intentionally
+// remains a flat overlay rather than a parent chain.
 type Overlay struct {
-	base        bundle.Source
-	changed     map[string][]byte
-	deleted     map[string]struct{}
-	manifest    store.Manifest
-	hasManifest bool
+	base    bundle.Source
+	changed map[string]overlayPayload
+	deleted map[string]struct{}
+
+	// baseManifest never changes. manifestChanged is only the delta over it;
+	// materialization happens at the public Manifest boundary.
+	baseManifest    store.Manifest
+	manifestChanged map[string]string
+	hasManifest     bool
+	paths           *overlayPaths
+}
+
+type overlayPayload struct {
+	data   []byte
+	digest string
+}
+
+// overlayPaths is deliberately shared by an overlay clone tree. Failed or
+// cancelled enumeration is never retained, so a later request can retry.
+type overlayPaths struct {
+	mu      sync.Mutex
+	ready   bool
+	paths   []string
+	loading chan struct{}
+}
+
+// verifiedManifestSource is intentionally package-private: only snapshots
+// proven against their Revision and overlays derived from such snapshots may
+// authorize the digest fast path.
+type verifiedManifestSource interface {
+	verifiedManifestContext(context.Context) (store.Manifest, []string, bool, error)
 }
 
 // NewOverlay returns an empty overlay over base.
 func NewOverlay(base bundle.Source) *Overlay {
-	o := &Overlay{base: base, changed: make(map[string][]byte), deleted: make(map[string]struct{})}
-	if source, ok := base.(store.ManifestSource); ok {
-		m := source.Manifest()
-		if m.Valid() && manifestPathsAreSourcePaths(m) {
-			o.manifest, o.hasManifest = m.Clone(), true
+	o, err := NewOverlayContext(context.Background(), base)
+	if err == nil {
+		return o
+	}
+	// The context-free convenience constructor cannot report a provider error;
+	// retain a usable overlay and disable only the optional manifest fast path.
+	return &Overlay{
+		base:            base,
+		changed:         make(map[string]overlayPayload),
+		deleted:         make(map[string]struct{}),
+		manifestChanged: make(map[string]string),
+		paths:           &overlayPaths{},
+	}
+}
+
+// NewOverlayContext returns an empty overlay and captures an optional manifest
+// through cancellable validation. Arbitrary ManifestSource hints are ignored;
+// an inconsistent verified snapshot is an error, as are cancellation and
+// provider failures.
+func NewOverlayContext(ctx context.Context, base bundle.Source) (*Overlay, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	o := &Overlay{
+		base:            base,
+		changed:         make(map[string]overlayPayload),
+		deleted:         make(map[string]struct{}),
+		manifestChanged: make(map[string]string),
+		paths:           &overlayPaths{},
+	}
+	if m, paths, ok, err := verifiedSourceManifestContext(ctx, base); err != nil {
+		return nil, err
+	} else if ok {
+		if manifestPathsAreSourcePathsContext(ctx, paths) {
+			o.baseManifest, o.hasManifest = m, true
 		}
 	}
-	return o
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
 func (o *Overlay) clone() *Overlay {
+	cloned, _ := o.cloneContext(context.Background())
+	return cloned
+}
+
+func (o *Overlay) cloneContext(ctx context.Context) (*Overlay, error) {
 	if o == nil {
-		return nil
+		return nil, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	cloned := &Overlay{
-		base:        o.base,
-		changed:     make(map[string][]byte, len(o.changed)),
-		deleted:     make(map[string]struct{}, len(o.deleted)),
-		hasManifest: o.hasManifest,
+		base:            o.base,
+		changed:         make(map[string]overlayPayload, len(o.changed)),
+		deleted:         make(map[string]struct{}, len(o.deleted)),
+		baseManifest:    o.baseManifest,
+		manifestChanged: make(map[string]string, len(o.manifestChanged)),
+		hasManifest:     o.hasManifest,
+		paths:           o.paths,
 	}
-	for name, data := range o.changed {
-		cloned.changed[name] = append([]byte(nil), data...)
+	for name, payload := range o.changed {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		cloned.changed[name] = payload
 	}
 	for name := range o.deleted {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		cloned.deleted[name] = struct{}{}
 	}
-	if o.hasManifest {
-		cloned.manifest = o.manifest.Clone()
+	for name, digest := range o.manifestChanged {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		cloned.manifestChanged[name] = digest
 	}
-	return cloned
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return cloned, nil
 }
 
 // Update replaces an existing or staged file. It is an alias for Put.
@@ -64,7 +148,11 @@ func (o *Overlay) Create(ctx context.Context, name string, content []byte) error
 	if err != nil {
 		return err
 	}
-	if _, err := o.ReadFile(ctx, name); err == nil {
+	exists, err := o.visiblePath(ctx, name)
+	if err != nil {
+		return err
+	}
+	if exists {
 		return fmt.Errorf("mutation: file already exists %q", name)
 	}
 	return o.putContext(ctx, name, content)
@@ -75,7 +163,8 @@ func (o *Overlay) Put(name string, content []byte) error {
 	return o.PutContext(context.Background(), name, content)
 }
 
-// PutContext stages content and propagates ctx to manifest hashing.
+// PutContext stages content. When a base manifest is available, it hashes the
+// single overlay-owned payload copy with its context-aware hash algorithm.
 func (o *Overlay) PutContext(ctx context.Context, name string, content []byte) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -86,18 +175,30 @@ func (o *Overlay) PutContext(ctx context.Context, name string, content []byte) e
 	}
 	return o.putContext(ctx, name, content)
 }
+
 func (o *Overlay) putContext(ctx context.Context, name string, content []byte) error {
 	if o == nil {
 		return fmt.Errorf("mutation: nil overlay")
 	}
+	owned, err := copyBytesContext(ctx, content)
+	if err != nil {
+		return err
+	}
+	payload := overlayPayload{data: owned}
 	if o.hasManifest {
-		manifest, err := o.manifest.PutContext(ctx, name, content)
+		digest, err := o.baseManifest.DigestContentContext(ctx, owned)
 		if err != nil {
 			return err
 		}
-		o.manifest = manifest
+		payload.digest = digest
 	}
-	o.changed[name] = append([]byte(nil), content...)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if o.hasManifest {
+		o.manifestChanged[name] = payload.digest
+	}
+	o.changed[name] = payload
 	delete(o.deleted, name)
 	return nil
 }
@@ -112,15 +213,22 @@ func (o *Overlay) Delete(name string) error {
 		return fmt.Errorf("mutation: nil overlay")
 	}
 	delete(o.changed, name)
+	delete(o.manifestChanged, name)
 	o.deleted[name] = struct{}{}
-	if o.hasManifest {
-		o.manifest = o.manifest.Delete(name)
-	}
 	return nil
 }
 
-// Rename moves a visible file. It never leaves a fallback at from.
+// Rename moves a visible file. A staged source reuses its immutable payload
+// and digest. A base source is read once and adopted as the owned Source
+// payload; it is never routed through ReadFile/Put and therefore not copied or
+// rehashed a second time.
 func (o *Overlay) Rename(ctx context.Context, from, to string) error {
+	if o == nil || o.base == nil {
+		return fmt.Errorf("mutation: nil overlay base")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	from, err := sourcePath(from)
 	if err != nil {
 		return err
@@ -130,41 +238,140 @@ func (o *Overlay) Rename(ctx context.Context, from, to string) error {
 		return err
 	}
 	if from == to {
-		return nil
-	}
-	data, err := o.ReadFile(ctx, from)
-	if err != nil {
-		return err
-	}
-	if _, err := o.ReadFile(ctx, to); err == nil {
-		return fmt.Errorf("mutation: rename target exists %q", to)
-	}
-	var renamed store.Manifest
-	if o.hasManifest {
-		renamed, err = o.manifest.Rename(from, to)
+		exists, err := o.visiblePath(ctx, from)
 		if err != nil {
 			return err
 		}
+		if !exists {
+			return fmt.Errorf("mutation: file not found %q", from)
+		}
+		return ctx.Err()
 	}
-	// Do not route this through Put: a rename is a path-only operation and the
-	// cached content digest must move without hashing the defensive read copy.
+	targetExists, err := o.visiblePath(ctx, to)
+	if err != nil {
+		return err
+	}
+	if targetExists {
+		return fmt.Errorf("mutation: rename target exists %q", to)
+	}
+	sourceExists, err := o.visiblePath(ctx, from)
+	if err != nil {
+		return err
+	}
+	if !sourceExists {
+		return fmt.Errorf("mutation: file not found %q", from)
+	}
+	payload, staged := o.changed[from]
+	if !staged {
+		data, err := o.base.ReadFile(ctx, from)
+		if err != nil {
+			return err
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		payload.data = data
+		if o.hasManifest {
+			var ok bool
+			payload.digest, ok = o.baseManifest.Digest(from)
+			if !ok {
+				return fmt.Errorf("mutation: manifest missing source path %q", from)
+			}
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	delete(o.changed, from)
+	delete(o.manifestChanged, from)
 	o.deleted[from] = struct{}{}
-	o.changed[to] = append([]byte(nil), data...)
+	o.changed[to] = payload
 	delete(o.deleted, to)
 	if o.hasManifest {
-		o.manifest = renamed
+		o.manifestChanged[to] = payload.digest
 	}
 	return nil
 }
 
-// Manifest returns a defensive digest cache when the immutable base exposed
-// one. An invalid zero manifest signals that a full hash is required.
-func (o *Overlay) Manifest() store.Manifest {
-	if o == nil || !o.hasManifest {
-		return store.Manifest{}
+// visiblePath proves existence from the overlay delta and the complete base
+// path set. It never treats a read, permission, traversal, or cancellation
+// error as evidence of absence.
+func (o *Overlay) visiblePath(ctx context.Context, name string) (bool, error) {
+	if o == nil || o.base == nil {
+		return false, fmt.Errorf("mutation: nil overlay base")
 	}
-	return o.manifest.Clone()
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if _, gone := o.deleted[name]; gone {
+		return false, nil
+	}
+	if _, changed := o.changed[name]; changed {
+		return true, nil
+	}
+	paths, err := o.cachedBasePaths(ctx)
+	if err != nil {
+		return false, err
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	at := sort.SearchStrings(paths, name)
+	return at < len(paths) && paths[at] == name, nil
+}
+
+// Manifest materializes a defensive digest cache only at this public boundary.
+// An invalid zero manifest signals that a full hash is required.
+func (o *Overlay) Manifest() store.Manifest {
+	manifest, _ := o.ManifestContext(context.Background())
+	return manifest
+}
+
+// ManifestContext materializes the immutable base plus staged digest delta
+// while honoring cancellation at every map-copy boundary.
+func (o *Overlay) ManifestContext(ctx context.Context) (store.Manifest, error) {
+	if err := ctx.Err(); err != nil {
+		return store.Manifest{}, err
+	}
+	if o == nil || !o.hasManifest {
+		return store.Manifest{}, nil
+	}
+	digests, err := o.baseManifest.DigestsContext(ctx)
+	if err != nil {
+		return store.Manifest{}, err
+	}
+	for name := range o.deleted {
+		if err := ctx.Err(); err != nil {
+			return store.Manifest{}, err
+		}
+		delete(digests, name)
+	}
+	for name, digest := range o.manifestChanged {
+		if err := ctx.Err(); err != nil {
+			return store.Manifest{}, err
+		}
+		digests[name] = digest
+	}
+	materialized, err := o.baseManifest.WithDigestsContext(ctx, digests)
+	if err != nil {
+		return store.Manifest{}, err
+	}
+	return materialized, nil
+}
+
+func (o *Overlay) verifiedManifestContext(ctx context.Context) (store.Manifest, []string, bool, error) {
+	if o == nil || !o.hasManifest {
+		return store.Manifest{}, nil, false, nil
+	}
+	manifest, err := o.ManifestContext(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	paths, err := o.Paths(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	return manifest, paths, true, nil
 }
 
 // Paths lists visible paths in lexical slash-path order.
@@ -175,14 +382,13 @@ func (o *Overlay) Paths(ctx context.Context) ([]string, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	base, err := o.base.Paths(ctx)
+	base, err := o.cachedBasePaths(ctx)
 	if err != nil {
 		return nil, err
 	}
 	seen := make(map[string]struct{}, len(base)+len(o.changed))
 	for _, p := range base {
-		p, err = sourcePath(p)
-		if err != nil {
+		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		if _, gone := o.deleted[p]; !gone {
@@ -190,14 +396,96 @@ func (o *Overlay) Paths(ctx context.Context) ([]string, error) {
 		}
 	}
 	for p := range o.changed {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		seen[p] = struct{}{}
 	}
 	out := make([]string, 0, len(seen))
 	for p := range seen {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		out = append(out, p)
 	}
 	sort.Strings(out)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
+}
+
+func (o *Overlay) cachedBasePaths(ctx context.Context) ([]string, error) {
+	cache := o.paths
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		cache.mu.Lock()
+		if cache.ready {
+			// cache.paths is immutable after ready is published. Callers are
+			// internal and only iterate it; public Paths builds its own slice.
+			out := cache.paths
+			cache.mu.Unlock()
+			return out, nil
+		}
+		if wait := cache.loading; wait != nil {
+			cache.mu.Unlock()
+			select {
+			case <-wait:
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+				continue
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+		cache.loading = make(chan struct{})
+		wait := cache.loading
+		cache.mu.Unlock()
+
+		paths, err := o.base.Paths(ctx)
+		if err == nil {
+			if err = ctx.Err(); err == nil {
+				for _, p := range paths {
+					if err = ctx.Err(); err != nil {
+						break
+					}
+					if _, pathErr := sourcePath(p); pathErr != nil {
+						err = pathErr
+						break
+					}
+				}
+				if err == nil {
+					sort.Strings(paths)
+					err = ctx.Err()
+				}
+			}
+		}
+		var ownedPaths []string
+		if err == nil {
+			ownedPaths = make([]string, 0, len(paths))
+			for _, name := range paths {
+				if err = ctx.Err(); err != nil {
+					break
+				}
+				ownedPaths = append(ownedPaths, name)
+			}
+		}
+		cache.mu.Lock()
+		if err == nil {
+			cache.paths = ownedPaths
+			cache.ready = true
+		}
+		cache.loading = nil
+		close(wait)
+		cache.mu.Unlock()
+		if err != nil {
+			return nil, err
+		}
+		return cache.paths, nil
+	}
 }
 
 // ReadFile returns staged content, a defensive copy from base, or its base error.
@@ -215,14 +503,41 @@ func (o *Overlay) ReadFile(ctx context.Context, name string) ([]byte, error) {
 	if _, gone := o.deleted[name]; gone {
 		return nil, fmt.Errorf("mutation: file not found %q", name)
 	}
-	if data, ok := o.changed[name]; ok {
-		return append([]byte(nil), data...), nil
+	if payload, ok := o.changed[name]; ok {
+		return copyBytesContext(ctx, payload.data)
 	}
 	data, err := o.base.ReadFile(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	return append([]byte(nil), data...), nil
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	// bundle.Source transfers ownership of returned bytes to its caller; after
+	// the context check this slice is already a defensive overlay result.
+	return data, nil
+}
+
+func copyBytesContext(ctx context.Context, source []byte) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]byte, len(source))
+	const chunk = 64 << 10
+	for at := 0; at < len(source); at += chunk {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		end := at + chunk
+		if end > len(source) {
+			end = len(source)
+		}
+		copy(out[at:end], source[at:end])
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func sourcePath(name string) (string, error) {
@@ -238,11 +553,126 @@ func invalidSourcePath(name string) error {
 
 // manifestPathsAreSourcePaths prevents metadata from entering the cached
 // revision through a ManifestSource without first being visible to Paths.
-func manifestPathsAreSourcePaths(manifest store.Manifest) bool {
-	for name := range manifest.Digests() {
+func manifestPathsAreSourcePathsContext(ctx context.Context, paths []string) bool {
+	for _, name := range paths {
+		if err := ctx.Err(); err != nil {
+			return false
+		}
 		if _, err := sourcePath(name); err != nil {
 			return false
 		}
 	}
 	return true
+}
+
+func sourceManifestContext(ctx context.Context, source bundle.Source) (store.Manifest, bool, error) {
+	if contextual, ok := source.(store.ContextManifestSource); ok {
+		manifest, err := contextual.ManifestContext(ctx)
+		return manifest, true, err
+	}
+	plain, ok := source.(store.ManifestSource)
+	if !ok {
+		return store.Manifest{}, false, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return store.Manifest{}, false, err
+	}
+	manifest := plain.Manifest()
+	if err := ctx.Err(); err != nil {
+		return store.Manifest{}, false, err
+	}
+	return manifest, true, nil
+}
+
+func verifiedSourceManifestContext(ctx context.Context, source bundle.Source) (store.Manifest, []string, bool, error) {
+	if verified, ok := source.(verifiedManifestSource); ok {
+		manifest, paths, available, err := verified.verifiedManifestContext(ctx)
+		if err != nil || !available {
+			return store.Manifest{}, nil, available, err
+		}
+		return verifyManifestPathSetContext(ctx, manifest, paths)
+	}
+	snapshot, ok := source.(store.Snapshot)
+	if !ok {
+		return store.Manifest{}, nil, false, nil
+	}
+	manifest, available, err := sourceManifestContext(ctx, source)
+	if err != nil || !available {
+		return store.Manifest{}, nil, available, err
+	}
+	revision, manifestPaths, err := manifest.RevisionPathsContext(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	if revision != snapshot.Revision() {
+		return store.Manifest{}, nil, false, fmt.Errorf("%w: snapshot revision and manifest disagree", store.ErrInvalidManifest)
+	}
+	sourcePaths, err := source.Paths(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	if err := validateAndSortSourcePathsContext(ctx, sourcePaths); err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	equal, err := equalStringSlicesContext(ctx, manifestPaths, sourcePaths)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	if !equal {
+		return store.Manifest{}, nil, false, fmt.Errorf("%w: snapshot paths and manifest disagree", store.ErrInvalidManifest)
+	}
+	return manifest, sourcePaths, true, nil
+}
+
+func verifyManifestPathSetContext(ctx context.Context, manifest store.Manifest, sourcePaths []string) (store.Manifest, []string, bool, error) {
+	manifestPaths, err := manifest.PathsContext(ctx)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	paths := make([]string, 0, len(sourcePaths))
+	for _, name := range sourcePaths {
+		if err := ctx.Err(); err != nil {
+			return store.Manifest{}, nil, false, err
+		}
+		paths = append(paths, name)
+	}
+	if err := validateAndSortSourcePathsContext(ctx, paths); err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	equal, err := equalStringSlicesContext(ctx, manifestPaths, paths)
+	if err != nil {
+		return store.Manifest{}, nil, false, err
+	}
+	if !equal {
+		return store.Manifest{}, nil, false, fmt.Errorf("%w: source paths and manifest disagree", store.ErrInvalidManifest)
+	}
+	return manifest, paths, true, nil
+}
+
+func validateAndSortSourcePathsContext(ctx context.Context, paths []string) error {
+	for _, name := range paths {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if _, err := sourcePath(name); err != nil {
+			return err
+		}
+	}
+	sort.Strings(paths)
+	return ctx.Err()
+}
+
+func equalStringSlicesContext(ctx context.Context, left, right []string) (bool, error) {
+	if len(left) != len(right) {
+		return false, nil
+	}
+	for i := range left {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		if left[i] != right[i] {
+			return false, nil
+		}
+	}
+	return true, ctx.Err()
 }

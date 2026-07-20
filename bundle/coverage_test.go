@@ -593,11 +593,11 @@ func TestLinkEdgePaths(t *testing.T) {
 	if _, ok := (Link{Target: "../..", Kind: LinkRelative}).Resolve(source); ok {
 		t.Fatal("traversal-only relative link resolved, want false")
 	}
-	if got := stripAnchor("/a.md"); got != "/a.md" {
-		t.Fatalf("stripAnchor(no anchor) = %q, want /a.md", got)
+	if got := stripLinkSuffix("/a.md"); got != "/a.md" {
+		t.Fatalf("stripLinkSuffix(no suffix) = %q, want /a.md", got)
 	}
-	if got := stripAnchor("/a.md#section"); got != "/a.md" {
-		t.Fatalf("stripAnchor(anchor) = %q, want /a.md", got)
+	if got := stripLinkSuffix("/a.md#section"); got != "/a.md" {
+		t.Fatalf("stripLinkSuffix(anchor) = %q, want /a.md", got)
 	}
 	if _, ok := conceptIDFromNormalizedSegments(nil); ok {
 		t.Fatal("conceptIDFromNormalizedSegments(nil) ok = true, want false")

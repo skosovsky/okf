@@ -1,0 +1,2 @@
+go test fuzz v1
+string("[inline](old.md) ![image](old-image.md)\\n[full][r] [collapsed][] [shortcut]\\n\\n[r]: <old-ref.md> \\\"title\\\"\\n[collapsed]: old-collapsed.md\\n[shortcut]: old-shortcut.md\\n\\n`[code](old.md)`\\n")

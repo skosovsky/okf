@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("baseRelations: &baseRelations\n  relations:\n    uses:\n      - target: b\nbaseType: &baseType\n  uses:\n    - target: b\nbaseTarget: &baseTarget\n  target: b\nbaseIdentity: &baseIdentity\n  id: old\nmergedRoot:\n  <<: *baseRelations\nrelations:\n  <<: *baseType\n  uses:\n    - <<: *baseTarget\nparts:\n  - <<: *baseIdentity\n")

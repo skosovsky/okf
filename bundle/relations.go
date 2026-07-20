@@ -219,6 +219,12 @@ func appendRelationsFromBlock(node *yaml.Node, source RelationRef, publishEdges 
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i]
 		value := node.Content[i+1]
+		// YAML merge provenance has no explicit relation-type owner in this
+		// mapping. Mutation handles a merge only when the operation actually
+		// touches a relation inherited through it; unrelated merges stay opaque.
+		if key != nil && key.Tag == "!!merge" {
+			continue
+		}
 		if key.Kind != yaml.ScalarNode || key.Tag != "!!str" || !validRelationType(key.Value) {
 			typ := ""
 			if key.Kind == yaml.ScalarNode {

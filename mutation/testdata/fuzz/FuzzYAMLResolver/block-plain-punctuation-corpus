@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("parts:\n  - id: part,one\n  - anchor: part[two]\nrelations:\n  uses:\n    - target: b{c}\n")

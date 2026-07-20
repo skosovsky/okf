@@ -110,6 +110,9 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 	clean := make([]string, 0, len(files))
 	seen := make(map[string]struct{}, len(files))
 	for _, name := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		name, err = normalizeSourcePath(name)
 		if err != nil {
 			return nil, err
@@ -124,9 +127,12 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 		clean = append(clean, name)
 	}
 	sort.Strings(clean)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	bundle := &Bundle{
-		files:        append([]string(nil), clean...),
+		files:        clean,
 		byID:         make(map[string]int),
 		outbound:     make(map[string][]ResolvedLink),
 		backlinks:    make(map[string][]ConceptID),
@@ -145,7 +151,11 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 			bundle.parseErrors = append(bundle.parseErrors, ParseError{Path: path, Err: readErr})
 			continue
 		}
-		bundle.contents[path] = append([]byte(nil), data...)
+		owned, err := copySourceBytesContext(ctx, data)
+		if err != nil {
+			return nil, err
+		}
+		bundle.contents[path] = owned
 		switch filepath.Base(path) {
 		case "index.md":
 			bundle.indexFiles = append(bundle.indexFiles, path)
@@ -154,15 +164,41 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 		default:
 			bundle.loadConceptBytes(path, data)
 		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 	}
 
 	for i, concept := range bundle.concepts {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		bundle.byID[concept.ID.String()] = i
 	}
 	bundle.buildGraph()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	bundle.finalizeRelationDiagnostics()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 
 	return bundle, nil
+}
+
+func copySourceBytesContext(ctx context.Context, source []byte) ([]byte, error) {
+	out := make([]byte, 0, len(source))
+	const chunkSize = 64 << 10
+	for len(source) > 0 {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		n := min(len(source), chunkSize)
+		out = append(out, source[:n]...)
+		source = source[n:]
+	}
+	return out, ctx.Err()
 }
 
 // Root returns the bundle root path.

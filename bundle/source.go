@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	iofs "io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,11 +16,167 @@ import (
 )
 
 // Source is an immutable, snapshot-compatible source of bundle files. Paths
-// must satisfy ValidateRevisionPath. ReadFile must return an owned byte slice;
-// Load makes an additional defensive copy before retaining it.
+// must satisfy ValidateRevisionPath. Paths and ReadFile must return caller-owned
+// slices; Load makes an additional defensive copy before retaining file bytes.
 type Source interface {
 	Paths(context.Context) ([]string, error)
 	ReadFile(context.Context, string) ([]byte, error)
+}
+
+// SourceFromFS adapts fsys to Source without taking ownership of it. The
+// caller is responsible for supplying a stable filesystem snapshot for the
+// complete Paths/ReadFile lifetime; a changing fs.FS can otherwise expose an
+// inconsistent source. Paths are deterministic slash paths for revision-visible
+// regular files only; .okf and symlinks are excluded. ReadFile rejects a
+// symlink in any path component rather than resolving it. Paths and ReadFile
+// each return caller-owned defensive copies. Source remains the core contract
+// for loaders and mutations; this is only an io/fs adapter.
+func SourceFromFS(fsys iofs.FS) Source { return fsSource{fsys: fsys} }
+
+type fsSource struct{ fsys iofs.FS }
+
+func (s fsSource) Paths(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s.fsys == nil {
+		return nil, fmt.Errorf("bundle: nil fs")
+	}
+	paths := make([]string, 0)
+	err := iofs.WalkDir(s.fsys, ".", func(name string, entry iofs.DirEntry, walkErr error) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if walkErr != nil {
+			return fmt.Errorf("bundle source walk %q: %w", name, walkErr)
+		}
+		if name == "." {
+			return nil
+		}
+		if name == ".okf" || strings.HasPrefix(name, ".okf/") {
+			if entry.IsDir() {
+				return iofs.SkipDir
+			}
+			return nil
+		}
+		if entry.Type()&iofs.ModeSymlink != 0 {
+			if entry.IsDir() {
+				return iofs.SkipDir
+			}
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return fmt.Errorf("bundle source stat %q: %w", name, err)
+		}
+		if info.Mode()&iofs.ModeSymlink != 0 {
+			return nil
+		}
+		if info.IsDir() || !info.Mode().IsRegular() {
+			return nil
+		}
+		if err := ValidateRevisionPath(name); err != nil {
+			return fmt.Errorf("bundle source path %q: %w", name, err)
+		}
+		paths = append(paths, name)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	sort.Strings(paths)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
+func (s fsSource) ReadFile(ctx context.Context, name string) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s.fsys == nil {
+		return nil, fmt.Errorf("bundle: nil fs")
+	}
+	if err := ValidateRevisionPath(name); err != nil {
+		return nil, fmt.Errorf("invalid bundle source path %q: %w", name, err)
+	}
+	if err := fsNoFollowRegularFile(ctx, s.fsys, name); err != nil {
+		return nil, fmt.Errorf("stat bundle source path %q: %w", name, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	file, err := s.fsys.Open(name)
+	if err != nil {
+		return nil, fmt.Errorf("open bundle source path %q: %w", name, err)
+	}
+	defer file.Close()
+	data, err := ioReadAllContext(ctx, file)
+	if err != nil {
+		return nil, fmt.Errorf("read bundle source path %q: %w", name, err)
+	}
+	return data, nil
+}
+
+// fsNoFollowRegularFile proves every component from . to name without using
+// fs.Stat(name), which is permitted to resolve symlinks. Each ReadDir runs on
+// a parent already proved to be a real directory. This is necessarily a
+// snapshot check: SourceFromFS requires fsys to remain stable for the complete
+// Paths/ReadFile lifetime.
+func fsNoFollowRegularFile(ctx context.Context, fsys iofs.FS, name string) error {
+	directory := "."
+	components := strings.Split(name, "/")
+	for index, component := range components {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		entries, err := iofs.ReadDir(fsys, directory)
+		if err != nil {
+			return fmt.Errorf("read directory %q: %w", directory, err)
+		}
+
+		var found iofs.DirEntry
+		for _, entry := range entries {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if entry.Name() == component {
+				found = entry
+				break
+			}
+		}
+		if found == nil {
+			return fmt.Errorf("component %q: %w", component, iofs.ErrNotExist)
+		}
+		if found.Type()&iofs.ModeSymlink != 0 {
+			return fmt.Errorf("%w: symlink component %q", ErrNotRegularFile, component)
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		info, err := found.Info()
+		if err != nil {
+			return fmt.Errorf("stat component %q: %w", component, err)
+		}
+		if info.Mode()&iofs.ModeSymlink != 0 {
+			return fmt.Errorf("%w: symlink component %q", ErrNotRegularFile, component)
+		}
+		if index == len(components)-1 {
+			if !info.Mode().IsRegular() {
+				return fmt.Errorf("%w: path %q", ErrNotRegularFile, name)
+			}
+			return nil
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("%w: non-directory component %q", ErrNotRegularFile, component)
+		}
+		directory = path.Join(directory, component)
+	}
+	return fmt.Errorf("%w: path %q", ErrNotRegularFile, name)
 }
 
 // FileSystemSource adapts a directory to Source. It pins Root when first used,
@@ -50,6 +207,9 @@ func (s *FileSystemSource) Paths(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	sort.Strings(out)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -65,6 +225,9 @@ func (s *FileSystemSource) ReadFile(ctx context.Context, name string) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	file, err := openRegularFile(root, name)
 	if err != nil {
 		return nil, fmt.Errorf("invalid bundle source path %q: %w", name, err)
@@ -74,7 +237,7 @@ func (s *FileSystemSource) ReadFile(ctx context.Context, name string) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	return append([]byte(nil), data...), nil
+	return data, nil
 }
 
 // Close releases the descriptor backing the pinned root.
@@ -198,7 +361,13 @@ func walkRevisionVisible(ctx context.Context, root *os.Root, directory, prefix s
 	if err != nil {
 		return err
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -327,18 +496,21 @@ func isSymlinkPathError(err error) bool {
 	return strings.Contains(err.Error(), "symlink") || strings.Contains(err.Error(), "changed component")
 }
 
-func ioReadAllContext(ctx context.Context, file *os.File) ([]byte, error) {
+func ioReadAllContext(ctx context.Context, reader io.Reader) ([]byte, error) {
 	var out []byte
 	buf := make([]byte, 64<<10)
 	for {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		n, err := file.Read(buf)
+		n, err := reader.Read(buf)
 		if n > 0 {
 			out = append(out, buf[:n]...)
 		}
 		if err == io.EOF {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			return out, nil
 		}
 		if err != nil {

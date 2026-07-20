@@ -3,11 +3,33 @@ package store
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/sha512"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
+	"strings"
+	"sync"
 	"testing"
 )
+
+type manifestCountdownContext struct {
+	context.Context
+	mu        sync.Mutex
+	remaining int
+}
+
+func (c *manifestCountdownContext) Err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.remaining > 0 {
+		c.remaining--
+	}
+	if c.remaining == 0 {
+		return context.Canceled
+	}
+	return nil
+}
 
 type countingHashAlgorithm struct{ newCalls int }
 
@@ -16,6 +38,11 @@ func (a *countingHashAlgorithm) New() hash.Hash {
 	a.newCalls++
 	return sha256.New()
 }
+
+type sha512HashAlgorithm struct{}
+
+func (sha512HashAlgorithm) Name() string   { return "sha512-test" }
+func (sha512HashAlgorithm) New() hash.Hash { return sha512.New() }
 
 func TestRevisionFromManifest_IsOrderIndependentAndPathSensitive(t *testing.T) {
 	// Arrange.
@@ -39,6 +66,38 @@ func TestRevisionFromManifest_IsOrderIndependentAndPathSensitive(t *testing.T) {
 	}
 	if !first.Valid() {
 		t.Fatalf("revision must validate: %s", first)
+	}
+}
+
+func TestManifestContextAPIsCancelDuringTraversal(t *testing.T) {
+	// Arrange.
+	entries := make([]ManifestEntry, 256)
+	for i := range entries {
+		entries[i] = ManifestEntry{Path: fmt.Sprintf("file%03d.md", i), Content: []byte("content")}
+	}
+	manifest, err := NewManifest(entries)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	validateErr := manifest.ValidateContext(&manifestCountdownContext{Context: context.Background(), remaining: 8})
+	digests, digestsErr := manifest.DigestsContext(&manifestCountdownContext{Context: context.Background(), remaining: 8})
+	revision, paths, revisionErr := manifest.RevisionPathsContext(&manifestCountdownContext{Context: context.Background(), remaining: 8})
+	put, putErr := manifest.PutContext(&manifestCountdownContext{Context: context.Background(), remaining: 270}, "new.md", []byte("new"))
+
+	// Assert.
+	if !errors.Is(validateErr, context.Canceled) {
+		t.Fatalf("ValidateContext() error = %v", validateErr)
+	}
+	if !errors.Is(digestsErr, context.Canceled) || digests != nil {
+		t.Fatalf("DigestsContext() = %#v, %v", digests, digestsErr)
+	}
+	if !errors.Is(revisionErr, context.Canceled) || !revision.IsZero() || paths != nil {
+		t.Fatalf("RevisionPathsContext() = %q, %#v, %v", revision, paths, revisionErr)
+	}
+	if !errors.Is(putErr, context.Canceled) || put.Len() != 0 {
+		t.Fatalf("PutContext() = %#v, %v", put, putErr)
 	}
 }
 
@@ -163,10 +222,76 @@ func TestManifest_ReusesDigestAcrossRenameAndDefensiveCopies(t *testing.T) {
 	}
 }
 
+func TestManifestWithDigestsValidatesAlgorithmDigestSizeAndOwnership(t *testing.T) {
+	// Arrange.
+	manifest, err := NewManifest([]ManifestEntry{{Path: "a.md", Content: []byte("one")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, _ := manifest.Digest("a.md")
+	tests := []struct {
+		name, digest string
+	}{
+		{name: "short", digest: "sha256:00"},
+		{name: "long", digest: "sha256:" + strings.Repeat("00", sha256.Size+1)},
+		{name: "wrong algorithm", digest: "other:" + strings.Repeat("00", sha256.Size)},
+		{name: "uppercase", digest: "sha256:" + strings.Repeat("AA", sha256.Size)},
+		{name: "non hex", digest: "sha256:" + strings.Repeat("zz", sha256.Size)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Act.
+			got, err := manifest.WithDigests(map[string]string{"a.md": tt.digest})
+
+			// Assert.
+			if !errors.Is(err, ErrInvalidManifest) || got.Valid() {
+				t.Fatalf("WithDigests() = %#v, %v", got, err)
+			}
+		})
+	}
+
+	input := map[string]string{"a.md": valid}
+	composed, err := manifest.WithDigests(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input["a.md"] = "tampered"
+	if got, _ := composed.Digest("a.md"); got != valid || !composed.Valid() {
+		t.Fatalf("composed digest/valid = %q/%t", got, composed.Valid())
+	}
+}
+
+func TestManifestDigestSizeSupportsCustomHashAndRejectsForgedFastPath(t *testing.T) {
+	// Arrange.
+	custom, err := NewManifestWithAlgorithm([]ManifestEntry{{Path: "a.md", Content: []byte("one")}}, sha512HashAlgorithm{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest, _ := custom.Digest("a.md")
+	forged := custom.Clone()
+	forged.digests["a.md"] = "sha512-test:00"
+
+	// Act.
+	composed, composeErr := custom.WithDigests(map[string]string{"a.md": digest})
+	_, revisionErr := forged.Revision()
+
+	// Assert.
+	if composeErr != nil || !composed.Valid() || forged.Valid() || !errors.Is(revisionErr, ErrInvalidManifest) {
+		t.Fatalf("custom=%v valid=%t forgedValid=%t revisionErr=%v", composeErr, composed.Valid(), forged.Valid(), revisionErr)
+	}
+}
+
 type hostileHash struct {
 	hash.Hash
 	write func([]byte) (int, error)
 }
+
+type inconsistentSizeHash struct {
+	hash.Hash
+	size int
+}
+
+func (h inconsistentSizeHash) Size() int { return h.size }
 
 func (h hostileHash) Write(p []byte) (int, error) { return h.write(p) }
 
@@ -315,6 +440,21 @@ func TestManifestHashConstructorNilReturnsStableError(t *testing.T) {
 	// Assert.
 	if !errors.Is(newErr, ErrInvalidHashAlgorithm) || !errors.Is(contextErr, ErrInvalidHashAlgorithm) {
 		t.Fatalf("nil constructors must return stable errors: New=%v NewContext=%v", newErr, contextErr)
+	}
+}
+
+func TestManifestRejectsHashSizeAndSumDisagreement(t *testing.T) {
+	// Arrange.
+	algorithm := hostileHashAlgorithm{new: func() hash.Hash {
+		return inconsistentSizeHash{Hash: sha256.New(), size: sha256.Size - 1}
+	}}
+
+	// Act.
+	manifest, err := NewManifestWithAlgorithm([]ManifestEntry{{Path: "a.md", Content: []byte("one")}}, algorithm)
+
+	// Assert.
+	if !errors.Is(err, ErrInvalidHashAlgorithm) || !errors.Is(err, ErrInvalidManifest) || manifest.Valid() {
+		t.Fatalf("NewManifestWithAlgorithm() = %#v, %v", manifest, err)
 	}
 }
 

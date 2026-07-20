@@ -144,6 +144,33 @@ func TestResolveAbsoluteLinkNormalizesDotSegments(t *testing.T) {
 	}
 }
 
+func TestResolveInternalLinkUsesSharedPathQueryAndPunctuationSemantics(t *testing.T) {
+	source, err := ParseConceptID("nested/source")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name, target, want string
+		kind               LinkKind
+	}{
+		{name: "absolute query fragment", target: "/a.md?view=1#part", kind: LinkAbsolute, want: "a"},
+		{name: "colon segment", target: "../a:b.md", kind: LinkRelative, want: "a:b"},
+		{name: "nested colon", target: "../dir:x/a.md", kind: LinkRelative, want: "dir:x/a"},
+		{name: "excess parent", target: "../../../a.md?view=1", kind: LinkRelative, want: "a"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Act.
+			got, ok := (Link{Target: tt.target, Kind: tt.kind}).Resolve(source)
+
+			// Assert.
+			if !ok || got.String() != tt.want {
+				t.Fatalf("Resolve(%q) = %q, %t; want %q", tt.target, got, ok, tt.want)
+			}
+		})
+	}
+}
+
 func TestResolveExternalLinkReturnsFalse(t *testing.T) {
 	t.Parallel()
 

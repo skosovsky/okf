@@ -210,6 +210,31 @@ identical retry, but preserves its fixed success schema (`status`, `path`,
 `diagnostics`) and exposes no receipt or commit evidence. See
 [Toolkit](toolkit/) for the API, idempotency, and limits.
 
+Parser-backed mutations preserve presentation instead of normalizing it:
+Goldmark proves eligible Markdown body destinations and an exact collector maps
+their byte spans to the full file; `yaml.v3` proves the supported block scalar
+subset in frontmatter. Autolinks, raw HTML, invalid UTF-8, and unsupported or
+ambiguous presentation fail closed rather than being rewritten. The flat overlay
+shares immutable staged payloads and successful `Paths` discovery; it has no
+HAMT or parent chain. `bundle.SourceFromFS` is a non-owning adapter and needs a
+stable `fs.FS` snapshot. These internals preserve existing CLI and MCP schemas.
+
+The edit boundary is exact: parsing is body-only and collector offsets map to
+the full file. It rewrites only Goldmark AST inline links/images and reference
+definitions; semantic links/images inside an inline-HTML container remain
+eligible if Goldmark emits `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code
+spans, fenced/indented code, and unresolved/malformed references are excluded.
+Touched YAML accepts proven plain/single/double-quoted scalar keys and values,
+and fails closed for flow mapping/sequence, literal/folded block scalar,
+explicit/custom tag, direct anchor or complex key (Unsupported); alias/merge
+provenance and duplicate semantic relations/type/target/id/anchor (Ambiguous);
+other duplicate touched mapping keys (Unsupported); `%YAML`/`%TAG`, inner
+document/end markers or multidoc frontmatter, and unprovable comment/range;
+unrelated nonintersecting extension bytes may remain. Invalid UTF-8 and every
+unsupported/ambiguous case return typed errors and create no stage. Recognized
+outer frontmatter delimiters alone define YAML: body thematic `---` and setext
+underlines are Markdown, not YAML multi-documents.
+
 See [Toolkit](toolkit/) and [Skill](skill/) for the repo-local details,
 including MCP setup.
 

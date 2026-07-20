@@ -284,6 +284,50 @@ identity выводится из canonical write request, поэтому иде�
 публикует повторно. Fixed success response остаётся `status`, `path` и
 `diagnostics`; MCP не раскрывает receipt DTO или commit evidence.
 
+### Lossless parser-backed edits
+
+Planning идет по one-load staged-validation path: validation завершается до
+filesystem write, а invalid, unsupported или ambiguous mutation не создает
+partial staged result. CLI и MCP wire schemas не меняются.
+
+Markdown destinations доказываются Goldmark semantic parser'ом и отдельным
+exact byte-span collector. Parser видит только body, а collector отображает
+spans в полный source file. Eligible — inline links, images и destination
+reference definition; definition patch'ится один раз независимо от use sites.
+Duplicate normalized definitions дают Ambiguous. Escapes и entities декодируются
+для semantic matching; replacement сохраняет angle style или использует
+безопасный escaped angle form. Autolinks и raw HTML намеренно исключены. AST re-render отсутствует: bytes вне
+доказанных spans остаются byte-identical.
+
+Для frontmatter `yaml.v3` — semantic authority. Resolver допускает только
+documented block-style subset и доказывает raw bytes каждого touched plain,
+single-quoted или double-quoted scalar key и value. Invalid UTF-8, unsupported syntax и
+несколько candidate spans fail-closed как inspectable
+`mutation.PresentationError` с `ErrUnsupportedPresentation` или
+`ErrAmbiguousPresentation`; goccy и tree-sitter не являются dependencies.
+
+Flat `mutation.Overlay` shallow-share'ит immutable staged payloads, хранит
+manifest delta над immutable base, отдает defensive reads и заполняет общий
+cache `Paths` только после successful enumeration. Parent chain и HAMT
+намеренно отсутствуют. `bundle.SourceFromFS(fsys fs.FS)` — non-owning adapter
+к core `bundle.Source`; caller обязан передать stable filesystem snapshot на
+весь срок использования.
+
+Точная граница: parsing идёт только по body, offsets отображаются в полный
+файл. Переписываются лишь Goldmark AST inline links/images и reference
+definitions; semantic link/image внутри inline-HTML container остаётся eligible,
+когда Goldmark создаёт `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code
+spans, fenced/indented code и unresolved/malformed references исключены.
+Touched YAML fail-closed для flow mapping/sequence, literal/folded block scalar,
+explicit/custom tag, direct anchor или complex key (Unsupported); alias/merge
+provenance и duplicate semantic relations/type/target/id/anchor (Ambiguous);
+остальные duplicate touched mapping keys (Unsupported); `%YAML`/`%TAG`, inner
+document/end markers или multidoc frontmatter и unprovable comment/range;
+unrelated nonintersecting extension bytes могут остаться. Invalid UTF-8 и все
+unsupported/ambiguous случаи возвращают typed error и не создают stage. YAML
+задают только recognized outer frontmatter delimiters; body thematic `---` и
+setext underline — Markdown, не YAML multi-doc.
+
 ## Вне scope
 
 Go quality gate не делает semantic/editorial judgments. Поиск claims,

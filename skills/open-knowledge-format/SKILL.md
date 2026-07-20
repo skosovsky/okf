@@ -610,6 +610,33 @@ Citations могут быть absolute URLs, bundle-relative paths или пут
 5. **Minimal by default.** Генерировать только `type` (required) + warranted recommended fields. Не набивать пустыми values.
 6. **Ask before assuming.** Если домен неясен, спросить, какие types и structure имеют смысл.
 7. **Не путать SPEC и ecosystem tooling.** Интеграции конкретных vendors или catalogs могут быть полезны, но не являются частью OKF conformance, пока это не сказано в SPEC.
+8. **Не обходить rejected mutation.** `write_concept` и Go mutation path сначала
+   валидируют staged source; invalid, unsupported или ambiguous edit не должен
+   попасть в stage или filesystem. Markdown parsing идёт только по body, а
+   exact byte offsets отображаются в полный файл. Goldmark + exact byte spans
+   применяются только к AST inline links/images/reference definitions;
+   semantic link/image внутри inline-HTML container остаётся eligible, если
+   Goldmark создаёт `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code spans,
+   fenced/indented code и unresolved/malformed references не переписываются.
+   Frontmatter использует `yaml.v3` только в supported lossless subset:
+   доказанные plain/single/double-quoted scalar keys и values поддерживаются;
+   flow mapping/sequence, literal/folded block scalar, explicit/custom tag,
+   direct anchor или complex key (Unsupported), alias/merge provenance и
+   duplicate semantic relations/type/target/id/anchor (Ambiguous), остальные
+   duplicate touched mapping keys (Unsupported), directives `%YAML`/`%TAG`, inner document/end
+   markers или multidoc внутри frontmatter и unprovable comment/range —
+   unsupported или ambiguous. Unrelated nonintersecting extension bytes могут
+   остаться lossless. Invalid UTF-8 и все эти случаи возвращают typed error
+   (`errors.Is(..., mutation.ErrUnsupportedPresentation)` /
+   `mutation.ErrAmbiguousPresentation`) без
+   stage. YAML задают только recognized outer frontmatter delimiters: thematic
+   `---` и setext underline в body — Markdown, не YAML multi-doc. MCP response
+   schema и CLI flags от этого не меняются.
+9. **Сохранять source ownership.** `bundle.Source` — core contract. Если
+   embedding code использует `bundle.SourceFromFS`, это non-owning adapter:
+   caller обязан удерживать стабильный snapshot `fs.FS` на весь срок
+   `Paths`/`ReadFile`. Overlay flat и делит только immutable staged payloads;
+   public reads остаются defensive, parent chain/HAMT отсутствуют.
 
 ---
 
