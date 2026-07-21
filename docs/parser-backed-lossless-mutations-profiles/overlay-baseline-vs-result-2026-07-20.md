@@ -1,30 +1,30 @@
-# Issue 002: overlay baseline vs result
+# Parser-backed lossless mutations: overlay baseline vs result
 
 Recorded 2026-07-20 on `darwin/arm64`, Apple M1 Max, Go 1.26.5. Both sides
-use `BenchmarkIssue002OverlayComparison`, the same 10,000-file fixtures,
+use `BenchmarkParserBackedOverlayComparison`, the same 10,000-file fixtures,
 256-byte staged payload, Go toolchain, hardware, `-benchtime=3x`, and
 `-count=3`. The table reports the median `ns/op`; allocation columns are the
 stable values reported by all three samples.
 
-The baseline is commit `43f7214` (`mutable`), before the Issue 002 working-tree
+The baseline is commit `43f7214` (`mutable`), before the parser-backed mutation
 implementation. The comparison benchmark is self-contained and was copied
 unchanged into an archive of that commit:
 
 ```sh
-mkdir /private/tmp/okf-issue002-baseline
-git archive 43f7214 | tar -x -C /private/tmp/okf-issue002-baseline
+mkdir /private/tmp/okf-parser-backed-baseline
+git archive 43f7214 | tar -x -C /private/tmp/okf-parser-backed-baseline
 cp mutation/overlay_comparison_benchmark_test.go \
-  /private/tmp/okf-issue002-baseline/mutation/overlay_comparison_benchmark_test.go
+  /private/tmp/okf-parser-backed-baseline/mutation/overlay_comparison_benchmark_test.go
 
-(cd /private/tmp/okf-issue002-baseline && \
+(cd /private/tmp/okf-parser-backed-baseline && \
   GOCACHE=/private/tmp/okf-go-cache-baseline \
   go test ./mutation -run '^$' \
-    -bench '^BenchmarkIssue002OverlayComparison$' \
+    -bench '^BenchmarkParserBackedOverlayComparison$' \
     -benchtime=3x -benchmem -count=3)
 
 GOCACHE=/private/tmp/okf-go-cache-result \
 go test ./mutation -run '^$' \
-  -bench '^BenchmarkIssue002OverlayComparison$' \
+  -bench '^BenchmarkParserBackedOverlayComparison$' \
   -benchtime=3x -benchmem -count=3
 ```
 

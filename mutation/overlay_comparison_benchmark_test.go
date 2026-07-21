@@ -7,8 +7,9 @@ import (
 	"testing"
 )
 
-// comparisonOverlaySource is deliberately self-contained so the same
-// benchmark can run against the pre-Issue-002 revision and the result tree.
+// comparisonOverlaySource is deliberately self-contained so the same benchmark
+// can run against baseline commit 43f7214, before the parser-backed mutation
+// implementation, and the result tree.
 type comparisonOverlaySource map[string][]byte
 
 func (s comparisonOverlaySource) Paths(context.Context) ([]string, error) {
@@ -28,7 +29,7 @@ func (s comparisonOverlaySource) ReadFile(_ context.Context, name string) ([]byt
 	return append([]byte(nil), data...), nil
 }
 
-func BenchmarkIssue002OverlayComparison(b *testing.B) {
+func BenchmarkParserBackedOverlayComparison(b *testing.B) {
 	const (
 		files        = 10_000
 		payloadBytes = 256

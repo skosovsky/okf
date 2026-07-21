@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 	"time"
 
@@ -237,7 +236,7 @@ func TestAdversarialLeaseCancellationAndCrossStoreCoherence(t *testing.T) {
 	if !errors.Is(openErr, context.Canceled) {
 		t.Fatalf("OpenContext() under held lease = %v, want cancellation", openErr)
 	}
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_UN); err != nil {
+	if err := testUnlockFile(lock); err != nil {
 		t.Fatal(err)
 	}
 	if err := lock.Close(); err != nil {
@@ -501,7 +500,7 @@ func adversarialExclusiveLock(t *testing.T, root string) *os.File {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+	if err := testLockExclusive(f); err != nil {
 		_ = f.Close()
 		t.Fatal(err)
 	}

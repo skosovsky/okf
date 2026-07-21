@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build (darwin && !ios) || (linux && !android)
 
 package fs
 
@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/skosovsky/okf/store"
 	"golang.org/x/sys/unix"
@@ -24,6 +25,24 @@ import (
 // openRootAfterReadCapability is an internal test seam between pinning the
 // mutation inode and opening the pathname-based read capability.
 var openRootAfterReadCapability func()
+
+func platformOpenError() error { return nil }
+
+func lockExclusive(f *os.File) error {
+	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+}
+
+func lockShared(f *os.File) error {
+	return syscall.Flock(int(f.Fd()), syscall.LOCK_SH|syscall.LOCK_NB)
+}
+
+func unlockFile(f *os.File) error {
+	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+}
+
+func leaseRetryable(err error) bool {
+	return errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK)
+}
 
 // openRootCapabilities walks every requested absolute path component from the
 // filesystem root with O_NOFOLLOW. The pinned descriptor is acquired before

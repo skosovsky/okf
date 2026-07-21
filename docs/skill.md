@@ -93,12 +93,17 @@ envelope is v2. It replans and revalidates a
 conflict at most twice; rejected writes return diagnostics and leave the bundle
 unchanged. The lease is advisory: raw editors do not coordinate, and raw
 readers can observe non-atomic multi-file renames during publication.
+The durable `store/fs` backend is a Darwin/Linux-only runtime contract. On
+Windows, Android, iOS, and other targets it is compile-safe and
+`Open`/`OpenContext` return `fs.ErrUnsupportedPlatform`; do not claim durable
+filesystem support there.
 Revisions default to `sha256:<lowercase-hex>`, but `fs.Config.HashAlgorithm`
+can replace the algorithm; Journal v5 binds it, so recovery requires the same
+configured algorithm.
 Staged durable payloads are bounded by `fs.Config`: 256 MiB per payload and
 1 GiB per transaction by default; recovery rejects an oversized manifest
 before allocating payload bytes.
-can replace the algorithm; Journal v5 binds it, so recovery requires the same
-configured algorithm. Every regular file under the bundle root is revision
+Every regular file under the bundle root is revision
 visible, including non-Markdown and reserved index/log files, except `.okf/**`;
 symlinks are never read or hashed, and the internal journal, receipts, and
 lease are excluded. Before changes, inspect context with

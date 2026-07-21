@@ -1,0 +1,150 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Test, vet, and module integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify downloaded modules
+        run: go mod verify
+      - name: Verify go.mod and go.sum are tidy
+        run: go mod tidy -diff
+      - name: Test whitespace gate
+        run: bash .github/scripts/check-whitespace_test.sh
+      - name: Check whitespace errors
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          MAIN_REF: refs/remotes/origin/main
+          REF_TYPE: ${{ github.ref_type }}
+        run: bash .github/scripts/check-whitespace.sh
+      - name: Vet packages
+        run: go vet ./...
+      - name: Test packages
+        run: go test ./...
+      - name: Build Linux packages
+        run: go build ./...
+
+  race:
+    name: Race detector (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Test packages with race detector
+        run: go test -race ./...
+
+  darwin:
+    name: Darwin durable backend
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Test platform-specific filesystem behavior
+        run: go test ./store/fs
+      - name: Build Darwin packages
+        run: go build ./...
+
+  unsupported-platform:
+    name: Unsupported platform contract (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build all packages for Windows
+        run: go build ./...
+      - name: Test typed unsupported-platform contract
+        run: go test ./store/fs -run "UnsupportedPlatform|CancellationPrecedesPlatform" -count=1
+
+  derived-platform:
+    name: Compile-safe derived platform (Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build all packages without selecting the Linux backend
+        env:
+          GOOS: android
+          GOARCH: arm64
+          CGO_ENABLED: "0"
+        run: go build ./...
+      - name: Assert Android selects the unsupported backend
+        env:
+          GOOS: android
+          GOARCH: arm64
+          CGO_ENABLED: "0"
+        run: |
+          files="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"
+          [[ " $files " == *" fd_unsupported.go "* ]]
+          [[ " $files " != *" fd_unix.go "* ]]
+      - name: Assert iOS selects the unsupported backend
+        env:
+          GOOS: ios
+          GOARCH: arm64
+          CGO_ENABLED: "1"
+        run: |
+          files="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"
+          [[ " $files " == *" fd_unsupported.go "* ]]
+          [[ " $files " != *" fd_unix.go "* ]]

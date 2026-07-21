@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -17,7 +18,11 @@ import (
 func TestFileSystemSourceSkipsAndRejectsSpecialFiles(t *testing.T) {
 	// Unix-domain socket paths have a small kernel limit (104 bytes on
 	// Darwin), so the usual testing temp path can be too long.
-	root, err := os.MkdirTemp("/private/tmp", "okf-src-")
+	tempBase := ""
+	if runtime.GOOS == "darwin" {
+		tempBase = "/private/tmp"
+	}
+	root, err := os.MkdirTemp(tempBase, "okf-src-")
 	if err != nil {
 		t.Fatalf("MkdirTemp() error = %v", err)
 	}

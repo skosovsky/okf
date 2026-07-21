@@ -279,6 +279,20 @@ not coordinate; raw readers may observe a multi-file rename while it is being
 published. The journal guarantees recovery, not distributed isolation. Use a
 different `store.Store` backend for distributed deployments.
 
+### Supported platforms
+
+`store/fs` provides its durable backend on Darwin and Linux. It uses
+descriptor-relative no-follow traversal, advisory leases, atomic rename, file
+and directory sync, and journal recovery, subject to runtime filesystem
+capability checks.
+
+On Windows and other targets the package remains compile-safe, but `Open` and
+`OpenContext` return `*fs.UnsupportedPlatformError`. Use
+`errors.Is(err, fs.ErrUnsupportedPlatform)` for classification and `errors.As`
+for the selected `GOOS` and `GOARCH`. The backend-neutral packages remain
+buildable. The complete executable matrix is documented in
+[Release engineering](release-engineering.md).
+
 `okf-mcp`'s `write_concept` uses staged strict/link/orphan validation and this
 durable cooperating-writer commit path. It does not claim distributed locking
 or isolation from raw filesystem edits. It derives a deterministic server-side

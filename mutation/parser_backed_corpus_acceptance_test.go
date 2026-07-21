@@ -11,10 +11,10 @@ import (
 	"github.com/skosovsky/okf/store"
 )
 
-// TestIssue002MarkdownCorpus is a deterministic, source-level complement to
+// TestParserBackedMarkdownCorpus is a deterministic, source-level complement to
 // FuzzRewriteMarkdownDestinations.  The expected tokens are deliberately raw:
 // they prove the exact span, including angle brackets and escaping.
-func TestIssue002MarkdownCorpus(t *testing.T) {
+func TestParserBackedMarkdownCorpus(t *testing.T) {
 	tests := []struct {
 		name, source string
 		want         []string
@@ -82,10 +82,10 @@ func TestIssue002MarkdownCorpus(t *testing.T) {
 	}
 }
 
-// TestIssue002YAMLPresentationCorpus covers parser -> resolver -> patch and
+// TestParserBackedYAMLPresentationCorpus covers parser -> resolver -> patch and
 // planner staging.  The rejection rows are intentionally planner-level so a
 // failure proves no partial Result escaped.
-func TestIssue002YAMLPresentationCorpus(t *testing.T) {
+func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 	t.Run("scalar-styles-crlf-utf8-comments-order-unknown", func(t *testing.T) {
 		for _, item := range []struct{ name, token string }{
 			{"plain", "old"}, {"single", "'old'"}, {"double-escaped", "\"old\""},
@@ -274,12 +274,12 @@ func TestIssue002YAMLPresentationCorpus(t *testing.T) {
 	})
 }
 
-// TestIssue002AllocationBaseline makes the payload-size allocation contract a
+// TestParserBackedAllocationBaseline makes the payload-size allocation contract a
 // stable gate in addition to the benchmark. Eight allocations is deliberately
 // a metadata-only ceiling: the measured clone baseline is five allocations,
 // and three allocations of slack permits harmless runtime/map variation while
 // still rejecting a payload-proportional copy.
-func TestIssue002AllocationBaseline(t *testing.T) {
+func TestParserBackedAllocationBaseline(t *testing.T) {
 	// Arrange.
 	small := cloneAllocsForPayload(64)
 	large := cloneAllocsForPayload(1 << 20)
