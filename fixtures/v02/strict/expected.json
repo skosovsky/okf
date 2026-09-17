@@ -1,0 +1,51 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "code": "generated_invalid",
+      "spec_ref": "okf-v0.2#5.2",
+      "file": "malformed-families.md",
+      "field_path": "generated",
+      "severity": "WARN",
+      "message": "'generated' should be a mapping"
+    },
+    {
+      "code": "sources_invalid",
+      "spec_ref": "okf-v0.2#5.1",
+      "file": "malformed-families.md",
+      "field_path": "sources",
+      "severity": "WARN",
+      "message": "'sources' should be a YAML sequence of mappings"
+    },
+    {
+      "code": "stale_after_invalid",
+      "spec_ref": "okf-v0.2#5.5",
+      "file": "malformed-families.md",
+      "field_path": "stale_after",
+      "severity": "WARN",
+      "message": "'stale_after' should be YYYY-MM-DD"
+    },
+    {
+      "code": "status_invalid",
+      "spec_ref": "okf-v0.2#5.4",
+      "file": "malformed-families.md",
+      "field_path": "status",
+      "severity": "WARN",
+      "message": "'status' should be draft, stable, or deprecated"
+    },
+    {
+      "code": "verified_invalid",
+      "spec_ref": "okf-v0.2#5.2",
+      "file": "malformed-families.md",
+      "field_path": "verified",
+      "severity": "WARN",
+      "message": "'verified' should be a mapping or sequence of mappings"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 5,
+    "info": 0
+  }
+}

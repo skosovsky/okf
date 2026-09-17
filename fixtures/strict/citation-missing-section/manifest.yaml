@@ -1,4 +1,4 @@
-description: "Citation markers require a Citations section in strict mode"
+description: "Numeric citation markers alone do not activate legacy Citations policy"
 run:
   path: "."
   strict: true
@@ -6,6 +6,4 @@ run:
   check_orphans: false
 expected:
   exit_code: 0
-  diagnostics:
-    - severity: "WARN"
-      message_contains: "citation markers require a bottom '# Citations' section"
+  diagnostics: []

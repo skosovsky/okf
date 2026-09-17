@@ -18,11 +18,11 @@ func platformOpenError() error {
 
 func lockExclusive(*os.File) error { return platformOpenError() }
 
-func lockShared(*os.File) error { return platformOpenError() }
-
 func unlockFile(*os.File) error { return platformOpenError() }
 
-func leaseRetryable(error) bool { return false }
+func rootLockRetryable(error) bool { return false }
+
+func openRootLockDescriptor(*os.File) (*os.File, error) { return nil, platformOpenError() }
 
 func openRootCapabilities(string) (*os.Root, *os.File, error) {
 	return nil, nil, platformOpenError()
@@ -30,6 +30,13 @@ func openRootCapabilities(string) (*os.Root, *os.File, error) {
 
 func openRootReadNoFollow(*os.Root, string, bool) (*os.File, error) {
 	return nil, platformOpenError()
+}
+
+func (s *Store) runDescriptorBarrier(operation string) error {
+	if s.descriptorBarrier != nil {
+		return s.descriptorBarrier(operation)
+	}
+	return nil
 }
 
 func (s *Store) fdOpen(string, int, os.FileMode) (*os.File, error) {
@@ -40,11 +47,17 @@ func (s *Store) fdLstat(string) (fs.FileInfo, error) {
 	return nil, platformOpenError()
 }
 
-func (s *Store) fdRemove(string) error { return platformOpenError() }
+func (s *Store) fdRemoveClaimOwned(claimsZonePath, fs.FileInfo, bool) (bool, error) {
+	return false, platformOpenError()
+}
 
-func (s *Store) fdRemoveDir(string) error { return platformOpenError() }
+func (s *Store) fdRemoveClaimOwnedMode(claimsZonePath, fs.FileInfo, bool, bool) (bool, error) {
+	return false, platformOpenError()
+}
 
-func (s *Store) fdRename(string, string) error { return platformOpenError() }
+func (s *Store) fdRenameGuarded(string, string, fs.FileInfo, mutationTargetIdentity) (fs.FileInfo, error) {
+	return nil, platformOpenError()
+}
 
 func (s *Store) fdSyncDir(string) error { return platformOpenError() }
 

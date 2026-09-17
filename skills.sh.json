@@ -4,7 +4,7 @@
   "groupings": [
     {
       "title": "Knowledge Formats",
-      "description": "Portable knowledge formats and bundle workflows for AI agents.",
+      "description": "Portable, version-aware knowledge bundle workflows for AI agents.",
       "skills": [
         "open-knowledge-format"
       ]

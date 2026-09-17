@@ -1,0 +1,9 @@
+description: "Canonical synthetic OKF v0.2 bundle exercises provenance, trust, lifecycle, and inert computation contracts"
+run:
+  path: "."
+  strict: true
+  check_links: true
+  check_orphans: true
+expected:
+  exit_code: 0
+  diagnostics: []

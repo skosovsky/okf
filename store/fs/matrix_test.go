@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/receiptprojection"
 	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
 )
@@ -79,11 +81,11 @@ func TestSemanticChangedRefsIncludesContentAndFragmentsInStableOrder(t *testing.
 	}
 
 	// Act.
-	got := relationRefStrings(semanticChangedRefs(base, current))
+	got := deriveChangedRefStrings(t, base, current)
 
 	// Assert. Repeating the comparison also guards map iteration order.
 	want := []string{"a", "a#new", "a#old", "b"}
-	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(relationRefStrings(semanticChangedRefs(base, current)), want) {
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(deriveChangedRefStrings(t, base, current), want) {
 		t.Fatalf("semantic changed refs = %v, want %v", got, want)
 	}
 }
@@ -104,13 +106,22 @@ func TestSemanticChangedRefsIncludesAddedAndDeletedConceptRefs(t *testing.T) {
 	}
 
 	// Act.
-	got := relationRefStrings(semanticChangedRefs(base, current))
+	got := deriveChangedRefStrings(t, base, current)
 
 	// Assert.
 	want := []string{"added", "added#new", "deleted", "deleted#old"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("semantic changed refs = %v, want %v", got, want)
 	}
+}
+
+func deriveChangedRefStrings(t *testing.T, base, target *snapshot) []string {
+	t.Helper()
+	projection, err := receiptprojection.Derive(context.Background(), base.concepts, target.concepts)
+	if err != nil {
+		t.Fatalf("receiptprojection.Derive() error = %v", err)
+	}
+	return relationRefStrings(projection.ChangedRefs)
 }
 
 func TestCommitReceiptChangedRefsDescribeStagedSemanticDiff(t *testing.T) {
@@ -155,10 +166,11 @@ func TestCommitReceiptChangedRefsDescribeStagedSemanticDiff(t *testing.T) {
 			for path, content := range tt.files {
 				writeTestFile(t, root, path, content)
 			}
-			s, err := Open(root, Config{})
+			s, err := openObserved(root, Config{})
 			if err != nil {
 				t.Fatal(err)
 			}
+			registerStoreCleanup(t, s)
 			base := adversarialSnapshot(t, s)
 			change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "semantic-" + store.ChangeSetID(tt.name), Actor: "tester", BaseRevision: base.Revision(), Operations: tt.operations}
 
@@ -218,10 +230,11 @@ func TestReplaceConceptReceiptChangedRefsDescribeContentAndAddedConcepts(t *test
 	// Arrange.
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "---\ntype: Note\nparts:\n  - id: old\n---\nA\n")
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	parse := func(raw string) bundle.Document {
 		t.Helper()
 		document, err := bundle.ParseDocument(raw)
@@ -312,10 +325,11 @@ func TestReplaceConceptCreateUpdateRejectsStaleAndPreservesModes(t *testing.T) {
 	if err := os.Chmod(filepath.Join(root, "existing.md"), 0o640); err != nil {
 		t.Fatal(err)
 	}
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	parse := func(text string) bundle.Document {
 		d, err := bundle.ParseDocument(text)
 		if err != nil {
@@ -422,10 +436,11 @@ func TestReplaceConceptProjectsBlockingRelationDiagnosticsLikePreview(t *testing
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nOriginal\n")
 	writeTestFile(t, root, "target.md", "---\ntype: Note\nparts:\n  - id: duplicate\n  - id: duplicate\n---\nTarget\n")
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	base := adversarialSnapshot(t, s)
 	before, err := os.ReadFile(filepath.Join(root, "a.md"))
 	if err != nil {
@@ -465,10 +480,11 @@ func TestReplaceConceptProjectsBlockingRelationDiagnosticsLikePreview(t *testing
 func TestReplaceConceptReplaysBeforeStaleCASAndAcrossStores(t *testing.T) {
 	// Arrange.
 	root, first := adversarialStore(t, Config{})
-	second, err := Open(root, Config{})
+	second, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, second)
 	base := adversarialSnapshot(t, first)
 	doc, err := bundle.ParseDocument(adversarialDocument("replacement"))
 	if err != nil {
@@ -517,10 +533,11 @@ func TestReplaceConceptConcurrentCrossStoreRetryReplaysReceipt(t *testing.T) {
 		}
 		return nil
 	}})
-	second, err := Open(root, Config{})
+	second, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, second)
 	base := adversarialSnapshot(t, first)
 	doc, err := bundle.ParseDocument(adversarialDocument("concurrent replacement"))
 	if err != nil {
@@ -562,10 +579,11 @@ func TestPostJournalFaultMatrixRecoversToValidPreOrPostState(t *testing.T) {
 			root := t.TempDir()
 			writeTestFile(t, root, "old.md", adversarialDocument("old"))
 			fired := false
-			s, err := Open(root, Config{})
+			s, err := openObserved(root, Config{})
 			if err != nil {
 				t.Fatal(err)
 			}
+			registerStoreCleanup(t, s)
 			base := adversarialSnapshot(t, s)
 			s.config.PostFault = func(got Step) error {
 				if got == step && !fired {
@@ -582,19 +600,21 @@ func TestPostJournalFaultMatrixRecoversToValidPreOrPostState(t *testing.T) {
 			if err == nil || !fired {
 				t.Fatalf("publish error=%v fired=%v", err, fired)
 			}
-			// Snapshot is an observation boundary, not a raw filesystem probe. Once
-			// the journal pathname has been published, the same Store completes its
-			// recorded post-state before returning. Earlier temp-file boundaries do
-			// not have a journal to recover and retain the pre-state.
-			if step == StepJournalRename || step == StepJournalDirectorySync {
+			// The physical transaction-directory sync, not rename visibility, owns
+			// the commit. Snapshot converges only a durable journal; an interrupted
+			// pre-boundary rename is cleaned as an atomic abort.
+			if step == StepJournalDirectorySync {
 				if got := adversarialSnapshot(t, s).Revision(); got != next.Revision() {
 					t.Fatalf("published journal fault %s observed %s, want post-state %s", step, got, next.Revision())
 				}
 			}
-			reopened, openErr := Open(root, Config{})
+			// Keep the faulted handle open to model recovery after an abrupt
+			// process stop; registered cleanup runs after recovery assertions.
+			reopened, openErr := openObserved(root, Config{})
 			if openErr != nil {
 				t.Fatalf("reopen = %v", openErr)
 			}
+			registerStoreCleanup(t, reopened)
 			snap := adversarialSnapshot(t, reopened)
 			if snap.Revision() != next.Revision() {
 				// A failure before the journal is deliberately an atomic abort.
@@ -610,23 +630,42 @@ func TestPostJournalFaultMatrixRecoversToValidPreOrPostState(t *testing.T) {
 func TestWriteFileSyncsNewNestedDirectoriesBottomUp(t *testing.T) {
 	root := t.TempDir()
 	var synced []string
-	s, err := Open(root, Config{DirectorySync: func(dir string) error { synced = append(synced, dir); return nil }})
+	s, err := openObserved(root, Config{DirectorySync: func(dir string) error { synced = append(synced, dir); return nil }})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	// Ignore Open's metadata setup; this is the new visible directory tree.
 	synced = nil
-	if err := s.writeFile("one/two/concept.md", []byte(adversarialDocument("nested"))); err != nil {
+	if err := s.writeFileForTest(context.Background(), "one/two/concept.md", []byte(adversarialDocument("nested"))); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"one/two", "one", "one", ".", "one/two"}
-	if len(synced) != len(want) {
-		t.Fatalf("sync calls = %#v, want %#v", synced, want)
+	publicSyncs := make([]string, 0, len(synced))
+	for _, dir := range synced {
+		if dir == claimDirectory || strings.HasPrefix(dir, claimDirectory+"/") || dir == internalDirectory {
+			continue
+		}
+		if dir == "." && len(publicSyncs) > 0 && publicSyncs[len(publicSyncs)-1] == "." {
+			continue // R5 private-root repair owns this adjacent barrier.
+		}
+		publicSyncs = append(publicSyncs, dir)
+	}
+	want := []string{"one/two", "one", "one", ".", temporaryDirectory, "one/two"}
+	if len(publicSyncs) != len(want) {
+		t.Fatalf("public sync calls = %#v, want %#v; full=%#v", publicSyncs, want, synced)
 	}
 	for i := range want {
-		if synced[i] != want[i] {
-			t.Fatalf("sync call %d = %q, want %q; all=%#v", i, synced[i], want[i], synced)
+		if publicSyncs[i] != want[i] {
+			t.Fatalf("public sync call %d = %q, want %q; all=%#v", i, publicSyncs[i], want[i], synced)
 		}
+	}
+	got, readErr := os.ReadFile(filepath.Join(root, "one", "two", "concept.md"))
+	if readErr != nil || !bytes.Equal(got, []byte(adversarialDocument("nested"))) {
+		t.Fatalf("visible result read=%v bytes=%q", readErr, got)
+	}
+	claims, readErr := os.ReadDir(filepath.Join(root, filepath.FromSlash(claimDirectory)))
+	if readErr != nil || len(claims) != 0 {
+		t.Fatalf("claim residue read=%v entries=%v", readErr, claims)
 	}
 }
 
@@ -652,10 +691,11 @@ func TestCommitCancellationImmediatelyBeforeJournalAbortsWithoutPublication(t *t
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Fatalf("Commit() = %v, want cancellation", err)
 	}
-	reopened, err := Open(root, Config{})
+	reopened, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, reopened)
 	if got := adversarialSnapshot(t, reopened).Revision(); got != base.Revision() {
 		t.Fatalf("published revision = %s, want %s", got, base.Revision())
 	}

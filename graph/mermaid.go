@@ -1,8 +1,9 @@
 package graph
 
 import (
-	"fmt"
+	"context"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/skosovsky/okf/bundle"
@@ -10,59 +11,190 @@ import (
 
 // RenderMermaid writes a Mermaid graph export.
 func RenderMermaid(w io.Writer, b *bundle.Bundle) error {
-	nodes := mermaidNodeAllocator{
-		labels: make(map[string]string),
-	}
+	return RenderMermaidContext(context.Background(), w, b)
+}
 
-	if err := writeln(w, "graph LR"); err != nil {
+// RenderMermaidContext writes a Mermaid graph export with cancellation.
+func RenderMermaidContext(ctx context.Context, w io.Writer, b *bundle.Bundle) error {
+	return RenderMermaidWithOptionsContext(ctx, w, b, Options{Profile: ProjectionProfileLegacyV01})
+}
+
+// RenderMermaidWithOptions writes a Mermaid graph export using explicit
+// rendering options.
+func RenderMermaidWithOptions(w io.Writer, b *bundle.Bundle, options Options) error {
+	return RenderMermaidWithOptionsContext(context.Background(), w, b, options)
+}
+
+// RenderMermaidWithOptionsContext writes a Mermaid graph export using
+// explicit rendering options and a cancellable request context.
+func RenderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bundle, options Options) error {
+	return renderTransactionalContext(ctx, w, func(spool io.Writer) error {
+		return renderMermaidWithOptionsContext(ctx, spool, b, options)
+	})
+}
+
+func renderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bundle, options Options) error {
+	if err := checkGraphContext(ctx); err != nil {
 		return err
 	}
-	for _, concept := range b.Concepts() {
-		links := b.LinksFrom(concept.ID)
-		relations := b.SemanticLinksFrom(concept.ID)
+	options, err := normalizeOptions(options)
+	if err != nil {
+		return err
+	}
+	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+		return err
+	}
+	nodes := mermaidNodeAllocator{}
+
+	if err := writelnContext(ctx, w, "graph LR"); err != nil {
+		return err
+	}
+	concepts, err := graphConceptsContext(ctx, b)
+	if err != nil {
+		return err
+	}
+	for index, concept := range concepts {
+		if index%graphContextCheckInterval == 0 {
+			if err := checkGraphContext(ctx); err != nil {
+				return err
+			}
+		}
+		links, err := b.LinksFromContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
+		var relations []bundle.Relation
+		if options.ExtensionRelations == ExtensionRelationsInclude {
+			relations, err = b.SemanticLinksFromContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
+		}
 		if len(links) == 0 && len(relations) == 0 {
 			continue
 		}
-		for _, link := range links {
-			source := nodes.node(concept.ID.String())
-			target := nodes.node(link.Target.String())
+		if options.AnnotateTopology {
+			annotation, err := topologyAnnotationContext(ctx, concept.Document, options)
+			if err != nil {
+				return err
+			}
+			conceptID, err := graphConceptIDContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
+			if err := writefContext(ctx, w, "  %%%% %s %s\n", conceptID, annotation); err != nil {
+				return err
+			}
+		}
+		for linkIndex, link := range links {
+			if linkIndex%graphContextCheckInterval == 0 {
+				if err := checkGraphContext(ctx); err != nil {
+					return err
+				}
+			}
+			sourceLabel, err := graphConceptIDContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
+			targetLabel, err := graphConceptIDContext(ctx, link.Target)
+			if err != nil {
+				return err
+			}
+			source, err := nodes.nodeContext(ctx, sourceLabel)
+			if err != nil {
+				return err
+			}
+			target, err := nodes.nodeContext(ctx, targetLabel)
+			if err != nil {
+				return err
+			}
 			if link.Exists {
-				if err := writef(w, "  %s --> %s\n", source, target); err != nil {
+				if err := writefContext(ctx, w, "  %s --> %s\n", source, target); err != nil {
 					return err
 				}
 				continue
 			}
-			if err := writef(w, "  %s -.->|\"404\"| %s\n", source, target); err != nil {
+			if err := writefContext(ctx, w, "  %s -.->|\"404\"| %s\n", source, target); err != nil {
 				return err
 			}
 		}
-		for _, relation := range relations {
-			source := nodes.node(relation.Source.String())
-			target := nodes.node(relation.Target.String())
-			if err := writef(w, "  %s -->|\"%s\"| %s\n", source, mermaidLabel(relation.Type), target); err != nil {
+		for relationIndex, relation := range relations {
+			if relationIndex%graphContextCheckInterval == 0 {
+				if err := checkGraphContext(ctx); err != nil {
+					return err
+				}
+			}
+			sourceLabel, err := graphRelationRefContext(ctx, relation.Source)
+			if err != nil {
+				return err
+			}
+			targetLabel, err := graphRelationRefContext(ctx, relation.Target)
+			if err != nil {
+				return err
+			}
+			source, err := nodes.nodeContext(ctx, sourceLabel)
+			if err != nil {
+				return err
+			}
+			target, err := nodes.nodeContext(ctx, targetLabel)
+			if err != nil {
+				return err
+			}
+			label, err := mermaidLabelContext(ctx, relation.Type)
+			if err != nil {
+				return err
+			}
+			if err := writefContext(ctx, w, "  %s -->|\"%s\"| %s\n", source, label, target); err != nil {
 				return err
 			}
 		}
 	}
-	return nil
+	return checkGraphContext(ctx)
 }
 
 type mermaidNodeAllocator struct {
-	labels map[string]string
-	order  []string
+	labels []string
 }
 
-func (a *mermaidNodeAllocator) node(label string) string {
-	id, ok := a.labels[label]
-	if !ok {
-		id = fmt.Sprintf("n%d", len(a.order))
-		a.labels[label] = id
-		a.order = append(a.order, label)
+func (a *mermaidNodeAllocator) nodeContext(ctx context.Context, label string) (string, error) {
+	index := -1
+	for candidate, existing := range a.labels {
+		result, err := compareGraphStringsContext(ctx, existing, label)
+		if err != nil {
+			return "", err
+		}
+		if result == 0 {
+			index = candidate
+			break
+		}
 	}
-	return fmt.Sprintf("%s[%q]", id, mermaidLabel(label))
+	if index < 0 {
+		index = len(a.labels)
+		a.labels = append(a.labels, label)
+	}
+	escaped, err := mermaidLabelContext(ctx, label)
+	if err != nil {
+		return "", err
+	}
+	var node strings.Builder
+	if err := writefContext(ctx, &node, "n%s[%q]", strconv.Itoa(index), escaped); err != nil {
+		return "", err
+	}
+	if err := checkGraphContext(ctx); err != nil {
+		return "", err
+	}
+	return node.String(), nil
 }
 
 func mermaidLabel(label string) string {
+	value, _ := mermaidLabelContext(context.Background(), label)
+	return value
+}
+
+func mermaidLabelContext(ctx context.Context, label string) (string, error) {
+	if err := checkGraphContext(ctx); err != nil {
+		return "", err
+	}
 	replacer := strings.NewReplacer(
 		"&", "&amp;",
 		"\"", "&quot;",
@@ -71,5 +203,16 @@ func mermaidLabel(label string) string {
 		"\t", " ",
 		"]", "&#93;",
 	)
-	return replacer.Replace(label)
+	var out strings.Builder
+	for offset := 0; offset < len(label); offset += graphContextCheckInterval {
+		if err := checkGraphContext(ctx); err != nil {
+			return "", err
+		}
+		end := min(offset+graphContextCheckInterval, len(label))
+		out.WriteString(replacer.Replace(label[offset:end]))
+	}
+	if err := checkGraphContext(ctx); err != nil {
+		return "", err
+	}
+	return out.String(), nil
 }

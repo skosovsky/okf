@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/preview_v02_migration.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_path", "timestamp_policy", "citation_mappings"],
+  "properties": {
+    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "from": {"enum": ["auto", "0.1", "0.2"], "default": "auto"},
+    "generated_by": {"type": "string", "maxLength": 256},
+    "generated_at": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["concept_id", "at"],
+        "properties": {
+          "concept_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "at": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "timestamp_conflict_policy": {
+      "enum": ["reject", "use_generated", "use_timestamp"],
+      "default": "reject"
+    },
+    "timestamp_policy": {"enum": ["preserve", "remove_after_copy"]},
+    "citation_mappings": {"$ref": "#/$defs/citation_mappings"},
+    "computations": {"$ref": "#/$defs/computations"}
+  }
+}

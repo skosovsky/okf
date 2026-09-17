@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/preview_concept_patch.output.schema.json",
+  "$comment": "Applicable previews advance the revision and noop previews preserve it; sibling revision comparison and canonical affected_paths ordering are enforced by the MCP output invariant because JSON Schema cannot compare sibling values or reuse the Go revision-path grammar.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "base_revision", "result_revision", "plan_digest", "diff", "diff_truncated", "affected_paths", "diagnostics", "unknown_preserved"],
+  "properties": {
+    "status": {"enum": ["applicable", "noop", "rejected"]},
+    "base_revision": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "result_revision": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"},
+    "plan_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "diff": {"type": "string", "maxLength": 1048576},
+    "diff_truncated": {"type": "boolean"},
+    "affected_paths": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "file", "field", "message", "spec_ref", "policy_failure"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["ERROR", "WARN", "INFO"]},
+          "file": {"type": "string"},
+          "field": {"type": "string"},
+          "message": {"type": "string"},
+          "spec_ref": {"type": "string"},
+          "policy_failure": {"type": "boolean"}
+        }
+      }
+    },
+    "unknown_preserved": {"type": "boolean"}
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "status": {"const": "applicable"},
+        "result_revision": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "diff": {"type": "string", "minLength": 1},
+        "affected_paths": {"type": "array", "minItems": 1},
+        "diagnostics": {
+          "type": "array",
+          "not": {
+            "contains": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["severity"],
+              "properties": {"severity": {"const": "ERROR"}}
+            }
+          }
+        },
+        "unknown_preserved": {"const": true}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "noop"},
+        "result_revision": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "diff": {"const": ""},
+        "diff_truncated": {"const": false},
+        "affected_paths": {"type": "array", "maxItems": 0},
+        "diagnostics": {
+          "type": "array",
+          "not": {
+            "contains": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["severity"],
+              "properties": {"severity": {"const": "ERROR"}}
+            }
+          }
+        },
+        "unknown_preserved": {"const": true}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "rejected"},
+        "result_revision": {"type": "null"},
+        "diff": {"const": ""},
+        "diff_truncated": {"const": false},
+        "affected_paths": {"type": "array", "maxItems": 0},
+        "diagnostics": {
+          "type": "array",
+          "minItems": 1,
+          "contains": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["severity"],
+            "properties": {"severity": {"const": "ERROR"}}
+          }
+        },
+        "unknown_preserved": {"const": false}
+      }
+    }
+  ]
+}

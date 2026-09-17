@@ -1,0 +1,37 @@
+spec_lock: spec-lock.json
+legacy_inventory: legacy-inventory.yaml
+provenance_inventory: provenance.yaml
+conformance_evidence: conformance-evidence.yaml
+cases:
+  minimal_v02: positive/minimal
+  appendix_a_v02: positive/appendix-a
+  canonical_synthetic_v02: positive/canonical
+  durability_v02: positive/durability
+  human_authored_unverified: positive/canonical/human-authored.md
+  multiple_sources_keyed_footnotes: positive/canonical/multiple-sources.md
+  lifecycle_draft: positive/canonical/draft.md
+  lifecycle_stable_default: positive/canonical/stable.md
+  lifecycle_deprecated: positive/canonical/deprecated.md
+  lifecycle_fresh_before_boundary: positive/appendix-a/computations/revenue.md
+  lifecycle_stale_exact_boundary: positive/appendix-a/computations/profit.md
+  inline_attested_computation: positive/canonical/computations/inline.md
+  file_backed_computation: positive/canonical/computations/file.md
+  narrative_computation_links: positive/canonical/metric.md
+  verified_bare: positive/canonical/verified-bare.md
+  verified_list: positive/canonical/verified-list.md
+  v01_declared: compat/declared-v01
+  v01_undeclared: compat/undeclared-v01
+  mixed_legacy_v02: compat/mixed-provenance
+  unknown_future: compat/future-version
+  strict_malformed_families: strict
+  strict_footnote_ownership: strict-footnote-integrity
+  strict_scalar_family_boundaries: strict-boundaries/families
+  strict_selector_boundary: strict-boundaries/selector-invalid
+  malformed_root_version_syntax: strict-boundaries/declaration-malformed-string
+  malformed_root_version_type: strict-boundaries/declaration-malformed-type
+  adversarial_optional_shapes: adversarial/optional-shapes
+  adversarial_untrusted_signals: adversarial/trust-signals
+  adversarial_inert_executor_policy_bypass: adversarial/inert-executor
+  forward_compatible_unknown_extension: adversarial/unknown-extension
+  lifecycle_structured_state_overrides_body_promotion: adversarial/lifecycle-self-promotion/structured-deprecated-stale.md
+  lifecycle_body_claims_are_inert: adversarial/lifecycle-self-promotion/body-only-claims.md

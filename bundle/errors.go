@@ -32,3 +32,33 @@ var ErrInvalidRelationType = errors.New("invalid relation type")
 
 // ErrInvalidRelationFragment marks an invalid semantic resource fragment.
 var ErrInvalidRelationFragment = errors.New("invalid relation fragment")
+
+// ErrUnsupportedVersionSelector marks an explicit selector the read layer
+// cannot assert.
+var ErrUnsupportedVersionSelector = errors.New("unsupported OKF version selector")
+
+// ErrVersionConflict marks an explicit selector that conflicts with the
+// version declared by the bundle.
+var ErrVersionConflict = errors.New("OKF version selector conflicts with declaration")
+
+// ErrInvalidVersionDeclaration marks a non-canonical <major>.<minor> value.
+var ErrInvalidVersionDeclaration = errors.New("invalid OKF version declaration")
+
+// ErrInvalidYAMLUint64 marks an invalid, negative, or overflowing YAML integer
+// for a non-negative uint64 domain field.
+var ErrInvalidYAMLUint64 = errors.New("invalid non-negative YAML uint64")
+
+// ErrUnknownSemanticFamily marks a request outside the restricted standard
+// family observation surface.
+var ErrUnknownSemanticFamily = errors.New("unknown semantic family")
+
+// ErrDocumentConflict marks a stale, concurrently replaced, closed, or
+// already-consumed path-scoped document session. Callers must open a fresh
+// session instead of retrying publication from an obsolete capture.
+var ErrDocumentConflict = errors.New("document rewrite conflict")
+
+// ErrPublicationCommitted marks a publication error returned after the exact
+// document or complete index batch was durably installed and passed its commit
+// validation. Cleanup may be pending; callers must not blindly retry the write
+// and may reopen the bundle to converge retained transaction evidence.
+var ErrPublicationCommitted = errors.New("publication committed")

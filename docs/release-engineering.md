@@ -61,9 +61,10 @@ A release record must link its issue, reviewable diff, commits, CI run, existing
 annotated tag, verification evidence, and any remaining follow-ups. Closing
 comments must use those artifacts rather than an unlinked completion claim.
 
-The `v0.2.0` release notes are tracked in
-[`releases/v0.2.0.md`](releases/v0.2.0.md). Parser-backed mutation verification
-is tracked separately in
+The existing `v0.2.0` release notes are tracked in
+[`releases/v0.2.0.md`](releases/v0.2.0.md). The current unreleased work planned
+for `v0.2.2` is tracked in [`releases/v0.2.2.md`](releases/v0.2.2.md); that page
+does not imply that the future tag exists. Parser-backed mutation verification is tracked separately in
 [`parser-backed-lossless-mutations-evidence.md`](parser-backed-lossless-mutations-evidence.md).
 The issue #2 requirement map is
 [`issue-2-release-engineering-evidence.md`](issue-2-release-engineering-evidence.md).

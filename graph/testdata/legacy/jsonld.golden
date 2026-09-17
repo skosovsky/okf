@@ -1,0 +1,43 @@
+{
+  "@context": {
+    "bundle": "local:bundle:",
+    "description": "okf:description",
+    "exists": "okf:exists",
+    "okf": "https://okf.io/ontology/v0.1#",
+    "references": "okf:references",
+    "resource": "okf:resource",
+    "tags": "okf:tags",
+    "target": {
+      "@id": "okf:target",
+      "@type": "@id"
+    },
+    "timestamp": "okf:timestamp",
+    "title": "okf:title",
+    "type": "okf:type"
+  },
+  "@graph": [
+    {
+      "@id": "bundle:a",
+      "@type": "okf:Concept",
+      "description": "Alpha",
+      "references": [
+        {
+          "@type": "okf:Reference",
+          "target": "bundle:b",
+          "exists": true
+        }
+      ],
+      "tags": [
+        "a"
+      ],
+      "timestamp": "2026-06-21T00:00:00Z",
+      "title": "A",
+      "type": "Note"
+    },
+    {
+      "@id": "bundle:b",
+      "@type": "okf:Concept",
+      "type": "Note"
+    }
+  ]
+}

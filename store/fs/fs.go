@@ -1,9 +1,10 @@
 // Package fs implements the durable, single-filesystem store backend on Darwin
 // and Linux.
 //
-// It deliberately uses an advisory lease: editors which bypass this package can
-// observe a multi-file transaction in progress.  On the next Open, an unfinished
-// journal is deterministically completed to its recorded post-state.
+// It deliberately uses an advisory root-inode lock: editors which bypass this package can
+// observe a multi-file transaction in progress. Before the next Store
+// observation or mutation, an unfinished journal is deterministically
+// completed to its recorded post-state.
 //
 // The package is compile-safe on other platforms, but Open and OpenContext
 // return *UnsupportedPlatformError there. No durable filesystem guarantees are
@@ -36,12 +37,16 @@ import (
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/receiptprojection"
 	"github.com/skosovsky/okf/mutation"
 	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
 )
 
-const internalDirectory = ".okf"
+const (
+	internalDirectory  = ".okf"
+	temporaryDirectory = internalDirectory + "/temporary"
+)
 
 // ErrUnsupportedPlatform identifies a platform for which this package has no
 // durable filesystem backend. Callers can use errors.Is without parsing error
@@ -87,17 +92,56 @@ const (
 	DefaultMaxStagedTransactionBytes int64 = 1 << 30
 	// DefaultMaxStagedFiles is both the public transaction bound and the v5
 	// payload-ordinal ceiling: payload-00000 through payload-99999.
-	DefaultMaxStagedFiles int    = 100_000
-	maxStagedPayloadBytes int64  = 1 << 40
-	replayFormatVersion   uint16 = 1
-	replayAlgorithm              = "sha256"
-	replayDomain                 = "okf:replace-concept-replay:v1"
-	maxReplayBytes               = 1 << 20
-	maxReplayDiagnostics         = 4096
-	maxReplayRefs                = 256
-	maxReplayScannedFiles        = 1_000_000
-	maxReplayString              = 16 << 10
+	DefaultMaxStagedFiles     int    = 100_000
+	maxStagedPayloadBytes     int64  = 1 << 40
+	maxStagedTransactionBytes int64  = 1 << 40
+	replayFormatVersion       uint16 = 1
+	replayAlgorithm                  = "sha256"
+	replayDomain                     = "okf:replace-concept-replay:v1"
+	maxReplayBytes                   = 1 << 20
+	maxReplayDiagnostics             = 4096
+	maxReplayRefs                    = 256
+	maxReplayScannedFiles            = 1_000_000
+	maxReplayString                  = 16 << 10
 )
+
+type stagedManifestLimits struct {
+	maxFiles            int
+	maxPayloadBytes     int64
+	maxTransactionBytes int64
+}
+
+// journalManifestByteLimits keeps the immutable v5 wire ceiling distinct from
+// an effective writer/recovery policy. Production binds both to the same
+// ceiling; tests may lower either side without mutable globals or large
+// allocations.
+type journalManifestByteLimits struct {
+	absolute  int
+	effective int
+}
+
+func productionJournalManifestByteLimits() journalManifestByteLimits {
+	return journalManifestByteLimits{
+		absolute:  maxJournalManifestRead,
+		effective: maxJournalManifestRead,
+	}
+}
+
+func absoluteStagedManifestLimits() stagedManifestLimits {
+	return stagedManifestLimits{
+		maxFiles:            DefaultMaxStagedFiles,
+		maxPayloadBytes:     maxStagedPayloadBytes,
+		maxTransactionBytes: maxStagedTransactionBytes,
+	}
+}
+
+func configuredStagedManifestLimits(config Config) stagedManifestLimits {
+	return stagedManifestLimits{
+		maxFiles:            config.MaxStagedFiles,
+		maxPayloadBytes:     config.MaxStagedPayloadBytes,
+		maxTransactionBytes: config.MaxStagedTransactionBytes,
+	}
+}
 
 const (
 	// MinReceiptRetention is the smallest non-default receipt retention period.
@@ -111,7 +155,7 @@ const (
 	MaxReceiptCount = 1_000_000
 )
 
-// Config controls bounded lease acquisition and receipt retention.
+// Config controls bounded root-lock acquisition and receipt retention.
 type Config struct {
 	LeaseTimeout time.Duration
 	// HashAlgorithm optionally replaces SHA-256 for snapshot materialization.
@@ -151,25 +195,6 @@ type Config struct {
 // Step identifies a fault-injectable durable filesystem boundary.
 type Step string
 
-// durableFaultInventory is the canonical list of transaction-protocol
-// boundaries that require deterministic fault coverage. Keep it beside Step
-// declarations so a new durable hook cannot hide in an unrelated test.
-func durableFaultInventory() []Step {
-	return []Step{
-		// Generic visible-file boundaries. These remain production boundaries even
-		// where metadata paths use a more specific Step below.
-		StepMkdir, StepChmod, StepFileWrite, StepFileSync, StepFileClose, StepRename, StepRemove, StepDirectorySync,
-		StepJournalWrite, StepJournalFileWrite, StepJournalFileSync, StepJournalFileClose, StepJournalRename, StepJournalDirectorySync,
-		StepStageFileWrite, StepStageFileSync, StepStageFileClose, StepStageRename, StepStageDirectorySync,
-		StepCapabilityMkdir, StepCapabilityChmod, StepCapabilityFileWrite, StepCapabilityFileSync, StepCapabilityFileClose, StepCapabilityRename, StepCapabilityRemove, StepCapabilityDirectorySync,
-		StepReceiptWrite, StepReceiptSync, StepReceiptClose, StepReceiptRename, StepReceiptDirectorySync, StepReceiptPrune,
-		StepPrivateMetadataSync, StepPrivateMetadataClose,
-		StepPrivateDirectoryChmod, StepPrivateDirectorySync, StepPrivateDirectoryClose, StepPrivateDirectoryParentSync,
-		StepStageCleanupPayloadRemove, StepStageCleanupPayloadDirectory, StepStageCleanupPayloadDirRemove, StepStageCleanupStageDirectory, StepStageCleanupStageDirRemove, StepStageCleanupRootDirectory,
-		StepTempCleanupRemove, StepTempCleanupDirectorySync,
-	}
-}
-
 const (
 	StepJournalWrite     Step = "journal_write"
 	StepJournalFileWrite Step = "journal_file_write"
@@ -204,6 +229,7 @@ const (
 	StepStageCleanupRootDirectory    Step = "stage_cleanup_root_directory_sync"
 	StepTempCleanupRemove            Step = "temp_cleanup_remove"
 	StepTempCleanupDirectorySync     Step = "temp_cleanup_directory_sync"
+	StepClaimDirectorySync           Step = "claim_directory_sync"
 	StepMkdir                        Step = "mkdir"
 	StepChmod                        Step = "chmod"
 	StepFileWrite                    Step = "file_write"
@@ -254,6 +280,13 @@ func (c Config) withDefaults() Config {
 	if c.MaxStagedFiles == 0 {
 		c.MaxStagedFiles = d.MaxStagedFiles
 	}
+	// Store configuration is immutable after binding. Copy the entire value,
+	// rather than selecting exported fields, so validator-owned internal
+	// checkpoints are frozen together with the public validation policy.
+	if c.ValidatorConfig != nil {
+		frozen := *c.ValidatorConfig
+		c.ValidatorConfig = &frozen
+	}
 	return c
 }
 
@@ -269,7 +302,7 @@ func (c Config) Validate() error {
 	if c.MinimumReceipts < MinReceiptCount || c.MinimumReceipts > MaxReceiptCount {
 		return fmt.Errorf("fs store: minimum receipts must be in [%d, %d]", MinReceiptCount, MaxReceiptCount)
 	}
-	if c.MaxStagedPayloadBytes <= 0 || c.MaxStagedPayloadBytes > maxStagedPayloadBytes || c.MaxStagedTransactionBytes < c.MaxStagedPayloadBytes || c.MaxStagedTransactionBytes > maxStagedPayloadBytes {
+	if c.MaxStagedPayloadBytes <= 0 || c.MaxStagedPayloadBytes > maxStagedPayloadBytes || c.MaxStagedTransactionBytes < c.MaxStagedPayloadBytes || c.MaxStagedTransactionBytes > maxStagedTransactionBytes {
 		return errors.New("fs store: invalid staged payload limits")
 	}
 	if c.MaxStagedFiles <= 0 || c.MaxStagedFiles > DefaultMaxStagedFiles {
@@ -312,10 +345,6 @@ func (a cachedHashAlgorithm) NewContext(ctx context.Context) (hash.Hash, error) 
 
 // Store is a durable Store rooted at one bundle directory.
 type Store struct {
-	// root is retained only for diagnostics and backwards-compatible test
-	// helpers. All store I/O is relative to rootFD, which pins the directory
-	// selected at Open even if its pathname is subsequently replaced.
-	root   string
 	rootFD *os.Root
 	// dirFD is the descriptor-relative mutation capability.  Never turn a
 	// validated relative name back into a pathname for a mutating operation.
@@ -328,16 +357,49 @@ type Store struct {
 	// unexported so callers cannot weaken atomic publication; tests can model
 	// POSIX-legal short writes (n < len(p), nil error).
 	write func(*os.File, []byte) (int, error)
+	// fileSync and directorySync are bound by Open before any private metadata
+	// setup. Production binds the real sync syscalls; exhaustive same-process
+	// crash matrices may substitute only these physical acknowledgements while
+	// retaining every fault hook and real namespace/content operation.
+	fileSync      func(*os.File) error
+	directorySync func(*Store, string) error
+	// closeRead is a Store-local observation seam for pinned recovery readers.
+	// Production leaves it nil and closes the descriptor directly.
+	closeRead func(*os.File) error
+	// clockNow is a Store-local producer seam. Production leaves it nil and
+	// temporary artifact names use time.Now; tests can prove invalid clock
+	// values fail before any file is created.
+	clockNow func() time.Time
 	// descriptorBarrier is an internal deterministic test seam. It is not part
 	// of Config: durable callers must not be able to alter syscall ordering.
 	descriptorBarrier func(string) error
+	// rootLockIdentity is a narrow test seam for the mandatory identity
+	// revalidation after flock succeeds and before private mutation begins.
+	rootLockIdentity func(*os.File, *os.File) error
 	// provenanceReadHook is a narrow deterministic test seam for the recovery
 	// gate. It fires immediately before a known visible regular file is opened.
-	provenanceReadHook   func(string)
+	provenanceReadHook func(string)
+	// beforeMutationLease is a narrow deterministic test seam between planning
+	// and the final cross-process root lock. Production stores leave it nil.
+	beforeMutationLease  func()
 	caseAliases          bool
 	normalizationAliases bool
-	mu                   sync.Mutex
-	closed               bool
+	// recoveryLimits is fixed at Open. privateReady becomes true only after the
+	// complete lazy private initialization succeeds under the root-inode lock.
+	recoveryLimits stagedManifestLimits
+	privateReady   bool
+	mu             sync.Mutex
+	closed         bool
+}
+
+type mutationTargetIdentity struct {
+	info      os.FileInfo
+	absent    bool
+	operation string
+}
+
+func errMutationTargetChanged(name string) error {
+	return fmt.Errorf("fs store: mutation target changed before publication: %s", name)
 }
 
 // Close releases the pinned root descriptor. Calls after Close return an
@@ -360,9 +422,12 @@ func (s *Store) usable() error {
 }
 
 // detectPathAliases probes each filesystem equivalence independently under the
-// exclusive lease. A volume may fold case without normalizing Unicode (or vice
+// exclusive root lock. A volume may fold case without normalizing Unicode (or vice
 // versa), so callers must not infer one capability from the other.
 func (s *Store) detectPathAliases() error {
+	if err := s.cleanupCapabilityInventory(context.Background()); err != nil {
+		return err
+	}
 	caseAliases, err := s.detectPathAliasProbe("case-probe-a", "CASE-PROBE-A")
 	if err != nil {
 		return err
@@ -378,24 +443,49 @@ func (s *Store) detectPathAliases() error {
 
 func (s *Store) detectPathAliasProbe(name, alternate string) (aliases bool, err error) {
 	probe := path.Join(internalDirectory, "capabilities", name)
-	if err := s.writePrivateDurableAt(probe, []byte("okf")); err != nil {
+	publication := journalPublication{
+		operation: internalArtifactOperation(fmt.Sprintf("capability:%s:%d", probe, time.Now().UnixNano())),
+		role:      claimCapability,
+	}
+	if err := s.writePrivateDurableAtObserved(context.Background(), probe, []byte("okf"), &publication); err != nil {
+		if publication.identity != nil && !publication.postFault {
+			err = errors.Join(err, s.removeCapabilityProbe(publication.operation, probe))
+		}
 		return false, err
 	}
 	info, err := s.rootFD.Lstat(path.Join(internalDirectory, "capabilities", alternate))
 	if err == nil {
 		if !info.Mode().IsRegular() {
-			cleanupErr := s.remove(probe)
+			cleanupErr := s.removeCapabilityProbe(publication.operation, probe)
 			return false, errors.Join(errors.New("fs store: invalid capability probe entry"), cleanupErr)
 		}
 		aliases = true
 	} else if !errors.Is(err, os.ErrNotExist) {
-		cleanupErr := s.remove(probe)
+		cleanupErr := s.removeCapabilityProbe(publication.operation, probe)
 		return false, errors.Join(err, cleanupErr)
 	}
-	if err := s.remove(probe); err != nil {
+	if err := s.removeCapabilityProbe(publication.operation, probe); err != nil {
 		return false, err
 	}
-	return aliases, s.syncDirAt(path.Join(internalDirectory, "capabilities"))
+	return aliases, nil
+}
+
+func (s *Store) removeCapabilityProbe(operation, probe string) error {
+	if err := s.fail(StepCapabilityRemove); err != nil {
+		return err
+	}
+	key, err := newArtifactClaimKey(operation, probe, claimCapability)
+	if err != nil {
+		return err
+	}
+	removed, err := s.consumeOwnedClaim(context.Background(), key, false)
+	if err != nil || !removed {
+		return errors.Join(errArtifactClaimConflict, err)
+	}
+	if err := s.postFault(StepCapabilityRemove); err != nil {
+		return err
+	}
+	return s.syncDirAt(path.Dir(probe))
 }
 
 func (s *Store) validateFilesystemPathAliases(files map[string][]byte) error {
@@ -403,7 +493,7 @@ func (s *Store) validateFilesystemPathAliases(files map[string][]byte) error {
 		return nil
 	}
 	seen := make(map[string]string, len(files))
-	for p := range files {
+	for _, p := range sortedFilePaths(files) {
 		key := s.filesystemPathKey(p)
 		if previous, ok := seen[key]; ok && previous != p {
 			return fmt.Errorf("%w: filesystem-equivalent result paths %q and %q", store.ErrInvalidChangeSet, previous, p)
@@ -434,13 +524,16 @@ func (s *Store) validateFilesystemPathAliasTransition(base, next map[string][]by
 	if err := s.validateFilesystemPathAliases(next); err != nil || (!s.caseAliases && !s.normalizationAliases) {
 		return err
 	}
-	basePaths := make(map[string]string, len(base))
-	for p := range base {
-		basePaths[s.filesystemPathKey(p)] = p
+	basePaths := make(map[string][]string, len(base))
+	for _, p := range sortedFilePaths(base) {
+		key := s.filesystemPathKey(p)
+		basePaths[key] = append(basePaths[key], p)
 	}
-	for p := range next {
-		if previous, ok := basePaths[s.filesystemPathKey(p)]; ok && previous != p {
-			return fmt.Errorf("%w: filesystem-equivalent result path %q replaces base path %q", store.ErrInvalidChangeSet, p, previous)
+	for _, p := range sortedFilePaths(next) {
+		for _, previous := range basePaths[s.filesystemPathKey(p)] {
+			if previous != p {
+				return fmt.Errorf("%w: filesystem-equivalent result path %q replaces base path %q", store.ErrInvalidChangeSet, p, previous)
+			}
 		}
 	}
 	return nil
@@ -455,7 +548,11 @@ func (s *Store) validateJournalFilesystemPathAliasTransition(base []journalBaseF
 	}
 	basePaths := make(map[string]string, len(base))
 	for _, file := range base {
-		basePaths[s.filesystemPathKey(file.Path)] = file.Path
+		key := s.filesystemPathKey(file.Path)
+		if previous, ok := basePaths[key]; ok && previous != file.Path {
+			return fmt.Errorf("%w: filesystem-equivalent base paths %q and %q", store.ErrInvalidChangeSet, previous, file.Path)
+		}
+		basePaths[key] = file.Path
 	}
 	seen := make(map[string]string, len(next))
 	for _, file := range next {
@@ -498,6 +595,19 @@ type replaceReplay struct {
 	Validation validationReplay `json:"validation"`
 }
 
+type recoveryOutcomeError struct {
+	err    error
+	replay *replaceReplay
+}
+
+func (e *recoveryOutcomeError) Error() string { return e.err.Error() }
+func (e *recoveryOutcomeError) Unwrap() error { return e.err }
+
+func newRecoveryOutcomeError(j journal, cause error) error {
+	committed := store.NewCommittedError(j.Receipt, cause)
+	return &recoveryOutcomeError{err: committed, replay: j.Replay}
+}
+
 type validationReplay struct {
 	Diagnostics  []validationDiagnosticReplay `json:"diagnostics"`
 	ScannedFiles int                          `json:"scanned_files"`
@@ -514,6 +624,22 @@ type validationDiagnosticReplay struct {
 	Refs         []string `json:"refs"`
 }
 
+type relationRefKey struct {
+	id       string
+	fragment string
+}
+
+func relationRefKeyOf(ref bundle.RelationRef) relationRefKey {
+	return relationRefKey{id: ref.ID.String(), fragment: ref.Fragment}
+}
+
+func (left relationRefKey) less(right relationRefKey) bool {
+	if left.id != right.id {
+		return left.id < right.id
+	}
+	return left.fragment < right.fragment
+}
+
 func freezeValidation(report validator.Report) replaceReplay {
 	v := validationReplay{ScannedFiles: report.ScannedFiles, Diagnostics: make([]validationDiagnosticReplay, len(report.Diagnostics))}
 	for i, d := range report.Diagnostics {
@@ -521,8 +647,8 @@ func freezeValidation(report validator.Report) replaceReplay {
 		for j, ref := range d.Refs {
 			refs[j] = ref.String()
 		}
+		sort.Strings(refs)
 		v.Diagnostics[i] = validationDiagnosticReplay{Code: d.Code, File: d.File, Severity: d.Severity.String(), Message: d.Message, Source: d.Source.String(), RelationType: d.RelationType, RawTarget: d.RawTarget, Refs: refs}
-		sort.Strings(v.Diagnostics[i].Refs)
 	}
 	sort.Slice(v.Diagnostics, func(i, j int) bool {
 		return replayDiagnosticKey(v.Diagnostics[i]) < replayDiagnosticKey(v.Diagnostics[j])
@@ -601,23 +727,40 @@ func validReplayDiagnostic(d validationDiagnosticReplay) bool {
 		return false
 	}
 	if d.Source != "" {
-		ref, err := bundle.ParseRelationRef(d.Source)
-		if err != nil || ref.String() != d.Source {
+		if _, err := parseCanonicalReplayRef(d.Source); err != nil {
 			return false
 		}
 	}
+	seenRefs := make(map[relationRefKey]struct{}, len(d.Refs))
 	previous := ""
+	havePrevious := false
 	for _, raw := range d.Refs {
 		if !utf8.ValidString(raw) || len(raw) > maxReplayString {
 			return false
 		}
-		ref, err := bundle.ParseRelationRef(raw)
-		if err != nil || ref.String() != raw || raw <= previous {
+		ref, err := parseCanonicalReplayRef(raw)
+		if err != nil {
 			return false
 		}
-		previous = raw
+		key := relationRefKeyOf(ref)
+		if _, duplicate := seenRefs[key]; duplicate || havePrevious && raw <= previous {
+			return false
+		}
+		seenRefs[key] = struct{}{}
+		previous, havePrevious = raw, true
 	}
 	return true
+}
+
+func parseCanonicalReplayRef(raw string) (bundle.RelationRef, error) {
+	ref, err := bundle.ParseRelationRef(raw)
+	if err != nil {
+		return bundle.RelationRef{}, err
+	}
+	if ref.String() != raw {
+		return bundle.RelationRef{}, errors.New("relation ref is not canonically serialized")
+	}
+	return ref, nil
 }
 
 func replayDiagnosticKey(d validationDiagnosticReplay) string {
@@ -800,7 +943,7 @@ func (r replaceReplay) validation() (validator.Report, error) {
 }
 
 // ReplaceConcept validates and publishes a single document through the same
-// lease, CAS, journal, receipt and recovery path used by Commit.
+// root lock, CAS, journal, receipt and recovery path used by Commit.
 func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, opts store.CommitOptions) (ReplaceConceptResult, error) {
 	if err := ctx.Err(); err != nil {
 		return ReplaceConceptResult{}, err
@@ -830,15 +973,15 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 	// Complete that work before any replay/CAS observation can mistake it for a
 	// competing commit.
 	if err := s.recoverPending(ctx); err != nil {
-		return ReplaceConceptResult{}, err
+		return projectReplaceRecoveryError(err, opts.IdempotencyKey, digest)
 	}
 	// Idempotency is checked before reading or comparing the requested base.
 	// A replay is a request identity, not a fresh CAS authorization.
 	if opts.IdempotencyKey != "" {
-		if r, found, err := s.lookupReceipt(opts.IdempotencyKey, digest); err != nil {
+		if r, found, err := s.lookupReceiptContext(ctx, opts.IdempotencyKey, digest); err != nil {
 			return ReplaceConceptResult{}, err
 		} else if found {
-			return s.replaceReplayResult(opts.IdempotencyKey, digest, r)
+			return s.replaceReplayResultContext(ctx, opts.IdempotencyKey, digest, r)
 		}
 	}
 	base, err := s.Snapshot(ctx)
@@ -846,16 +989,20 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 		return ReplaceConceptResult{}, err
 	}
 	// A concurrent Store may have written the receipt while Snapshot waited for
-	// its lease. Replay still wins over a now-stale caller base.
+	// its root lock. Replay still wins over a now-stale caller base.
 	if opts.IdempotencyKey != "" {
-		if r, found, err := s.lookupReceipt(opts.IdempotencyKey, digest); err != nil {
+		if r, found, err := s.lookupReceiptContext(ctx, opts.IdempotencyKey, digest); err != nil {
 			return ReplaceConceptResult{}, err
 		} else if found {
-			return s.replaceReplayResult(opts.IdempotencyKey, digest, r)
+			return s.replaceReplayResultContext(ctx, opts.IdempotencyKey, digest, r)
 		}
 	}
 	if base.Revision() != req.BaseRevision {
-		return ReplaceConceptResult{}, &store.Conflict{Expected: req.BaseRevision, Actual: base.Revision(), ChangedRefs: semanticRefs(base.(*snapshot)), Retryable: true}
+		changedRefs, err := semanticRefs(ctx, base.(*snapshot))
+		if err != nil {
+			return ReplaceConceptResult{}, err
+		}
+		return ReplaceConceptResult{}, &store.Conflict{Expected: req.BaseRevision, Actual: base.Revision(), ChangedRefs: changedRefs, Retryable: true}
 	}
 	targetPath := req.ConceptID.String() + ".md"
 	if c, err := base.OpenConcept(req.ConceptID); err == nil {
@@ -877,7 +1024,7 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 	if err != nil {
 		return ReplaceConceptResult{}, err
 	}
-	if !report.IsConformant() || blockedRelations {
+	if report.ExitCode() != 0 || blockedRelations {
 		return ReplaceConceptResult{Validation: report}, &store.InvalidChangeSet{
 			Code:        "staged_validation_failed",
 			Diagnostics: relationStoreDiagnostics(stagedBundle.RelationDiagnostics()),
@@ -892,18 +1039,28 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 	if err := s.usable(); err != nil {
 		return ReplaceConceptResult{}, err
 	}
+	if s.beforeMutationLease != nil {
+		s.beforeMutationLease()
+	}
 	unlock, err := s.acquire(ctx)
 	if err != nil {
 		return ReplaceConceptResult{}, err
 	}
 	defer unlock()
+	// Planning happens outside the cross-process root lock. A different Store may
+	// have crossed the durable journal boundary while this caller was planning
+	// and then returned before apply/receipt cleanup. Complete that promise
+	// before replay lookup, CAS, or publication can observe its invisible base.
+	if err := s.prepareLocked(ctx); err != nil {
+		return projectReplaceRecoveryError(err, opts.IdempotencyKey, digest)
+	}
 	// Another Store may have committed the same request while this caller was
-	// planning. Check under the cross-process lease before CAS.
+	// planning. Check under the cross-process root lock before CAS.
 	if opts.IdempotencyKey != "" {
-		if r, found, err := s.lookupReceipt(opts.IdempotencyKey, digest); err != nil {
+		if r, found, err := s.lookupReceiptContext(ctx, opts.IdempotencyKey, digest); err != nil {
 			return ReplaceConceptResult{}, err
 		} else if found {
-			return s.replaceReplayResult(opts.IdempotencyKey, digest, r)
+			return s.replaceReplayResultContext(ctx, opts.IdempotencyKey, digest, r)
 		}
 	}
 	current, err := s.snapshotUnlocked(ctx)
@@ -911,9 +1068,17 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 		return ReplaceConceptResult{}, err
 	}
 	if current.Revision() != base.Revision() {
-		return ReplaceConceptResult{}, &store.Conflict{Expected: base.Revision(), Actual: current.Revision(), ChangedRefs: semanticChangedRefs(base.(*snapshot), current.(*snapshot)), Retryable: true}
+		projection, projectionErr := receiptprojection.Derive(ctx, base.(*snapshot).concepts, current.(*snapshot).concepts)
+		if projectionErr != nil {
+			return ReplaceConceptResult{}, projectionErr
+		}
+		return ReplaceConceptResult{}, &store.Conflict{Expected: base.Revision(), Actual: current.Revision(), ChangedRefs: projection.ChangedRefs, Retryable: true}
 	}
-	receipt := store.CommitReceipt{FormatVersion: store.CommitReceiptFormatVersion, ChangeSetID: req.ChangeSetID, IdempotencyKey: opts.IdempotencyKey, RequestDigest: digest, BaseRevision: base.Revision(), ResultRevision: next.Revision(), CommitTime: time.Now().UTC(), ChangedRefs: semanticChangedRefs(base.(*snapshot), next), ChangedFiles: diff(base.(*snapshot), next)}
+	projection, err := receiptprojection.Derive(ctx, base.(*snapshot).concepts, next.concepts)
+	if err != nil {
+		return ReplaceConceptResult{}, err
+	}
+	receipt := store.CommitReceipt{FormatVersion: store.CommitReceiptFormatVersion, ChangeSetID: req.ChangeSetID, IdempotencyKey: opts.IdempotencyKey, RequestDigest: digest, BaseRevision: base.Revision(), ResultRevision: next.Revision(), CommitTime: time.Now().UTC(), ChangedRefs: projection.ChangedRefs, ChangedFiles: projection.ChangedFiles}
 	replay := freezeValidation(report)
 	// Return the same canonical projection that will be persisted for a retry.
 	report, err = replay.validation()
@@ -921,6 +1086,10 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 		return ReplaceConceptResult{}, fmt.Errorf("fs store: canonicalize replay: %w", err)
 	}
 	if err := s.publishWithReplay(ctx, next, receipt, replay); err != nil {
+		var committed *store.CommittedError
+		if errors.As(err, &committed) {
+			return ReplaceConceptResult{Receipt: committed.Receipt(), Validation: report}, err
+		}
 		return ReplaceConceptResult{}, err
 	}
 	return ReplaceConceptResult{Receipt: receipt.Clone(), Validation: report}, nil
@@ -969,15 +1138,75 @@ func (s *Store) postFault(step Step) error {
 	return nil
 }
 
-// Open pins one symlink-free root inode, then completes any interrupted commit.
+func (s *Store) syncFile(file *os.File) error {
+	return s.fileSync(file)
+}
+
+func (s *Store) closeReadFile(file *os.File) error {
+	if s.closeRead != nil {
+		return s.closeRead(file)
+	}
+	return file.Close()
+}
+
+func (s *Store) syncDirectory(name string) error {
+	return s.directorySync(s, name)
+}
+
+// Open validates configuration and pins one symlink-free root inode. Private
+// metadata initialization and recovery are lazy.
 func Open(root string, config Config) (*Store, error) {
 	return OpenContext(context.Background(), root, config)
 }
 
-// OpenContext is Open with a cancellation boundary before recovery starts.
+// OpenContext is Open with cancellation. It performs no namespace mutation.
 func OpenContext(ctx context.Context, root string, config Config) (*Store, error) {
+	return openContextWithRecoveryLimits(ctx, root, config, absoluteStagedManifestLimits())
+}
+
+type durabilitySyncImplementation struct {
+	file      func(*os.File) error
+	directory func(*Store, string) error
+}
+
+func productionDurabilitySyncImplementation() durabilitySyncImplementation {
+	return durabilitySyncImplementation{
+		file: func(file *os.File) error {
+			return file.Sync()
+		},
+		directory: func(store *Store, name string) error {
+			return store.fdSyncDir(name)
+		},
+	}
+}
+
+// openContextWithRecoveryLimits is a bounded test seam for exercising recovery
+// policy without allocating production-sized payloads. Production callers pass
+// only the immutable format ceilings through OpenContext.
+func openContextWithRecoveryLimits(ctx context.Context, root string, config Config, absoluteLimits stagedManifestLimits) (*Store, error) {
+	return openContextWithRecoveryLimitsAndSync(
+		ctx,
+		root,
+		config,
+		absoluteLimits,
+		productionDurabilitySyncImplementation(),
+	)
+}
+
+// openContextWithRecoveryLimitsAndSync is the package-private crash-matrix
+// harness. sync is bound before any metadata setup or recovery begins.
+func openContextWithRecoveryLimitsAndSync(
+	ctx context.Context,
+	root string,
+	config Config,
+	absoluteLimits stagedManifestLimits,
+	syncImplementation durabilitySyncImplementation,
+) (*Store, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if syncImplementation.file == nil || syncImplementation.directory == nil {
+		return nil, errors.New("fs store: incomplete durability sync implementation")
 	}
 	if err := platformOpenError(); err != nil {
 		return nil, err
@@ -1005,28 +1234,16 @@ func OpenContext(ctx context.Context, root string, config Config) (*Store, error
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{root: abs, rootFD: rootFD, dirFD: dirFD, config: config, hashAlgorithmName: algorithmName, write: func(f *os.File, data []byte) (int, error) { return f.Write(data) }}
-	unlock, err := s.acquire(ctx)
-	if err != nil {
-		return nil, errors.Join(err, rootFD.Close(), dirFD.Close())
-	}
-	defer unlock()
-	for _, dir := range []string{
-		internalDirectory,
-		path.Join(internalDirectory, "transactions"),
-		path.Join(internalDirectory, "staging"),
-		path.Join(internalDirectory, "receipts"),
-		path.Join(internalDirectory, "capabilities"),
-	} {
-		if err := s.mkdirAll(dir, 0o700); err != nil {
-			return nil, errors.Join(err, rootFD.Close(), dirFD.Close())
-		}
-	}
-	if err := s.detectPathAliases(); err != nil {
-		return nil, errors.Join(err, rootFD.Close(), dirFD.Close())
-	}
-	if err := s.recoverContext(ctx); err != nil {
-		return nil, errors.Join(err, rootFD.Close(), dirFD.Close())
+	s := &Store{
+		rootFD:            rootFD,
+		dirFD:             dirFD,
+		config:            config,
+		hashAlgorithmName: algorithmName,
+		write:             func(f *os.File, data []byte) (int, error) { return f.Write(data) },
+		fileSync:          syncImplementation.file,
+		directorySync:     syncImplementation.directory,
+		recoveryLimits:    absoluteLimits,
+		rootLockIdentity:  verifyRootLockIdentity,
 	}
 	return s, nil
 }
@@ -1044,21 +1261,21 @@ func (s *Store) Snapshot(ctx context.Context) (store.Snapshot, error) {
 	}
 	// A durable journal is a promise of the post-state.  Recovery must run
 	// before every observation, including a second call on this Store after a
-	// PostFault.  Take the exclusive lease directly: attempting recovery after
-	// acquireRead would self-deadlock while upgrading the flock.
+	// PostFault. Take the exclusive root lock because recovery may mutate the
+	// journal's visible and private post-state.
 	unlock, err := s.acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer unlock()
-	if err := s.recoverContext(ctx); err != nil {
+	if err := s.prepareLocked(ctx); err != nil {
 		return nil, err
 	}
 	return s.snapshotUnlocked(ctx)
 }
 
 func (s *Store) snapshotUnlocked(ctx context.Context) (store.Snapshot, error) {
-	files, err := readVisibleRoot(ctx, s.rootFD)
+	files, err := s.readVisibleRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1089,8 +1306,8 @@ func (s *Store) Preview(ctx context.Context, change store.ChangeSet) (store.Prev
 
 // Commit has a durable cancellation boundary: cancellation before the journal
 // is synced aborts without publication. Once the journal is durable, Commit
-// always finishes (or leaves recoverable work) but returns ctx.Err and no
-// receipt to this caller; an idempotent retry discovers the persisted receipt.
+// continues with a value-preserving, non-cancellable context. Any failure
+// observed after that boundary carries the canonical receipt.
 func (s *Store) Commit(ctx context.Context, change store.ChangeSet, options store.CommitOptions) (store.CommitReceipt, error) {
 	if err := ctx.Err(); err != nil {
 		return store.CommitReceipt{}, err
@@ -1106,21 +1323,25 @@ func (s *Store) Commit(ctx context.Context, change store.ChangeSet, options stor
 		return store.CommitReceipt{}, err
 	}
 	if err := s.recoverPending(ctx); err != nil {
-		return store.CommitReceipt{}, err
+		return projectCommitRecoveryError(err, options.IdempotencyKey, digest)
 	}
 	if options.IdempotencyKey != "" {
-		if r, found, err := s.lookupReceipt(options.IdempotencyKey, digest); err != nil || found {
+		if r, found, err := s.lookupReceiptContext(ctx, options.IdempotencyKey, digest); err != nil || found {
 			return r, err
 		}
 	}
-	// Planning is intentionally outside the lease. The fresh revision check below
+	// Planning is intentionally outside the root lock. The fresh revision check below
 	// is the sole authorization to publish this plan.
 	base, err := s.Snapshot(ctx)
 	if err != nil {
 		return store.CommitReceipt{}, err
 	}
 	if change.BaseRevision != base.Revision() {
-		return store.CommitReceipt{}, &store.Conflict{Expected: change.BaseRevision, Actual: base.Revision(), ChangedRefs: semanticRefs(base.(*snapshot)), Retryable: true}
+		changedRefs, err := semanticRefs(ctx, base.(*snapshot))
+		if err != nil {
+			return store.CommitReceipt{}, err
+		}
+		return store.CommitReceipt{}, &store.Conflict{Expected: change.BaseRevision, Actual: base.Revision(), ChangedRefs: changedRefs, Retryable: true}
 	}
 	planned, err := mutation.NewPlanner(s.config.ValidatorConfig).Plan(ctx, base, change)
 	if err != nil {
@@ -1130,20 +1351,29 @@ func (s *Store) Commit(ctx context.Context, change store.ChangeSet, options stor
 		return store.CommitReceipt{}, err
 	}
 	// Keep cooperating snapshots from observing a partial multi-file publish.
-	// The advisory filesystem lease provides the same boundary across Store
+	// The advisory filesystem root lock provides the same boundary across Store
 	// instances and processes.
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.usable(); err != nil {
 		return store.CommitReceipt{}, err
 	}
+	if s.beforeMutationLease != nil {
+		s.beforeMutationLease()
+	}
 	unlock, err := s.acquire(ctx)
 	if err != nil {
 		return store.CommitReceipt{}, err
 	}
 	defer unlock()
+	// The root lock may have been held by a publisher that made its journal durable
+	// but returned before apply/receipt cleanup. Recovery is the first operation
+	// under the final root lock so replay and CAS are refreshed from that post-state.
+	if err := s.prepareLocked(ctx); err != nil {
+		return projectCommitRecoveryError(err, options.IdempotencyKey, digest)
+	}
 	if options.IdempotencyKey != "" {
-		if r, found, err := s.lookupReceipt(options.IdempotencyKey, digest); err != nil || found {
+		if r, found, err := s.lookupReceiptContext(ctx, options.IdempotencyKey, digest); err != nil || found {
 			return r, err
 		}
 	}
@@ -1152,15 +1382,26 @@ func (s *Store) Commit(ctx context.Context, change store.ChangeSet, options stor
 		return store.CommitReceipt{}, err
 	}
 	if current.Revision() != base.Revision() {
-		return store.CommitReceipt{}, &store.Conflict{Expected: base.Revision(), Actual: current.Revision(), ChangedRefs: semanticChangedRefs(base.(*snapshot), current.(*snapshot)), Retryable: true}
+		projection, projectionErr := receiptprojection.Derive(ctx, base.(*snapshot).concepts, current.(*snapshot).concepts)
+		if projectionErr != nil {
+			return store.CommitReceipt{}, projectionErr
+		}
+		return store.CommitReceipt{}, &store.Conflict{Expected: base.Revision(), Actual: current.Revision(), ChangedRefs: projection.ChangedRefs, Retryable: true}
 	}
 	staged, err := snapshotFromSource(ctx, planned.Staged, s.config.HashAlgorithm)
 	if err != nil {
 		return store.CommitReceipt{}, err
 	}
-	changes := diff(base.(*snapshot), staged)
-	receipt := store.CommitReceipt{FormatVersion: store.CommitReceiptFormatVersion, ChangeSetID: change.ID, IdempotencyKey: options.IdempotencyKey, RequestDigest: digest, BaseRevision: base.Revision(), ResultRevision: staged.Revision(), CommitTime: time.Now().UTC(), ChangedRefs: semanticChangedRefs(base.(*snapshot), staged), ChangedFiles: changes}
+	projection, err := receiptprojection.Derive(ctx, base.(*snapshot).concepts, staged.concepts)
+	if err != nil {
+		return store.CommitReceipt{}, err
+	}
+	receipt := store.CommitReceipt{FormatVersion: store.CommitReceiptFormatVersion, ChangeSetID: change.ID, IdempotencyKey: options.IdempotencyKey, RequestDigest: digest, BaseRevision: base.Revision(), ResultRevision: staged.Revision(), CommitTime: time.Now().UTC(), ChangedRefs: projection.ChangedRefs, ChangedFiles: projection.ChangedFiles}
 	if err := s.publish(ctx, staged, receipt); err != nil {
+		var committed *store.CommittedError
+		if errors.As(err, &committed) {
+			return committed.Receipt(), err
+		}
 		return store.CommitReceipt{}, err
 	}
 	return receipt.Clone(), nil
@@ -1183,7 +1424,41 @@ func (s *Store) recoverPending(ctx context.Context) error {
 		return err
 	}
 	defer unlock()
-	return s.recoverContext(ctx)
+	return s.prepareLocked(ctx)
+}
+
+func matchingRecoveryReceipt(err error, key store.IdempotencyKey, digest string) (store.CommitReceipt, bool) {
+	var committed *store.CommittedError
+	if !errors.As(err, &committed) {
+		return store.CommitReceipt{}, false
+	}
+	receipt := committed.Receipt()
+	return receipt, receipt.RequestDigest == digest && receipt.IdempotencyKey == key
+}
+
+func projectCommitRecoveryError(err error, key store.IdempotencyKey, digest string) (store.CommitReceipt, error) {
+	receipt, matches := matchingRecoveryReceipt(err, key, digest)
+	if !matches {
+		return store.CommitReceipt{}, err
+	}
+	return receipt, err
+}
+
+func projectReplaceRecoveryError(err error, key store.IdempotencyKey, digest string) (ReplaceConceptResult, error) {
+	receipt, matches := matchingRecoveryReceipt(err, key, digest)
+	if !matches {
+		return ReplaceConceptResult{}, err
+	}
+	result := ReplaceConceptResult{Receipt: receipt}
+	var outcome *recoveryOutcomeError
+	if errors.As(err, &outcome) && outcome.replay != nil {
+		report, replayErr := outcome.replay.validation()
+		if replayErr != nil {
+			return ReplaceConceptResult{}, errors.Join(err, metadataCorrupt(replayErr))
+		}
+		result.Validation = report
+	}
+	return result, err
 }
 
 // validatePublicChange is deliberately before RequestDigest: malformed public
@@ -1201,109 +1476,152 @@ func invalidChangeSet(err error) error {
 	return &store.InvalidChangeSet{Code: "invalid_change_set", Cause: err}
 }
 
-// semanticChangedRefs returns a deterministic, conservative description of
-// semantic refs whose meaning may have changed between two captured snapshots.
-// It is the single source for both conflict and receipt payloads. A caller must
-// never derive a receipt from Preview: Preview describes planned dependencies,
-// while this comparison describes the semantic state that actually changed.
-// Changing a concept document changes its root and every extant fragment;
-// changing a relation changes both its source and its old/new targets.
-func semanticChangedRefs(base, current *snapshot) []bundle.RelationRef {
-	if base == nil || current == nil {
-		return nil
-	}
-	seen := make(map[string]bundle.RelationRef)
-	add := func(ref bundle.RelationRef) {
-		if ref.String() != "" {
-			seen[ref.String()] = ref
-		}
-	}
-	addConcept := func(s *snapshot, id bundle.ConceptID) {
-		if s == nil || !s.concepts.Contains(id) {
-			return
-		}
-		add(bundle.RelationRef{ID: id})
-		for _, fragment := range s.concepts.Subresources(id) {
-			add(bundle.RelationRef{ID: id, Fragment: fragment})
-		}
-	}
-
-	ids := make(map[string]bundle.ConceptID)
-	for _, s := range []*snapshot{base, current} {
-		for _, concept := range s.concepts.Concepts() {
-			ids[concept.ID.String()] = concept.ID
-		}
-	}
-	for _, id := range ids {
-		baseConcept, baseOK := base.concepts.Get(id)
-		currentConcept, currentOK := current.concepts.Get(id)
-		if !baseOK || !currentOK || !bytes.Equal(base.files[baseConcept.Path], current.files[currentConcept.Path]) {
-			addConcept(base, id)
-			addConcept(current, id)
-		}
-	}
-
-	type relationKey struct{ source, typ, target string }
-	relations := func(s *snapshot) map[relationKey]bundle.Relation {
-		out := make(map[relationKey]bundle.Relation)
-		for _, concept := range s.concepts.Concepts() {
-			for _, relation := range s.concepts.SemanticLinksFrom(concept.ID) {
-				out[relationKey{relation.Source.String(), relation.Type, relation.Target.String()}] = relation
-			}
-		}
-		return out
-	}
-	baseRelations, currentRelations := relations(base), relations(current)
-	for key, relation := range baseRelations {
-		if _, ok := currentRelations[key]; !ok {
-			add(relation.Source)
-			add(relation.Target)
-		}
-	}
-	for key, relation := range currentRelations {
-		if _, ok := baseRelations[key]; !ok {
-			add(relation.Source)
-			add(relation.Target)
-		}
-	}
-
-	out := make([]bundle.RelationRef, 0, len(seen))
-	for _, ref := range seen {
-		out = append(out, ref)
-	}
-	sort.Slice(out, func(i, j int) bool { return out[i].String() < out[j].String() })
-	return out
-}
-
 // semanticRefs is the conservative conflict payload when only the actual
 // snapshot is available. Every extant semantic ref is reported rather than
 // guessing which one changed from a revision hash alone.
-func semanticRefs(s *snapshot) []bundle.RelationRef {
+func semanticRefs(ctx context.Context, s *snapshot) ([]bundle.RelationRef, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if s == nil || s.concepts == nil {
-		return nil
+		return nil, nil
 	}
-	seen := make(map[string]bundle.RelationRef)
-	add := func(ref bundle.RelationRef) {
-		if ref.String() != "" {
-			seen[ref.String()] = ref
+	conceptIDs, err := s.concepts.ConceptIDsContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	seen := make(map[relationRefKey]bundle.RelationRef)
+	for _, conceptID := range conceptIDs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if err := addSemanticRef(ctx, seen, bundle.RelationRef{ID: conceptID}); err != nil {
+			return nil, err
+		}
+		fragments, err := s.concepts.SubresourcesContext(ctx, conceptID)
+		if err != nil {
+			return nil, err
+		}
+		for _, fragment := range fragments {
+			if err := addSemanticRef(ctx, seen, bundle.RelationRef{ID: conceptID, Fragment: fragment}); err != nil {
+				return nil, err
+			}
+		}
+		relations, err := s.concepts.SemanticLinksFromContext(ctx, conceptID)
+		if err != nil {
+			return nil, err
+		}
+		for _, relation := range relations {
+			if err := addSemanticRef(ctx, seen, relation.Source); err != nil {
+				return nil, err
+			}
+			if err := addSemanticRef(ctx, seen, relation.Target); err != nil {
+				return nil, err
+			}
 		}
 	}
-	for _, concept := range s.concepts.Concepts() {
-		add(bundle.RelationRef{ID: concept.ID})
-		for _, fragment := range s.concepts.Subresources(concept.ID) {
-			add(bundle.RelationRef{ID: concept.ID, Fragment: fragment})
-		}
-		for _, relation := range s.concepts.SemanticLinksFrom(concept.ID) {
-			add(relation.Source)
-			add(relation.Target)
-		}
+	return canonicalSemanticRefs(ctx, seen)
+}
+
+func addSemanticRef(ctx context.Context, seen map[relationRefKey]bundle.RelationRef, ref bundle.RelationRef) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	key := relationRefKeyOf(ref)
+	if key.id != "" {
+		seen[key] = ref
+	}
+	return nil
+}
+
+func canonicalSemanticRefs(
+	ctx context.Context,
+	seen map[relationRefKey]bundle.RelationRef,
+) ([]bundle.RelationRef, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	out := make([]bundle.RelationRef, 0, len(seen))
 	for _, ref := range seen {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		out = append(out, ref)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].String() < out[j].String() })
-	return out
+	if err := sortSemanticRefsContext(ctx, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// sortSemanticRefsContext preserves canonical lexical ordering without an
+// uninterruptible O(n log n) tail after cancellation.
+func sortSemanticRefsContext(ctx context.Context, values []bundle.RelationRef) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(values) < 2 {
+		return nil
+	}
+	scratch := make([]bundle.RelationRef, len(values))
+	source, destination := values, scratch
+	sourceIsScratch := false
+	for width := 1; width < len(values); {
+		for left := 0; left < len(values); {
+			middle := left + min(width, len(values)-left)
+			right := middle + min(width, len(values)-middle)
+			first, second, output := left, middle, left
+			for first < middle && second < right {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				if relationRefKeyOf(source[second]).less(relationRefKeyOf(source[first])) {
+					destination[output] = source[second]
+					second++
+				} else {
+					destination[output] = source[first]
+					first++
+				}
+				output++
+			}
+			for first < middle {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				destination[output] = source[first]
+				first++
+				output++
+			}
+			for second < right {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				destination[output] = source[second]
+				second++
+				output++
+			}
+			left = right
+		}
+		source, destination = destination, source
+		sourceIsScratch = !sourceIsScratch
+		if width >= len(values)-width {
+			width = len(values)
+		} else {
+			width *= 2
+		}
+	}
+	if sourceIsScratch {
+		for index := range source {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			values[index] = source[index]
+		}
+	}
+	return ctx.Err()
 }
 
 type snapshot struct {
@@ -1313,9 +1631,6 @@ type snapshot struct {
 	concepts *bundle.Bundle
 }
 
-func newSnapshot(ctx context.Context, files map[string][]byte) (*snapshot, error) {
-	return newSnapshotWithAlgorithm(ctx, files, nil)
-}
 func newSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algorithm store.HashAlgorithm) (*snapshot, error) {
 	owned, err := cloneFilesContext(ctx, files)
 	if err != nil {
@@ -1325,11 +1640,15 @@ func newSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algo
 }
 func newOwnedSnapshotWithAlgorithm(ctx context.Context, files map[string][]byte, algorithm store.HashAlgorithm) (*snapshot, error) {
 	entries := make([]store.ManifestEntry, 0, len(files))
-	for p, b := range files {
+	paths, err := sortedFilePathsContext(ctx, files)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range paths {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		entries = append(entries, store.ManifestEntry{Path: p, Content: b})
+		entries = append(entries, store.ManifestEntry{Path: p, Content: files[p]})
 	}
 	manifest, err := store.NewManifestContext(ctx, entries, algorithm)
 	if err != nil {
@@ -1457,19 +1776,31 @@ func (s *snapshot) ListConcepts() ([]bundle.ConceptID, error) {
 }
 
 func readVisibleRoot(ctx context.Context, root *os.Root) (map[string][]byte, error) {
+	return readVisibleRootWithClose(ctx, root, func(file *os.File) error { return file.Close() })
+}
+
+func (s *Store) readVisibleRoot(ctx context.Context) (map[string][]byte, error) {
+	return readVisibleRootWithClose(ctx, s.rootFD, s.closeReadFile)
+}
+
+func readVisibleRootWithClose(ctx context.Context, root *os.Root, closeFile func(*os.File) error) (map[string][]byte, error) {
 	out := map[string][]byte{}
-	if err := walkVisibleRoot(ctx, root, ".", "", out); err != nil {
+	if err := walkVisibleRootWithClose(ctx, root, ".", "", out, closeFile); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
 func walkVisibleRoot(ctx context.Context, root *os.Root, directory, prefix string, out map[string][]byte) (err error) {
+	return walkVisibleRootWithClose(ctx, root, directory, prefix, out, func(file *os.File) error { return file.Close() })
+}
+
+func walkVisibleRootWithClose(ctx context.Context, root *os.Root, directory, prefix string, out map[string][]byte, closeFile func(*os.File) error) (err error) {
 	dir, err := openRootReadNoFollow(root, directory, true)
 	if err != nil {
 		return err
 	}
-	defer func() { err = errors.Join(err, dir.Close()) }()
+	defer func() { err = errors.Join(err, closeFile(dir)) }()
 	entries, err := dir.ReadDir(-1)
 	if err != nil {
 		return err
@@ -1484,7 +1815,7 @@ func walkVisibleRoot(ctx context.Context, root *os.Root, directory, prefix strin
 			continue
 		}
 		if !safePath(rel) {
-			return fmt.Errorf("fs store: invalid revision-visible path %q", rel)
+			return metadataCorrupt(fmt.Errorf("fs store: invalid revision-visible path %q", rel))
 		}
 		name := path.Join(directory, entry.Name())
 		info, err := root.Lstat(name)
@@ -1492,10 +1823,10 @@ func walkVisibleRoot(ctx context.Context, root *os.Root, directory, prefix strin
 			return err
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("fs store: symlink revision-visible path %s", rel)
+			return metadataCorrupt(fmt.Errorf("fs store: symlink revision-visible path %s", rel))
 		}
 		if info.IsDir() {
-			if err := walkVisibleRoot(ctx, root, name, rel, out); err != nil {
+			if err := walkVisibleRootWithClose(ctx, root, name, rel, out, closeFile); err != nil {
 				return err
 			}
 			continue
@@ -1503,7 +1834,7 @@ func walkVisibleRoot(ctx context.Context, root *os.Root, directory, prefix strin
 		if !info.Mode().IsRegular() {
 			continue
 		}
-		b, err := readPinnedRegular(ctx, root, rel, info)
+		b, err := readPinnedRegularWithClose(ctx, root, rel, info, closeFile)
 		if err != nil {
 			return err
 		}
@@ -1518,6 +1849,10 @@ func walkVisibleRoot(ctx context.Context, root *os.Root, directory, prefix strin
 // Each ancestor is similarly checked so a swap cannot redirect hashing to a
 // different in-root subtree either.
 func readPinnedRegular(ctx context.Context, root *os.Root, name string, expected os.FileInfo) ([]byte, error) {
+	return readPinnedRegularWithClose(ctx, root, name, expected, func(file *os.File) error { return file.Close() })
+}
+
+func readPinnedRegularWithClose(ctx context.Context, root *os.Root, name string, expected os.FileInfo, closeFile func(*os.File) error) ([]byte, error) {
 	if err := rejectSymlinkPath(root, name); err != nil {
 		return nil, err
 	}
@@ -1529,19 +1864,20 @@ func readPinnedRegular(ctx context.Context, root *os.Root, name string, expected
 			return nil, err
 		}
 		if !before.IsDir() || before.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("fs store: unsafe ancestor %s", ancestor)
+			return nil, metadataCorrupt(fmt.Errorf("fs store: unsafe ancestor %s", ancestor))
 		}
 		f, err := openRootReadNoFollow(root, ancestor, true)
 		if err != nil {
 			return nil, err
 		}
 		after, statErr := f.Stat()
-		closeErr := f.Close()
-		if statErr != nil || closeErr != nil {
-			return nil, errors.Join(statErr, closeErr)
+		var structural error
+		if statErr == nil && (!os.SameFile(before, after) || !after.IsDir()) {
+			structural = fmt.Errorf("fs store: ancestor changed during snapshot: %s", ancestor)
 		}
-		if !os.SameFile(before, after) || !after.IsDir() {
-			return nil, fmt.Errorf("fs store: ancestor changed during snapshot: %s", ancestor)
+		closeErr := closeFile(f)
+		if err := errors.Join(statErr, closeErr, metadataCorrupt(structural)); err != nil {
+			return nil, err
 		}
 	}
 	f, err := openRootReadNoFollow(root, name, false)
@@ -1549,16 +1885,18 @@ func readPinnedRegular(ctx context.Context, root *os.Root, name string, expected
 		return nil, err
 	}
 	actual, statErr := f.Stat()
+	var structural error
 	if statErr == nil && (!actual.Mode().IsRegular() || !os.SameFile(expected, actual)) {
-		statErr = fmt.Errorf("fs store: path changed during snapshot: %s", name)
+		structural = fmt.Errorf("fs store: path changed during snapshot: %s", name)
 	}
 	var data []byte
-	if statErr == nil {
-		data, statErr = readAllContext(ctx, f)
+	var readErr error
+	if statErr == nil && structural == nil {
+		data, readErr = readAllContext(ctx, f)
 	}
-	closeErr := f.Close()
-	if statErr != nil || closeErr != nil {
-		return nil, errors.Join(statErr, closeErr)
+	closeErr := closeFile(f)
+	if err := errors.Join(statErr, readErr, closeErr, metadataCorrupt(structural)); err != nil {
+		return nil, err
 	}
 	return data, nil
 }
@@ -1583,14 +1921,14 @@ func (s *Store) validateCurrentJournalProvenance(ctx context.Context, base []jou
 	for name := range baseByPath {
 		if !seen[name] {
 			if _, alsoResult := resultByPath[name]; alsoResult {
-				return errors.New("journal base/result state mismatch")
+				return metadataCorrupt(errors.New("journal base/result state mismatch"))
 			}
 		}
 	}
 	for name := range resultByPath {
 		if !seen[name] {
 			if _, alsoBase := baseByPath[name]; alsoBase {
-				return errors.New("journal base/result state mismatch")
+				return metadataCorrupt(errors.New("journal base/result state mismatch"))
 			}
 		}
 	}
@@ -1617,7 +1955,7 @@ func (s *Store) walkCurrentJournalProvenance(ctx context.Context, directory, pre
 			continue
 		}
 		if !safePath(rel) {
-			return fmt.Errorf("invalid revision-visible path %q", rel)
+			return metadataCorrupt(fmt.Errorf("invalid revision-visible path %q", rel))
 		}
 		name := path.Join(directory, entry.Name())
 		info, err := s.rootFD.Lstat(name)
@@ -1625,7 +1963,7 @@ func (s *Store) walkCurrentJournalProvenance(ctx context.Context, directory, pre
 			return err
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("symlink revision-visible path %s", rel)
+			return metadataCorrupt(fmt.Errorf("symlink revision-visible path %s", rel))
 		}
 		if info.IsDir() {
 			if err := s.walkCurrentJournalProvenance(ctx, name, rel, base, result, seen); err != nil {
@@ -1639,40 +1977,46 @@ func (s *Store) walkCurrentJournalProvenance(ctx context.Context, directory, pre
 		baseEntry, hasBase := base[rel]
 		resultEntry, hasResult := result[rel]
 		if !hasBase && !hasResult {
-			return errors.New("journal base/result state mismatch")
+			return metadataCorrupt(errors.New("journal base/result state mismatch"))
 		}
 		if (!hasBase || info.Size() != baseEntry.Size) && (!hasResult || info.Size() != resultEntry.Size) {
-			return errors.New("journal base/result state mismatch")
+			return metadataCorrupt(errors.New("journal base/result state mismatch"))
 		}
 		if s.provenanceReadHook != nil {
 			s.provenanceReadHook(rel)
 		}
-		digest, err := streamPinnedRegularDigest(ctx, s.rootFD, rel, info)
+		if err := s.runDescriptorBarrier("provenance_read"); err != nil {
+			return err
+		}
+		if err := s.runDescriptorBarrier("provenance_read:" + rel); err != nil {
+			return err
+		}
+		digest, err := s.streamPinnedRegularDigest(ctx, rel, info)
 		if err != nil {
 			return err
 		}
 		if (!hasBase || digest != baseEntry.Digest) && (!hasResult || digest != resultEntry.Digest) {
-			return errors.New("journal base/result state mismatch")
+			return metadataCorrupt(errors.New("journal base/result state mismatch"))
 		}
 		seen[rel] = true
 	}
 	return nil
 }
 
-func streamPinnedRegularDigest(ctx context.Context, root *os.Root, name string, expected os.FileInfo) (string, error) {
-	if err := rejectSymlinkPath(root, name); err != nil {
+func (s *Store) streamPinnedRegularDigest(ctx context.Context, name string, expected os.FileInfo) (string, error) {
+	if err := rejectSymlinkPath(s.rootFD, name); err != nil {
 		return "", err
 	}
-	f, err := openRootReadNoFollow(root, name, false)
+	f, err := openRootReadNoFollow(s.rootFD, name, false)
 	if err != nil {
 		return "", err
 	}
 	actual, statErr := f.Stat()
 	if statErr == nil && (!actual.Mode().IsRegular() || !os.SameFile(expected, actual)) {
-		statErr = fmt.Errorf("path changed during provenance scan: %s", name)
+		return "", s.closeStructuralMetadata(f, fmt.Errorf("path changed during provenance scan: %s", name))
 	}
 	if statErr != nil {
-		return "", errors.Join(statErr, f.Close())
+		return "", errors.Join(statErr, s.closeReadFile(f))
 	}
 	h := sha256.New()
 	buf := make([]byte, 64<<10)
@@ -1687,7 +2031,19 @@ func streamPinnedRegularDigest(ctx context.Context, root *os.Root, name string, 
 			}
 		}
 		if readErr == io.EOF {
-			return "sha256:" + hex.EncodeToString(h.Sum(nil)), f.Close()
+			if err := s.runDescriptorBarrier("provenance_restat:" + name); err != nil {
+				return "", errors.Join(err, f.Close())
+			}
+			current, pathErr := s.rootFD.Lstat(name)
+			var structural error
+			if pathErr == nil && (current == nil || !current.Mode().IsRegular() || !os.SameFile(actual, current)) {
+				structural = fmt.Errorf("path changed after provenance scan: %s", name)
+			}
+			closeErr := s.closeReadFile(f)
+			if err := errors.Join(closeErr, pathErr, metadataCorrupt(structural)); err != nil {
+				return "", err
+			}
+			return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
 		}
 		if readErr != nil {
 			return "", errors.Join(readErr, f.Close())
@@ -1759,9 +2115,10 @@ func relationStoreDiagnostics(diagnostics []bundle.RelationDiagnostic) []store.D
 // validateStagedSource is the one arbitration point for revision-visible
 // post-states. It loads source once, then validates that exact bundle and
 // projects its relation diagnostics. ValidatorConfig determines base
-// conformance; independently, blocking semantic relation diagnostics veto
-// publication. Recovery uses this same gate before it can touch a visible
-// path. The returned bundle is the same immutable bundle used for validation.
+// conformance and explicit policy assertions; independently, blocking semantic
+// relation diagnostics veto publication. Recovery uses this same gate before
+// it can touch a visible path. The returned bundle is the same immutable bundle
+// used for validation.
 func (s *Store) validateStagedSource(ctx context.Context, source bundle.Source) (validator.Report, bool, *bundle.Bundle, error) {
 	if err := ctx.Err(); err != nil {
 		return validator.Report{}, false, nil, err
@@ -1796,7 +2153,151 @@ func readMetadataLimit(ctx context.Context, root *os.Root, name string, limit in
 	data, readErr := readAllContextLimit(ctx, f, limit)
 	closeErr := f.Close()
 	if readErr != nil || closeErr != nil {
-		return nil, metadataCorrupt(errors.Join(readErr, closeErr))
+		return nil, errors.Join(readErr, closeErr)
+	}
+	return data, nil
+}
+
+func (s *Store) readMetadataLimitObserved(ctx context.Context, name string, limit int64) ([]byte, error) {
+	if err := s.runDescriptorBarrier("metadata_open"); err != nil {
+		return nil, err
+	}
+	if err := s.runDescriptorBarrier("metadata_open:" + name); err != nil {
+		return nil, err
+	}
+	f, err := s.openPinnedMetadata(name, false)
+	if err != nil {
+		return nil, err
+	}
+	identity, statErr := f.Stat()
+	if statErr != nil {
+		return nil, errors.Join(statErr, s.closeReadFile(f))
+	}
+	if err := s.runDescriptorBarrier("metadata_read"); err != nil {
+		return nil, errors.Join(err, s.closeReadFile(f))
+	}
+	if err := s.runDescriptorBarrier("metadata_read:" + name); err != nil {
+		return nil, errors.Join(err, s.closeReadFile(f))
+	}
+	data, readErr := readAllContextLimit(ctx, f, limit)
+	if err := s.runDescriptorBarrier("metadata_restat:" + name); err != nil {
+		return nil, errors.Join(err, s.closeReadFile(f))
+	}
+	current, pathErr := s.rootFD.Lstat(name)
+	var structural error
+	if pathErr == nil && (current == nil || !current.Mode().IsRegular() || !os.SameFile(identity, current)) {
+		structural = fmt.Errorf("metadata path changed after read: %s", name)
+	}
+	closeErr := s.closeReadFile(f)
+	if err := errors.Join(closeErr, pathErr, readErr, metadataCorrupt(structural)); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// readRecoveryJournal keeps one no-follow descriptor pinned from the initial
+// file/type/size inspection through the bounded read and final pathname
+// identity proof. Recovery can therefore validate one byte stream and later
+// claim ownership of exactly that inode without a close/reopen gap.
+func (s *Store) readRecoveryJournal(ctx context.Context, name string, limit int64) ([]byte, os.FileInfo, error) {
+	if err := s.runDescriptorBarrier("journal_open"); err != nil {
+		return nil, nil, err
+	}
+	f, err := s.fdOpen(name, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := s.runDescriptorBarrier("journal_stat"); err != nil {
+		return nil, nil, errors.Join(err, f.Close())
+	}
+	identity, statErr := f.Stat()
+	if statErr != nil {
+		return nil, nil, errors.Join(statErr, f.Close())
+	}
+	if identity == nil || !identity.Mode().IsRegular() {
+		return nil, nil, s.closeStructuralMetadata(f, errors.New("journal is not a regular file"))
+	}
+	if identity.Size() > limit {
+		return nil, nil, s.closeStructuralMetadata(f, fmt.Errorf("journal manifest exceeds %d byte limit", limit))
+	}
+	// This seam is after the pinned descriptor's initial type/size proof and
+	// before the first byte read. Tests use it to model same-inode growth; a
+	// raw seam error remains operational and closes the pinned descriptor.
+	if err := s.runDescriptorBarrier("journal_before_read"); err != nil {
+		return nil, nil, errors.Join(err, s.closeReadFile(f))
+	}
+	raw, readErr := readAllContext(ctx, io.LimitReader(f, limit+1))
+	if readErr != nil {
+		return nil, nil, errors.Join(readErr, f.Close())
+	}
+	if int64(len(raw)) > limit {
+		return nil, nil, s.closeStructuralMetadata(f, fmt.Errorf("journal manifest exceeds %d byte limit", limit))
+	}
+	// This seam is deliberately after the byte read but while the descriptor is
+	// still pinned. A stronger I/O error wins over cancellation at this cut.
+	if err := s.runDescriptorBarrier("journal_ownership"); err != nil {
+		return nil, nil, errors.Join(err, f.Close())
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, nil, errors.Join(err, f.Close())
+	}
+	if err := s.runDescriptorBarrier("journal_restat"); err != nil {
+		return nil, nil, errors.Join(err, f.Close())
+	}
+	current, pathErr := s.rootFD.Lstat(name)
+	var structural error
+	if pathErr == nil && (current == nil || !current.Mode().IsRegular() || !os.SameFile(identity, current)) {
+		structural = errors.New("journal identity changed after read")
+	}
+	closeErr := s.closeReadFile(f)
+	if err := errors.Join(closeErr, pathErr, metadataCorrupt(structural)); err != nil {
+		return nil, nil, err
+	}
+	return raw, identity, nil
+}
+
+func (s *Store) readMetadataLimitOwned(ctx context.Context, name string, limit int64, expected os.FileInfo) ([]byte, error) {
+	if err := s.runDescriptorBarrier("payload_open"); err != nil {
+		return nil, err
+	}
+	f, err := s.fdOpen(name, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.runDescriptorBarrier("payload_stat"); err != nil {
+		return nil, errors.Join(err, f.Close())
+	}
+	actual, statErr := f.Stat()
+	if statErr != nil {
+		return nil, errors.Join(statErr, s.closeReadFile(f))
+	}
+	if expected == nil || !actual.Mode().IsRegular() || !os.SameFile(expected, actual) {
+		return nil, s.closeStructuralMetadata(f, fmt.Errorf("transaction-owned payload changed: %s", name))
+	}
+	// The barrier models a raw read failure after the owned inode is pinned.
+	// Its I/O error wins over a simultaneous cancellation; a nil barrier leaves
+	// readAllContextLimit responsible for observing cancellation.
+	if err := s.runDescriptorBarrier("payload_read"); err != nil {
+		return nil, errors.Join(err, f.Close())
+	}
+	data, readErr := readAllContextLimit(ctx, f, limit)
+	if readErr != nil {
+		return nil, errors.Join(readErr, f.Close())
+	}
+	if err := s.runDescriptorBarrier("payload_restat"); err != nil {
+		return nil, errors.Join(err, f.Close())
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, errors.Join(err, f.Close())
+	}
+	current, pathErr := s.rootFD.Lstat(name)
+	var structural error
+	if pathErr == nil && (current == nil || !current.Mode().IsRegular() || !os.SameFile(actual, current)) {
+		structural = fmt.Errorf("transaction-owned payload changed after read: %s", name)
+	}
+	closeErr := s.closeReadFile(f)
+	if err := errors.Join(closeErr, pathErr, metadataCorrupt(structural)); err != nil {
+		return nil, err
 	}
 	return data, nil
 }
@@ -1806,6 +2307,14 @@ func openPinnedMetadataDir(root *os.Root, name string) (*os.File, error) {
 }
 
 func openPinnedMetadata(root *os.Root, name string, wantDir bool) (*os.File, error) {
+	return openPinnedMetadataWithClose(root, name, wantDir, func(file *os.File) error { return file.Close() })
+}
+
+func (s *Store) openPinnedMetadata(name string, wantDir bool) (*os.File, error) {
+	return openPinnedMetadataWithClose(s.rootFD, name, wantDir, s.closeReadFile)
+}
+
+func openPinnedMetadataWithClose(root *os.Root, name string, wantDir bool, closeFile func(*os.File) error) (*os.File, error) {
 	clean := path.Clean(name)
 	if clean == "." || !strings.HasPrefix(clean, internalDirectory+"/") {
 		return nil, metadataCorrupt(fmt.Errorf("unsafe metadata path %q", name))
@@ -1815,38 +2324,55 @@ func openPinnedMetadata(root *os.Root, name string, wantDir bool) (*os.File, err
 		component := strings.Join(parts[:i], "/")
 		before, err := root.Lstat(component)
 		if err != nil {
-			if i == len(parts) && errors.Is(err, os.ErrNotExist) {
-				return nil, err
-			}
-			return nil, metadataCorrupt(err)
+			return nil, err
 		}
 		if before.Mode()&os.ModeSymlink != 0 || (i < len(parts) && !before.IsDir()) {
 			return nil, metadataCorrupt(fmt.Errorf("unsafe metadata component %s", component))
 		}
 		f, err := openRootReadNoFollow(root, component, i < len(parts))
 		if err != nil {
-			return nil, metadataCorrupt(err)
+			return nil, err
 		}
 		after, statErr := f.Stat()
 		if i != len(parts) {
-			closeErr := f.Close()
-			if statErr != nil || closeErr != nil {
-				return nil, metadataCorrupt(errors.Join(statErr, closeErr))
+			var structural error
+			if statErr == nil && (!after.IsDir() || !os.SameFile(before, after)) {
+				structural = fmt.Errorf("metadata ancestor changed: %s", component)
 			}
-			if !after.IsDir() || !os.SameFile(before, after) {
-				return nil, metadataCorrupt(fmt.Errorf("metadata ancestor changed: %s", component))
+			closeErr := closeFile(f)
+			if err := errors.Join(statErr, closeErr, metadataCorrupt(structural)); err != nil {
+				return nil, err
 			}
 			continue
 		}
 		if statErr != nil {
-			return nil, metadataCorrupt(errors.Join(statErr, f.Close()))
+			return nil, errors.Join(statErr, closeFile(f))
 		}
 		if !os.SameFile(before, after) || (wantDir && !after.IsDir()) || (!wantDir && !after.Mode().IsRegular()) {
-			return nil, metadataCorrupt(errors.Join(fmt.Errorf("metadata path changed: %s", component), f.Close()))
+			return nil, closeStructuralMetadataWith(f, fmt.Errorf("metadata path changed: %s", component), closeFile)
 		}
 		return f, nil
 	}
 	return nil, metadataCorrupt(fmt.Errorf("empty metadata path"))
+}
+
+// closeStructuralMetadata preserves both facts when structural validation and
+// descriptor close fail together. Operational I/O is ordered first while the
+// structural fact remains discoverable through errors.Is(ErrStorageCorrupt).
+func closeStructuralMetadata(file *os.File, structural error) error {
+	return closeStructuralMetadataWith(file, structural, func(file *os.File) error { return file.Close() })
+}
+
+func (s *Store) closeStructuralMetadata(file *os.File, structural error) error {
+	return closeStructuralMetadataWith(file, structural, s.closeReadFile)
+}
+
+func closeStructuralMetadataWith(file *os.File, structural error, closeFile func(*os.File) error) error {
+	closeErr := closeFile(file)
+	if structural == nil {
+		return closeErr
+	}
+	return errors.Join(closeErr, metadataCorrupt(structural))
 }
 
 func readAllContextLimit(ctx context.Context, r io.Reader, limit int64) ([]byte, error) {
@@ -1855,7 +2381,7 @@ func readAllContextLimit(ctx context.Context, r io.Reader, limit int64) ([]byte,
 		return nil, err
 	}
 	if int64(len(data)) > limit {
-		return nil, fmt.Errorf("metadata exceeds %d byte limit", limit)
+		return nil, metadataCorrupt(fmt.Errorf("metadata exceeds %d byte limit", limit))
 	}
 	return data, nil
 }
@@ -1876,7 +2402,7 @@ func rejectSymlinkPath(root *os.Root, name string) error {
 	}
 	for _, part := range strings.Split(path.Clean(name), "/") {
 		if part == "" || part == "." || part == ".." {
-			return fmt.Errorf("fs store: unsafe path %q", name)
+			return metadataCorrupt(fmt.Errorf("fs store: unsafe path %q", name))
 		}
 	}
 	parts := strings.Split(path.Clean(name), "/")
@@ -1890,20 +2416,49 @@ func rejectSymlinkPath(root *os.Root, name string) error {
 			return err
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("fs store: symlink path component %s", p)
+			return metadataCorrupt(fmt.Errorf("fs store: symlink path component %s", p))
 		}
 	}
 	return nil
 }
 func readSource(ctx context.Context, source bundle.Source) (map[string][]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	ps, err := source.Paths(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := map[string][]byte{}
-	for _, p := range ps {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	orderedPaths := make([]string, len(ps))
+	for index, p := range ps {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		orderedPaths[index] = p
+	}
+	ps = orderedPaths
+	sort.Strings(ps)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	for index, p := range ps {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !safePath(p) {
 			return nil, fmt.Errorf("fs store: invalid source path %q", p)
+		}
+		if index > 0 && ps[index-1] == p {
+			return nil, fmt.Errorf("fs store: duplicate source path %q", p)
+		}
+	}
+	out := map[string][]byte{}
+	for _, p := range ps {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		b, err := source.ReadFile(ctx, p)
 		if err != nil {
@@ -1946,65 +2501,6 @@ func safePath(p string) bool {
 	return bundle.ValidateRevisionPath(p) == nil
 }
 
-func diff(base, next *snapshot) []store.FileChange {
-	var out []store.FileChange
-	created := make(map[string][]byte)
-	removed := make(map[string][]byte)
-	for p, b := range next.files {
-		if a, ok := base.files[p]; !ok || !bytes.Equal(a, b) {
-			if !ok {
-				created[p] = b
-			} else {
-				out = append(out, store.FileChange{Kind: store.FileWrite, Path: p})
-			}
-		}
-	}
-	for p := range base.files {
-		if _, ok := next.files[p]; !ok {
-			removed[p] = base.files[p]
-		}
-	}
-	// Surface pure moves in receipts. The durable protocol still writes the
-	// post-state and deletes obsolete paths, which is safer to recover than a
-	// sequence of platform-specific rename assumptions.
-	createdPaths := make([]string, 0, len(created))
-	for p := range created {
-		createdPaths = append(createdPaths, p)
-	}
-	sort.Strings(createdPaths)
-	for _, to := range createdPaths {
-		content := created[to]
-		from := ""
-		removedPaths := make([]string, 0, len(removed))
-		for candidate := range removed {
-			removedPaths = append(removedPaths, candidate)
-		}
-		sort.Strings(removedPaths)
-		for _, candidate := range removedPaths {
-			old := removed[candidate]
-			if bytes.Equal(content, old) && (from == "" || candidate < from) {
-				from = candidate
-			}
-		}
-		if from == "" {
-			out = append(out, store.FileChange{Kind: store.FileWrite, Path: to})
-			continue
-		}
-		out = append(out, store.FileChange{Kind: store.FileRename, From: from, Path: to})
-		delete(removed, from)
-	}
-	for p := range removed {
-		out = append(out, store.FileChange{Kind: store.FileDelete, Path: p})
-	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Path == out[j].Path {
-			return out[i].Kind < out[j].Kind
-		}
-		return out[i].Path < out[j].Path
-	})
-	return out
-}
-
 type journal struct {
 	Version       uint16              `json:"version"`
 	HashAlgorithm string              `json:"hash_algorithm"`
@@ -2018,7 +2514,7 @@ type journal struct {
 
 // journalBaseFile is the canonical durable provenance of one visible base
 // pathname. It lets recovery distinguish a crash during apply from an editor
-// changing the bundle behind the store's advisory lease.
+// changing the bundle behind the store's advisory root lock.
 type journalBaseFile struct {
 	Path   string `json:"path"`
 	Size   int64  `json:"size"`
@@ -2035,32 +2531,34 @@ type journalFile struct {
 	Digest  string `json:"digest"`
 }
 
-// decodeJournal accepts only the current complete on-disk transaction format.
-// It validates all data needed to decide that applying its post-state is safe,
-// before recovery touches a revision-visible file.
-func decodeJournal(raw []byte) (journal, error) {
-	return decodeJournalWithAlgorithmName(raw, nil, "sha256")
-}
-
-func decodeJournalWithAlgorithm(raw []byte, algorithm store.HashAlgorithm) (journal, error) {
-	name := algorithmName(algorithm)
-	return decodeJournalWithAlgorithmName(raw, algorithm, name)
-}
-
-func decodeJournalWithAlgorithmName(raw []byte, algorithm store.HashAlgorithm, expectedAlgorithm string) (journal, error) {
-	if len(raw) > maxJournalManifestRead {
-		return journal{}, fmt.Errorf("journal manifest exceeds %d byte limit", maxJournalManifestRead)
+func decodeJournalWithAlgorithmNameAndLimits(raw []byte, algorithm store.HashAlgorithm, expectedAlgorithm string, limits stagedManifestLimits) (journal, error) {
+	if err := validateJournalManifestBytes(raw, maxJournalManifestRead); err != nil {
+		return journal{}, err
 	}
 	// encoding/json replaces malformed UTF-8 while decoding strings. Reject it
 	// first so recovery can never publish a replacement-character filename.
 	if !utf8.Valid(raw) {
 		return journal{}, errors.New("journal contains invalid UTF-8")
 	}
-	if err := store.RejectDuplicateJSONKeys(raw); err != nil {
+	envelope, err := decodeJournalTopLevelEnvelope(raw)
+	if err != nil {
 		return journal{}, err
 	}
-	var envelope map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &envelope); err != nil {
+	versionRaw, ok := envelope["version"]
+	if !ok || !jsonCanonicalUint(versionRaw, ^uint64(0), false) {
+		return journal{}, errors.New("journal version must be a canonical non-negative integer")
+	}
+	version, err := strconv.ParseUint(string(versionRaw), 10, 64)
+	if err != nil {
+		return journal{}, errors.New("journal version must be a canonical non-negative integer")
+	}
+	if version != 5 {
+		return journal{}, fmt.Errorf("unsupported journal version %d", version)
+	}
+	// Nested duplicate keys and every v5-only field/type contract deliberately
+	// follow the version gate. Unsupported envelopes are never interpreted as
+	// the current journal schema, while current v5 retains recursive strictness.
+	if err := store.RejectDuplicateJSONKeys(raw); err != nil {
 		return journal{}, err
 	}
 	if len(envelope) != 7 && len(envelope) != 8 {
@@ -2100,9 +2598,6 @@ func decodeJournalWithAlgorithmName(raw []byte, algorithm store.HashAlgorithm, e
 			return journal{}, errors.New("journal replay binding does not match receipt")
 		}
 	}
-	if j.Version != 5 {
-		return journal{}, fmt.Errorf("unsupported journal version %d", j.Version)
-	}
 	if j.HashAlgorithm == "" || !j.Receipt.ResultRevision.Valid() || !strings.HasPrefix(string(j.Receipt.ResultRevision), j.HashAlgorithm+":") {
 		return journal{}, errors.New("journal hash algorithm does not match result revision")
 	}
@@ -2130,19 +2625,20 @@ func decodeJournalWithAlgorithmName(raw []byte, algorithm store.HashAlgorithm, e
 		return journal{}, errors.New("journal base manifest binding does not match receipt")
 	}
 	previous = ""
-	if len(j.Files) > DefaultMaxStagedFiles {
-		return journal{}, errors.New("journal file manifest exceeds entry limit")
+	// The decoder is an integrity gate, not the store's configured policy gate.
+	// Accept every manifest within immutable format ceilings here; recovery
+	// applies the effective Config to the complete manifest before payload I/O.
+	if err := validateStagedManifestLimits(j.Files, limits.maxFiles, limits.maxPayloadBytes, limits.maxTransactionBytes); err != nil {
+		return journal{}, fmt.Errorf("invalid journal file manifest: %w", err)
 	}
 	payloads := make(map[string]struct{}, len(j.Files))
-	var aggregate int64
 	for i, file := range j.Files {
-		if !safePath(file.Path) || file.Path <= previous || file.Payload != payloadName(i) || file.Size < 0 || file.Size > DefaultMaxStagedPayloadBytes || !validPayloadDigest(file.Digest) || aggregate > DefaultMaxStagedTransactionBytes-file.Size {
+		if !safePath(file.Path) || file.Path <= previous || file.Payload != payloadName(i) || !validPayloadDigest(file.Digest) {
 			return journal{}, errors.New("invalid journal file manifest")
 		}
 		if _, exists := payloads[file.Payload]; exists {
 			return journal{}, errors.New("duplicate journal payload")
 		}
-		aggregate += file.Size
 		previous, payloads[file.Payload] = file.Path, struct{}{}
 	}
 	canonical, err := json.Marshal(j)
@@ -2150,6 +2646,53 @@ func decodeJournalWithAlgorithmName(raw []byte, algorithm store.HashAlgorithm, e
 		return journal{}, errors.New("journal is not canonical JSON")
 	}
 	return j, nil
+}
+
+// decodeJournalTopLevelEnvelope rejects ambiguity in the generic envelope
+// without interpreting any nested version-specific value. json.RawMessage
+// preserves the exact scalar spelling for the canonical version gate.
+func decodeJournalTopLevelEnvelope(raw []byte) (map[string]json.RawMessage, error) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	token, err := decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+	if delim, ok := token.(json.Delim); !ok || delim != '{' {
+		return nil, errors.New("journal must be an object")
+	}
+	envelope := make(map[string]json.RawMessage)
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		name, ok := token.(string)
+		if !ok {
+			return nil, errors.New("journal object key is not a string")
+		}
+		if _, duplicate := envelope[name]; duplicate {
+			return nil, fmt.Errorf("duplicate JSON key %q", name)
+		}
+		var value json.RawMessage
+		if err := decoder.Decode(&value); err != nil {
+			return nil, err
+		}
+		envelope[name] = value
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, err
+	}
+	if err := requireJSONEOF(decoder); err != nil {
+		return nil, err
+	}
+	return envelope, nil
+}
+
+func validateJournalManifestBytes(raw []byte, limit int) error {
+	if limit <= 0 || len(raw) > limit {
+		return fmt.Errorf("journal manifest exceeds %d byte limit", limit)
+	}
+	return nil
 }
 
 func jsonObject(raw json.RawMessage) bool {
@@ -2182,6 +2725,23 @@ func payloadName(index int) string {
 	}
 	return fmt.Sprintf("payload-%05d", index)
 }
+
+// validateStagedManifestLimits is metadata-only. Callers must run it against
+// the complete manifest before opening the first staged payload.
+func validateStagedManifestLimits(files []journalFile, maxFiles int, maxPayloadBytes, maxTransactionBytes int64) error {
+	if maxFiles <= 0 || maxPayloadBytes <= 0 || maxTransactionBytes < maxPayloadBytes || len(files) > maxFiles {
+		return errors.New("staged file count exceeds limit")
+	}
+	var aggregate int64
+	for _, entry := range files {
+		if entry.Size < 0 || entry.Size > maxPayloadBytes || entry.Size > maxTransactionBytes || aggregate > maxTransactionBytes-entry.Size {
+			return errors.New("staged payload exceeds limit")
+		}
+		aggregate += entry.Size
+	}
+	return nil
+}
+
 func validPayloadDigest(v string) bool {
 	return len(v) == len("sha256:")+64 && strings.HasPrefix(v, "sha256:") && allHex(v[len("sha256:"):])
 }
@@ -2238,74 +2798,208 @@ func (s *Store) publish(ctx context.Context, next *snapshot, receipt store.Commi
 }
 
 func (s *Store) publishWithReplay(ctx context.Context, next *snapshot, receipt store.CommitReceipt, replay replaceReplay) (err error) {
+	return s.publishWithReplayAndManifestLimits(ctx, next, receipt, replay, productionJournalManifestByteLimits())
+}
+
+func (s *Store) publishWithReplayAndManifestLimits(
+	ctx context.Context,
+	next *snapshot,
+	receipt store.CommitReceipt,
+	replay replaceReplay,
+	manifestLimits journalManifestByteLimits,
+) (err error) {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	journaled := false
-	defer func() {
-		if journaled && ctx.Err() != nil {
-			err = ctx.Err()
-		}
-	}()
 	replay, err = sealReplay(receipt, replay)
 	if err != nil {
 		return fmt.Errorf("fs store: seal replay: %w", errors.Join(store.ErrStorageCorrupt, err))
 	}
-	j, err := s.stageJournal(next, receipt, replay)
+	j, raw, err := s.prepareJournalContext(ctx, next, receipt, replay, manifestLimits)
 	if err != nil {
 		return err
 	}
-	raw, err := json.Marshal(j)
-	if err != nil {
-		return err
-	}
-	if len(raw) > maxJournalManifestRead {
-		return fmt.Errorf("fs store: journal manifest exceeds %d byte limit", maxJournalManifestRead)
+	stageOwnership, stageErr := s.stageJournalPayloadsObserved(ctx, next, j)
+	if stageErr != nil {
+		return errors.Join(stageErr, s.cleanupOwnedStage(j, stageOwnership))
 	}
 	jp, err := journalPath(receipt.RequestDigest)
 	if err != nil {
-		return err
+		return errors.Join(err, s.cleanupOwnedStage(j, stageOwnership))
 	}
 	// A pathname that happened to be renamed is not a published journal. Its
 	// data and directory entry must both be durable before post-state apply.
-	if err := s.writeJournal(ctx, jp, raw); err != nil {
-		return err
+	publication, journalErr := s.writeJournalObserved(ctx, jp, raw)
+	if !publication.durable {
+		return errors.Join(journalErr, s.cleanupBeforeDurable(jp, publication.identity, j, stageOwnership))
 	}
-	journaled = true
-	// The journal is the point of no return. Do not consult ctx until all
-	// durable post-state work is finished; recovery follows the same path.
-	if _, err := s.apply(context.Background(), j); err != nil {
-		return err
+	if journalErr != nil {
+		// PostFault models a process stopping after the physical durability
+		// acknowledgement. Return the canonical outcome immediately and retain
+		// the journal plus stage as the sole recovery evidence.
+		return store.NewCommittedError(receipt, journalErr)
+	}
+	// The physical transaction-directory sync is the point of no return. Keep
+	// caller values, but detach cancellation while converging the durable
+	// promise. A PostFault at the boundary is an observed post-commit failure,
+	// not permission to abandon the journal.
+	durableCtx := context.WithoutCancel(ctx)
+	var postErr error
+	if journalIdentityErr := s.requireOwnedRegular(jp, publication.identity); journalIdentityErr != nil {
+		return store.NewCommittedError(receipt, journalIdentityErr)
+	}
+	if _, applyErr := s.applyWithOwnership(durableCtx, j, &stageOwnership); applyErr != nil {
+		postErr = errors.Join(postErr, applyErr)
+		return store.NewCommittedError(receipt, postCommitCause(postErr, ctx))
+	}
+	if cleanupErr := s.cleanupVisibleClaims(j); cleanupErr != nil {
+		return store.NewCommittedError(receipt, postCommitCause(cleanupErr, ctx))
 	}
 	if receipt.IdempotencyKey != "" {
-		if err := s.writeReceiptWithReplay(receipt, replay); err != nil {
-			return err
+		if receiptErr := s.writeReceiptWithReplay(receipt, replay); receiptErr != nil {
+			postErr = errors.Join(postErr, receiptErr)
+			return store.NewCommittedError(receipt, postCommitCause(postErr, ctx))
 		}
-		if err := s.pruneReceipts(); err != nil {
-			return err
+		if pruneErr := s.pruneReceipts(); pruneErr != nil {
+			postErr = errors.Join(postErr, pruneErr)
+			return store.NewCommittedError(receipt, postCommitCause(postErr, ctx))
 		}
 	}
-	if err := s.remove(jp); err != nil {
-		return err
+	if removeErr := s.removeOwnedDurableJournal(receipt.RequestDigest, jp, publication.identity); removeErr != nil {
+		postErr = errors.Join(postErr, removeErr)
+		return store.NewCommittedError(receipt, postCommitCause(postErr, ctx))
 	}
-	if err := s.syncDirAt(path.Dir(jp)); err != nil {
-		return err
+	if cleanupErr := s.cleanupVisibleInstalledClaims(durableCtx, j); cleanupErr != nil {
+		return store.NewCommittedError(receipt, postCommitCause(cleanupErr, ctx))
 	}
-	if err := s.cleanupStage(j); err != nil {
-		return err
+	if cleanupErr := s.cleanupOwnedStageStrict(j, stageOwnership); cleanupErr != nil {
+		postErr = errors.Join(postErr, cleanupErr)
+		return store.NewCommittedError(receipt, postCommitCause(postErr, ctx))
 	}
-	return ctx.Err()
+	if cause := postCommitCause(postErr, ctx); cause != nil {
+		return store.NewCommittedError(receipt, cause)
+	}
+	return nil
 }
 
-// apply advances a journal only from its recorded base state. A matching
-// result state is an interrupted post-state publication and is intentionally
-// not rewritten; recovery may then finish only private receipt/journal cleanup.
-func (s *Store) apply(ctx context.Context, j journal) (bool, error) {
+func (s *Store) requireOwnedRegular(name string, owned os.FileInfo) error {
+	current, err := s.rootFD.Lstat(name)
+	if err != nil {
+		return err
+	}
+	if owned == nil || !current.Mode().IsRegular() || !os.SameFile(owned, current) {
+		return fmt.Errorf("fs store: transaction-owned artifact changed: %s", name)
+	}
+	return nil
+}
+
+func (s *Store) removeOwnedDurableJournal(operation, name string, owned os.FileInfo) error {
+	if err := s.fail(StepRemove); err != nil {
+		return err
+	}
+	key, err := newArtifactClaimKey(operation, name, claimJournal)
+	if err != nil {
+		return err
+	}
+	removed, err := s.consumeOwnedClaim(context.Background(), key, false)
+	if err != nil {
+		return err
+	}
+	if !removed {
+		return fmt.Errorf("fs store: durable journal changed before cleanup: %s", name)
+	}
+	if err := s.postFault(StepRemove); err != nil {
+		return err
+	}
+	if err := s.syncDirAt(path.Dir(name)); err != nil {
+		return err
+	}
+	if _, err := s.rootFD.Lstat(name); !errors.Is(err, os.ErrNotExist) {
+		if err == nil {
+			return fmt.Errorf("fs store: durable journal path reappeared after cleanup: %s", name)
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *Store) cleanupOwnedStageStrict(j journal, owned stagePublicationOwnership) error {
+	if err := s.cleanupOwnedStage(j, owned); err != nil {
+		return err
+	}
+	if _, err := s.rootFD.Lstat(path.Dir(j.Stage)); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return fmt.Errorf("fs store: transaction-owned stage changed before cleanup: %s", path.Dir(j.Stage))
+}
+
+func (s *Store) captureStageDirectoryOwnership(ctx context.Context, j journal) (stagePublicationOwnership, error) {
+	owned := stagePublicationOwnership{directories: make(map[string]os.FileInfo, 2), payloads: make(map[string]os.FileInfo, len(j.Files))}
+	for _, name := range []string{path.Dir(j.Stage), j.Stage} {
+		info, err := s.rootFD.Lstat(name)
+		if err != nil {
+			return owned, err
+		}
+		if info == nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return owned, metadataCorrupt(fmt.Errorf("invalid transaction-owned stage directory: %s", name))
+		}
+		key, err := newArtifactClaimKey(j.Receipt.RequestDigest, name, claimStageDir)
+		if err != nil {
+			return owned, err
+		}
+		verified, err := s.verifyDirectoryWitnessAt(ctx, key, name, info)
+		if err != nil {
+			return owned, err
+		}
+		owned.directories[name] = verified
+	}
+	for _, entry := range j.Files {
+		name := path.Join(j.Stage, entry.Payload)
+		info, err := s.rootFD.Lstat(name)
+		if errors.Is(err, os.ErrNotExist) {
+			return owned, metadataCorrupt(fmt.Errorf("declared staged payload is missing: %s: %w", name, err))
+		}
+		if err != nil {
+			return owned, err
+		}
+		key, err := newArtifactClaimKey(j.Receipt.RequestDigest, name, claimPayload)
+		if err != nil {
+			return owned, err
+		}
+		if _, err := s.verifyInstalledRegularArtifact(ctx, key, name, info); err != nil {
+			return owned, err
+		}
+		owned.payloads[name] = info
+	}
+	return owned, nil
+}
+
+func (s *Store) cleanupBeforeDurable(journalName string, journalIdentity os.FileInfo, j journal, stage stagePublicationOwnership) error {
+	absent, err := s.cleanupUnpublishedJournal(j.Receipt.RequestDigest, journalName, journalIdentity)
+	if err != nil {
+		return err
+	}
+	if !absent {
+		return errors.New("fs store: unpublished journal path is not transaction-owned; stage preserved")
+	}
+	return s.cleanupOwnedStage(j, stage)
+}
+
+func postCommitCause(operationErr error, caller context.Context) error {
+	if operationErr != nil {
+		return operationErr
+	}
+	return caller.Err()
+}
+
+func (s *Store) applyWithOwnership(ctx context.Context, j journal, ownership *stagePublicationOwnership) (bool, error) {
 	if !j.Receipt.ResultRevision.IsZero() && !j.Receipt.ResultRevision.Valid() {
-		return false, fmt.Errorf("fs store: invalid journal result revision")
+		return false, metadataCorrupt(fmt.Errorf("fs store: invalid journal result revision"))
 	}
 	if j.Version != 5 || j.HashAlgorithm != s.hashAlgorithmName || !strings.HasPrefix(string(j.Receipt.ResultRevision), s.hashAlgorithmName+":") {
-		return false, fmt.Errorf("fs store: journal hash algorithm does not match configured algorithm")
+		return false, metadataCorrupt(fmt.Errorf("fs store: journal hash algorithm does not match configured algorithm"))
 	}
 	if err := s.validateJournalFilesystemPathAliasTransition(j.Base, j.Files); err != nil {
 		return false, metadataCorrupt(err)
@@ -2315,9 +3009,9 @@ func (s *Store) apply(ctx context.Context, j journal) (bool, error) {
 	// and rejects extras/size mismatches before open, so editor drift cannot
 	// allocate attacker-sized current bytes or mask a bad staged payload.
 	if err := s.validateCurrentJournalProvenance(ctx, j.Base, j.Files); err != nil {
-		return false, metadataCorrupt(err)
+		return false, err
 	}
-	next, err := s.readStagedJournal(j)
+	next, err := s.readStagedJournal(ctx, j, ownership)
 	if err != nil {
 		return false, err
 	}
@@ -2327,24 +3021,27 @@ func (s *Store) apply(ctx context.Context, j journal) (bool, error) {
 	}
 	report, blocked, _, err := s.validateStagedSource(ctx, staged)
 	if err != nil {
-		return false, err
+		if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
+			return false, err
+		}
+		return false, metadataCorrupt(err)
 	}
-	if !report.IsConformant() || blocked {
-		return false, errors.New("fs store: journal staged post-state fails validation")
+	if report.ExitCode() != 0 || blocked {
+		return false, metadataCorrupt(errors.New("fs store: journal staged post-state fails validation"))
 	}
 	if j.Receipt.ResultRevision.Valid() {
-		actual, err := newSnapshotWithAlgorithm(context.Background(), next, s.config.HashAlgorithm)
+		actual, err := newSnapshotWithAlgorithm(ctx, next, s.config.HashAlgorithm)
 		if err != nil {
 			return false, err
 		}
 		if actual.Revision() != j.Receipt.ResultRevision {
-			return false, fmt.Errorf("fs store: journal content does not match receipt revision")
+			return false, metadataCorrupt(fmt.Errorf("fs store: journal content does not match receipt revision"))
 		}
 	}
 	// Materialization is intentionally after the metadata/streaming gate and
 	// staged payload verification. It is needed only for the actual idempotent
 	// apply comparison, never to decide whether staged bytes may be opened.
-	current, err := readVisibleRoot(ctx, s.rootFD)
+	current, err := s.readVisibleRoot(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -2355,55 +3052,198 @@ func (s *Store) apply(ctx context.Context, j journal) (bool, error) {
 	baseExact := currentSnapshot.Revision() == j.Receipt.BaseRevision && sameBaseManifest(current, j.Base)
 	resultExact := currentSnapshot.Revision() == j.Receipt.ResultRevision && sameVisibleFiles(current, next)
 	if resultExact {
+		// A prior syscall may have made the journal result visible and then
+		// failed at its PostFault before acknowledging the destination
+		// namespace. Visibility is therefore not durability evidence. Replay
+		// every directory that can contain a journal-visible path before
+		// private receipt/journal cleanup is allowed to forget the promise.
+		if err := s.syncJournalVisibleNamespace(ctx, j); err != nil {
+			return false, err
+		}
 		return false, nil
 	}
 	if !baseExact {
 		if !currentMatchesJournalStates(current, j.Base, next) {
-			return false, fmt.Errorf("fs store: journal base/result state mismatch: current=%s base=%s result=%s", currentSnapshot.Revision(), j.Receipt.BaseRevision, j.Receipt.ResultRevision)
+			return false, metadataCorrupt(fmt.Errorf("fs store: journal base/result state mismatch: current=%s base=%s result=%s", currentSnapshot.Revision(), j.Receipt.BaseRevision, j.Receipt.ResultRevision))
+		}
+		if rootSignpostPrecedesIncompleteResult(current, j.Base, next) {
+			return false, metadataCorrupt(errors.New("fs store: root index signpost precedes incomplete journal result"))
 		}
 		// A crash can occur after any individual visible write, rename, removal,
 		// or directory sync. Every path has durable base/result provenance, so
-		// this mixed state is safe to finish idempotently.
+		// this forward mixed state is safe to finish idempotently. index.md is the
+		// final signpost: once it is at result, every non-root path must be there.
 	}
-	paths := make([]string, 0, len(next))
-	for p := range next {
-		paths = append(paths, p)
-	}
-	sort.Strings(paths)
-	for _, p := range paths {
-		b := next[p]
-		if old, ok := current[p]; !ok || string(old) != string(b) {
-			if err := s.writeFile(p, b); err != nil {
+	for _, p := range visibleApplicationOrder(current, next) {
+		expected, identityErr := s.captureMutationTarget(p)
+		if identityErr != nil {
+			return false, identityErr
+		}
+		expected.operation = j.Receipt.RequestDigest
+		if data, exists := next[p]; exists {
+			if err := s.writeFileGuarded(ctx, p, data, expected); err != nil {
 				return false, err
 			}
+			continue
 		}
-		delete(current, p)
-	}
-	obsolete := make([]string, 0, len(current))
-	for p := range current {
-		obsolete = append(obsolete, p)
-	}
-	sort.Strings(obsolete)
-	for _, p := range obsolete {
-		if err := s.remove(p); err != nil {
-			return false, err
-		}
-		if err := s.syncDirAt(path.Dir(p)); err != nil {
+		if err := s.removeVisibleGuarded(ctx, p, expected); err != nil {
 			return false, err
 		}
 	}
-	verifiedFiles, err := readVisibleRoot(ctx, s.rootFD)
+	verifiedFiles, err := s.readVisibleRoot(ctx)
 	if err != nil {
 		return false, err
 	}
 	if !sameVisibleFiles(verifiedFiles, next) {
-		return false, errors.New("fs store: post-apply visible state does not match journal result")
+		return false, metadataCorrupt(errors.New("fs store: post-apply visible state does not match journal result"))
 	}
 	verified, err := newSnapshotWithAlgorithm(ctx, verifiedFiles, s.config.HashAlgorithm)
 	if err != nil || verified.Revision() != j.Receipt.ResultRevision {
-		return false, errors.New("fs store: post-apply revision does not match journal receipt")
+		return false, metadataCorrupt(errors.New("fs store: post-apply revision does not match journal receipt"))
+	}
+	if err := s.syncJournalVisibleNamespace(ctx, j); err != nil {
+		return false, err
 	}
 	return true, nil
+}
+
+func (s *Store) captureMutationTarget(name string) (mutationTargetIdentity, error) {
+	info, err := s.rootFD.Lstat(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return mutationTargetIdentity{absent: true}, nil
+	}
+	if err != nil {
+		return mutationTargetIdentity{}, err
+	}
+	if !info.Mode().IsRegular() {
+		return mutationTargetIdentity{}, errMutationTargetChanged(name)
+	}
+	return mutationTargetIdentity{info: info}, nil
+}
+
+func (s *Store) removeVisibleGuarded(ctx context.Context, name string, expected mutationTargetIdentity) error {
+	step := s.durableStep(name, StepRemove)
+	if err := s.fail(step); err != nil {
+		return err
+	}
+	if expected.operation == "" {
+		return errArtifactClaimConflict
+	}
+	if err := s.removeVisibleClaimed(ctx, name, expected, step); err != nil {
+		return err
+	}
+	return nil
+}
+
+// syncJournalVisibleNamespace closes the recovery gap between a visible
+// namespace syscall and its skipped PostFault durability boundary. The union
+// is intentionally conservative: recovery can prove the journal's base/result
+// provenance, but a result-exact retry cannot prove which individual rename,
+// removal, or mkdir was acknowledged before the interrupted process stopped.
+func (s *Store) syncJournalVisibleNamespace(ctx context.Context, j journal) error {
+	directories := make(map[string]struct{}, len(j.Base)+len(j.Files)+1)
+	addAncestors := func(name string) {
+		dir := path.Dir(name)
+		for {
+			directories[dir] = struct{}{}
+			if dir == "." {
+				return
+			}
+			dir = path.Dir(dir)
+		}
+	}
+	for _, file := range j.Base {
+		addAncestors(file.Path)
+	}
+	for _, file := range j.Files {
+		addAncestors(file.Path)
+	}
+	return s.syncNamespaceDirectories(ctx, directories)
+}
+
+func (s *Store) syncNamespaceDirectories(ctx context.Context, directories map[string]struct{}) error {
+	ordered := make([]string, 0, len(directories))
+	for dir := range directories {
+		ordered = append(ordered, dir)
+	}
+	sort.Slice(ordered, func(i, j int) bool {
+		leftDepth := namespaceDepth(ordered[i])
+		rightDepth := namespaceDepth(ordered[j])
+		if leftDepth != rightDepth {
+			return leftDepth > rightDepth
+		}
+		return ordered[i] < ordered[j]
+	})
+	for _, dir := range ordered {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := s.syncDirAt(dir); err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+func namespaceDepth(dir string) int {
+	if dir == "." || dir == "" {
+		return 0
+	}
+	return strings.Count(path.Clean(dir), "/") + 1
+}
+
+func knownPrivateDirectories() []string {
+	return []string{
+		internalDirectory,
+		path.Join(internalDirectory, "transactions"),
+		path.Join(internalDirectory, "staging"),
+		path.Join(internalDirectory, "receipts"),
+		path.Join(internalDirectory, "capabilities"),
+		claimDirectory,
+		temporaryDirectory,
+	}
+}
+
+func (s *Store) syncKnownPrivateNamespace(ctx context.Context) error {
+	directories := make(map[string]struct{}, len(knownPrivateDirectories())+1)
+	for _, name := range knownPrivateDirectories() {
+		for dir := name; ; dir = path.Dir(dir) {
+			directories[dir] = struct{}{}
+			if dir == "." {
+				break
+			}
+		}
+	}
+	return s.syncNamespaceDirectories(ctx, directories)
+}
+
+// visibleApplicationOrder derives the deterministic physical publication
+// sequence without changing either journal or receipt canonical ordering.
+// index.md is the root revision signpost, so it is applied only after every
+// other revision-visible write or removal has reached its durability boundary.
+func visibleApplicationOrder(current, next map[string][]byte) []string {
+	paths := make([]string, 0, len(current)+len(next))
+	for p, data := range next {
+		old, exists := current[p]
+		if !exists || !bytes.Equal(old, data) {
+			paths = append(paths, p)
+		}
+	}
+	for p := range current {
+		if _, exists := next[p]; !exists {
+			paths = append(paths, p)
+		}
+	}
+	sort.Strings(paths)
+	for i, p := range paths {
+		if p != "index.md" {
+			continue
+		}
+		copy(paths[i:], paths[i+1:])
+		paths[len(paths)-1] = p
+		break
+	}
+	return paths
 }
 
 func sameBaseManifest(files map[string][]byte, base []journalBaseFile) bool {
@@ -2462,48 +3302,85 @@ func currentMatchesJournalStates(current map[string][]byte, base []journalBaseFi
 	return true
 }
 
-func currentMatchesJournalMetadata(current map[string][]byte, base []journalBaseFile, result []journalFile) bool {
+// rootSignpostPrecedesIncompleteResult detects a reverse publication state
+// that cannot be produced by this store: an actually changed root index.md is
+// already at result while at least one non-root path is not. Recovery must not
+// publish that missing non-root work after the root revision signpost.
+func rootSignpostPrecedesIncompleteResult(current map[string][]byte, base []journalBaseFile, result map[string][]byte) bool {
+	const signpost = "index.md"
+
 	baseByPath := make(map[string]journalBaseFile, len(base))
-	resultByPath := make(map[string]journalFile, len(result))
-	paths := make(map[string]struct{}, len(base)+len(result))
 	for _, entry := range base {
 		baseByPath[entry.Path] = entry
-		paths[entry.Path] = struct{}{}
 	}
-	for _, entry := range result {
-		resultByPath[entry.Path] = entry
-		paths[entry.Path] = struct{}{}
-	}
-	if len(current) > len(paths) {
+	rootMatchesBase := matchesJournalBaseState(current, signpost, baseByPath)
+	rootMatchesResult := matchesJournalResultState(current, signpost, result)
+	if !rootMatchesResult || rootMatchesBase {
 		return false
 	}
-	for p := range current {
-		if _, ok := paths[p]; !ok {
-			return false
+
+	paths := make(map[string]struct{}, len(base)+len(result))
+	for path := range baseByPath {
+		if path != signpost {
+			paths[path] = struct{}{}
 		}
 	}
-	for p := range paths {
-		data, exists := current[p]
-		b, hasBase := baseByPath[p]
-		r, hasResult := resultByPath[p]
-		if !exists {
-			if hasBase && hasResult {
-				return false
-			}
-			continue
-		}
-		matchesBase := hasBase && int64(len(data)) == b.Size && sha256Digest(data) == b.Digest
-		matchesResult := hasResult && int64(len(data)) == r.Size && sha256Digest(data) == r.Digest
-		if !matchesBase && !matchesResult {
-			return false
+	for path := range result {
+		if path != signpost {
+			paths[path] = struct{}{}
 		}
 	}
-	return true
+	for path := range paths {
+		if !matchesJournalResultState(current, path, result) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesJournalBaseState(current map[string][]byte, path string, base map[string]journalBaseFile) bool {
+	data, exists := current[path]
+	entry, expected := base[path]
+	if !expected {
+		return !exists
+	}
+	return exists && int64(len(data)) == entry.Size && entry.Digest == sha256Digest(data)
+}
+
+func matchesJournalResultState(current map[string][]byte, path string, result map[string][]byte) bool {
+	data, exists := current[path]
+	expected, wanted := result[path]
+	if !wanted {
+		return !exists
+	}
+	return exists && bytes.Equal(data, expected)
 }
 
 func sha256Digest(data []byte) string {
 	sum := sha256.Sum256(data)
 	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+func sha256DigestContext(ctx context.Context, data []byte) (string, error) {
+	h := sha256.New()
+	const chunk = 64 << 10
+	for offset := 0; offset < len(data); {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+		end := offset + chunk
+		if end > len(data) {
+			end = len(data)
+		}
+		if _, err := h.Write(data[offset:end]); err != nil {
+			return "", err
+		}
+		offset = end
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func sameVisibleFiles(left, right map[string][]byte) bool {
@@ -2519,63 +3396,166 @@ func sameVisibleFiles(left, right map[string][]byte) bool {
 	return true
 }
 
-func (s *Store) stageJournal(next *snapshot, receipt store.CommitReceipt, replay replaceReplay) (journal, error) {
+func (s *Store) prepareJournalContext(
+	ctx context.Context,
+	next *snapshot,
+	receipt store.CommitReceipt,
+	replay replaceReplay,
+	manifestLimits journalManifestByteLimits,
+) (journal, []byte, error) {
+	if err := ctx.Err(); err != nil {
+		return journal{}, nil, err
+	}
 	stage, err := journalStage(receipt.RequestDigest)
 	if err != nil {
-		return journal{}, err
+		return journal{}, nil, err
 	}
-	baseFiles, err := readVisibleRoot(context.Background(), s.rootFD)
+	baseFiles, err := s.readVisibleRoot(ctx)
 	if err != nil {
-		return journal{}, err
+		return journal{}, nil, err
 	}
-	base, err := newSnapshotWithAlgorithm(context.Background(), baseFiles, s.config.HashAlgorithm)
+	base, err := newSnapshotWithAlgorithm(ctx, baseFiles, s.config.HashAlgorithm)
 	if err != nil {
-		return journal{}, err
+		return journal{}, nil, err
 	}
 	if base.Revision() != receipt.BaseRevision {
-		return journal{}, errors.New("fs store: visible base does not match receipt")
+		return journal{}, nil, errors.New("fs store: visible base does not match receipt")
 	}
 	if err := s.validateFilesystemPathAliasTransition(base.files, next.files); err != nil {
-		return journal{}, err
+		return journal{}, nil, err
 	}
-	j := journal{Version: 5, HashAlgorithm: s.hashAlgorithmName, Stage: stage, Receipt: receipt}
-	for _, p := range sortedFilePaths(base.files) {
-		data := base.files[p]
-		sum := sha256.Sum256(data)
-		j.Base = append(j.Base, journalBaseFile{Path: p, Size: int64(len(data)), Digest: "sha256:" + hex.EncodeToString(sum[:])})
+	j := journal{
+		Version:       5,
+		HashAlgorithm: s.hashAlgorithmName,
+		Stage:         stage,
+		Base:          []journalBaseFile{},
+		Files:         []journalFile{},
+		Receipt:       receipt,
 	}
-	j.BaseBinding, err = journalBaseBinding(receipt, j.Base)
+	basePaths, err := sortedFilePathsContext(ctx, base.files)
 	if err != nil {
-		return journal{}, err
+		return journal{}, nil, err
+	}
+	for _, p := range basePaths {
+		if err := ctx.Err(); err != nil {
+			return journal{}, nil, err
+		}
+		data := base.files[p]
+		digest, err := sha256DigestContext(ctx, data)
+		if err != nil {
+			return journal{}, nil, err
+		}
+		j.Base = append(j.Base, journalBaseFile{Path: p, Size: int64(len(data)), Digest: digest})
+	}
+	j.BaseBinding, err = journalBaseBindingContext(ctx, receipt, j.Base)
+	if err != nil {
+		return journal{}, nil, err
 	}
 	if replay.Validation.Diagnostics != nil {
 		j.Replay = &replay
 	}
-	paths := sortedFilePaths(next.files)
+	paths, err := sortedFilePathsContext(ctx, next.files)
+	if err != nil {
+		return journal{}, nil, err
+	}
 	if len(paths) > s.config.MaxStagedFiles {
-		return journal{}, fmt.Errorf("%w: staged file limit exceeded", store.ErrInvalidChangeSet)
+		return journal{}, nil, fmt.Errorf("%w: staged file limit exceeded", store.ErrInvalidChangeSet)
 	}
 	var aggregate int64
 	for _, p := range paths {
+		if err := ctx.Err(); err != nil {
+			return journal{}, nil, err
+		}
 		size := int64(len(next.files[p]))
 		if size > s.config.MaxStagedPayloadBytes || aggregate > s.config.MaxStagedTransactionBytes-size {
-			return journal{}, fmt.Errorf("%w: staged payload limit exceeded", store.ErrInvalidChangeSet)
+			return journal{}, nil, fmt.Errorf("%w: staged payload limit exceeded", store.ErrInvalidChangeSet)
 		}
 		aggregate += size
 	}
 	for i, p := range paths {
+		if err := ctx.Err(); err != nil {
+			return journal{}, nil, err
+		}
 		if !safePath(p) {
-			return journal{}, fmt.Errorf("fs store: invalid journal path %q", p)
+			return journal{}, nil, fmt.Errorf("fs store: invalid journal path %q", p)
 		}
 		payload := payloadName(i)
 		data := next.files[p]
-		sum := sha256.Sum256(data)
-		j.Files = append(j.Files, journalFile{Path: p, Payload: payload, Size: int64(len(data)), Digest: "sha256:" + hex.EncodeToString(sum[:])})
-		if err := s.writePrivateDurableAt(path.Join(stage, payload), data); err != nil {
-			return journal{}, err
+		digest, err := sha256DigestContext(ctx, data)
+		if err != nil {
+			return journal{}, nil, err
+		}
+		j.Files = append(j.Files, journalFile{Path: p, Payload: payload, Size: int64(len(data)), Digest: digest})
+	}
+	raw, err := json.Marshal(j)
+	if err != nil {
+		return journal{}, nil, err
+	}
+	for _, limit := range []int{manifestLimits.absolute, manifestLimits.effective} {
+		if err := validateJournalManifestBytes(raw, limit); err != nil {
+			return journal{}, nil, fmt.Errorf("fs store: %w", err)
 		}
 	}
-	return j, nil
+	if _, err := decodeJournalWithAlgorithmNameAndLimits(raw, s.config.HashAlgorithm, s.hashAlgorithmName, absoluteStagedManifestLimits()); err != nil {
+		return journal{}, nil, fmt.Errorf("fs store: generated invalid journal: %w", errors.Join(store.ErrStorageCorrupt, err))
+	}
+	return j, raw, nil
+}
+
+type stagePublicationOwnership struct {
+	directories map[string]os.FileInfo
+	payloads    map[string]os.FileInfo
+}
+
+func (s *Store) stageJournalPayloadsObserved(ctx context.Context, next *snapshot, j journal) (stagePublicationOwnership, error) {
+	owned := stagePublicationOwnership{directories: make(map[string]os.FileInfo, 2), payloads: make(map[string]os.FileInfo, len(j.Files))}
+	if err := ctx.Err(); err != nil {
+		return owned, err
+	}
+	for _, directory := range []string{path.Dir(j.Stage), j.Stage} {
+		key, err := newArtifactClaimKey(j.Receipt.RequestDigest, directory, claimStageDir)
+		if err != nil {
+			return owned, err
+		}
+		identity, err := s.createOwnedStageDirectory(ctx, key)
+		if identity != nil {
+			current, statErr := s.rootFD.Lstat(directory)
+			if statErr == nil && current.IsDir() && os.SameFile(identity, current) {
+				owned.directories[directory] = identity
+			} else if err != nil {
+				cleanupErr := s.cleanupAttemptStageBuild(ctx, key, identity)
+				return owned, errors.Join(err, cleanupErr)
+			} else {
+				return owned, errors.Join(errArtifactClaimConflict, statErr)
+			}
+		}
+		if err != nil {
+			return owned, err
+		}
+	}
+	for _, entry := range j.Files {
+		if err := ctx.Err(); err != nil {
+			return owned, err
+		}
+		data, ok := next.files[entry.Path]
+		digest, digestErr := sha256DigestContext(ctx, data)
+		if digestErr != nil {
+			return owned, digestErr
+		}
+		if !ok || int64(len(data)) != entry.Size || digest != entry.Digest {
+			return owned, fmt.Errorf("fs store: generated journal payload metadata drift: %w", store.ErrStorageCorrupt)
+		}
+		payloadPath := path.Join(j.Stage, entry.Payload)
+		publication := journalPublication{operation: j.Receipt.RequestDigest, role: claimPayload}
+		if err := s.writePrivateDurableAtObserved(ctx, payloadPath, data, &publication); err != nil {
+			if publication.identity != nil {
+				owned.payloads[payloadPath] = publication.identity
+			}
+			return owned, err
+		}
+		owned.payloads[payloadPath] = publication.identity
+	}
+	return owned, ctx.Err()
 }
 
 func sortedFilePaths(files map[string][]byte) []string {
@@ -2587,13 +3567,41 @@ func sortedFilePaths(files map[string][]byte) []string {
 	return paths
 }
 
+func sortedFilePathsContext(ctx context.Context, files map[string][]byte) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	paths := make([]string, 0, len(files))
+	for p := range files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
 func journalBaseBinding(receipt store.CommitReceipt, base []journalBaseFile) (string, error) {
+	return journalBaseBindingContext(context.Background(), receipt, base)
+}
+
+func journalBaseBindingContext(ctx context.Context, receipt store.CommitReceipt, base []journalBaseFile) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	canonical, err := json.Marshal(base)
 	if err != nil {
 		return "", err
 	}
 	h := sha256.New()
 	for _, value := range [][]byte{[]byte("okf:journal-base:v1"), []byte(receipt.RequestDigest), []byte(receipt.BaseRevision), []byte(receipt.ResultRevision), canonical} {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
 		var n [8]byte
 		binary.BigEndian.PutUint64(n[:], uint64(len(value)))
 		if _, err := h.Write(n[:]); err != nil {
@@ -2606,26 +3614,38 @@ func journalBaseBinding(receipt store.CommitReceipt, base []journalBaseFile) (st
 	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func (s *Store) readStagedJournal(j journal) (map[string][]byte, error) {
-	if len(j.Files) > s.config.MaxStagedFiles {
-		return nil, metadataCorrupt(errors.New("staged file count exceeds configured limit"))
+func (s *Store) readStagedJournal(ctx context.Context, j journal, ownership *stagePublicationOwnership) (map[string][]byte, error) {
+	if err := validateStagedManifestLimits(j.Files, s.config.MaxStagedFiles, s.config.MaxStagedPayloadBytes, s.config.MaxStagedTransactionBytes); err != nil {
+		return nil, metadataCorrupt(fmt.Errorf("staged manifest exceeds configured limit: %w", err))
 	}
 	next := make(map[string][]byte, len(j.Files))
-	var aggregate int64
 	for _, entry := range j.Files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !safePath(entry.Path) || !safeStageDirectory(j.Stage) || !safePayloadName(entry.Payload) {
 			return nil, metadataCorrupt(errors.New("unsafe staged payload reference"))
 		}
-		if entry.Size < 0 || entry.Size > s.config.MaxStagedPayloadBytes || aggregate > s.config.MaxStagedTransactionBytes-entry.Size {
-			return nil, metadataCorrupt(errors.New("staged payload exceeds configured limit"))
-		}
-		aggregate += entry.Size
 		// Payloads are revision-visible bytes, not metadata. Their declared size
 		// is checked against the opened regular file, while the journal itself
 		// remains bounded above. This is what permits legitimate large assets.
-		data, err := readMetadataLimit(context.Background(), s.rootFD, path.Join(j.Stage, entry.Payload), entry.Size)
+		payloadPath := path.Join(j.Stage, entry.Payload)
+		var data []byte
+		var err error
+		if ownership == nil {
+			return nil, errArtifactClaimConflict
+		} else {
+			expected, exists := ownership.payloads[payloadPath]
+			if !exists {
+				return nil, errArtifactClaimConflict
+			}
+			data, err = s.readMetadataLimitOwned(ctx, payloadPath, entry.Size, expected)
+		}
 		if err != nil {
-			return nil, metadataCorrupt(err)
+			if errors.Is(err, os.ErrNotExist) {
+				return nil, metadataCorrupt(fmt.Errorf("declared staged payload is missing: %s: %w", payloadPath, err))
+			}
+			return nil, err
 		}
 		if int64(len(data)) != entry.Size {
 			return nil, metadataCorrupt(errors.New("staged payload size mismatch"))
@@ -2639,7 +3659,7 @@ func (s *Store) readStagedJournal(j journal) (map[string][]byte, error) {
 	if err := s.validateFilesystemPathAliases(next); err != nil {
 		return nil, metadataCorrupt(err)
 	}
-	actual, err := newSnapshotWithAlgorithm(context.Background(), next, s.config.HashAlgorithm)
+	actual, err := newSnapshotWithAlgorithm(ctx, next, s.config.HashAlgorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -2649,58 +3669,118 @@ func (s *Store) readStagedJournal(j journal) (map[string][]byte, error) {
 	return next, nil
 }
 
-// cleanupStage is only called before a journal is published or after that
-// journal has been durably removed. It therefore can never discard recovery's
-// sole copy of post-state. Every name comes from the validated manifest.
-func (s *Store) cleanupStage(j journal) error {
+// cleanupOwnedStage is the pre-journal abort path. It removes only inodes
+// installed by this attempt; same-name replacements and unrelated entries are
+// preserved without turning an otherwise safe abort into a namespace sweep.
+func (s *Store) cleanupOwnedStage(j journal, owned stagePublicationOwnership) error {
 	if !safeStageDirectory(j.Stage) {
-		return metadataCorrupt(errors.New("unsafe stage cleanup path"))
+		return metadataCorrupt(errors.New("unsafe owned stage cleanup path"))
 	}
-	for _, entry := range j.Files {
-		if !safePayloadName(entry.Payload) {
-			return metadataCorrupt(errors.New("unsafe stage payload cleanup path"))
-		}
-		if err := s.cleanupRemoveFile(path.Join(j.Stage, entry.Payload)); err != nil {
+	payloadPaths := make([]string, 0, len(owned.payloads))
+	for name := range owned.payloads {
+		payloadPaths = append(payloadPaths, name)
+	}
+	sort.Strings(payloadPaths)
+	for _, name := range payloadPaths {
+		if err := s.cleanupOwnedFile(j.Receipt.RequestDigest, name, owned.payloads[name]); err != nil {
 			return err
 		}
+	}
+	payloadCurrent, payloadMatches, err := s.ownedDirectory(j.Stage, owned.directories[j.Stage])
+	if err != nil {
+		return err
+	}
+	if payloadCurrent {
 		if err := s.cleanupSyncDir(j.Stage, StepStageCleanupPayloadDirectory); err != nil {
 			return err
 		}
+		if !payloadMatches {
+			return nil
+		}
+		if err := s.cleanupOwnedDirectory(j.Receipt.RequestDigest, j.Stage, owned.directories[j.Stage], StepStageCleanupPayloadDirRemove); err != nil {
+			return err
+		}
 	}
-	if err := s.cleanupRemoveDir(j.Stage, StepStageCleanupPayloadDirRemove); err != nil {
+	stageName := path.Dir(j.Stage)
+	stageCurrent, stageMatches, err := s.ownedDirectory(stageName, owned.directories[stageName])
+	if err != nil {
 		return err
 	}
-	parent := path.Dir(j.Stage)
-	if err := s.cleanupSyncDir(parent, StepStageCleanupStageDirectory); err != nil {
-		return err
+	if stageCurrent {
+		if err := s.cleanupSyncDir(stageName, StepStageCleanupStageDirectory); err != nil {
+			return err
+		}
+		if !stageMatches {
+			return nil
+		}
+		if err := s.cleanupOwnedDirectory(j.Receipt.RequestDigest, stageName, owned.directories[stageName], StepStageCleanupStageDirRemove); err != nil {
+			return err
+		}
 	}
-	if err := s.cleanupRemoveDir(parent, StepStageCleanupStageDirRemove); err != nil {
-		return err
-	}
-	if err := s.cleanupSyncDir(path.Dir(parent), StepStageCleanupRootDirectory); err != nil {
-		return err
-	}
-	return nil
+	return s.cleanupSyncDir(path.Dir(stageName), StepStageCleanupRootDirectory)
 }
 
-func (s *Store) cleanupRemoveFile(name string) error {
+func (s *Store) cleanupOwnedFile(operation, name string, owned os.FileInfo) error {
+	if owned == nil {
+		return nil
+	}
 	if err := s.fail(StepStageCleanupPayloadRemove); err != nil {
 		return err
 	}
-	err := s.fdRemove(name)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	key, err := newArtifactClaimKey(operation, name, claimPayload)
+	if err != nil {
 		return err
+	}
+	removed, err := s.consumeOwnedClaim(context.Background(), key, false)
+	if err != nil {
+		return err
+	}
+	if !removed {
+		return nil
 	}
 	return s.postFault(StepStageCleanupPayloadRemove)
 }
 
-func (s *Store) cleanupRemoveDir(name string, step Step) error {
+func (s *Store) ownedDirectory(name string, owned os.FileInfo) (exists, matches bool, err error) {
+	current, err := s.rootFD.Lstat(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, false, nil
+	}
+	if err != nil {
+		return false, false, err
+	}
+	if !current.IsDir() || current.Mode()&os.ModeSymlink != 0 {
+		return true, false, nil
+	}
+	return true, owned != nil && os.SameFile(owned, current), nil
+}
+
+func (s *Store) cleanupOwnedDirectory(operation, name string, owned os.FileInfo, step Step) error {
+	key, err := newArtifactClaimKey(operation, name, claimStageDir)
+	if err != nil {
+		return err
+	}
+	// Directory creation and its sentinel publication are two separately
+	// faultable operations.  The same attempt still has a pinned inode witness
+	// when sentinel publication stops early, so finish that ownership record
+	// before entering the claim protocol.  Recovery never takes this path for a
+	// legacy directory: it lacks the attempt-local inode in owned.
+	current, err := s.rootFD.Lstat(name)
+	if err != nil {
+		return err
+	}
+	if owned == nil || current == nil || !current.IsDir() || !os.SameFile(owned, current) {
+		return errArtifactClaimConflict
+	}
 	if err := s.fail(step); err != nil {
 		return err
 	}
-	err := s.fdRemoveDir(name)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	removed, err := s.consumeOwnedClaim(context.Background(), key, true)
+	if err != nil {
 		return err
+	}
+	if !removed {
+		return nil
 	}
 	return s.postFault(step)
 }
@@ -2714,52 +3794,95 @@ func (s *Store) cleanupSyncDir(name string, step Step) error {
 			return err
 		}
 	}
-	if err := s.fdSyncDir(name); err != nil {
+	if err := s.syncDirectory(name); err != nil {
 		return err
 	}
 	return s.postFault(step)
 }
 
-func (s *Store) writeJournal(ctx context.Context, target string, data []byte) error {
+type journalPublication struct {
+	identity  os.FileInfo
+	durable   bool
+	postFault bool
+	operation string
+	role      artifactRole
+}
+
+func (s *Store) writeJournalObserved(ctx context.Context, target string, data []byte) (journalPublication, error) {
+	publication := journalPublication{}
+	decoded, decodeErr := decodeJournalWithAlgorithmNameAndLimits(data, s.config.HashAlgorithm, s.hashAlgorithmName, absoluteStagedManifestLimits())
+	if decodeErr != nil {
+		return publication, metadataCorrupt(decodeErr)
+	}
+	publication.operation = decoded.Receipt.RequestDigest
+	publication.role = claimJournal
 	if err := s.fail(StepJournalWrite); err != nil {
-		return err
+		return publication, err
 	}
 	if err := ctx.Err(); err != nil {
-		return err
+		return publication, err
 	}
-	if err := s.writePrivateDurableAt(target, data); err != nil {
-		return err
+	if err := s.writePrivateDurableAtObserved(ctx, target, data, &publication); err != nil {
+		return publication, err
 	}
-	return s.postFault(StepJournalWrite)
+	return publication, s.postFault(StepJournalWrite)
 }
-func (s *Store) writeFile(target string, data []byte) error {
-	return s.writeDurableAt(target, data, 0o644)
+
+// cleanupUnpublishedJournal removes only the inode installed by this
+// publication attempt. A same-name foreign replacement is evidence outside
+// the transaction and must survive pre-boundary cleanup.
+func (s *Store) cleanupUnpublishedJournal(operation, name string, owned os.FileInfo) (bool, error) {
+	if owned != nil {
+		if err := s.fail(StepRemove); err != nil {
+			return false, err
+		}
+		key, err := newArtifactClaimKey(operation, name, claimJournal)
+		if err != nil {
+			return false, err
+		}
+		removed, err := s.consumeOwnedClaim(context.Background(), key, false)
+		if err != nil {
+			return false, err
+		}
+		if removed {
+			if err := s.postFault(StepRemove); err != nil {
+				return false, err
+			}
+		}
+	}
+	if err := s.syncDirAt(path.Dir(name)); err != nil {
+		return false, err
+	}
+	_, err := s.rootFD.Lstat(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
-func (s *Store) remove(target string) error {
-	step := s.durableStep(target, StepRemove)
-	if err := s.fail(step); err != nil {
-		return err
-	}
-	removeErr := s.fdRemove(target)
-	if removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
-		return removeErr
-	}
-	// A retry which sees ENOENT cannot prove that a previous process did not
-	// unlink this entry just before crashing.  Sync the parent on both paths.
-	postRemoveErr := s.postFault(step)
-	syncErr := s.syncDirAt(path.Dir(target))
-	return errors.Join(postRemoveErr, syncErr)
+func (s *Store) writeFileGuarded(ctx context.Context, target string, data []byte, expected mutationTargetIdentity) error {
+	return s.writeDurableAtObserved(ctx, target, data, 0o644, nil, &expected)
 }
 func (s *Store) syncDirAt(dir string) error {
+	return s.syncDirAtObserved(dir, nil)
+}
+
+func (s *Store) syncDirAtObserved(dir string, afterPhysicalSync func() error) error {
 	step := StepDirectorySync
 	if dir == path.Join(internalDirectory, "transactions") {
 		step = StepJournalDirectorySync
 	} else if dir == path.Join(internalDirectory, "staging") || strings.HasPrefix(dir, path.Join(internalDirectory, "staging")+"/") {
 		step = StepStageDirectorySync
+	} else if dir == temporaryDirectory || strings.HasPrefix(dir, temporaryDirectory+"/") {
+		step = StepTempCleanupDirectorySync
 	} else if dir == path.Join(internalDirectory, "receipts") {
 		step = StepReceiptDirectorySync
 	} else if dir == path.Join(internalDirectory, "capabilities") {
 		step = StepCapabilityDirectorySync
+	} else if dir == claimDirectory || strings.HasPrefix(dir, claimDirectory+"/") {
+		step = StepClaimDirectorySync
 	}
 	if err := s.fail(step); err != nil {
 		return err
@@ -2769,17 +3892,29 @@ func (s *Store) syncDirAt(dir string) error {
 			return err
 		}
 	}
-	if err := s.fdSyncDir(dir); err != nil {
+	if err := s.syncDirectory(dir); err != nil {
 		return err
+	}
+	if afterPhysicalSync != nil {
+		if err := afterPhysicalSync(); err != nil {
+			return err
+		}
 	}
 	return s.postFault(step)
 }
 
 func (s *Store) writePrivateDurableAt(target string, data []byte) error {
-	if err := s.mkdirAll(path.Dir(target), 0o700); err != nil {
+	return s.writePrivateDurableAtObserved(context.Background(), target, data, nil)
+}
+
+func (s *Store) writePrivateDurableAtObserved(ctx context.Context, target string, data []byte, publication *journalPublication) error {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if err := s.writeDurableAt(target, data, 0o600); err != nil {
+	if err := s.mkdirAllContext(ctx, path.Dir(target), 0o700); err != nil {
+		return err
+	}
+	if err := s.writeDurableAtObserved(ctx, target, data, 0o600, publication, nil); err != nil {
 		return err
 	}
 	// Mode is metadata: persist it before declaring the file durable.
@@ -2800,7 +3935,7 @@ func (s *Store) writePrivateDurableAt(target string, data []byte) error {
 		_ = f.Close()
 		return err
 	}
-	err = f.Sync()
+	err = s.syncFile(f)
 	if err == nil {
 		err = s.postFault(StepPrivateMetadataSync)
 	}
@@ -2814,30 +3949,14 @@ func (s *Store) writePrivateDurableAt(target string, data []byte) error {
 	return errors.Join(err, closeErr)
 }
 
-func (s *Store) enforcePrivateFileMode(f *os.File) error {
-	info, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	if !info.Mode().IsRegular() {
-		return errors.New("fs store: private metadata is not a regular file")
-	}
-	if info.Mode().Perm() == 0o600 {
-		return nil
-	}
-	if err := s.fail(StepPrivateMetadataSync); err != nil {
-		return err
-	}
-	if err := f.Chmod(0o600); err != nil {
-		return err
-	}
-	if err := f.Sync(); err != nil {
-		return err
-	}
-	return s.postFault(StepPrivateMetadataSync)
+func (s *Store) mkdirAllContext(ctx context.Context, dir string, mode os.FileMode) error {
+	return s.mkdirAllObserved(ctx, dir, mode, nil)
 }
 
-func (s *Store) mkdirAll(dir string, mode os.FileMode) error {
+func (s *Store) mkdirAllObserved(ctx context.Context, dir string, mode os.FileMode, ownership map[string]os.FileInfo) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if dir == "." || dir == "" {
 		return nil
 	}
@@ -2849,11 +3968,24 @@ func (s *Store) mkdirAll(dir string, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
+	for _, name := range created {
+		if ownership == nil {
+			break
+		}
+		info, statErr := s.rootFD.Lstat(name)
+		if statErr != nil {
+			return statErr
+		}
+		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return metadataCorrupt(fmt.Errorf("created private directory changed identity: %q", name))
+		}
+		ownership[name] = info
+	}
 	if err := s.postFault(step); err != nil {
 		return err
 	}
 	if strings.HasPrefix(dir, internalDirectory) && (dir == internalDirectory || strings.HasPrefix(dir, internalDirectory+"/")) {
-		if err := s.ensurePrivateDirectories(dir); err != nil {
+		if err := s.ensurePrivateDirectories(ctx, dir); err != nil {
 			return err
 		}
 	}
@@ -2880,79 +4012,6 @@ func (s *Store) mkdirAll(dir string, mode os.FileMode) error {
 	return nil
 }
 
-// ensurePrivateDirectories enforces the .okf namespace as owner-only before
-// it is used. Each component is opened descriptor-relatively with no-follow;
-// a symlink, device, or regular file therefore fails closed.
-func (s *Store) ensurePrivateDirectories(dir string) error {
-	parts := strings.Split(path.Clean(dir), "/")
-	for i := range parts {
-		name := strings.Join(parts[:i+1], "/")
-		info, err := s.rootFD.Lstat(name)
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("fs store: unsafe private metadata directory %q", name)
-		}
-		if info.Mode().Perm() == 0o700 {
-			continue
-		}
-		f, err := openRootReadNoFollow(s.rootFD, name, true)
-		if err != nil {
-			return err
-		}
-		if err := s.fail(StepPrivateDirectoryChmod); err != nil {
-			_ = f.Close()
-			return err
-		}
-		err = f.Chmod(0o700)
-		if err == nil {
-			err = s.postFault(StepPrivateDirectoryChmod)
-		}
-		if err == nil {
-			err = s.fail(StepPrivateDirectorySync)
-		}
-		if err == nil {
-			err = f.Sync()
-		}
-		if err == nil {
-			err = s.postFault(StepPrivateDirectorySync)
-		}
-		if err == nil {
-			err = s.fail(StepPrivateDirectoryClose)
-		}
-		closeErr := f.Close()
-		if err == nil && closeErr == nil {
-			err = s.postFault(StepPrivateDirectoryClose)
-		}
-		if err != nil || closeErr != nil {
-			return errors.Join(err, closeErr)
-		}
-		// chmod changes this directory's metadata; persist the containing
-		// namespace as well (root for .okf).
-		if err := s.syncPrivateDirectoryParent(name); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Store) syncPrivateDirectoryParent(name string) error {
-	if err := s.fail(StepPrivateDirectoryParentSync); err != nil {
-		return err
-	}
-	parent := path.Dir(name)
-	if s.config.DirectorySync != nil {
-		if err := s.config.DirectorySync(parent); err != nil {
-			return err
-		}
-	}
-	if err := s.fdSyncDir(parent); err != nil {
-		return err
-	}
-	return s.postFault(StepPrivateDirectoryParentSync)
-}
-
 func (s *Store) syncStageDirAt(dir string) error {
 	if err := s.fail(StepStageDirectorySync); err != nil {
 		return err
@@ -2962,30 +4021,56 @@ func (s *Store) syncStageDirAt(dir string) error {
 			return err
 		}
 	}
-	if err := s.fdSyncDir(dir); err != nil {
+	if err := s.syncDirectory(dir); err != nil {
 		return err
 	}
 	return s.postFault(StepStageDirectorySync)
 }
 
-func (s *Store) writeDurableAt(target string, data []byte, fallbackMode os.FileMode) (err error) {
+func (s *Store) writeDurableAtObserved(ctx context.Context, target string, data []byte, fallbackMode os.FileMode, publication *journalPublication, guarded *mutationTargetIdentity) (err error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if !safePath(target) && !strings.HasPrefix(target, internalDirectory+"/") {
 		return fmt.Errorf("fs store: unsafe path %q", target)
 	}
 	dir := path.Dir(target)
-	if err := s.mkdirAll(dir, 0o755); err != nil {
+	if err := s.mkdirAllContext(ctx, dir, 0o755); err != nil {
 		return err
 	}
 	mode := fallbackMode
+	expectedTarget := mutationTargetIdentity{absent: true}
 	if info, err := s.fdLstat(target); err == nil {
 		mode = info.Mode().Perm()
+		expectedTarget = mutationTargetIdentity{info: info}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
+	if guarded != nil {
+		expectedTarget = *guarded
+	}
 	var tmp *os.File
 	var tmpName string
+	var tmpIdentity os.FileInfo
+	var scratchKey artifactClaimKey
+	var scratchWitness os.FileInfo
+	var scratchBinding os.FileInfo
+	renamed := false
+	postFaulted := false
+	scratchOperation := internalArtifactOperation(target)
+	if publication != nil && publication.operation != "" {
+		scratchOperation = publication.operation
+	}
 	for i := 0; i < 100; i++ {
-		tmpName = path.Join(dir, fmt.Sprintf(".okf-tmp-%d-%d", time.Now().UnixNano(), i))
+		now := time.Now()
+		if s.clockNow != nil {
+			now = s.clockNow()
+		}
+		base, formatErr := formatCanonicalTempArtifactName(now.UnixNano(), uint64(i))
+		if formatErr != nil {
+			return formatErr
+		}
+		tmpName = path.Join(temporaryDirectory, base)
 		var err error
 		tmp, err = s.fdOpen(tmpName, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 		if errors.Is(err, os.ErrExist) {
@@ -2999,51 +4084,130 @@ func (s *Store) writeDurableAt(target string, data []byte, fallbackMode os.FileM
 	if tmp == nil {
 		return errors.New("fs store: unable to allocate temporary file")
 	}
-	renamed := false
 	defer func() {
 		if renamed {
 			return
 		}
-		if tmp != nil {
-			err = errors.Join(err, tmp.Close())
+		if tmpIdentity == nil && tmp != nil {
+			identity, statErr := tmp.Stat()
+			if statErr != nil {
+				err = errors.Join(err, statErr, tmp.Close())
+				tmp = nil
+				return
+			}
+			tmpIdentity = identity
 		}
-		if cleanupErr := s.cleanupTemp(tmpName, dir); cleanupErr != nil {
+		if tmp != nil {
+			if closeErr := tmp.Close(); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
+			tmp = nil
+		}
+		if postFaulted {
+			return
+		}
+		if scratchKey.Operation == "" && tmpIdentity != nil {
+			var keyErr error
+			scratchKey, keyErr = newArtifactClaimKey(scratchOperation, tmpName, claimScratch)
+			if keyErr != nil {
+				err = errors.Join(err, keyErr)
+				return
+			}
+		}
+		if cleanupErr := s.cleanupScratchAttempt(scratchKey, tmpName, tmpIdentity, scratchBinding, scratchWitness); cleanupErr != nil {
 			err = errors.Join(err, cleanupErr)
-			// Fault seams commonly model a one-shot crash boundary. A best-effort
-			// second cleanup keeps an aborted writer from leaving scratch visible
-			// to a later Open; the original boundary error is still returned.
-			_ = s.cleanupTemp(tmpName, dir)
 		}
 	}()
+	if err := s.runDescriptorBarrier("scratch_opened"); err != nil {
+		return err
+	}
+	if err := s.runDescriptorBarrier("scratch_before_stat"); err != nil {
+		return err
+	}
+	tmpIdentity, err = tmp.Stat()
+	if err != nil {
+		return err
+	}
+	if err := s.runDescriptorBarrier("scratch_stat_ready"); err != nil {
+		return err
+	}
+	scratchKey, err = newArtifactClaimKey(scratchOperation, tmpName, claimScratch)
+	if err != nil {
+		return err
+	}
+	preparedWitness, prepareErr := s.prepareRegularWitnessFromObserved(ctx, scratchKey, tmpName, tmpIdentity, func(binding, witness os.FileInfo) {
+		if binding != nil {
+			scratchBinding = binding
+		}
+		if witness != nil {
+			scratchWitness = witness
+		}
+	})
+	if preparedWitness != nil {
+		scratchWitness = preparedWitness
+	}
+	if prepareErr != nil {
+		return prepareErr
+	}
+	postFault := func(step Step) error {
+		err := s.postFault(step)
+		if err != nil {
+			postFaulted = true
+			if publication != nil {
+				publication.postFault = true
+			}
+		}
+		return err
+	}
 	if err := s.fail(s.durableStep(target, StepChmod)); err != nil {
 		return err
 	}
 	if err := tmp.Chmod(mode); err != nil {
 		return err
 	}
-	if err := s.postFault(s.durableStep(target, StepChmod)); err != nil {
+	if err := postFault(s.durableStep(target, StepChmod)); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := s.fail(s.durableStep(target, StepFileWrite)); err != nil {
 		return err
 	}
-	n, err := s.write(tmp, data)
-	if err != nil {
+	const writeChunk = 64 << 10
+	for offset := 0; offset < len(data); {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		end := offset + writeChunk
+		if end > len(data) {
+			end = len(data)
+		}
+		n, writeErr := s.write(tmp, data[offset:end])
+		if writeErr != nil {
+			return writeErr
+		}
+		if n != end-offset {
+			return io.ErrShortWrite
+		}
+		offset = end
+	}
+	if err := postFault(s.durableStep(target, StepFileWrite)); err != nil {
 		return err
 	}
-	if n != len(data) {
-		return io.ErrShortWrite
-	}
-	if err := s.postFault(s.durableStep(target, StepFileWrite)); err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := s.fail(s.durableStep(target, StepFileSync)); err != nil {
 		return err
 	}
-	if err := tmp.Sync(); err != nil {
+	if err := s.syncFile(tmp); err != nil {
 		return err
 	}
-	if err := s.postFault(s.durableStep(target, StepFileSync)); err != nil {
+	if err := postFault(s.durableStep(target, StepFileSync)); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := s.fail(s.durableStep(target, StepFileClose)); err != nil {
@@ -3053,52 +4217,249 @@ func (s *Store) writeDurableAt(target string, data []byte, fallbackMode os.FileM
 		return err
 	}
 	tmp = nil
-	if err := s.postFault(s.durableStep(target, StepFileClose)); err != nil {
+	if err := postFault(s.durableStep(target, StepFileClose)); err != nil {
+		return err
+	}
+	ready, readyErr := s.readScratchOwned(ctx, tmpName, int64(len(data)), tmpIdentity)
+	if readyErr != nil {
+		return readyErr
+	}
+	if !bytes.Equal(ready, data) {
+		return metadataCorrupt(errors.New("scratch content changed before consume"))
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := s.fail(s.durableStep(target, StepRename)); err != nil {
 		return err
 	}
-	if err := s.fdRename(tmpName, target); err != nil {
+	var installedIdentity os.FileInfo
+	var visibleState visibleReplacement
+	if publication != nil && publication.operation != "" && publication.role != "" {
+		key, keyErr := newArtifactClaimKey(publication.operation, target, publication.role)
+		if keyErr != nil {
+			return keyErr
+		}
+		installedIdentity, err = s.installOwnedClaimed(ctx, key, tmpName, tmpIdentity, true)
+		if installedIdentity != nil {
+			renamed = true
+			publication.identity = installedIdentity
+		}
+		if err != nil {
+			if artifactSourceRetained(err) {
+				postFaulted = true
+			}
+			return err
+		}
+	} else if guarded != nil && guarded.operation != "" {
+		visibleState, installedIdentity, err = s.installVisibleSource(ctx, guarded.operation, target, tmpName, tmpIdentity, expectedTarget)
+		if installedIdentity != nil {
+			renamed = true
+		}
+		if err != nil {
+			if artifactSourceRetained(err) {
+				postFaulted = true
+			}
+			return err
+		}
+	} else {
+		installedIdentity, err = s.fdRenameGuarded(tmpName, target, tmpIdentity, expectedTarget)
+		if err != nil {
+			return err
+		}
+		renamed = true
+	}
+	if publication != nil {
+		if err := s.runDescriptorBarrier("rename_capture"); err != nil {
+			return err
+		}
+		current, statErr := s.rootFD.Lstat(target)
+		err = statErr
+		if err != nil {
+			return err
+		}
+		if installedIdentity == nil || !current.Mode().IsRegular() || !os.SameFile(installedIdentity, current) {
+			return errMutationTargetChanged(target)
+		}
+		publication.identity = installedIdentity
+	}
+	if err := postFault(s.durableStep(target, StepRename)); err != nil {
 		return err
 	}
-	if err := s.postFault(s.durableStep(target, StepRename)); err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
-	// Once rename completed and its immediate fault boundary passed, there is
-	// no temporary entry left to clean up. The following directory sync makes
-	// the rename durable; an ENOENT cleanup would only duplicate that sync.
-	renamed = true
-	return s.syncDirAt(dir)
+	// Rename crosses from the private scratch directory into the destination.
+	// Both namespace changes need one durability acknowledgement.
+	if err := s.syncTemporaryDirectory(); err != nil {
+		return err
+	}
+	if dir == temporaryDirectory {
+		return nil
+	}
+	if publication == nil {
+		if err := s.syncDirAt(dir); err != nil {
+			return err
+		}
+		if guarded != nil && guarded.operation != "" {
+			if err := s.runDescriptorBarrier("visible_parent_synced"); err != nil {
+				return err
+			}
+			if err := s.runDescriptorBarrier("visible_parent_synced:" + target); err != nil {
+				return err
+			}
+		}
+	} else {
+		if err := s.syncDirAtObserved(dir, func() error {
+			publication.durable = true
+			current, statErr := s.rootFD.Lstat(target)
+			if statErr != nil {
+				return statErr
+			}
+			if !current.Mode().IsRegular() || !os.SameFile(publication.identity, current) {
+				return metadataCorrupt(errors.New("journal identity changed before durability boundary"))
+			}
+			return nil
+		}); err != nil {
+			if publication.durable {
+				publication.postFault = true
+			}
+			return err
+		}
+	}
+	if scratchWitness != nil {
+		if err := s.removeArtifactWitness(scratchKey, scratchWitness); err != nil {
+			return err
+		}
+	}
+	return s.cleanupVisibleReplacement(visibleState)
 }
 
-// cleanupTemp makes aborted atomic-write scratch files crash-durable. It is a
-// separate boundary from visible-file removal: a hook here must never be
-// mistaken for a post-state mutation fault.
-func (s *Store) cleanupTemp(name, dir string) error {
+func (s *Store) cleanupScratchAttempt(key artifactClaimKey, name string, owned, binding, witness os.FileInfo) error {
+	if owned == nil || path.Dir(name) != temporaryDirectory || !strings.HasPrefix(path.Base(name), ".okf-tmp-") {
+		return errArtifactClaimConflict
+	}
+	compensation := scratchAttemptCompensation{store: s, key: key, source: name, owned: owned}
+	if witness == nil && binding != nil {
+		candidate, witnessErr := s.rootFD.Lstat(key.witnessPath(false))
+		if witnessErr == nil {
+			if candidate == nil || !candidate.Mode().IsRegular() || !os.SameFile(owned, candidate) {
+				return errArtifactClaimConflict
+			}
+			witness = candidate
+		} else if !errors.Is(witnessErr, os.ErrNotExist) {
+			return witnessErr
+		}
+	}
+	current, err := s.rootFD.Lstat(name)
+	if err == nil {
+		if current == nil || !current.Mode().IsRegular() || !os.SameFile(owned, current) {
+			return errArtifactClaimConflict
+		}
+		if binding != nil && witness == nil {
+			currentBinding, bindingErr := s.rootFD.Lstat(key.bindingPath())
+			if bindingErr != nil || currentBinding == nil || !os.SameFile(binding, currentBinding) {
+				return errors.Join(errArtifactClaimConflict, bindingErr)
+			}
+			if removeErr := compensation.removePartialBinding(currentBinding); removeErr != nil {
+				return removeErr
+			}
+			binding = nil
+		}
+		if witness == nil {
+			var prepareErr error
+			witness, prepareErr = compensation.prepareWitness()
+			if prepareErr != nil {
+				return prepareErr
+			}
+		}
+		if err := compensation.removeAlias(context.Background()); err != nil {
+			return err
+		}
+		if err := s.syncDirectory(temporaryDirectory); err != nil {
+			return err
+		}
+		if err := compensation.removeProof(witness); err != nil {
+			return err
+		}
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if witness == nil {
+		candidate, witnessErr := s.rootFD.Lstat(key.witnessPath(false))
+		if witnessErr == nil {
+			witness = candidate
+		} else if !errors.Is(witnessErr, os.ErrNotExist) {
+			return witnessErr
+		}
+	}
+	if witness != nil {
+		current, err := s.rootFD.Lstat(key.witnessPath(false))
+		if err != nil || current == nil || !os.SameFile(witness, current) {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		if err := s.removeArtifactWitness(key, current); err != nil {
+			return err
+		}
+		return nil
+	}
+	if binding != nil {
+		current, err := s.rootFD.Lstat(key.bindingPath())
+		if err != nil || current == nil || !os.SameFile(binding, current) {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		return s.removeArtifactBinding(key)
+	}
+	return nil
+}
+
+func (s *Store) cleanupTempOwned(operation, name string, owned os.FileInfo) error {
+	if path.Dir(name) != temporaryDirectory || !strings.HasPrefix(path.Base(name), ".okf-tmp-") {
+		return metadataCorrupt(fmt.Errorf("unsafe temporary cleanup path %q", name))
+	}
 	if err := s.fail(StepTempCleanupRemove); err != nil {
 		return err
 	}
-	removeErr := s.fdRemove(name)
-	if removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
-		return removeErr
+	if owned == nil || operation == "" {
+		return nil
+	}
+	key, err := newArtifactClaimKey(operation, name, claimScratch)
+	if err != nil {
+		return err
+	}
+	// The scratch writer creates and pins the immutable binding+witness before
+	// writing. Cleanup consumes that capability; it must not derive a new one
+	// from whatever inode currently occupies the temporary pathname.
+	removed, err := s.consumeOwnedClaim(context.Background(), key, false)
+	if err != nil {
+		return err
+	}
+	if !removed {
+		return nil
 	}
 	// An unlink has changed the parent directory even when a crash hook fires
 	// immediately afterwards.  Do not let an ENOENT retry shortcut skip that
 	// durability boundary: the prior unlink may have succeeded before a crash.
-	postRemoveErr := s.postFault(StepTempCleanupRemove)
+	if err := s.postFault(StepTempCleanupRemove); err != nil {
+		return err
+	}
+	return s.syncTemporaryDirectory()
+}
+
+func (s *Store) syncTemporaryDirectory() error {
 	if err := s.fail(StepTempCleanupDirectorySync); err != nil {
-		return errors.Join(postRemoveErr, err)
+		return err
 	}
 	if s.config.DirectorySync != nil {
-		if err := s.config.DirectorySync(dir); err != nil {
-			return errors.Join(postRemoveErr, err)
+		if err := s.config.DirectorySync(temporaryDirectory); err != nil {
+			return err
 		}
 	}
-	if err := s.fdSyncDir(dir); err != nil {
-		return errors.Join(postRemoveErr, err)
+	if err := s.syncDirectory(temporaryDirectory); err != nil {
+		return err
 	}
-	return errors.Join(postRemoveErr, s.postFault(StepTempCleanupDirectorySync))
+	return s.postFault(StepTempCleanupDirectorySync)
 }
 
 func (s *Store) durableStep(target string, step Step) Step {
@@ -3166,30 +4527,79 @@ func (s *Store) durableStep(target string, step Step) Step {
 	}
 }
 
-func syncRootDir(root *os.Root, dir string) error {
-	if err := rejectSymlinkPath(root, dir); err != nil {
+// prepareLocked is the sole lazy private-namespace entry point. The caller
+// holds s.mu and the root-inode lock, so repair, capability discovery and
+// recovery complete before any revision observation or mutation.
+func (s *Store) prepareLocked(ctx context.Context) error {
+	if !s.privateReady {
+		for _, dir := range knownPrivateDirectories() {
+			if err := s.mkdirAllContext(ctx, dir, 0o700); err != nil {
+				return err
+			}
+		}
+		if err := s.syncKnownPrivateNamespace(ctx); err != nil {
+			return err
+		}
+		if err := s.detectPathAliases(); err != nil {
+			return err
+		}
+	}
+	absoluteLimits := s.recoveryLimits
+	if absoluteLimits.maxFiles == 0 {
+		absoluteLimits = absoluteStagedManifestLimits()
+	}
+	if err := s.recoverContextWithLimits(ctx, absoluteLimits, configuredStagedManifestLimits(s.config)); err != nil {
 		return err
 	}
-	f, err := openRootReadNoFollow(root, dir, true)
-	if err != nil {
-		return err
-	}
-	err = f.Sync()
-	closeErr := f.Close()
-	return errors.Join(err, closeErr)
-}
-func (s *Store) recover() error {
-	return s.recoverContext(context.Background())
+	s.privateReady = true
+	return nil
 }
 
-func (s *Store) recoverContext(ctx context.Context) error {
+func (s *Store) recoverContextWithLimits(ctx context.Context, absoluteLimits, effectiveLimits stagedManifestLimits) error {
+	return s.recoverContextWithAllLimits(ctx, absoluteLimits, effectiveLimits, productionJournalManifestByteLimits())
+}
+
+func (s *Store) recoverContextWithAllLimits(
+	ctx context.Context,
+	absoluteLimits stagedManifestLimits,
+	effectiveLimits stagedManifestLimits,
+	manifestLimits journalManifestByteLimits,
+) error {
+	callerCtx := ctx
 	dir := path.Join(internalDirectory, "transactions")
-	if err := s.mkdirAll(dir, 0o700); err != nil {
-		return metadataCorrupt(err)
+	if err := s.mkdirAllContext(ctx, dir, 0o700); err != nil {
+		return err
+	}
+	if err := s.compensateUndurableRegularBindings(ctx); err != nil {
+		return err
+	}
+	if err := s.cleanupStageNamespaceClaims(ctx); err != nil {
+		return err
+	}
+	if err := s.restoreClaimInventory(ctx); err != nil {
+		return err
+	}
+	if err := s.recoverJournalClaims(ctx); err != nil {
+		return err
+	}
+	// A PostFault may leave a closed private scratch file, or may rename it out
+	// before the scratch directory sync. Resolve that source namespace before
+	// journal and provenance checks.
+	if err := s.cleanupOrphanTemps(ctx); err != nil {
+		return err
+	}
+	// The journal rename/remove may already be visible after an erroring
+	// PostFault while its containing-directory acknowledgement was skipped.
+	// Confirm the transaction namespace even when its retry listing is empty.
+	if err := s.syncDirAt(dir); err != nil {
+		return err
 	}
 	d, err := openPinnedMetadataDir(s.rootFD, dir)
 	if err != nil {
 		return err
+	}
+	if err := s.runDescriptorBarrier("recovery_transactions_readdir"); err != nil {
+		return errors.Join(err, d.Close())
 	}
 	entries, err := d.ReadDir(-1)
 	closeErr := d.Close()
@@ -3197,6 +4607,7 @@ func (s *Store) recoverContext(ctx context.Context) error {
 		return readErr
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+	journalEntries := make([]os.DirEntry, 0, 1)
 	for _, e := range entries {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -3219,60 +4630,157 @@ func (s *Store) recoverContext(ctx context.Context) error {
 		if !info.Mode().IsRegular() {
 			continue
 		}
-		raw, err := readMetadataLimit(ctx, s.rootFD, journalName, maxJournalManifestRead)
+		journalEntries = append(journalEntries, e)
+	}
+	if len(journalEntries) > 1 {
+		return metadataCorrupt(fmt.Errorf("multiple pending journals: %d", len(journalEntries)))
+	}
+	var lastRecovered *journal
+	for _, e := range journalEntries {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		journalName := path.Join(dir, e.Name())
+		listedIdentity, err := s.rootFD.Lstat(journalName)
 		if err != nil {
 			return err
 		}
-		j, err := decodeJournalWithAlgorithmName(raw, s.config.HashAlgorithm, s.hashAlgorithmName)
+		journalKey, _, err := s.resolveInstalledRegularArtifact(ctx, journalName, claimJournal, listedIdentity)
+		if err != nil {
+			return fmt.Errorf("fs store: verify durable journal proof: %w", err)
+		}
+		raw, journalIdentity, err := s.readRecoveryJournal(ctx, journalName, maxJournalManifestRead)
+		if err != nil {
+			return err
+		}
+		if journalIdentity == nil || !os.SameFile(listedIdentity, journalIdentity) {
+			return fmt.Errorf("fs store: durable journal proof changed before read: %w", errArtifactClaimConflict)
+		}
+		if err := validateJournalManifestBytes(raw, manifestLimits.absolute); err != nil {
+			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), errors.Join(store.ErrStorageCorrupt, err))
+		}
+		j, err := decodeJournalWithAlgorithmNameAndLimits(raw, s.config.HashAlgorithm, s.hashAlgorithmName, absoluteLimits)
 		if err != nil {
 			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), errors.Join(store.ErrStorageCorrupt, err))
+		}
+		if journalKey.Operation != j.Receipt.RequestDigest {
+			return fmt.Errorf("fs store: durable journal proof operation mismatch: %w", errors.Join(errArtifactClaimConflict, store.ErrStorageCorrupt))
 		}
 		wantName, pathErr := journalPath(j.Receipt.RequestDigest)
 		if pathErr != nil || e.Name() != path.Base(wantName) {
 			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), store.ErrStorageCorrupt)
 		}
-		if _, err := s.apply(ctx, j); err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), errors.Join(store.ErrStorageCorrupt, err))
+		if err := validateStagedManifestLimits(j.Files, effectiveLimits.maxFiles, effectiveLimits.maxPayloadBytes, effectiveLimits.maxTransactionBytes); err != nil {
+			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), errors.Join(store.ErrStorageCorrupt, fmt.Errorf("staged manifest exceeds configured limit: %w", err)))
+		}
+		if err := validateJournalManifestBytes(raw, manifestLimits.effective); err != nil {
+			return fmt.Errorf("fs store: invalid journal %s: %w", e.Name(), errors.Join(store.ErrStorageCorrupt, fmt.Errorf("journal manifest exceeds configured limit: %w", err)))
+		}
+		if err := s.restoreVisibleClaimsForJournal(j); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		// Alias and visible provenance are caller-cancellable semantic gates.
+		// They precede ownership restoration and every staged payload open.
+		if err := s.validateJournalFilesystemPathAliasTransition(j.Base, j.Files); err != nil {
+			return metadataCorrupt(err)
+		}
+		if err := s.validateCurrentJournalProvenance(ctx, j.Base, j.Files); err != nil {
+			return err
+		}
+		if err := s.convergeVisibleVacancyClaims(ctx, j); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		if err := s.convergeVisibleInstalledClaims(ctx, j); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		// Metadata, canonical name and both absolute/effective limits establish
+		// ownership of a valid durable promise. Cancellation before this point
+		// leaves evidence untouched; after it, recovery must converge while
+		// retaining caller context values.
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := s.resumeRegularBindingsForJournal(ctx, j); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		if err := s.restoreStageClaims(j); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		stageOwnership, err := s.captureStageDirectoryOwnership(ctx, j)
+		if err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		if err := s.runDescriptorBarrier("recovery_ownership_validated"); err != nil {
+			return newRecoveryOutcomeError(j, err)
+		}
+		recoveryCtx := context.WithoutCancel(ctx)
+		ctx = recoveryCtx
+		if _, err := s.applyWithOwnership(recoveryCtx, j, &stageOwnership); err != nil {
+			return newRecoveryOutcomeError(j, fmt.Errorf("apply durable journal: %w", err))
+		}
+		if err := s.cleanupVisibleClaims(j); err != nil {
+			return newRecoveryOutcomeError(j, fmt.Errorf("cleanup visible claim inventory: %w", err))
+		}
+		if err := s.cleanupScratchInventoryOperation(recoveryCtx, j.Receipt.RequestDigest); err != nil {
+			return newRecoveryOutcomeError(j, fmt.Errorf("cleanup scratch claim inventory: %w", err))
 		}
 		if j.Receipt.IdempotencyKey != "" {
 			if err := s.writeReceiptWithReplay(j.Receipt, replayOrZero(j.Replay)); err != nil {
-				return err
+				return newRecoveryOutcomeError(j, err)
 			}
 			if err := s.pruneReceipts(); err != nil {
-				return err
+				return newRecoveryOutcomeError(j, err)
 			}
 		}
-		if err := s.remove(path.Join(dir, e.Name())); err != nil {
-			return err
+		if err := s.removeOwnedDurableJournal(j.Receipt.RequestDigest, path.Join(dir, e.Name()), journalIdentity); err != nil {
+			return newRecoveryOutcomeError(j, err)
 		}
-		if err := s.syncDirAt(dir); err != nil {
-			return err
+		if err := s.cleanupVisibleInstalledClaims(recoveryCtx, j); err != nil {
+			return newRecoveryOutcomeError(j, err)
 		}
-		if err := s.cleanupStage(j); err != nil {
-			return err
+		if err := s.cleanupOwnedStageStrict(j, stageOwnership); err != nil {
+			return newRecoveryOutcomeError(j, err)
 		}
+		recovered := j
+		lastRecovered = &recovered
+	}
+	if err := s.cleanupVisibleInstalledInventory(ctx); err != nil {
+		if lastRecovered != nil {
+			return newRecoveryOutcomeError(*lastRecovered, err)
+		}
+		return err
+	}
+	if err := s.cleanupScratchInventory(ctx); err != nil {
+		if lastRecovered != nil {
+			return newRecoveryOutcomeError(*lastRecovered, err)
+		}
+		return err
 	}
 	if err := s.cleanupOrphanStages(ctx); err != nil {
+		if lastRecovered != nil {
+			return newRecoveryOutcomeError(*lastRecovered, err)
+		}
 		return err
 	}
-	return s.cleanupOrphanTemps(ctx)
+	if lastRecovered != nil && callerCtx.Err() != nil {
+		return newRecoveryOutcomeError(*lastRecovered, callerCtx.Err())
+	}
+	return nil
 }
 
-// cleanupOrphanTemps removes only store-created temporary *regular* files in
-// every revision-visible directory.  It never follows or removes symlinks,
-// devices, sockets, or FIFOs: those are user-visible filesystem objects, not
-// recoverable store scratch.  Every parent whose namespace changed is synced.
+// cleanupOrphanTemps is confined to the private scratch directory. Public
+// revision paths are opaque even when their base names resemble scratch files.
+// Ordinary entries, directories, symlinks, and special files are preserved.
 func (s *Store) cleanupOrphanTemps(ctx context.Context) error {
-	return s.cleanupOrphanTempsDir(ctx, ".")
-}
-
-func (s *Store) cleanupOrphanTempsDir(ctx context.Context, directory string) (err error) {
-	d, err := openRootReadNoFollow(s.rootFD, directory, true)
+	d, err := openPinnedMetadataDir(s.rootFD, temporaryDirectory)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
 	if err != nil {
 		return err
+	}
+	if err := s.runDescriptorBarrier("orphan_temporary_readdir"); err != nil {
+		return errors.Join(err, d.Close())
 	}
 	entries, readErr := d.ReadDir(-1)
 	closeErr := d.Close()
@@ -3284,13 +4792,7 @@ func (s *Store) cleanupOrphanTempsDir(ctx context.Context, directory string) (er
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		name := path.Join(directory, entry.Name())
-		if directory == "." {
-			name = entry.Name()
-		}
-		if name == internalDirectory {
-			continue
-		}
+		name := path.Join(temporaryDirectory, entry.Name())
 		info, err := s.rootFD.Lstat(name)
 		if err != nil {
 			return err
@@ -3298,19 +4800,15 @@ func (s *Store) cleanupOrphanTempsDir(ctx context.Context, directory string) (er
 		if info.Mode()&os.ModeSymlink != 0 {
 			continue
 		}
-		if info.IsDir() {
-			if err := s.cleanupOrphanTempsDir(ctx, name); err != nil {
-				return err
-			}
-			continue
-		}
-		if strings.HasPrefix(entry.Name(), ".okf-tmp-") && info.Mode().IsRegular() {
-			if err := s.cleanupTemp(name, directory); err != nil {
-				return err
-			}
-		}
+		// Basenames are not ownership. Closed binding inventory is consumed by
+		// cleanupScratchInventory before this scan; everything else is preserved.
 	}
-	return nil
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	// A prior rename-out may have succeeded before its source directory sync.
+	// Even an empty scratch directory therefore needs one recovery barrier.
+	return s.syncTemporaryDirectory()
 }
 
 // cleanupOrphanStages bounds failed-pre-journal attempts. A stage directory is
@@ -3325,11 +4823,15 @@ func (s *Store) cleanupOrphanStages(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	if err := s.runDescriptorBarrier("orphan_stage_readdir"); err != nil {
+		return errors.Join(err, d.Close())
+	}
 	entries, readErr := d.ReadDir(-1)
 	closeErr := d.Close()
 	if err := errors.Join(readErr, closeErr); err != nil {
-		return metadataCorrupt(err)
+		return err
 	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -3350,19 +4852,25 @@ func (s *Store) cleanupOrphanStages(ctx context.Context) error {
 		if !validStageID(entry.Name()) {
 			return metadataCorrupt(fmt.Errorf("invalid stage entry %q", entry.Name()))
 		}
+		stageKey, keyErr := s.directorySentinelKey(ctx, stageDir)
+		if errors.Is(keyErr, os.ErrNotExist) {
+			// Legacy/unproven directories are inert and intentionally preserved.
+			continue
+		}
+		if keyErr != nil {
+			return keyErr
+		}
 		payloadDir := path.Join(root, entry.Name(), "payload")
 		pd, err := openPinnedMetadataDir(s.rootFD, payloadDir)
 		stageDir = path.Dir(payloadDir)
 		// A crash may have happened after payload rmdir but before the parent
 		// fsync. That is an expected partial cleanup state, not corruption.
 		if errors.Is(err, os.ErrNotExist) {
-			if err := s.cleanupSyncDir(stageDir, StepStageCleanupStageDirectory); err != nil {
-				return err
+			removed, removeErr := s.consumeOwnedClaim(ctx, stageKey, true)
+			if removeErr != nil || !removed {
+				return errors.Join(errArtifactClaimConflict, removeErr)
 			}
-			if err := s.cleanupRemoveDir(stageDir, StepStageCleanupStageDirRemove); err != nil {
-				return err
-			}
-			if err := s.cleanupSyncDir(root, StepStageCleanupRootDirectory); err != nil {
+			if err := s.postFault(StepStageCleanupStageDirRemove); err != nil {
 				return err
 			}
 			continue
@@ -3370,13 +4878,24 @@ func (s *Store) cleanupOrphanStages(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		if err := s.runDescriptorBarrier("orphan_payload_readdir"); err != nil {
+			return errors.Join(err, pd.Close())
+		}
+		payloadKey, err := s.directorySentinelKey(ctx, payloadDir)
+		if err != nil || payloadKey.Operation != stageKey.Operation {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
 		payloads, readErr := pd.ReadDir(-1)
 		closeErr := pd.Close()
 		if err := errors.Join(readErr, closeErr); err != nil {
-			return metadataCorrupt(err)
+			return err
 		}
+		sort.Slice(payloads, func(i, j int) bool { return payloads[i].Name() < payloads[j].Name() })
 		hasSpecialPayload := false
 		for _, payload := range payloads {
+			if payload.Name() == directorySentinelName {
+				continue
+			}
 			payloadName := path.Join(payloadDir, payload.Name())
 			info, err := s.rootFD.Lstat(payloadName)
 			if err != nil {
@@ -3392,12 +4911,27 @@ func (s *Store) cleanupOrphanStages(ctx context.Context) error {
 			if !safePayloadName(payload.Name()) {
 				return metadataCorrupt(fmt.Errorf("invalid staged payload %q", payload.Name()))
 			}
-			if err := s.cleanupRemoveFile(payloadName); err != nil {
+			payloadClaim, err := newArtifactClaimKey(stageKey.Operation, payloadName, claimPayload)
+			if err != nil {
 				return err
 			}
-			if err := s.cleanupSyncDir(payloadDir, StepStageCleanupPayloadDirectory); err != nil {
+			removed, err := s.consumeOwnedClaim(ctx, payloadClaim, false)
+			if err != nil {
 				return err
 			}
+			if !removed {
+				hasSpecialPayload = true
+				continue
+			}
+			if err := s.postFault(StepStageCleanupPayloadRemove); err != nil {
+				return err
+			}
+		}
+		// One barrier per visited payload directory covers both removals made in
+		// this pass and removals that are already absent after a prior
+		// PostFault. It must precede either preserving special entries or rmdir.
+		if err := s.cleanupSyncDir(payloadDir, StepStageCleanupPayloadDirectory); err != nil {
+			return err
 		}
 		if hasSpecialPayload {
 			// Keep an unowned directory containing special files untouched. It
@@ -3405,49 +4939,57 @@ func (s *Store) cleanupOrphanStages(ctx context.Context) error {
 			// harmless FIFO/device into a failed public observation.
 			continue
 		}
-		if err := s.cleanupRemoveDir(payloadDir, StepStageCleanupPayloadDirRemove); err != nil {
+		removed, err := s.consumeOwnedClaim(ctx, payloadKey, true)
+		if err != nil || !removed {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		if err := s.postFault(StepStageCleanupPayloadDirRemove); err != nil {
 			return err
 		}
-		if err := s.cleanupSyncDir(stageDir, StepStageCleanupStageDirectory); err != nil {
-			return err
+		removed, err = s.consumeOwnedClaim(ctx, stageKey, true)
+		if err != nil || !removed {
+			return errors.Join(errArtifactClaimConflict, err)
 		}
-		if err := s.cleanupRemoveDir(stageDir, StepStageCleanupStageDirRemove); err != nil {
-			return err
-		}
-		if err := s.cleanupSyncDir(root, StepStageCleanupRootDirectory); err != nil {
+		if err := s.postFault(StepStageCleanupStageDirRemove); err != nil {
 			return err
 		}
 	}
-	return nil
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	// An interrupted stage-directory removal is absent from the retry listing.
+	// One pass-level root barrier therefore closes every such namespace delta,
+	// including the zero-entry case.
+	return s.cleanupSyncDir(root, StepStageCleanupRootDirectory)
 }
 
 func (s *Store) acquire(ctx context.Context) (func(), error) {
 	deadline := time.Now().Add(s.config.LeaseTimeout)
-	p := path.Join(internalDirectory, "lease")
 	for {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if err := s.mkdirAll(path.Dir(p), 0o700); err != nil {
-			return nil, err
-		}
-		f, err := s.fdOpen(p, os.O_CREATE|os.O_RDWR, 0600)
+		f, err := openRootLockDescriptor(s.dirFD)
 		if err != nil {
 			return nil, err
 		}
-		if err := s.enforcePrivateFileMode(f); err != nil {
-			return nil, errors.Join(err, f.Close())
-		}
 		err = lockExclusive(f)
 		if err == nil {
+			verify := s.rootLockIdentity
+			if verify == nil {
+				verify = verifyRootLockIdentity
+			}
+			if err := verify(s.dirFD, f); err != nil {
+				return nil, errors.Join(err, unlockFile(f), f.Close())
+			}
 			return func() { _ = unlockFile(f); _ = f.Close() }, nil
 		}
 		_ = f.Close()
-		if !leaseRetryable(err) {
-			return nil, fmt.Errorf("fs store: acquire lease: %w", err)
+		if !rootLockRetryable(err) {
+			return nil, fmt.Errorf("fs store: acquire root lock: %w", err)
 		}
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("fs store: lease timeout: %w", context.DeadlineExceeded)
+			return nil, fmt.Errorf("fs store: root lock timeout: %w", context.DeadlineExceeded)
 		}
 		select {
 		case <-ctx.Done():
@@ -3457,40 +4999,19 @@ func (s *Store) acquire(ctx context.Context) (func(), error) {
 	}
 }
 
-func (s *Store) acquireRead(ctx context.Context) (func(), error) {
-	deadline := time.Now().Add(s.config.LeaseTimeout)
-	p := path.Join(internalDirectory, "lease")
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		if err := s.mkdirAll(path.Dir(p), 0o700); err != nil {
-			return nil, err
-		}
-		f, err := s.fdOpen(p, os.O_CREATE|os.O_RDWR, 0600)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.enforcePrivateFileMode(f); err != nil {
-			return nil, errors.Join(err, f.Close())
-		}
-		err = lockShared(f)
-		if err == nil {
-			return func() { _ = unlockFile(f); _ = f.Close() }, nil
-		}
-		_ = f.Close()
-		if !leaseRetryable(err) {
-			return nil, fmt.Errorf("fs store: acquire read lease: %w", err)
-		}
-		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("fs store: read lease timeout: %w", context.DeadlineExceeded)
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(10 * time.Millisecond):
-		}
+func verifyRootLockIdentity(root, lock *os.File) error {
+	want, err := root.Stat()
+	if err != nil {
+		return err
 	}
+	got, err := lock.Stat()
+	if err != nil {
+		return err
+	}
+	if !os.SameFile(want, got) {
+		return fmt.Errorf("fs store: root lock inode changed: %w", store.ErrStorageCorrupt)
+	}
+	return nil
 }
 
 type receiptFile struct {
@@ -3599,25 +5120,34 @@ func (s *Store) receiptPath(key store.IdempotencyKey) string {
 	sum := sha256.Sum256([]byte(key))
 	return path.Join(internalDirectory, "receipts", hex.EncodeToString(sum[:])+".json")
 }
-func (s *Store) lookupReceipt(key store.IdempotencyKey, digest string) (store.CommitReceipt, bool, error) {
-	f, found, err := s.lookupReceiptFile(key, digest)
+func (s *Store) lookupReceiptContext(ctx context.Context, key store.IdempotencyKey, digest string) (store.CommitReceipt, bool, error) {
+	f, found, err := s.lookupReceiptFileContext(ctx, key, digest)
 	if err != nil || !found {
 		return store.CommitReceipt{}, found, err
 	}
 	return f.Receipt.Clone(), true, nil
 }
 
-func (s *Store) lookupReceiptFile(key store.IdempotencyKey, digest string) (receiptFile, bool, error) {
-	raw, err := readMetadata(context.Background(), s.rootFD, s.receiptPath(key))
+func (s *Store) lookupReceiptFileContext(ctx context.Context, key store.IdempotencyKey, digest string) (receiptFile, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return receiptFile{}, false, err
+	}
+	raw, err := s.readMetadataLimitObserved(ctx, s.receiptPath(key), maxMetadataRead)
 	if errors.Is(err, os.ErrNotExist) {
 		return receiptFile{}, false, nil
 	}
 	if err != nil {
 		return receiptFile{}, false, err
 	}
+	if err := ctx.Err(); err != nil {
+		return receiptFile{}, false, err
+	}
 	f, err := decodeReceiptFile(raw)
 	if err != nil {
 		return receiptFile{}, false, fmt.Errorf("fs store: receipt: %w", errors.Join(store.ErrStorageCorrupt, err))
+	}
+	if err := ctx.Err(); err != nil {
+		return receiptFile{}, false, err
 	}
 	if f.Key != string(key) {
 		return receiptFile{}, false, fmt.Errorf("fs store: receipt: %w", store.ErrStorageCorrupt)
@@ -3626,9 +5156,6 @@ func (s *Store) lookupReceiptFile(key store.IdempotencyKey, digest string) (rece
 		return receiptFile{}, false, &store.IdempotencyConflict{Key: key, PreviousDigest: f.Digest, RequestDigest: digest}
 	}
 	return f, true, nil
-}
-func (s *Store) writeReceipt(r store.CommitReceipt) error {
-	return s.writeReceiptWithReplay(r, replaceReplay{})
 }
 func (s *Store) writeReceiptWithReplay(r store.CommitReceipt, replay replaceReplay) error {
 	replay, err := sealReplay(r, replay)
@@ -3653,8 +5180,8 @@ func replayOrZero(replay *replaceReplay) replaceReplay {
 	return *replay
 }
 
-func (s *Store) replaceReplayResult(key store.IdempotencyKey, digest string, receipt store.CommitReceipt) (ReplaceConceptResult, error) {
-	f, found, err := s.lookupReceiptFile(key, digest)
+func (s *Store) replaceReplayResultContext(ctx context.Context, key store.IdempotencyKey, digest string, receipt store.CommitReceipt) (ReplaceConceptResult, error) {
+	f, found, err := s.lookupReceiptFileContext(ctx, key, digest)
 	if err != nil {
 		return ReplaceConceptResult{}, err
 	}
@@ -3670,16 +5197,16 @@ func (s *Store) replaceReplayResult(key store.IdempotencyKey, digest string, rec
 
 // pruneReceipts keeps the newest configured minimum even when old, then drops
 // only receipts outside the retention window. It runs while the transaction
-// lease is held (or during single-process Open recovery).
+// root lock is held (or during lazy first-observation recovery).
 func (s *Store) pruneReceipts() error {
 	if err := s.fail(StepReceiptPrune); err != nil {
 		return err
 	}
+	if err := s.cleanupReceiptPruneInventory(context.Background()); err != nil {
+		return err
+	}
 	dir := path.Join(internalDirectory, "receipts")
 	d, err := openPinnedMetadataDir(s.rootFD, dir)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
 	if err != nil {
 		return err
 	}
@@ -3688,9 +5215,12 @@ func (s *Store) pruneReceipts() error {
 	if readErr := errors.Join(err, closeErr); readErr != nil {
 		return readErr
 	}
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 	type item struct {
-		name string
-		at   time.Time
+		name      string
+		at        time.Time
+		operation string
+		identity  os.FileInfo
 	}
 	items := make([]item, 0, len(entries))
 	for _, entry := range entries {
@@ -3708,7 +5238,7 @@ func (s *Store) pruneReceipts() error {
 		if !info.Mode().IsRegular() {
 			continue
 		}
-		raw, err := readMetadata(context.Background(), s.rootFD, receiptName)
+		raw, err := s.readMetadataLimitOwned(context.Background(), receiptName, maxMetadataRead, info)
 		if err != nil {
 			return err
 		}
@@ -3716,7 +5246,10 @@ func (s *Store) pruneReceipts() error {
 		if err != nil {
 			return fmt.Errorf("fs store: receipt: %w", errors.Join(store.ErrStorageCorrupt, err))
 		}
-		items = append(items, item{name: entry.Name(), at: receipt.Receipt.CommitTime})
+		if s.receiptPath(store.IdempotencyKey(receipt.Key)) != receiptName {
+			return errors.Join(errArtifactClaimConflict, metadataCorrupt(fmt.Errorf("receipt filename does not match envelope")))
+		}
+		items = append(items, item{name: entry.Name(), at: receipt.Receipt.CommitTime, operation: receiptPruneOperation(receiptName, raw), identity: info})
 	}
 	sort.Slice(items, func(i, j int) bool {
 		if items[i].at.Equal(items[j].at) {
@@ -3725,21 +5258,113 @@ func (s *Store) pruneReceipts() error {
 		return items[i].at.After(items[j].at)
 	})
 	cutoff := time.Now().UTC().Add(-s.config.ReceiptRetention)
-	pruned := false
+	var pruneItems []item
 	for i := s.config.MinimumReceipts; i < len(items); i++ {
 		if items[i].at.After(cutoff) {
 			continue
 		}
-		if err := s.remove(path.Join(dir, items[i].name)); err != nil {
+		pruneItems = append(pruneItems, items[i])
+	}
+	sort.Slice(pruneItems, func(i, j int) bool { return pruneItems[i].name < pruneItems[j].name })
+	for _, item := range pruneItems {
+		if err := s.removeReceiptForPrune(context.Background(), path.Join(dir, item.name), item.operation, item.identity); err != nil {
 			return err
 		}
-		pruned = true
 	}
+	// A prior receipt unlink may already be absent from this retry's listing.
+	// Always acknowledge the containing namespace before journal removal.
 	if err := s.syncDirAt(dir); err != nil {
 		return err
 	}
-	if pruned {
+	if err := s.runDescriptorBarrier("receipt_prune_batch_synced"); err != nil {
+		return err
+	}
+	if len(pruneItems) > 0 {
 		return s.postFault(StepReceiptPrune)
+	}
+	return nil
+}
+
+func receiptPruneOperation(name string, raw []byte) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte("okf:receipt-prune:v1\x00"))
+	_, _ = h.Write([]byte(path.Clean(name)))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write(raw)
+	return "receipt:" + hex.EncodeToString(h.Sum(nil))
+}
+
+func (s *Store) removeReceiptForPrune(ctx context.Context, name, operation string, identity os.FileInfo) error {
+	key, err := newArtifactClaimKey(operation, name, claimReceipt)
+	if err != nil {
+		return err
+	}
+	var binding, witness os.FileInfo
+	prepared, prepareErr := s.prepareRegularWitnessFromObserved(ctx, key, name, identity, func(gotBinding, gotWitness os.FileInfo) {
+		if gotBinding != nil {
+			binding = gotBinding
+		}
+		if gotWitness != nil {
+			witness = gotWitness
+		}
+	})
+	if prepared != nil {
+		witness = prepared
+	}
+	if prepareErr != nil {
+		if artifactSourceCrash(prepareErr) {
+			return prepareErr
+		}
+		return errors.Join(prepareErr, s.cleanupReceiptAttemptProof(key, identity, binding, witness))
+	}
+	if err := s.fail(StepRemove); err != nil {
+		return err
+	}
+	removed, err := s.consumeOwnedClaim(ctx, key, false)
+	if err != nil || !removed {
+		return errors.Join(errArtifactClaimConflict, err)
+	}
+	return s.postFault(StepRemove)
+}
+
+func (s *Store) cleanupReceiptAttemptProof(key artifactClaimKey, receipt, binding, witness os.FileInfo) error {
+	if receipt == nil {
+		return errArtifactClaimConflict
+	}
+	if witness == nil && binding != nil {
+		candidate, err := s.rootFD.Lstat(key.witnessPath(false))
+		if err == nil {
+			if candidate == nil || !candidate.Mode().IsRegular() || !os.SameFile(receipt, candidate) {
+				return errArtifactClaimConflict
+			}
+			witness = candidate
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+	if witness != nil {
+		current, err := s.rootFD.Lstat(key.witnessPath(false))
+		if err != nil || current == nil || !os.SameFile(witness, current) {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		removed, err := s.fdRemoveClaimOwned(claimZonePath(key.witnessPath(false)), current, false)
+		if err != nil || !removed {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		if err := s.syncDirAt(claimDirectory); err != nil {
+			return err
+		}
+	}
+	if binding != nil {
+		current, err := s.rootFD.Lstat(key.bindingPath())
+		if err != nil || current == nil || !os.SameFile(binding, current) {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		removed, err := s.fdRemoveClaimOwned(claimZonePath(key.bindingPath()), current, false)
+		if err != nil || !removed {
+			return errors.Join(errArtifactClaimConflict, err)
+		}
+		return s.syncDirAt(claimDirectory)
 	}
 	return nil
 }

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/validate_bundle.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "version_declaration", "scanned_files", "conformance", "guidance", "diagnostics"],
+  "properties": {
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared", "effective", "resolution", "compatibility"],
+      "properties": {
+        "declared": {"type": ["string", "null"]},
+        "effective": {"type": ["string", "null"]},
+        "resolution": {"enum": ["declared", "default", "explicit", "future-best-effort", null]},
+        "compatibility": {"enum": ["native", "legacy", "best-effort", null]}
+      }
+    },
+    "version_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "valid", "raw", "value"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "valid": {"type": "boolean"},
+        "raw": {"type": ["string", "null"]},
+        "value": {"type": ["string", "null"]}
+      }
+    },
+    "as_of": {"type": "string", "format": "date"},
+    "scanned_files": {"type": "integer", "minimum": 0},
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conformant", "errors"],
+      "properties": {
+        "conformant": {"type": "boolean"},
+        "errors": {"type": "integer", "minimum": 0}
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["warnings", "info"],
+      "properties": {
+        "warnings": {"type": "integer", "minimum": 0},
+        "info": {"type": "integer", "minimum": 0}
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "file", "field", "message", "spec_ref", "policy_failure"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["ERROR", "WARN", "INFO"]},
+          "file": {"type": "string"},
+          "field": {"type": "string"},
+          "message": {"type": "string"},
+          "spec_ref": {"type": "string"},
+          "policy_failure": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

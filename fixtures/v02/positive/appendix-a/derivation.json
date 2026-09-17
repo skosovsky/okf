@@ -1,0 +1,101 @@
+{
+  "source": {
+    "path": "skills/open-knowledge-format/references/spec-v02.md",
+    "revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
+    "sha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+    "appendix_lines": "831-1003"
+  },
+  "transforms": [
+    {
+      "source_lines": "892-913",
+      "source_slice_sha256": "73d12893139a4d01c65e02bebd880070aae7c14f311d40cce9088ae0b9c44da1",
+      "target": "metrics/income-statement.md",
+      "reason": "Appendix concept content with one explicit readability blank line inserted after the Definition heading",
+      "operations": [
+        {
+          "kind": "replace_exact",
+          "old": "# Definition\nThe income statement",
+          "new": "# Definition\n\nThe income statement"
+        }
+      ]
+    },
+    {
+      "source_lines": "920-962",
+      "source_slice_sha256": "7d1c290405806f7996c1a02724676aa429768937637020ec46efac34cc99216d",
+      "target": "computations/revenue.md",
+      "reason": "Appendix concept content with bundle-root resource paths and the indented SQL converted to the single fenced block required by section 10.3",
+      "operations": [
+        {
+          "kind": "replace_exact",
+          "old": "  resource: references/skills/run-on-bq.md",
+          "new": "  resource: /references/skills/run-on-bq.md"
+        },
+        {
+          "kind": "replace_exact",
+          "old": "  resource: references/attesters/sql-equality.py",
+          "new": "  resource: /references/attesters/sql-equality.py"
+        },
+        {
+          "kind": "replace_exact",
+          "old": "    SELECT SUM(amount) AS revenue\n    FROM finance.recognized_revenue\n    WHERE fiscal_year = @year\n",
+          "new": "```sql\nSELECT SUM(amount) AS revenue\nFROM finance.recognized_revenue\nWHERE fiscal_year = @year\n```\n"
+        }
+      ]
+    },
+    {
+      "source_lines": "969-1002",
+      "source_slice_sha256": "b86f78607cff64d1c031510659461972603992988cf2ed4e9bd621e09ff15d2e",
+      "target": "computations/profit.md",
+      "reason": "Appendix concept content with bundle-root resource paths and the indented SQL converted to the single fenced block required by section 10.3",
+      "operations": [
+        {
+          "kind": "replace_exact",
+          "old": "  resource: references/skills/run-dbt.md",
+          "new": "  resource: /references/skills/run-dbt.md"
+        },
+        {
+          "kind": "replace_exact",
+          "old": "  resource: references/attesters/dbt-binding.py",
+          "new": "  resource: /references/attesters/dbt-binding.py"
+        },
+        {
+          "kind": "replace_exact",
+          "old": "    SELECT gross_profit\n    FROM {{ ref('fct_income_statement') }}\n    WHERE fiscal_year = {{ var('year') }}\n      AND segment = {{ var('segment') }}\n",
+          "new": "```sql\nSELECT gross_profit\nFROM {{ ref('fct_income_statement') }}\nWHERE fiscal_year = {{ var('year') }}\n  AND segment = {{ var('segment') }}\n```\n"
+        }
+      ]
+    }
+  ],
+  "synthetic_materializations": [
+    {
+      "target": "index.md",
+      "reason": "repository-authored root index materializes the Appendix tree"
+    },
+    {
+      "target": "references/skills/run-on-bq.md",
+      "reason": "repository-authored inert executor documentation"
+    },
+    {
+      "target": "references/skills/run-dbt.md",
+      "reason": "repository-authored inert executor documentation"
+    },
+    {
+      "target": "references/attesters/sql-equality.py",
+      "reason": "repository-authored inert attester stub"
+    },
+    {
+      "target": "references/attesters/dbt-binding.py",
+      "reason": "repository-authored inert attester stub"
+    }
+  ],
+  "derived_sha256": {
+    "metrics/income-statement.md": "e4b31d033990f0ddad60221ac8aff604554b8c3eaf8913090a6c5f49414a9804",
+    "computations/revenue.md": "c34378daad86f20b2d5513ad374eebd8618fa3ae83d8ea5e684ad6a95004ec52",
+    "computations/profit.md": "d25c28d888d1f3749482a497fa79b977d0dfc5363aad0aba07207378d990f61e",
+    "index.md": "69e7e9375e5e73826518d6fba2ba8f79133624a50bf2a8426d14db691e411109",
+    "references/skills/run-on-bq.md": "88cd7d8035b4dcb382493cfe47ffeb0a43f3e003c29c78b7ad4d572d055d1fe2",
+    "references/skills/run-dbt.md": "90718ebc19fef179f94473d3aca04f359a4fd2aaf2c41e89d0814b797bc473f3",
+    "references/attesters/sql-equality.py": "d3beece7bdcddb16015661893363d9d9ed6be9001d3fe3cfe51daad09d3243bc",
+    "references/attesters/dbt-binding.py": "d3beece7bdcddb16015661893363d9d9ed6be9001d3fe3cfe51daad09d3243bc"
+  }
+}

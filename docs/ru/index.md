@@ -1,270 +1,147 @@
 ---
-title: OKF - Markdown-спецификация для людей и AI-агентов
-description: Русская документация Open Knowledge Format, CLI toolkit и agent skill.
+title: Open Knowledge Format v0.2
+description: Формат OKF v0.2, toolkit, migration и agent workflow.
 permalink: /ru/
 ---
 
 {% include nav_ru.html %}
 
-# Open Knowledge Format
+# Open Knowledge Format v0.2
 
-OKF - маленький vendor-neutral формат для баз знаний, которые живут в git,
-рендерятся где угодно и дают AI-агентам структурный контекст. Под капотом это
-Markdown + YAML frontmatter, компактный base conformance и advisory-режимы для
-строгого review.
+OKF хранит переносимые знания как Markdown concepts с YAML frontmatter. Этот
+репозиторий реализует v0.2 contract для чтения и записи, сохраняя explicit v0.1
+consumption и migration.
 
-![Пример OKF bundle](../images/01-hero.png?v=20260622){: .hero-image }
-
-<div class="cards">
-  <div class="card">
-    <h3>Только Markdown</h3>
-    <p>Директория <code>.md</code> файлов с YAML frontmatter. Без runtime, backend и проприетарного редактора.</p>
-  </div>
-  <div class="card">
-    <h3>Слоистая валидация</h3>
-    <p>Base conformance остается маленьким; strict, link и orphan checks добавляют parseable warnings и info.</p>
-  </div>
-  <div class="card">
-    <h3>Инструменты repo</h3>
-    <p>В этом репозитории есть Go CLI toolkit и local agent skill для создания, проверки, анализа и экспорта OKF bundles.</p>
-  </div>
-</div>
+![Пример OKF bundle](../images/01-hero.png?v=20260729){: .hero-image }
 
 ## Spec {#spec}
 
-OKF представляет знания как дерево Markdown-файлов:
+Нормативный contract — [pinned upstream specification](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md)
+из commit `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`.
+
+Base conformance намеренно компактный:
+
+1. Каждый concept — UTF-8 Markdown с parseable YAML frontmatter.
+2. В каждом concept есть непустой string `type`.
+3. Reserved `index.md` и `log.md` соблюдают заданную структуру.
+
+Provenance, trust, lifecycle и Attested Computation fields optional. Missing
+optional data и unknown keys/types/runtimes остаются consumable.
+При отсутствии root version допустим v0.2 traversal default. Present malformed
+`okf_version` нарушает reserved-index conformance; unsupported canonical future
+versions сохраняют declaration и читаются best-effort.
+
+## Быстрый старт {#quickstart}
 
 ```text
 knowledge/
 ├── index.md
-├── log.md
-├── metrics/
-│   ├── index.md
-│   └── mrr.md
-└── runbooks/
-    └── incident-escalation.md
+└── minimal.md
 ```
 
-Reserved files:
-
-| Файл | Назначение |
-| --- | --- |
-| `index.md` | Directory listing для progressive disclosure. |
-| `log.md` | Chronological update history. |
-
-Все остальные `.md` файлы - **concept documents**:
+`index.md`:
 
 ```markdown
 ---
-type: Metric
-title: Monthly Recurring Revenue
-description: Normalized monthly recurring subscription revenue.
-tags: [revenue, saas]
-timestamp: 2026-06-13T10:00:00Z
+okf_version: "0.2"
 ---
 
-# Definition
+# Concepts
 
-MRR is the sum of active subscription revenue normalized to one month.
-
-# Related
-
-- [Churn Rate](./churn.md) affects MRR directly.
+* [Minimal](minimal.md) - Minimal conformant v0.2 concept.
 ```
 
-Единственное обязательное поле frontmatter - `type`. Common optional fields:
-`title`, `description`, `resource`, `tags` и `timestamp`; `--strict` дает
-warning при отсутствии `title`, `description`, `tags` и `timestamp`, а
-`resource` проверяется только если присутствует. Дополнительные
-producer-defined fields разрешены.
-
-## Быстрый старт {#quickstart}
-
-Создай маленький bundle:
-
-```sh
-mkdir saas-metrics
-cd saas-metrics
-```
-
-Добавь `mrr.md`:
+`minimal.md`:
 
 ```markdown
 ---
-type: Metric
-title: MRR - Monthly Recurring Revenue
-description: Нормализованная monthly recurring revenue для SaaS.
-tags: [revenue, saas, finance]
-timestamp: 2026-06-13T10:00:00Z
+type: Unknown Producer Type
 ---
 
-# Formula
-
-MRR = Σ(active subscription monthly value)
-
-# Related
-
-- [Churn Rate](./churn.md) снижает MRR.
-- [NPS](./nps.md) может быть leading indicator будущего churn.
+Minimal conformant v0.2 concept.
 ```
 
-Добавь `index.md`:
-
-```markdown
-# SaaS Metrics Bundle
-
-## Metrics
-
-* [MRR](./mrr.md) - Нормализованная monthly recurring revenue для SaaS.
-* [Churn](./churn.md) - customer or revenue loss over time
-* [NPS](./nps.md) - recommendation score from -100 to 100
-```
-
-Вернись в корень репозитория и проверь:
+Проверка:
 
 ```sh
-cd ..
-go run ./cmd/okf validate -path ./saas-metrics
+okf validate --path ./knowledge --spec auto
 ```
 
-Для полного review-pass включи advisory-режимы:
+Для review используй strict guidance и deterministic staleness date:
 
 ```sh
-go run ./cmd/okf validate -path ./saas-metrics --strict --check-links --check-orphans
+okf validate --path ./knowledge --spec auto --strict --as-of 2026-07-29
 ```
 
-Только diagnostics уровня `[ERROR]` делают bundle non-conformant. `[WARN]` и
-`[INFO]` - это review-сигналы для recommended metadata, conventional sections,
-link targets, anchors и local index coverage.
+Validation не является verification. Добавляй `verified` только после проверки
+concept относительно его sources или resource.
 
-Этот quickstart намеренно оставляет linked concepts `churn.md` и `nps.md`
-ненаписанными; `--check-links` покажет их как `[INFO]` knowledge gaps.
+## Provenance, trust и lifecycle
+
+`sources` хранит actual materials. Claims в body используют Markdown footnotes
+с labels из `sources[].id`. `generated` называет известного producer текущего
+content; `verified` хранит отдельные проверки.
+
+Consumer выводит trust только из `verified`:
+
+- key отсутствует — unverified;
+- только non-human verifiers — machine-confirmed;
+- есть `human:<id>` verifier — human-reviewed.
+
+Trust, `status` и staleness — разные сигналы. Deprecated concept может быть
+human-reviewed; stable concept — unverified; verified concept — stale.
+
+## Attested Computation
+
+Sanctioned computation — отдельный concept `type: Attested Computation`, на
+который ссылаются narrative concepts. Computation задаётся либо одним inline
+fence под `# Computation`, либо одним file path.
+
+Contract inert. Toolkit не исполняет resource без отдельно trusted runtime и
+authorization. v0.2 намеренно откладывает binding, runtime packaging,
+receipt/verdict wire format, attester ABI, sandboxing и caching.
+
+По pinned spec agent MAY передавать только значения declared parameters и MUST
+NOT создавать или редактировать sanctioned computation.
 
 ## Примеры {#examples}
 
-Рабочие формы bundle:
+Canonical examples парсятся из
+[`fixtures/v02/corpus.yaml`](https://github.com/skosovsky/okf/blob/main/fixtures/v02/corpus.yaml). Corpus покрывает
+minimal, Appendix A, verification shapes, lifecycle, inline/file computation,
+narrative links, v0.1 compatibility, mixed provenance, future version и
+adversarial cases.
 
-- **E-commerce analytics** - tables, metrics, dashboards, owners, freshness SLA, citations.
-- **Incident playbooks** - alerts, runbooks, escalation rules, false positives, mitigation commands.
-- **API documentation** - auth flows, endpoints, rate limits, caveats, examples.
-
-Пример API concept:
-
-````markdown
----
-type: API Endpoint
-title: Create Order
-description: Creates a new order. Requires scope orders:write.
-resource: https://api.acme.com/v2/orders
-tags: [orders, write, core]
-method: POST
-path: /v2/orders
-auth_scope: orders:write
----
-
-# Request
-
-```bash
-curl -X POST https://api.acme.com/v2/orders \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json"
-```
-````
+Синтетические URL этого repo используют reserved domains вроде
+`example.invalid`.
 
 ## Инструменты {#tools}
 
-В этом репозитории четыре публичные поверхности:
+- [Toolkit]({{ '/ru/toolkit/' | relative_url }}): CLI и Go surfaces.
+- [Agent skill]({{ '/ru/skill/' | relative_url }}): authoring, consumption и guardrails.
+- [Migration]({{ '/ru/migration/' | relative_url }}): explicit v0.1 → v0.2 workflow.
 
-1. **CLI toolkit** - `cmd/okf` для validation, summaries, index generation, graph output (`text`, Graphviz DOT, Mermaid, JSON-LD, N-Triples), parsing и formatting.
-2. **Go library** - domain packages `bundle`, `validator`, `graph`, `store` и `store/fs`, включая snapshot-based transactional mutation для local bundles.
-3. **MCP server** - `cmd/okf-mcp` для MCP-capable agents: читать, проверять, строить graph и безопасно редактировать local OKF bundles через stdio tools. `write_concept` использует staged validation и durable cooperating-writer commit path.
-4. **Agent skill** - `skills/open-knowledge-format` для создания, конвертации, обогащения, проверки и работы с OKF bundles.
-
-Graph output имеет два слоя: Markdown links для human navigation и YAML
-`relations` для строгих semantic dependencies. Targets в `relations` - OKF
-concept refs вроде `tables/orders#col-status`; для nested field-level sources
-нужен явный `id` или `anchor`. Target с fragment существует, только если
-существуют его concept и один уникальный matching fragment.
-
-Некорректные или неразрешенные semantic relations остаются structured
-diagnostics. Baseline validation в CLI и MCP ограничен conformance v0.1;
-Go-клиент может включить relation reporting через `ValidatorConfig.CheckRelations`,
-а mutation и write paths всегда отклоняют blocking relation diagnostics. Они
-исключаются из resolved outgoing, incoming и reverse indexes,
-а также из всех semantic graph exporters. Dangling Markdown links — отдельный
-навигационный слой и могут по-прежнему отображаться как missing.
-
-Только nested mapping определяют fragments; top-level frontmatter `id` и
-`anchor` — metadata concept. Для nested mapping `id` canonical. Отличающийся валидный `anchor` —
-noncanonical alias для информации и навигации; semantic edits и relation refs
-используют canonical `id`.
-
-Transactional API использует algorithm-qualified revisions, preview и CAS
-commits. По умолчанию revision — `sha256:<lowercase-hex>`;
-`fs.Config.HashAlgorithm` может заменить алгоритм. Она включает каждый regular
-file под bundle root, включая non-Markdown и reserved index/log files, кроме
-`.okf/**`; symlinks никогда не читаются и не хешируются, а internal journal,
-receipts и lease исключены. Journal v5 фиксирует алгоритм и canonical
-request/result/replay data в compact bounded manifest; durable staged payloads
-хранят post-state bytes. Перед apply recovery проверяет safe no-follow path,
-declared size и SHA-256 digest каждого payload, затем очищает данные и требует
-ту же configured algorithm. Persisted receipt envelope использует v2. Filesystem backend
-имеет advisory locks и scope одного filesystem. MCP `write_concept` использует
-тот же idempotent pipeline без повторной публикации идентичного retry, но
-сохраняет fixed success schema (`status`, `path`, `diagnostics`) и не раскрывает
-receipt или commit evidence. API,
-idempotency и ограничения — в [Toolkit](toolkit/).
-
-Durable runtime backend `store/fs` поддерживается только на Darwin и Linux с
-обязательными filesystem capability checks. Windows, Android, iOS и другие
-targets остаются compile-safe, но `Open`/`OpenContext` возвращают typed path
-`fs.ErrUnsupportedPlatform`; backend-neutral packages остаются buildable.
-Исполняемая matrix описана в [Release engineering](../release-engineering/).
-
-Parser-backed mutations сохраняют presentation вместо нормализации: Goldmark
-доказывает eligible Markdown body destinations, а exact collector отображает
-их byte spans в полный файл; `yaml.v3` доказывает supported block scalar subset
-во frontmatter. Autolinks, raw HTML, invalid UTF-8 и unsupported или ambiguous
-presentation fail-closed, а не переписываются. Flat overlay делит immutable
-staged payloads и результат только успешного `Paths` discovery; HAMT и parent
-chain отсутствуют. `bundle.SourceFromFS` — non-owning adapter и требует stable
-snapshot `fs.FS`. Эти внутренние детали сохраняют CLI и MCP schemas.
-
-Граница edit точная: parsing идёт только по body, а collector offsets
-отображаются в полный файл. Переписываются только Goldmark AST inline
-links/images и reference definitions; semantic link/image внутри inline-HTML
-container остаётся eligible, если Goldmark создаёт `Link`/`Image`. Autolinks,
-raw-HTML `href`/URLs, code spans, fenced/indented code и unresolved/malformed
-references исключены. Touched YAML принимает доказанные plain/single/double-
-quoted scalar keys и values и fail-closed для flow mapping/sequence,
-literal/folded block scalar, explicit/custom tag, direct anchor или complex key
-(Unsupported); alias/merge provenance и duplicate semantic
-relations/type/target/id/anchor (Ambiguous); остальные duplicate touched mapping
-keys (Unsupported); `%YAML`/`%TAG`, inner
-document/end markers или multidoc frontmatter и
-unprovable comment/range; unrelated nonintersecting extension bytes могут
-остаться. Invalid UTF-8 и любой unsupported/ambiguous случай возвращают typed
-error и не создают stage. YAML задают только recognized outer frontmatter
-delimiters: body thematic `---` и setext underline — Markdown, не YAML multi-doc.
-
-Смотри отдельные разделы: [Toolkit](toolkit/) и [Skill](skill/), включая MCP setup.
+YAML `relations` — `skosovsky/okf` extension/tooling policy, а не часть upstream
+v0.2 spec.
 
 ## FAQ {#faq}
 
-### Нужен backend?
+### Каждому concept нужен provenance?
 
-Нет. Bundle - это файлы. Backend нужен только если ты строишь поиск, permissions, enrichment pipeline или catalog UI поверх формата.
+Нет. `type` — единственное всегда обязательное поле. Отсутствующий provenance
+означает unknown provenance, а не invalid concept.
 
-### OKF заменяет OpenAPI, Protobuf, Avro или data catalogs?
+### Human-authored concept автоматически human-reviewed?
 
-Нет. OKF ссылается на domain-specific schemas и catalogs. Он хранит контекст вокруг них.
+Нет. `generated.by: human:...` фиксирует authoring. Human-reviewed требует
+реального human event в `verified`.
 
-### Это только для BigQuery?
+### Bundle может запускать executor или attester?
 
-Нет. `type` свободный: `PostgreSQL Table`, `Kafka Topic`, `Metric`, `Runbook`, `API Endpoint`, `Business Process`.
+Не потому, что это OKF. Resource fields — inert data. Execution требует trusted
+runtime и authorization за пределами format/toolkit.
 
-### Чем отличается от AGENTS.md?
+### Что происходит с v0.1?
 
-AGENTS.md говорит coding agent, как вести себя в проекте. OKF говорит агенту, что существует в домене: tables, metrics, APIs, playbooks, processes и relationships.
-
-Filesystem durability: `MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`). Case-folding и Unicode-normalization aliases определяются независимо. `.okf` directories no-follow 0700, private files и lease 0600 либо Open fail-closed.
+Он остаётся intentional read/validate/migration source. Legacy fallback не
+выполняет hidden migration. См. [migration guide]({{ '/ru/migration/' | relative_url }}).

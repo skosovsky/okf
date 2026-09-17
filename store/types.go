@@ -63,9 +63,10 @@ type ContextManifestSource interface {
 
 // Store atomically previews and commits semantic changes. All methods honor
 // context cancellation until their implementation's documented durable commit
-// boundary. A Commit cancelled after that boundary may return ctx.Err and a
-// zero receipt even though the durable outcome completes; retrying with the
-// same non-empty IdempotencyKey must return that outcome's receipt.
+// boundary. After that boundary, every failure is returned with the canonical
+// nonzero receipt and a *CommittedError; cancellation is used as the cause only
+// when no stronger post-boundary I/O failure exists. A matching idempotent retry
+// returns the same receipt.
 type Store interface {
 	Snapshot(context.Context) (Snapshot, error)
 	Preview(context.Context, ChangeSet) (Preview, error)
@@ -104,22 +105,52 @@ func (c ChangeSet) Validate() error {
 		return invalidChangeSet(fmt.Errorf("%w: no operations", ErrInvalidChangeSet))
 	}
 	for _, op := range c.Operations {
-		if op == nil {
-			return invalidChangeSet(fmt.Errorf("%w: nil operation", ErrInvalidChangeSet))
-		}
-		if err := op.validate(); err != nil {
+		if err := validateOperationValue(op); err != nil {
 			return invalidChangeSet(err)
 		}
 	}
 	for _, pre := range c.Preconditions {
-		if pre == nil {
-			return invalidChangeSet(fmt.Errorf("%w: nil precondition", ErrInvalidChangeSet))
-		}
-		if err := pre.validate(); err != nil {
+		if err := validatePreconditionValue(pre); err != nil {
 			return invalidChangeSet(err)
 		}
 	}
 	return nil
+}
+
+func validateOperationValue(operation Operation) error {
+	switch operation.(type) {
+	case EnsureRelation,
+		MoveConcept,
+		RenameFragment,
+		SetGenerated,
+		EnsureVerification,
+		RemoveVerification,
+		PutSource,
+		RemoveSource,
+		SetUsageWindow,
+		SetLifecycle,
+		PutAttestedComputation,
+		SetBundleVersion,
+		MigrateV01ToV02:
+		return operation.validate()
+	default:
+		return fmt.Errorf("%w: operation must be a supported non-pointer value, got %T", ErrInvalidChangeSet, operation)
+	}
+}
+
+func validatePreconditionValue(precondition Precondition) error {
+	switch precondition.(type) {
+	case RefExists,
+		RefAbsent,
+		FileDigestEquals,
+		RelationExists,
+		RelationAbsent,
+		FragmentUnique,
+		RevisionEquals:
+		return precondition.validate()
+	default:
+		return fmt.Errorf("%w: precondition must be a supported non-pointer value, got %T", ErrInvalidChangeSet, precondition)
+	}
 }
 
 func invalidChangeSet(cause error) error {

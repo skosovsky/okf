@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -121,6 +123,128 @@ func TestCommitReceiptJSONRoundTripIsCanonical(t *testing.T) {
 	if restored.CommitTime.Location() != time.UTC || restored.ChangedRefs[0].String() != "alpha" || restored.ChangedFiles[0].Path != "a.md" {
 		t.Fatalf("canonical receipt = %#v", restored)
 	}
+	const want = `{"FormatVersion":1,"ChangeSetID":"change","IdempotencyKey":"retry","RequestDigest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","BaseRevision":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","ResultRevision":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","CommitTime":"2026-07-19T00:00:00Z","ChangedRefs":["alpha","beta"],"ChangedFiles":[{"Kind":"delete","Path":"a.md","From":""},{"Kind":"write","Path":"z.md","From":""}]}`
+	if string(raw) != want {
+		t.Fatalf("canonical receipt bytes = %s, want %s", raw, want)
+	}
+}
+
+func TestCommitReceiptJSONPreservesV1LexicalWireOrderAcrossRootFragmentBoundary(t *testing.T) {
+	// Arrange. v1 receipts canonically sort the serialized ref strings. Sorting
+	// the structural (ID, Fragment) tuple would reverse this historical order.
+	root, err := bundle.ParseRelationRef("a!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fragment, err := bundle.ParseRelationRef("a#z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	revision := Revision("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	receipt := CommitReceipt{
+		FormatVersion:  CommitReceiptFormatVersion,
+		ChangeSetID:    "lexical-v1",
+		IdempotencyKey: "lexical-v1-key",
+		RequestDigest:  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		BaseRevision:   revision,
+		ResultRevision: revision,
+		CommitTime:     time.Date(2026, 7, 19, 0, 0, 0, 0, time.UTC),
+		ChangedRefs:    []bundle.RelationRef{root, fragment},
+		ChangedFiles:   make([]FileChange, 0),
+	}
+	const want = `{"FormatVersion":1,"ChangeSetID":"lexical-v1","IdempotencyKey":"lexical-v1-key","RequestDigest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","BaseRevision":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","ResultRevision":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","CommitTime":"2026-07-19T00:00:00Z","ChangedRefs":["a!","a#z"],"ChangedFiles":[]}`
+
+	// Act.
+	raw, marshalErr := json.Marshal(receipt)
+	var restored CommitReceipt
+	unmarshalErr := json.Unmarshal([]byte(want), &restored)
+
+	// Assert.
+	if marshalErr != nil || unmarshalErr != nil {
+		t.Fatalf("canonical v1 receipt errors = marshal:%v unmarshal:%v", marshalErr, unmarshalErr)
+	}
+	if string(raw) != want {
+		t.Fatalf("canonical v1 receipt = %s, want %s", raw, want)
+	}
+	if got := []string{restored.ChangedRefs[0].String(), restored.ChangedRefs[1].String()}; !reflect.DeepEqual(got, []string{"a!", "a#z"}) {
+		t.Fatalf("restored ChangedRefs = %#v, want lexical v1 order", got)
+	}
+}
+
+func TestCommitReceiptJSONRoundTripsEscapedRootRelationRefStructurally(t *testing.T) {
+	// Arrange.
+	embeddedID, err := bundle.NewConceptID([]string{"source#part"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceID, err := bundle.ParseConceptID("source")
+	if err != nil {
+		t.Fatal(err)
+	}
+	revision := Revision("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	receipt := CommitReceipt{
+		FormatVersion:  CommitReceiptFormatVersion,
+		ChangeSetID:    "escaped-root",
+		RequestDigest:  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		BaseRevision:   revision,
+		ResultRevision: revision,
+		CommitTime:     time.Date(2026, 7, 19, 0, 0, 0, 0, time.UTC),
+		ChangedRefs: []bundle.RelationRef{
+			{ID: sourceID, Fragment: "part"},
+			{ID: embeddedID},
+		},
+	}
+
+	// Act.
+	raw, err := json.Marshal(receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var restored CommitReceipt
+	err = json.Unmarshal(raw, &restored)
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `["source#part","source\\#part"]`
+	if !bytes.Contains(raw, []byte(want)) {
+		t.Fatalf("receipt ChangedRefs encoding = %s, want fragment and escaped-root tuples %s", raw, want)
+	}
+	if len(restored.ChangedRefs) != 2 ||
+		relationRefIdentityOf(restored.ChangedRefs[0]) != (relationRefIdentity{id: "source", fragment: "part"}) ||
+		relationRefIdentityOf(restored.ChangedRefs[1]) != (relationRefIdentity{id: "source#part"}) {
+		t.Fatalf("restored ChangedRefs = %#v, want exact structural tuples", restored.ChangedRefs)
+	}
+}
+
+func TestCommitReceiptJSONRejectsAmbiguousAndNonCanonicalRelationRefEscapes(t *testing.T) {
+	// Arrange.
+	revision := "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	template := `{"FormatVersion":1,"ChangeSetID":"change","IdempotencyKey":"","RequestDigest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","BaseRevision":"` + revision + `","ResultRevision":"` + revision + `","CommitTime":"2026-07-19T00:00:00Z","ChangedRefs":[%s],"ChangedFiles":[]}`
+	tests := []struct {
+		name string
+		ref  string
+	}{
+		{name: "ambiguous extra delimiter", ref: `"source#part#tail"`},
+		{name: "escape without hash", ref: `"source\\part"`},
+		{name: "trailing escape", ref: `"source\\"`},
+		{name: "noncanonical JSON escape", ref: `"source\u005c#part"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var receipt CommitReceipt
+
+			// Act.
+			err := json.Unmarshal([]byte(fmt.Sprintf(template, tt.ref)), &receipt)
+
+			// Assert.
+			if !errors.Is(err, ErrStorageCorrupt) {
+				t.Fatalf("UnmarshalJSON() error = %v, want storage corruption", err)
+			}
+		})
+	}
 }
 
 func TestCommitReceiptMarshalJSONRejectsInvalidReceipt(t *testing.T) {
@@ -149,5 +273,123 @@ func TestCommitReceiptMarshalJSONRejectsInvalidReceipt(t *testing.T) {
 		if !errors.Is(marshalErr, ErrStorageCorrupt) {
 			t.Fatalf("MarshalJSON() error = %v, want storage corruption", marshalErr)
 		}
+	}
+}
+
+func TestCommitReceiptFileChangePathsUseRevisionPathPolicy(t *testing.T) {
+	// Arrange.
+	revision := Revision("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	base := CommitReceipt{
+		FormatVersion:  CommitReceiptFormatVersion,
+		ChangeSetID:    "change",
+		RequestDigest:  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		BaseRevision:   revision,
+		ResultRevision: revision,
+		CommitTime:     time.Date(2026, 7, 19, 0, 0, 0, 0, time.UTC),
+	}
+	invalidUTF8 := string([]byte{'b', 'a', 'd', 0xff})
+	tests := []struct {
+		name  string
+		value string
+		valid bool
+	}{
+		{name: "canonical file", value: "concepts/alpha.md", valid: true},
+		{name: "unicode", value: "assets/данные.csv", valid: true},
+		{name: "nested metadata name", value: "assets/.okf/data", valid: true},
+		{name: "invalid UTF-8", value: invalidUTF8},
+		{name: "NUL", value: "bad\x00path"},
+		{name: "C0", value: "bad\x1fpath"},
+		{name: "DEL", value: "bad\x7fpath"},
+		{name: "empty", value: ""},
+		{name: "absolute", value: "/absolute.md"},
+		{name: "backslash", value: `dir\file.md`},
+		{name: "current directory", value: "."},
+		{name: "parent directory", value: ".."},
+		{name: "traversal", value: "../escape.md"},
+		{name: "embedded traversal", value: "dir/../escape.md"},
+		{name: "dot prefix", value: "./file.md"},
+		{name: "duplicate slash", value: "dir//file.md"},
+		{name: "reserved metadata root", value: ".okf"},
+		{name: "reserved metadata descendant", value: ".okf/journal"},
+	}
+
+	for _, field := range []string{"Path", "From"} {
+		t.Run(field, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					receipt := base
+					switch field {
+					case "Path":
+						receipt.ChangedFiles = []FileChange{{Kind: FileWrite, Path: tt.value}}
+					case "From":
+						receipt.ChangedFiles = []FileChange{{Kind: FileRename, Path: "target.md", From: tt.value}}
+					default:
+						t.Fatalf("unknown field %q", field)
+					}
+
+					// Act.
+					revisionPathErr := bundle.ValidateRevisionPath(tt.value)
+					validateErr := ValidateCommitReceipt(receipt)
+					raw, marshalErr := receipt.MarshalJSON()
+
+					// Assert.
+					if (revisionPathErr == nil) != tt.valid {
+						t.Fatalf("bundle.ValidateRevisionPath(%q) error = %v, valid = %t", tt.value, revisionPathErr, tt.valid)
+					}
+					if (validateErr == nil) != tt.valid {
+						t.Fatalf("ValidateCommitReceipt(%s=%q) error = %v, valid = %t", field, tt.value, validateErr, tt.valid)
+					}
+					if (marshalErr == nil) != tt.valid {
+						t.Fatalf("MarshalJSON(%s=%q) error = %v, valid = %t", field, tt.value, marshalErr, tt.valid)
+					}
+					if !tt.valid {
+						if !errors.Is(validateErr, ErrStorageCorrupt) || !errors.Is(marshalErr, ErrStorageCorrupt) {
+							t.Fatalf("%s=%q errors = validate:%v marshal:%v, want storage corruption", field, tt.value, validateErr, marshalErr)
+						}
+						if raw != nil {
+							t.Fatalf("MarshalJSON(%s=%q) bytes = %q, want nil before encoding normalization", field, tt.value, raw)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestCommitReceiptMarshalJSONRejectsMalformedFilePathBeforeEncodingNormalization(t *testing.T) {
+	// Arrange. encoding/json would otherwise replace malformed UTF-8 with
+	// U+FFFD, producing durable bytes for a value that never passed the path
+	// contract.
+	revision := Revision("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	base := CommitReceipt{
+		FormatVersion:  CommitReceiptFormatVersion,
+		ChangeSetID:    "change",
+		RequestDigest:  "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		BaseRevision:   revision,
+		ResultRevision: revision,
+		CommitTime:     time.Date(2026, 7, 19, 0, 0, 0, 0, time.UTC),
+	}
+	malformed := string([]byte{'b', 'a', 'd', 0xff})
+	tests := []struct {
+		name string
+		file FileChange
+	}{
+		{name: "Path", file: FileChange{Kind: FileWrite, Path: malformed}},
+		{name: "From", file: FileChange{Kind: FileRename, Path: "target.md", From: malformed}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			receipt := base
+			receipt.ChangedFiles = []FileChange{tt.file}
+
+			// Act.
+			raw, err := receipt.MarshalJSON()
+
+			// Assert.
+			if raw != nil || !errors.Is(err, ErrStorageCorrupt) {
+				t.Fatalf("MarshalJSON() = %q, %v, want nil storage corruption", raw, err)
+			}
+		})
 	}
 }

@@ -1,0 +1,9 @@
+description: "Unknown future OKF version is consumed best-effort without dropping its declaration"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

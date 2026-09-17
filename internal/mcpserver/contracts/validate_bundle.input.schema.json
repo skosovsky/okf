@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/validate_bundle.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_path"],
+  "properties": {
+    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "strict": {"type": "boolean", "default": false},
+    "check_links": {"type": "boolean", "default": false},
+    "check_orphans": {"type": "boolean", "default": false},
+    "target_version": {"enum": ["auto", "0.1", "0.2"], "default": "auto"},
+    "as_of": {"type": "string", "format": "date"}
+  }
+}

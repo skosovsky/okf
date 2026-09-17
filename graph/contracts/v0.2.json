@@ -1,0 +1,180 @@
+{
+  "profile": "skosovsky/okf-v0.2",
+  "projection_version": "0.2",
+  "namespace": "https://github.com/skosovsky/okf/ns/projection/v0.2#",
+  "identity": {
+    "concept_iri": {
+      "prefix": "local:bundle:",
+      "component_encoding": "url-path-escape"
+    },
+    "synthetic_iri": {
+      "prefix": "urn:skosovsky:okf:graph:v0.2:",
+      "component_encoding": "base64url-unpadded",
+      "component_separator": ":"
+    },
+    "namespaces_disjoint": true
+  },
+  "collections": {
+    "empty_predicate": "omit",
+    "jsonld_singleton": "scalar",
+    "jsonld_multiple": "array",
+    "ntriples_values": "one-triple-per-value"
+  },
+  "deduplication": {
+    "node_key": "@id",
+    "coalesce_same_node_key": true,
+    "property_values": "set",
+    "node_order": ["iri"],
+    "value_order": ["predicate", "kind", "value"]
+  },
+  "parity": {
+    "formats": ["json-ld", "n-triples"],
+    "graph": "default",
+    "semantic_triple_set": "equal"
+  },
+  "joins": {
+    "claim_attribution_sources": {
+      "source_key": "ProvenanceSource.sourceID",
+      "attribution_key": "ClaimAttribution.sourceID",
+      "normalization": "commonmark-reference-label",
+      "cardinality": "many-to-many",
+      "collision": "all-matches"
+    }
+  },
+  "datatypes": {
+    "string": "http://www.w3.org/2001/XMLSchema#string",
+    "boolean": "http://www.w3.org/2001/XMLSchema#boolean",
+    "integer": "http://www.w3.org/2001/XMLSchema#integer",
+    "date": "http://www.w3.org/2001/XMLSchema#date",
+    "dateTime": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "iri": "@id",
+    "invalid_date_or_datetime": "omitted"
+  },
+  "classes": {
+    "Projection": {
+      "closed": true,
+      "predicates": {
+        "profile": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "projectionVersion": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "declaredOKFVersion": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "effectiveOKFVersion": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "versionSource": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "compatibilityMode": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"}
+      }
+    },
+    "Concept": {
+      "closed": true,
+      "predicates": {
+        "conceptType": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "title": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "description": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resource": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resourceKind": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resourceNode": {"min": 0, "max": 1, "kind": "iri", "datatype": "@id"},
+        "tag": {"min": 0, "max": null, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "references": {"min": 0, "max": null, "kind": "iri", "datatype": "@id"},
+        "trustTier": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "declaredStatus": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "effectiveStatus": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "staleAfter": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#date"},
+        "stalenessAsOf": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#date"},
+        "stale": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"}
+      }
+    },
+    "Generation": {
+      "closed": true,
+      "predicates": {
+        "actor": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "at": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"},
+        "legacyFallback": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"},
+        "generationOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "Verification": {
+      "closed": true,
+      "predicates": {
+        "actor": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "at": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#dateTime"},
+        "verificationOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "ProvenanceSource": {
+      "closed": true,
+      "predicates": {
+        "sourceID": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resource": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resourceKind": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resourceNode": {"min": 0, "max": 1, "kind": "iri", "datatype": "@id"},
+        "title": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "author": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "usageCount": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer"},
+        "lastModified": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#date"},
+        "usageFrom": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#date"},
+        "usageTo": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#date"},
+        "sourceUsageWindowOverride": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"},
+        "legacyFallback": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"},
+        "legacyCitationNumber": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer"},
+        "sourceOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "ClaimAttribution": {
+      "closed": true,
+      "predicates": {
+        "sourceID": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "attributionOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"},
+        "referenceCount": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer"},
+        "definitionCount": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#integer"},
+        "resolved": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"},
+        "attributedSource": {"min": 0, "max": null, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "AttestedComputationContract": {
+      "closed": true,
+      "predicates": {
+        "contractOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"},
+        "runtime": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "computationMode": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "computationResource": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "computationResourceKind": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "computationNode": {"min": 0, "max": 1, "kind": "iri", "datatype": "@id"},
+        "executorResource": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "executorResourceKind": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "executorNode": {"min": 0, "max": 1, "kind": "iri", "datatype": "@id"},
+        "receiptField": {"min": 0, "max": null, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "attesterResource": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "attesterResourceKind": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "attesterNode": {"min": 0, "max": 1, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "ComputationParameter": {
+      "closed": true,
+      "predicates": {
+        "parameterOf": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"},
+        "name": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "parameterType": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "required": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"}
+      }
+    },
+    "ReferencedAsset": {
+      "closed": true,
+      "predicates": {
+        "resource": {"min": 1, "max": null, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "resourceKind": {"min": 1, "max": null, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "bundlePath": {"min": 0, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "exists": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"},
+        "resourceRole": {"min": 1, "max": null, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "referencedBy": {"min": 1, "max": null, "kind": "iri", "datatype": "@id"}
+      }
+    },
+    "ToolkitExtensionRelation": {
+      "closed": true,
+      "predicates": {
+        "extensionNamespace": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "relationType": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#string"},
+        "relationSource": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"},
+        "relationTarget": {"min": 1, "max": 1, "kind": "iri", "datatype": "@id"},
+        "targetExists": {"min": 1, "max": 1, "kind": "literal", "datatype": "http://www.w3.org/2001/XMLSchema#boolean"}
+      }
+    }
+  }
+}

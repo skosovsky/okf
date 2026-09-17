@@ -2,59 +2,97 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
-	"github.com/skosovsky/okf/bundle"
-	"gopkg.in/yaml.v3"
+	"github.com/skosovsky/okf/internal/okfcli"
 )
 
 func TestMainFunctionUsesRunExitCode(t *testing.T) {
 	// Arrange.
 	oldArgs := os.Args
 	oldExit := exit
-	oldStdout := os.Stdout
-	readEnd, writeEnd, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("Pipe() error = %v", err)
-	}
 	defer func() {
 		os.Args = oldArgs
 		exit = oldExit
-		os.Stdout = oldStdout
-		_ = readEnd.Close()
 	}()
 
 	os.Args = []string{"okf", "help"}
-	os.Stdout = writeEnd
 	exit = func(code int) {
 		panic(exitCode(code))
 	}
 
 	// Act.
-	got := catchExit(main)
-	_ = writeEnd.Close()
-	output, err := io.ReadAll(readEnd)
-	if err != nil {
-		t.Fatalf("ReadAll() error = %v", err)
-	}
+	got := -1
+	stdout, stderr, captureErr := captureProcessOutput(func() {
+		got = catchExit(main)
+	})
 
 	// Assert.
+	if captureErr != nil {
+		t.Fatalf("captureProcessOutput() error = %v", captureErr)
+	}
 	if got != 0 {
 		t.Fatalf("main() exit code = %d, want 0", got)
 	}
-	if !strings.Contains(string(output), "USAGE:") {
-		t.Fatalf("stdout = %q, want usage", output)
+	if !strings.Contains(string(stdout), "USAGE:") {
+		t.Fatalf("stdout = %q, want usage", stdout)
+	}
+	if len(stderr) != 0 {
+		t.Fatalf("stderr = %q, want empty", stderr)
+	}
+}
+
+func TestCaptureProcessOutputDrainsLargeSeparatedStreamsAndPreservesCatchExit(t *testing.T) {
+	// Arrange.
+	wantStdout := append([]byte("stdout:"), bytes.Repeat([]byte("o"), 2<<20)...)
+	wantStderr := append([]byte("stderr:"), bytes.Repeat([]byte("e"), 2<<20)...)
+	gotExit := -1
+	var stdoutBytes, stderrBytes int
+	var stdoutWriteErr, stderrWriteErr error
+
+	// Act.
+	stdout, stderr, captureErr := captureProcessOutput(func() {
+		gotExit = catchExit(func() {
+			stdoutBytes, stdoutWriteErr = os.Stdout.Write(wantStdout)
+			stderrBytes, stderrWriteErr = os.Stderr.Write(wantStderr)
+			panic(exitCode(23))
+		})
+	})
+
+	// Assert.
+	if captureErr != nil {
+		t.Fatalf("captureProcessOutput() error = %v", captureErr)
+	}
+	if stdoutWriteErr != nil || stderrWriteErr != nil {
+		t.Fatalf("stdout/stderr write errors = %v/%v", stdoutWriteErr, stderrWriteErr)
+	}
+	if stdoutBytes != len(wantStdout) || stderrBytes != len(wantStderr) {
+		t.Fatalf("stdout/stderr bytes = %d/%d, want %d/%d",
+			stdoutBytes, stderrBytes, len(wantStdout), len(wantStderr))
+	}
+	if gotExit != 23 {
+		t.Fatalf("catchExit() code = %d, want 23", gotExit)
+	}
+	if !bytes.Equal(stdout, wantStdout) {
+		t.Fatalf("captured stdout length/content = %d/mismatch, want %d/exact",
+			len(stdout), len(wantStdout))
+	}
+	if !bytes.Equal(stderr, wantStderr) {
+		t.Fatalf("captured stderr length/content = %d/mismatch, want %d/exact",
+			len(stderr), len(wantStderr))
 	}
 }
 
@@ -66,8 +104,9 @@ func TestRunMetaCommands(t *testing.T) {
 		wantOut    string
 		wantErrOut string
 	}{
-		{name: "no args", wantCode: 1, wantErrOut: "USAGE:"},
+		{name: "no args", wantCode: 1, wantErrOut: "missing command"},
 		{name: "help", args: []string{"help"}, wantCode: 0, wantOut: "COMMANDS:"},
+		{name: "help unexpected argument", args: []string{"help", "extra"}, wantCode: 1, wantErrOut: "unexpected help argument"},
 		{name: "version", args: []string{"version"}, wantCode: 0, wantOut: "OKF spec v0.1"},
 		{name: "unknown", args: []string{"wat"}, wantCode: 1, wantErrOut: "unknown subcommand: wat"},
 		{name: "validate unexpected positional", args: []string{"validate", "bundle"}, wantCode: 1, wantErrOut: "unexpected validate argument"},
@@ -106,15 +145,15 @@ func TestRunValidateInfoAndGraph(t *testing.T) {
 	root := sampleBundle(t)
 
 	// Act.
-	validateCode, validateOut, validateErr := runCommand("validate", "-path", root, "-check-links")
+	validateCode, validateOut, validateErr := runCommand("validate", "--path", root, "--check-links")
 	infoCode, infoOut, infoErr := runCommand("info", root)
 	graphCode, graphOut, graphErr := runCommand("graph", root)
 	dotCode, dotOut, dotErr := runCommand("graph", root, "--dot")
-	dotFormatCode, dotFormatOut, dotFormatErr := runCommand("graph", root, "-format", "dot")
-	dotEqualsCode, dotEqualsOut, dotEqualsErr := runCommand("graph", root, "-format=dot")
-	textFormatCode, textFormatOut, textFormatErr := runCommand("graph", root, "-format", "text")
-	textEqualsCode, textEqualsOut, textEqualsErr := runCommand("graph", root, "-format=text")
-	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "-format", "mermaid")
+	dotFormatCode, dotFormatOut, dotFormatErr := runCommand("graph", root, "--format", "dot")
+	dotEqualsCode, dotEqualsOut, dotEqualsErr := runCommand("graph", root, "--format=dot")
+	textFormatCode, textFormatOut, textFormatErr := runCommand("graph", root, "--format", "text")
+	textEqualsCode, textEqualsOut, textEqualsErr := runCommand("graph", root, "--format=text")
+	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "--format", "mermaid")
 
 	// Assert.
 	if validateCode != 0 {
@@ -128,9 +167,9 @@ func TestRunValidateInfoAndGraph(t *testing.T) {
 		t.Fatalf("info code = %d, stderr = %q", infoCode, infoErr)
 	}
 	assertContains(t, infoOut, "concepts:   2")
-	assertContains(t, infoOut, "okf_version: 0.1")
+	assertContains(t, infoOut, "okf_version: \"0.1\"")
 	assertContains(t, infoOut, "links:      2 internal (1 broken)")
-	assertContains(t, infoOut, "     2  Note")
+	assertContains(t, infoOut, "     2  \"Note\"")
 
 	if graphCode != 0 {
 		t.Fatalf("graph code = %d, stderr = %q", graphCode, graphErr)
@@ -146,30 +185,30 @@ func TestRunValidateInfoAndGraph(t *testing.T) {
 	assertContains(t, dotOut, `"a" -> "missing" [style=dashed, color=red];`)
 
 	if dotFormatCode != 0 {
-		t.Fatalf("graph -format dot code = %d, stderr = %q", dotFormatCode, dotFormatErr)
+		t.Fatalf("graph --format dot code = %d, stderr = %q", dotFormatCode, dotFormatErr)
 	}
 	if dotEqualsCode != 0 {
-		t.Fatalf("graph -format=dot code = %d, stderr = %q", dotEqualsCode, dotEqualsErr)
+		t.Fatalf("graph --format=dot code = %d, stderr = %q", dotEqualsCode, dotEqualsErr)
 	}
 	if dotFormatOut != dotOut || dotEqualsOut != dotOut {
-		t.Fatalf("explicit dot output mismatch\n--dot:\n%s\n-format dot:\n%s\n-format=dot:\n%s", dotOut, dotFormatOut, dotEqualsOut)
+		t.Fatalf("explicit dot output mismatch\n--dot:\n%s\n--format dot:\n%s\n--format=dot:\n%s", dotOut, dotFormatOut, dotEqualsOut)
 	}
 
 	if textFormatCode != 0 {
-		t.Fatalf("graph -format text code = %d, stderr = %q", textFormatCode, textFormatErr)
+		t.Fatalf("graph --format text code = %d, stderr = %q", textFormatCode, textFormatErr)
 	}
 	if textEqualsCode != 0 {
-		t.Fatalf("graph -format=text code = %d, stderr = %q", textEqualsCode, textEqualsErr)
+		t.Fatalf("graph --format=text code = %d, stderr = %q", textEqualsCode, textEqualsErr)
 	}
 	if textFormatOut != graphOut || textEqualsOut != graphOut {
-		t.Fatalf("explicit text output mismatch\ndefault:\n%s\n-format text:\n%s\n-format=text:\n%s", graphOut, textFormatOut, textEqualsOut)
+		t.Fatalf("explicit text output mismatch\ndefault:\n%s\n--format text:\n%s\n--format=text:\n%s", graphOut, textFormatOut, textEqualsOut)
 	}
 
 	if mermaidCode != 0 {
-		t.Fatalf("graph -format mermaid code = %d, stderr = %q", mermaidCode, mermaidErr)
+		t.Fatalf("graph --format mermaid code = %d, stderr = %q", mermaidCode, mermaidErr)
 	}
 	if mermaidErr != "" {
-		t.Fatalf("graph -format mermaid stderr = %q, want empty", mermaidErr)
+		t.Fatalf("graph --format mermaid stderr = %q, want empty", mermaidErr)
 	}
 	assertContains(t, mermaidOut, "graph LR\n")
 	assertContains(t, mermaidOut, `n0["a"] --> n1["b"]`)
@@ -180,13 +219,13 @@ func TestRunValidateKeepsRelationDiagnosticsOutOfBaselineReport(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "---\ntype: Note\nrelations:\n  uses:\n    - target: missing#part\n---\nBody.\n")
 
-	code, stdout, stderr := runCommand("validate", "-path", root, "-format=json")
+	code, stdout, stderr := runCommand("validate", "--path", root, "--format=json")
 	if code != 0 || stderr != "" {
 		t.Fatalf("validate code/stderr = %d/%q, want 0/empty", code, stderr)
 	}
 	var got struct {
-		Conformant  bool                       `json:"conformant"`
-		Diagnostics []validationJSONDiagnostic `json:"diagnostics"`
+		Conformant  bool                              `json:"conformant"`
+		Diagnostics []okfcli.ValidationJSONDiagnostic `json:"diagnostics"`
 	}
 	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
 		t.Fatalf("validate JSON = %q: %v", stdout, err)
@@ -194,7 +233,7 @@ func TestRunValidateKeepsRelationDiagnosticsOutOfBaselineReport(t *testing.T) {
 	if !got.Conformant || len(got.Diagnostics) != 0 {
 		t.Fatalf("validate response = %#v, want conformant base-only report", got)
 	}
-	textCode, textOutput, textErr := runCommand("validate", "-path", root)
+	textCode, textOutput, textErr := runCommand("validate", "--path", root)
 	if textCode != 0 || textErr != "" {
 		t.Fatalf("text validate code/stderr = %d/%q, want 0/empty", textCode, textErr)
 	}
@@ -208,23 +247,23 @@ func TestRunGraphArgumentOrder(t *testing.T) {
 	root := sampleBundle(t)
 
 	// Act.
-	suffixFlagCode, suffixFlagOut, suffixFlagErr := runCommand("graph", root, "-format", "mermaid")
-	prefixFlagCode, prefixFlagOut, prefixFlagErr := runCommand("graph", "-format", "mermaid", root)
-	suffixEqualsCode, suffixEqualsOut, suffixEqualsErr := runCommand("graph", root, "-format=mermaid")
-	prefixEqualsCode, prefixEqualsOut, prefixEqualsErr := runCommand("graph", "-format=mermaid", root)
+	suffixFlagCode, suffixFlagOut, suffixFlagErr := runCommand("graph", root, "--format", "mermaid")
+	prefixFlagCode, prefixFlagOut, prefixFlagErr := runCommand("graph", "--format", "mermaid", root)
+	suffixEqualsCode, suffixEqualsOut, suffixEqualsErr := runCommand("graph", root, "--format=mermaid")
+	prefixEqualsCode, prefixEqualsOut, prefixEqualsErr := runCommand("graph", "--format=mermaid", root)
 
 	// Assert.
 	if suffixFlagCode != 0 {
-		t.Fatalf("graph root -format mermaid code = %d, stderr = %q", suffixFlagCode, suffixFlagErr)
+		t.Fatalf("graph root --format mermaid code = %d, stderr = %q", suffixFlagCode, suffixFlagErr)
 	}
 	if prefixFlagCode != 0 {
-		t.Fatalf("graph -format mermaid root code = %d, stderr = %q", prefixFlagCode, prefixFlagErr)
+		t.Fatalf("graph --format mermaid root code = %d, stderr = %q", prefixFlagCode, prefixFlagErr)
 	}
 	if suffixEqualsCode != 0 {
-		t.Fatalf("graph root -format=mermaid code = %d, stderr = %q", suffixEqualsCode, suffixEqualsErr)
+		t.Fatalf("graph root --format=mermaid code = %d, stderr = %q", suffixEqualsCode, suffixEqualsErr)
 	}
 	if prefixEqualsCode != 0 {
-		t.Fatalf("graph -format=mermaid root code = %d, stderr = %q", prefixEqualsCode, prefixEqualsErr)
+		t.Fatalf("graph --format=mermaid root code = %d, stderr = %q", prefixEqualsCode, prefixEqualsErr)
 	}
 	if prefixFlagOut != suffixFlagOut || suffixEqualsOut != suffixFlagOut || prefixEqualsOut != suffixFlagOut {
 		t.Fatalf("mermaid output differs by argument order\nsuffix flag:\n%s\nprefix flag:\n%s\nsuffix equals:\n%s\nprefix equals:\n%s", suffixFlagOut, prefixFlagOut, suffixEqualsOut, prefixEqualsOut)
@@ -269,10 +308,10 @@ func TestRunGraphFormatErrors(t *testing.T) {
 		args    []string
 		wantErr string
 	}{
-		{name: "unknown format", args: []string{"graph", root, "-format", "unknown"}, wantErr: "unsupported graph format: unknown"},
-		{name: "format conflict", args: []string{"graph", root, "--dot", "-format", "mermaid"}, wantErr: "cannot use --dot with -format=mermaid"},
-		{name: "jsonld format conflict", args: []string{"graph", root, "--dot", "-format", "json-ld"}, wantErr: "cannot use --dot with -format=json-ld"},
-		{name: "ntriples format conflict", args: []string{"graph", root, "--dot", "-format", "ntriples"}, wantErr: "cannot use --dot with -format=ntriples"},
+		{name: "unknown format", args: []string{"graph", root, "--format", "unknown"}, wantErr: "unsupported graph format: unknown"},
+		{name: "format conflict", args: []string{"graph", root, "--dot", "--format", "mermaid"}, wantErr: "cannot use --dot with --format=mermaid"},
+		{name: "jsonld format conflict", args: []string{"graph", root, "--dot", "--format", "json-ld"}, wantErr: "cannot use --dot with --format=json-ld"},
+		{name: "ntriples format conflict", args: []string{"graph", root, "--dot", "--format", "ntriples"}, wantErr: "cannot use --dot with --format=ntriples"},
 		{name: "missing bundle", args: []string{"graph"}, wantErr: "missing <bundle>"},
 		{name: "extra positional", args: []string{"graph", root, "extra"}, wantErr: "unexpected graph argument: extra"},
 	}
@@ -291,39 +330,39 @@ func TestRunGraphFormatErrors(t *testing.T) {
 	}
 
 	// Act.
-	dotFalseCode, dotFalseOut, dotFalseErr := runCommand("graph", root, "--dot=false", "-format=mermaid")
+	dotFalseCode, dotFalseOut, dotFalseErr := runCommand("graph", root, "--dot=false", "--format=mermaid")
 
 	// Assert.
 	if dotFalseCode != 0 {
-		t.Fatalf("graph --dot=false -format=mermaid code = %d, stderr = %q", dotFalseCode, dotFalseErr)
+		t.Fatalf("graph --dot=false --format=mermaid code = %d, stderr = %q", dotFalseCode, dotFalseErr)
 	}
 	assertContains(t, dotFalseOut, "graph LR\n")
 	if strings.Contains(dotFalseOut, "digraph okf") {
-		t.Fatalf("--dot=false overrode -format=mermaid:\n%s", dotFalseOut)
+		t.Fatalf("--dot=false overrode --format=mermaid:\n%s", dotFalseOut)
 	}
 
 	// Act.
-	jsonldDotFalseCode, jsonldDotFalseOut, jsonldDotFalseErr := runCommand("graph", root, "--dot=false", "-format=json-ld")
+	jsonldDotFalseCode, jsonldDotFalseOut, jsonldDotFalseErr := runCommand("graph", root, "--dot=false", "--format=json-ld")
 
 	// Assert.
 	if jsonldDotFalseCode != 0 {
-		t.Fatalf("graph --dot=false -format=json-ld code = %d, stderr = %q", jsonldDotFalseCode, jsonldDotFalseErr)
+		t.Fatalf("graph --dot=false --format=json-ld code = %d, stderr = %q", jsonldDotFalseCode, jsonldDotFalseErr)
 	}
 	_ = decodeJSONLD(t, jsonldDotFalseOut)
 	if strings.Contains(jsonldDotFalseOut, "digraph okf") {
-		t.Fatalf("--dot=false overrode -format=json-ld:\n%s", jsonldDotFalseOut)
+		t.Fatalf("--dot=false overrode --format=json-ld:\n%s", jsonldDotFalseOut)
 	}
 
 	// Act.
-	ntriplesDotFalseCode, ntriplesDotFalseOut, ntriplesDotFalseErr := runCommand("graph", root, "--dot=false", "-format=ntriples")
+	ntriplesDotFalseCode, ntriplesDotFalseOut, ntriplesDotFalseErr := runCommand("graph", root, "--dot=false", "--format=ntriples")
 
 	// Assert.
 	if ntriplesDotFalseCode != 0 {
-		t.Fatalf("graph --dot=false -format=ntriples code = %d, stderr = %q", ntriplesDotFalseCode, ntriplesDotFalseErr)
+		t.Fatalf("graph --dot=false --format=ntriples code = %d, stderr = %q", ntriplesDotFalseCode, ntriplesDotFalseErr)
 	}
 	_ = parseNTriples(t, ntriplesDotFalseOut)
 	if strings.Contains(ntriplesDotFalseOut, "digraph okf") {
-		t.Fatalf("--dot=false overrode -format=ntriples:\n%s", ntriplesDotFalseOut)
+		t.Fatalf("--dot=false overrode --format=ntriples:\n%s", ntriplesDotFalseOut)
 	}
 }
 
@@ -334,11 +373,11 @@ func TestRunGraphMermaidEscapesLabels(t *testing.T) {
 	writeTestFile(t, root, "target.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "mermaid")
+	code, stdout, stderr := runCommand("graph", root, "--format", "mermaid")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format mermaid code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format mermaid code = %d, stderr = %q", code, stderr)
 	}
 	assertContains(t, stdout, "&amp;")
 	assertContains(t, stdout, "&quot;")
@@ -355,11 +394,11 @@ func TestRunGraphMermaidEmptyGraph(t *testing.T) {
 	writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "mermaid")
+	code, stdout, stderr := runCommand("graph", root, "--format", "mermaid")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format mermaid code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format mermaid code = %d, stderr = %q", code, stderr)
 	}
 	if stdout != "graph LR\n" {
 		t.Fatalf("mermaid empty graph stdout = %q, want %q", stdout, "graph LR\n")
@@ -374,11 +413,11 @@ func TestRunGraphMermaidDoesNotAllocateHiddenNoLinkNodes(t *testing.T) {
 	writeTestFile(t, root, "c.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "mermaid")
+	code, stdout, stderr := runCommand("graph", root, "--format", "mermaid")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format mermaid code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format mermaid code = %d, stderr = %q", code, stderr)
 	}
 	assertContains(t, stdout, `n0["b"] --> n1["c"]`)
 	if strings.Contains(stdout, `n0["a"]`) {
@@ -392,15 +431,15 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	root := semanticRelationsBundle(t)
 
 	// Act.
-	textCode, textOut, textErr := runCommand("graph", root, "-format", "text")
-	dotCode, dotOut, dotErr := runCommand("graph", root, "-format", "dot")
-	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "-format", "mermaid")
-	jsonldCode, jsonldOut, jsonldErr := runCommand("graph", root, "-format", "json-ld")
-	ntriplesCode, ntriplesOut, ntriplesErr := runCommand("graph", root, "-format", "ntriples")
+	textCode, textOut, textErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "text")
+	dotCode, dotOut, dotErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "dot")
+	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "mermaid")
+	jsonldCode, jsonldOut, jsonldErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
+	ntriplesCode, ntriplesOut, ntriplesErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if textCode != 0 {
-		t.Fatalf("graph -format text code = %d, stderr = %q", textCode, textErr)
+		t.Fatalf("graph --format text code = %d, stderr = %q", textCode, textErr)
 	}
 	const wantText = "a\n" +
 		"  -> b\n" +
@@ -409,11 +448,11 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 		"  => writes_to b#col-2\n" +
 		"  => writes_to b#col-2\n"
 	if textOut != wantText {
-		t.Fatalf("graph -format text stdout =\n%s\nwant:\n%s", textOut, wantText)
+		t.Fatalf("graph --format text stdout =\n%s\nwant:\n%s", textOut, wantText)
 	}
 
 	if dotCode != 0 {
-		t.Fatalf("graph -format dot code = %d, stderr = %q", dotCode, dotErr)
+		t.Fatalf("graph --format dot code = %d, stderr = %q", dotCode, dotErr)
 	}
 	assertContains(t, dotOut, `"a" -> "b";`)
 	if strings.Count(dotOut, `"a#field1" -> "b#col-2" [label="writes_to"];`) != 2 {
@@ -423,7 +462,7 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	assertNotContains(t, dotOut, `"a" -> "missing#col"`)
 
 	if mermaidCode != 0 {
-		t.Fatalf("graph -format mermaid code = %d, stderr = %q", mermaidCode, mermaidErr)
+		t.Fatalf("graph --format mermaid code = %d, stderr = %q", mermaidCode, mermaidErr)
 	}
 	assertContains(t, mermaidOut, `n0["a"] --> n1["b"]`)
 	if strings.Count(mermaidOut, `n3["a#field1"] -->|"writes_to"| n4["b#col-2"]`) != 2 {
@@ -433,7 +472,7 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	assertNotContains(t, mermaidOut, "missing#col")
 
 	if jsonldCode != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", jsonldCode, jsonldErr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", jsonldCode, jsonldErr)
 	}
 	document := decodeRawJSONLD(t, jsonldOut)
 	for _, key := range []string{"depends_on", "writes_to", "is_part_of"} {
@@ -469,7 +508,7 @@ func TestRunGraphSemanticRelations(t *testing.T) {
 	}
 
 	if ntriplesCode != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", ntriplesCode, ntriplesErr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", ntriplesCode, ntriplesErr)
 	}
 	triples := parseNTriples(t, ntriplesOut, "depends_on", "writes_to")
 	assertContains(t, ntriplesOut, `<local:bundle:a> <https://okf.io/ontology/v0.1#references> <local:bundle:b> .`)
@@ -503,11 +542,11 @@ func TestRunGraphSemanticRelationsNTriplesIRIEncoding(t *testing.T) {
 	writeTestFile(t, root, "tables/orders.md", "---\ntype: BigQuery Table\nfields:\n  - id: col customer\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	triples := parseNTriples(t, stdout, "writes_to")
 	assertContains(t, stdout, `<local:bundle:api%2Fcheckout#payload%20user> <https://okf.io/ontology/v0.1#writes_to> <local:bundle:tables%2Forders#col%20customer> .`)
@@ -537,11 +576,11 @@ func TestRunGraphSemanticRelationsRejectsControlFragments(t *testing.T) {
 	writeTestFile(t, root, "b.md", "---\ntype: Note\nfields:\n  - id: ok\n---\nBody.\n")
 
 	// Act.
-	textCode, textOut, textErr := runCommand("graph", root, "-format", "text")
-	dotCode, dotOut, dotErr := runCommand("graph", root, "-format", "dot")
-	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "-format", "mermaid")
-	jsonldCode, jsonldOut, jsonldErr := runCommand("graph", root, "-format", "json-ld")
-	ntriplesCode, ntriplesOut, ntriplesErr := runCommand("graph", root, "-format", "ntriples")
+	textCode, textOut, textErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "text")
+	dotCode, dotOut, dotErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "dot")
+	mermaidCode, mermaidOut, mermaidErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "mermaid")
+	jsonldCode, jsonldOut, jsonldErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
+	ntriplesCode, ntriplesOut, ntriplesErr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	outputs := []struct {
@@ -558,7 +597,7 @@ func TestRunGraphSemanticRelationsRejectsControlFragments(t *testing.T) {
 	}
 	for _, output := range outputs {
 		if output.code != 0 {
-			t.Fatalf("graph -format %s code = %d, stderr = %q", output.name, output.code, output.stderr)
+			t.Fatalf("graph --format %s code = %d, stderr = %q", output.name, output.code, output.stderr)
 		}
 		if strings.Contains(output.stdout, "\x7f") ||
 			strings.Contains(output.stdout, "bad") ||
@@ -578,9 +617,9 @@ func TestRunGraphJSONLDContract(t *testing.T) {
 		name string
 		args []string
 	}{
-		{name: "suffix flag", args: []string{"graph", root, "-format", "json-ld"}},
-		{name: "suffix equals", args: []string{"graph", root, "-format=json-ld"}},
-		{name: "prefix flag", args: []string{"graph", "-format", "json-ld", root}},
+		{name: "suffix flag", args: []string{"graph", root, "--format", "json-ld"}},
+		{name: "suffix equals", args: []string{"graph", root, "--format=json-ld"}},
+		{name: "prefix flag", args: []string{"graph", "--format", "json-ld", root}},
 		{name: "long flag", args: []string{"graph", root, "--format", "json-ld"}},
 		{name: "long equals", args: []string{"graph", root, "--format=json-ld"}},
 	}
@@ -665,11 +704,11 @@ func TestRunGraphJSONLDOmitsSemanticContextWithoutRelations(t *testing.T) {
 	root := sampleBundle(t)
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", code, stderr)
 	}
 	document := decodeRawJSONLD(t, stdout)
 	for _, key := range []string{"depends_on", "writes_to", "is_part_of"} {
@@ -689,11 +728,11 @@ func TestRunGraphJSONLDEmptyGraph(t *testing.T) {
 	root := t.TempDir()
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", code, stderr)
 	}
 	document := decodeJSONLD(t, stdout)
 	if document.Graph == nil {
@@ -712,11 +751,11 @@ func TestRunGraphJSONLDOmitsAndSkipsParsedConcepts(t *testing.T) {
 	writeTestFile(t, root, "bad.md", "---\ntype: [\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", code, stderr)
 	}
 
 	nodes := decodeRawJSONLDNodes(t, stdout)
@@ -758,11 +797,11 @@ func TestRunGraphJSONLDLinkFiltering(t *testing.T) {
 	}
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", code, stderr)
 	}
 	document := decodeJSONLD(t, stdout)
 	source, ok := jsonldNodeByID(document, "bundle:source")
@@ -794,11 +833,11 @@ func TestRunGraphJSONLDEscapesViaJSON(t *testing.T) {
 		"---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format json-ld code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format json-ld code = %d, stderr = %q", code, stderr)
 	}
 	document := decodeJSONLD(t, stdout)
 	node, ok := jsonldNodeByID(document, "bundle:complex & \"name]")
@@ -826,9 +865,9 @@ func TestRunGraphNTriplesContract(t *testing.T) {
 		name string
 		args []string
 	}{
-		{name: "suffix flag", args: []string{"graph", root, "-format", "ntriples"}},
-		{name: "suffix equals", args: []string{"graph", root, "-format=ntriples"}},
-		{name: "prefix flag", args: []string{"graph", "-format", "ntriples", root}},
+		{name: "suffix flag", args: []string{"graph", root, "--format", "ntriples"}},
+		{name: "suffix equals", args: []string{"graph", root, "--format=ntriples"}},
+		{name: "prefix flag", args: []string{"graph", "--format", "ntriples", root}},
 		{name: "long suffix flag", args: []string{"graph", root, "--format", "ntriples"}},
 		{name: "long suffix equals", args: []string{"graph", root, "--format=ntriples"}},
 		{name: "long prefix flag", args: []string{"graph", "--format", "ntriples", root}},
@@ -890,11 +929,11 @@ func TestRunGraphNTriplesOmitsAndSkipsParsedConcepts(t *testing.T) {
 	writeTestFile(t, root, "bad.md", "---\ntype: [\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	_ = parseNTriples(t, stdout)
 	assertContains(t, stdout, `<local:bundle:a> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#Concept> .`)
@@ -915,11 +954,11 @@ func TestRunGraphNTriplesIRIEncoding(t *testing.T) {
 	writeTestFile(t, root, "unicode/тест.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	_ = parseNTriples(t, stdout)
 	assertContains(t, stdout, `<local:bundle:datasets%2Fsales%20report>`)
@@ -942,11 +981,11 @@ func TestRunGraphNTriplesEscapesLiterals(t *testing.T) {
 		"---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	_ = parseNTriples(t, stdout)
 	assertContains(t, stdout, `Line one\nLine two\tTabbed\rCarriage \"quoted\" \\slash`)
@@ -972,11 +1011,11 @@ func TestRunGraphNTriplesLinkFilteringAndDuplicates(t *testing.T) {
 	}
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	_ = parseNTriples(t, stdout)
 	targetReference := `<local:bundle:source> <https://okf.io/ontology/v0.1#references> <local:bundle:target> .`
@@ -999,14 +1038,14 @@ func TestRunGraphNTriplesEmptyBundle(t *testing.T) {
 	root := t.TempDir()
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "-format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
-		t.Fatalf("graph -format ntriples code = %d, stderr = %q", code, stderr)
+		t.Fatalf("graph --format ntriples code = %d, stderr = %q", code, stderr)
 	}
 	if stderr != "" {
-		t.Fatalf("graph -format ntriples stderr = %q, want empty", stderr)
+		t.Fatalf("graph --format ntriples stderr = %q, want empty", stderr)
 	}
 	if stdout != "" {
 		t.Fatalf("empty ntriples stdout = %q, want empty", stdout)
@@ -1016,30 +1055,20 @@ func TestRunGraphNTriplesEmptyBundle(t *testing.T) {
 func TestSkillsLockMatchesOpenKnowledgeFormatSkill(t *testing.T) {
 	// Arrange.
 	root := repoRoot(t)
-	lockPath := filepath.Join(root, "skills-lock.json")
-	content, err := os.ReadFile(lockPath)
-	if err != nil {
-		t.Fatalf("ReadFile(skills-lock.json) error = %v", err)
-	}
-	var lock struct {
-		Skills map[string]struct {
-			ComputedHash string `json:"computedHash"`
-		} `json:"skills"`
-	}
-	if err := json.Unmarshal(content, &lock); err != nil {
-		t.Fatalf("json.Unmarshal(skills-lock.json) error = %v", err)
-	}
-	entry, ok := lock.Skills["open-knowledge-format"]
-	if !ok {
-		t.Fatalf("skills-lock.json has no open-knowledge-format entry: %#v", lock.Skills)
-	}
+	command := exec.Command(
+		"node",
+		filepath.Join(root, "scripts", "update-skills-lock.mjs"),
+		"--check",
+		"--root",
+		root,
+	)
 
 	// Act.
-	got := computeSkillFolderHash(t, filepath.Join(root, "skills", "open-knowledge-format"))
+	output, err := command.CombinedOutput()
 
 	// Assert.
-	if got != entry.ComputedHash {
-		t.Fatalf("skills-lock computedHash = %q, want current skill folder hash %q", entry.ComputedHash, got)
+	if err != nil {
+		t.Fatalf("skills lock check error = %v; output:\n%s", err, output)
 	}
 }
 
@@ -1051,7 +1080,7 @@ func TestRunValidateAndParseNonConformant(t *testing.T) {
 	file := filepath.Join(root, "bad.md")
 
 	// Act.
-	validateCode, validateOut, validateErr := runCommand("validate", "-path", root)
+	validateCode, validateOut, validateErr := runCommand("validate", "--path", root)
 	parseCode, parseOut, parseErr := runCommand("parse", file)
 
 	// Assert.
@@ -1064,7 +1093,7 @@ func TestRunValidateAndParseNonConformant(t *testing.T) {
 	if parseCode != 1 {
 		t.Fatalf("parse code = %d, want 1; stderr = %q", parseCode, parseErr)
 	}
-	assertContains(t, parseOut, "frontmatter (1 key(s)):")
+	assertContains(t, parseOut, "type: (absent)")
 	assertContains(t, parseOut, "has non-empty string `type`: false")
 }
 
@@ -1077,7 +1106,7 @@ func TestRunValidateRejectsReservedFileStructure(t *testing.T) {
 	writeTestFile(t, root, "log.md", "# Log\n\n## May 22\n* bad date\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("validate", "-path", root)
+	code, stdout, stderr := runCommand("validate", "--path", root)
 
 	// Assert.
 	if code != 1 {
@@ -1094,7 +1123,7 @@ func TestRunValidateRespectsNoColor(t *testing.T) {
 	root := sampleBundle(t)
 
 	// Act.
-	code, stdout, stderr := runCommand("validate", "-path", root)
+	code, stdout, stderr := runCommand("validate", "--path", root)
 
 	// Assert.
 	if code != 0 {
@@ -1127,14 +1156,13 @@ func TestRunParsePrintsDocumentStructure(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("parse code = %d, stderr = %q", code, stderr)
 	}
-	assertContains(t, stdout, "frontmatter (4 key(s)):")
-	assertContains(t, stdout, "  tags: [one, two]")
-	assertContains(t, stdout, "  meta: {owner: data}")
+	assertContains(t, stdout, `type: "Note"`)
+	assertContains(t, stdout, `title: "A"`)
 	assertContains(t, stdout, "body:")
 	assertContains(t, stdout, "links (2):")
-	assertContains(t, stdout, "[Absolute] B -> /b.md")
+	assertContains(t, stdout, `kind="Absolute" text="B" target="/b.md"`)
 	assertContains(t, stdout, "citations (1):")
-	assertContains(t, stdout, "[1] [Source](https://example.com)")
+	assertContains(t, stdout, `[1] text="Source" target="https://example.com" raw="[Source](https://example.com)"`)
 }
 
 func TestRunIndexAndFmt(t *testing.T) {
@@ -1170,7 +1198,7 @@ func TestRunIndexAndFmt(t *testing.T) {
 	if writeCode != 0 {
 		t.Fatalf("fmt -w code = %d, stderr = %q", writeCode, writeErr)
 	}
-	assertContains(t, writeOut, "formatted "+file)
+	assertContains(t, writeOut, "formatted "+strconv.QuoteToGraphic(file))
 	if readErr != nil {
 		t.Fatalf("ReadFile(formatted) error = %v", readErr)
 	}
@@ -1193,11 +1221,10 @@ func TestRunErrorPaths(t *testing.T) {
 	}{
 		{name: "info missing bundle", args: []string{"info", filepath.Join(root, "missing")}, fragment: "no such file"},
 		{name: "graph missing bundle", args: []string{"graph", filepath.Join(root, "missing")}, fragment: "no such file"},
-		{name: "parse missing file", args: []string{"parse", missing}, fragment: "no such file"},
+		{name: "parse missing file", args: []string{"parse", missing}, fragment: "file does not exist"},
 		{name: "parse malformed file", args: []string{"parse", bad}, fragment: "invalid frontmatter"},
-		{name: "fmt missing file", args: []string{"fmt", missing}, fragment: "no such file"},
+		{name: "fmt missing file", args: []string{"fmt", missing}, fragment: "file does not exist"},
 		{name: "fmt malformed file", args: []string{"fmt", bad}, fragment: "invalid frontmatter"},
-		{name: "index empty missing bundle", args: []string{"index", filepath.Join(root, "missing")}, fragment: "no index files written"},
 	}
 
 	for _, tt := range tests {
@@ -1209,19 +1236,32 @@ func TestRunErrorPaths(t *testing.T) {
 			code := run(tt.args, &stdout, &stderr)
 
 			// Assert.
-			if tt.name == "index empty missing bundle" {
-				if code != 0 {
-					t.Fatalf("run(%v) code = %d, want 0", tt.args, code)
-				}
-				assertContains(t, stdout.String(), tt.fragment)
-				return
-			}
 			if code != 1 {
 				t.Fatalf("run(%v) code = %d, want 1", tt.args, code)
 			}
 			assertContains(t, stderr.String(), tt.fragment)
 		})
 	}
+
+	t.Run("index missing bundle is an error", func(t *testing.T) {
+		// Arrange.
+		var stdout, stderr bytes.Buffer
+
+		// Act.
+		code := run([]string{"index", filepath.Join(root, "missing")}, &stdout, &stderr)
+
+		// Assert.
+		if code != 1 || stdout.Len() != 0 || stderr.Len() == 0 ||
+			!strings.HasPrefix(stderr.String(), "error: ") ||
+			strings.Count(stderr.String(), "\n") != 1 {
+			t.Fatalf(
+				"run(index missing) code/stdout/stderr = %d/%q/%q, want 1/empty/error line",
+				code,
+				stdout.String(),
+				stderr.String(),
+			)
+		}
+	})
 }
 
 func TestRunInfoReportsParseErrors(t *testing.T) {
@@ -1241,60 +1281,62 @@ func TestRunInfoReportsParseErrors(t *testing.T) {
 	assertContains(t, stdout, "unterminated frontmatter")
 }
 
-func TestPositionalSupportsDashSeparatedPath(t *testing.T) {
-	// Arrange.
-	args := []string{"-w", "--", "-file.md"}
-
-	// Act.
-	got, err := positional(args, "<file>")
-
-	// Assert.
-	if err != nil {
-		t.Fatalf("positional() error = %v", err)
-	}
-	if got != "-file.md" {
-		t.Fatalf("positional() = %q, want -file.md", got)
-	}
-}
-
-func TestCLIFormattingHelpers(t *testing.T) {
-	tests := []struct {
-		kind bundle.LinkKind
-		want string
-	}{
-		{kind: bundle.LinkAbsolute, want: "Absolute"},
-		{kind: bundle.LinkRelative, want: "Relative"},
-		{kind: bundle.LinkExternal, want: "External"},
-		{kind: bundle.LinkAnchor, want: "Anchor"},
-		{kind: bundle.LinkOther, want: "Other"},
-		{kind: bundle.LinkKind(99), want: "Other"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			// Act.
-			got := cliLinkKind(tt.kind)
-
-			// Assert.
-			if got != tt.want {
-				t.Fatalf("cliLinkKind(%v) = %q, want %q", tt.kind, got, tt.want)
-			}
-		})
-	}
-
-	// Arrange.
-	unknown := &yaml.Node{Kind: yaml.AliasNode}
-
-	// Act / Assert.
-	if got := formatYAMLValue(nil); got != "" {
-		t.Fatalf("formatYAMLValue(nil) = %q, want empty", got)
-	}
-	if got := formatYAMLValue(unknown); got != "" {
-		t.Fatalf("formatYAMLValue(unknown) = %q, want empty", got)
-	}
-}
-
 type exitCode int
+
+func captureProcessOutput(fn func()) (stdout, stderr []byte, captureErr error) {
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("create stdout pipe: %w", err)
+	}
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		_ = stdoutReader.Close()
+		_ = stdoutWriter.Close()
+		return nil, nil, fmt.Errorf("create stderr pipe: %w", err)
+	}
+
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	var stdoutBuffer, stderrBuffer bytes.Buffer
+	var stdoutReadErr, stderrReadErr error
+	var drains sync.WaitGroup
+	drains.Add(2)
+	go func() {
+		defer drains.Done()
+		_, stdoutReadErr = io.Copy(&stdoutBuffer, stdoutReader)
+	}()
+	go func() {
+		defer drains.Done()
+		_, stderrReadErr = io.Copy(&stderrBuffer, stderrReader)
+	}()
+
+	os.Stdout = stdoutWriter
+	os.Stderr = stderrWriter
+	defer func() {
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+
+		stdoutWriteCloseErr := stdoutWriter.Close()
+		stderrWriteCloseErr := stderrWriter.Close()
+		drains.Wait()
+		stdoutReadCloseErr := stdoutReader.Close()
+		stderrReadCloseErr := stderrReader.Close()
+
+		stdout = bytes.Clone(stdoutBuffer.Bytes())
+		stderr = bytes.Clone(stderrBuffer.Bytes())
+		captureErr = errors.Join(
+			stdoutWriteCloseErr,
+			stderrWriteCloseErr,
+			stdoutReadErr,
+			stderrReadErr,
+			stdoutReadCloseErr,
+			stderrReadCloseErr,
+		)
+	}()
+
+	fn()
+	return nil, nil, nil
+}
 
 func catchExit(fn func()) (code int) {
 	defer func() {
@@ -1387,65 +1429,6 @@ func repoRoot(t *testing.T) string {
 		t.Fatalf("runtime.Caller() failed")
 	}
 	return filepath.Clean(filepath.Join(filepath.Dir(filename), "..", ".."))
-}
-
-func computeSkillFolderHash(t *testing.T, skillDir string) string {
-	t.Helper()
-	type skillFile struct {
-		relativePath string
-		content      []byte
-	}
-	var files []skillFile
-	err := filepath.WalkDir(skillDir, func(path string, entry os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			switch entry.Name() {
-			case ".git", "node_modules":
-				return filepath.SkipDir
-			default:
-				return nil
-			}
-		}
-		if !entry.Type().IsRegular() {
-			return nil
-		}
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		relativePath, err := filepath.Rel(skillDir, path)
-		if err != nil {
-			return err
-		}
-		files = append(files, skillFile{
-			relativePath: filepath.ToSlash(relativePath),
-			content:      content,
-		})
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("WalkDir(%s) error = %v", skillDir, err)
-	}
-	sort.Slice(files, func(i, j int) bool {
-		left := strings.ToLower(files[i].relativePath)
-		right := strings.ToLower(files[j].relativePath)
-		if left != right {
-			return left < right
-		}
-		return files[i].relativePath < files[j].relativePath
-	})
-	hash := sha256.New()
-	for _, file := range files {
-		if _, err := hash.Write([]byte(file.relativePath)); err != nil {
-			t.Fatalf("hash.Write(relativePath) error = %v", err)
-		}
-		if _, err := hash.Write(file.content); err != nil {
-			t.Fatalf("hash.Write(content) error = %v", err)
-		}
-	}
-	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
 func assertContains(t *testing.T, got, fragment string) {

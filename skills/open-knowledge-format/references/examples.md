@@ -1,313 +1,279 @@
-# Примеры OKF bundles
+# OKF v0.2 examples
 
-Три полных conformant bundle из разных доменов.
+Canonical examples live in the shared `fixtures/v02` corpus. Do not duplicate
+their YAML here: fixture-backed files are parsed by bundle/validator/CLI/MCP
+tests and therefore cannot silently drift from documentation.
 
----
+Use `fixtures/v02/corpus.yaml` to locate the exact paths for:
 
-## 1. E-commerce analytics
+- minimal type-only concept;
+- Appendix A bundle;
+- human-authored concept;
+- multiple sources and keyed footnotes;
+- bare and list `verified`;
+- draft, stable, deprecated, fresh, and stale boundary cases;
+- inline and file-backed Attested Computation;
+- narrative concept linking sanctioned computations;
+- declared/undeclared v0.1 compatibility;
+- simultaneous legacy/v0.2 provenance;
+- unknown future version;
+- forward-compatible unknown extension fields;
+- adversarial lifecycle self-promotion, optional shapes, and inert executor
+  content.
 
-```text
-ecommerce/
-├── index.md
-├── tables/
-│   ├── index.md
-│   ├── orders.md
-│   └── customers.md
-└── metrics/
-    ├── index.md
-    └── gross-revenue.md
-```
+All repository-authored synthetic materials use reserved domains such as
+`https://example.invalid/` and say that they are synthetic. Upstream Appendix A
+content remains upstream content and is not relabeled.
 
-### tables/orders.md
+## Minimal authoring pattern
 
-```markdown
----
-type: BigQuery Table
-title: Заказы
-description: Одна строка на завершенный customer order по всем каналам.
-resource: https://console.cloud.google.com/bigquery?p=acme&d=sales&t=orders
-tags: [sales, orders, revenue]
-timestamp: 2026-05-28T14:30:00Z
-schema:
-  fields:
-    - id: col-customer_id
-      name: customer_id
-      relations:
-        joins_to:
-          - target: tables/customers#col-customer_id
----
-
-# Schema
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `order_id` | STRING | Глобально уникальный идентификатор заказа |
-| `customer_id` | STRING | FK на [customers](./customers.md) |
-| `total_usd` | NUMERIC | Сумма заказа в долларах США |
-| `placed_at` | TIMESTAMP | Когда customer отправил заказ |
-| `channel` | STRING | Канал привлечения: web, mobile, pos |
-
-# Joins
-
-- Join with [customers](./customers.md) по `customer_id`
-- Используется metric [gross revenue](/metrics/gross-revenue.md)
-
-# Citations
-
-[1] [BigQuery schema docs](https://cloud.google.com/bigquery/docs/schemas)
-```
-
-### tables/customers.md
+For a new v0.2 concept, begin with:
 
 ```markdown
 ---
-type: BigQuery Table
-title: Customers
-description: Одна строка на зарегистрированного customer с profile и lifetime data.
-resource: https://console.cloud.google.com/bigquery?p=acme&d=sales&t=customers
-tags: [sales, customers]
-timestamp: 2026-05-28T14:30:00Z
+type: <descriptive type>
 ---
 
-# Schema
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `customer_id` | STRING | Primary key |
-| `email` | STRING | Email customer, hashed в production |
-| `created_at` | TIMESTAMP | Дата регистрации |
-| `ltv_usd` | NUMERIC | Lifetime value в USD |
-
-# Joins
-
-- Используется [orders](./orders.md) по `customer_id`
+<known content>
 ```
 
-### metrics/gross-revenue.md
+Add optional fields only when warranted:
 
-````markdown
----
-type: Metric
-title: Gross Revenue
-description: Общая выручка до refunds и discounts.
-tags: [revenue, finance, kpi]
-timestamp: 2026-05-28T14:30:00Z
-relations:
-  depends_on:
-    - target: tables/orders#col-total_usd
----
+- `generated` only with known actor;
+- `sources` only from real materials;
+- `verified` only after real checking;
+- lifecycle only from an explicit lifecycle decision;
+- computation contract only for a standalone sanctioned computation.
 
-# Definition
+## Human-authored is not automatically verified
 
-Сумма `total_usd` из [orders](/tables/orders.md) за период.
-Refunds не вычитаются; для этого нужна metric Net Revenue.
+A human author uses the `human:` actor convention in `generated.by`. That says
+who wrote the current content. It does not add `verified` and does not yield
+`human-reviewed` unless a human actually confirms the content.
 
-# SQL
+## Multiple sources
 
-```sql
-SELECT DATE_TRUNC(placed_at, MONTH) as month,
-       SUM(total_usd) as gross_revenue
-FROM `acme.sales.orders`
-GROUP BY 1
+Each attributable source gets a stable `sources[].id`. Body claims use keyed
+footnotes with the same label. Reordering `sources` must not change mapping.
+
+## Bare/list verification
+
+A bare mapping and a one-item sequence have identical consumption semantics.
+Keep the original YAML shape on read; normalize only the typed projection.
+
+## Computation examples are inert
+
+Inline and file-backed fixtures describe contract shapes. They do not promise
+runtime discovery, binding, executor/attester packaging, receipt/verdict
+formats, sandboxing, caching, or execution by this toolkit.
+
+## Intentional compatibility examples
+
+Legacy `timestamp` and `# Citations` occur only in compatibility/migration
+fixtures. In mixed provenance, v0.2 is the effective read because fallback
+applies only when its replacement is absent; raw legacy data remains lossless.
+Migration blocks coexistence of `sources` and legacy Citations instead of
+merging them and reports `reconcile_sources_and_citations`. Future versions are
+read best-effort without rewriting their declaration.
+
+## Citation mapping selector examples
+
+CLI and MCP share this exact closed shape:
+
+```json
+[
+  {
+    "path": "index.md",
+    "entries": [
+      {"legacy_number": 1, "source_id": "numbered"}
+    ]
+  },
+  {
+    "path": "log.md",
+    "entries": [
+      {
+        "legacy_entry": "https://example.invalid/raw",
+        "source_id": "raw-url"
+      }
+    ]
+  },
+  {
+    "path": "nested/report.md",
+    "entries": [
+      {
+        "legacy_number": 2,
+        "legacy_entry": "[Report](https://example.invalid/report)",
+        "source_id": "report",
+        "title": "Report"
+      },
+      {
+        "legacy_number": 3,
+        "legacy_entry": "[Report](https://example.invalid/report)",
+        "source_id": "report-copy",
+        "title": "Report"
+      }
+    ]
+  }
+]
 ```
 
-# Related
+The first entry selects numbered `[1]`; the second selects an unnumbered raw
+URL. The two nested entries demonstrate valid disjoint full pairs: identical
+raw text is allowed because distinct nonzero numbers make both AND selectors
+non-overlapping. Duplicate nonzero numbers always fail. An entry-only selector
+overlaps any reuse of the same raw text, including another entry-only selector,
+and is rejected as ambiguous. Exact raw comparison performs no trimming or
+newline normalization. `legacy_entry` must be valid UTF-8, 1..4096 bytes,
+`TrimSpace`-nonblank, and NUL-free. TAB/LF/CR are allowed; other C0 controls and
+DEL are rejected. Exact bytes bind authorization/digest, so LF and CRLF are
+distinct inputs. Canonical order is path, then `legacy_number`, then exact
+`legacy_entry`.
+Duplicate number/raw selector ambiguity reports `disambiguate_citation_entry`;
+it must not be mislabeled as `disambiguate_citation_destination`, which is
+reserved for parser link-destination ownership ambiguity.
+An explicit citation, generated-at, or computation path must name an existing
+bundle document. A missing path blocks with `migration_document_missing`,
+returns no manual actions, and cannot be created by mappings; no new action
+code is introduced.
+Migration input validation runs before source resolution. Any supplied
+structurally/domain-invalid individual actor, timestamp, citation, generated-at,
+computation, or asset field is rejected even for `target-noop` or a rootless
+bundle and follows the same zero-write guarantee.
+Source resolution is computed exactly once before Preview, and Preview and
+Apply use the same complete frozen `expected_source`. It includes requested
+selector, `declaration_present`, `declaration_valid`, `declaration_raw`,
+`declared_version`, resolved/provenance/transition fields, and ordered
+candidates/blockers. A proof-bound transition uses only
+`format_version: 2` with required non-empty `resolution_digest`; a live
+`target-noop` is proofless but still validates the target document.
+§13 fallback is presence-only and version-source agnostic: default, declared,
+or explicit v0.1/v0.2 and future resolution use the same predicate.
+`GeneratedPresent`/`SourcesPresent` suppress fallback even when malformed;
+`TimestampAllowed`/`CitationsAllowed` record replacement absence, while
+`TimestampActive`/`CitationsActive` also require the actual legacy form.
+`CitationsActive` requires a parser-owned exact `# Citations` heading; a numeric
+marker alone is inactive. Marker-only `[1]` prose in an undeclared bundle is
+native v0.2 `target-noop`, not inferred legacy evidence. Common document-aware
+preflight still validates explicit inputs first. MCP remains proofless,
+store-free, and zero-write; CLI dry-run builds a proof without store access,
+while CLI `--write` commits an empty CAS and durable `.okf` receipt without
+changing revision-visible files. A number-only mapping on that target is a replay
+assertion, not a rewrite: the keyed footnote and concept source metadata must
+already match. Otherwise `migration_replay_mismatch` blocks with no invented
+manual action; normalized label collision uses
+`normalized_footnote_label_collision` and
+`disambiguate_citation_entry`.
+For every mapping with nonzero `legacy_number`, the selected parser-owned `[n]`
+must be absent and normalized keyed `[^SourceID]` must be referenced. Entry-only
+mappings have no claim-reference requirement. Leftover selected, missing, or
+wrong references return `migration_replay_mismatch` at the exact parser-owned
+span with zero writes and no proof/plan authorization. Marker-like bytes inside
+inline/fenced code or raw HTML are opaque and ignored.
+An unrenderable individual migration field is `invalid_request`. A normalized
+per-document SourceID collision is instead blocked with
+`normalized_footnote_label_collision` and `disambiguate_citation_entry`,
+including on `target-noop`; an existing-document collision reports the same
+exact span. Neither is published and both are zero-write.
+A proof-bound `v0.1-to-v0.2` apply may return transition-noop only after
+authenticating and rebuilding the exact proof and plan digest; it returns noop
+before store open and creates no `.okf`. For live `target-noop`, MCP is
+proofless and opens no store, CLI dry-run builds a proof without opening the
+store, and CLI `--write` commits an empty CAS with a durable `.okf` receipt.
+Each surface leaves revision-visible bundle files path-and-byte identical.
 
-- Source table: [orders](/tables/orders.md)
-- Связанная metric: Net Revenue, то есть gross minus refunds
-````
+## `skosovsky/okf` RelationRef wire examples
 
-### index.md (root)
+These strings describe the repository YAML-relations extension, not upstream
+OKF v0.2:
 
-```markdown
-# E-commerce Analytics Bundle
+| Wire string | Structural identity |
+| --- | --- |
+| `source` | root concept `source` |
+| `source#part` | concept `source`, fragment `part` |
+| `source\#part` | root concept whose ID is `source#part` |
+| `source\#part#leaf\value` | concept `source#part`, fragment `leaf\value` |
 
-- [Tables](./tables/) - Database tables для analytics stack
-- [Metrics](./metrics/) - Business KPIs, рассчитанные из tables
+Only concept-ID `#` bytes use `\#`; the first unescaped `#` is the delimiter,
+and fragment backslashes are unchanged. Stray/non-canonical concept escapes are
+invalid. Ordinary strings round-trip byte-identically. JSON transports the
+logical `source\#part` as `"source\\#part"` without changing graph/MCP schema
+shapes or store receipt v1 `[]string`.
+
+## MCP `usage_count` wire example
+
+The domain value remains `uint64`, but every MCP structured JSON surface uses a
+canonical decimal string, or `null` when the output field is nullable:
+
+```json
+{"usage_count":"18446744073709551615"}
 ```
 
----
+The canonical pattern is `^(0|[1-9][0-9]*)$`; overflow is rejected on input.
+The string wire form prevents `float64` precision loss for `MaxUint64`.
+Legacy text fallbacks retain their existing representation.
 
-## 2. SaaS incident playbooks
+## MCP `set_usage_window` selector examples
 
-```text
-incidents/
-├── index.md
-├── alerts/
-│   ├── index.md
-│   ├── api-latency-p99.md
-│   └── db-connections.md
-└── runbooks/
-    ├── index.md
-    └── escalate-incident.md
-```
-
-### alerts/api-latency-p99.md
-
-````markdown
----
-type: Alert
-title: API Latency P99 > 2s
-description: Срабатывает, когда 99-й перцентиль API latency выше 2 секунд в течение 5 минут.
-tags: [api, latency, critical]
-severity: critical
-timestamp: 2026-06-01T09:00:00Z
----
-
-# Trigger Condition
-
-```promql
-histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 2
-```
-
-# Impact
-
-Пользователи получают timeouts. Downstream services могут упасть каскадом.
-
-# Response
-
-1. Проверить [DB connections alert](./db-connections.md) - это часто root cause.
-2. Перейти к [escalation runbook](/runbooks/escalate-incident.md), если проблема не решена за 10 минут.
-3. Проверить deployment log на недавние changes.
-
-# Citations
-
-[1] [SLA definition](https://wiki.internal/sla/api-latency)
-````
-
-### runbooks/escalate-incident.md
-
-```markdown
----
-type: Runbook
-title: Escalate Incident
-description: Шаги escalation, если on-call не может решить incident в пределах SLA.
-tags: [oncall, incident, escalation]
-timestamp: 2026-06-01T09:00:00Z
----
-
-# When to Escalate
-
-- Alert не resolved за 10 минут.
-- Customer-facing impact подтвержден.
-- Несколько alerts срабатывают одновременно.
-
-# Steps
-
-1. Написать в Slack channel #incidents со ссылкой на alert.
-2. Вызвать secondary on-call через PagerDuty.
-3. Если P1: вызвать Engineering Manager.
-4. Создать incident document из template.
-5. Обновить status page, если impact customer-facing.
-
-# Contacts
-
-| Role | Who | Method |
-|------|-----|--------|
-| Secondary on-call | Rotation | PagerDuty |
-| Eng Manager | @manager | Slack DM |
-| Infra lead | @infra-lead | Slack DM |
-```
-
----
-
-## 3. API documentation
-
-```text
-api/
-├── index.md
-├── auth/
-│   ├── index.md
-│   └── oauth2-flow.md
-├── endpoints/
-│   ├── index.md
-│   └── create-order.md
-└── policies/
-    ├── index.md
-    └── rate-limits.md
-```
-
-### endpoints/create-order.md
-
-````markdown
----
-type: API Endpoint
-title: Create Order
-description: Создает новый order для authenticated customer.
-resource: https://api.acme.com/v2/orders
-tags: [orders, write, v2]
-method: POST
-timestamp: 2026-05-20T10:00:00Z
----
-
-# POST /v2/orders
-
-Создает новый order. Требует [OAuth2 authentication](/auth/oauth2-flow.md).
-
-# Request
+The selector is a closed union. Omit both selector fields for the shared
+window:
 
 ```json
 {
-  "customer_id": "cust_abc123",
-  "items": [{"sku": "WIDGET-01", "quantity": 2}],
-  "idempotency_key": "unique-request-id"
+  "kind": "set_usage_window",
+  "concept_id": "report",
+  "usage_window": {"from": "2026-07-01", "to": "2026-07-31"}
 }
 ```
 
-# Response (201 Created)
+Use one non-empty `source_id` for an identified source:
 
 ```json
 {
-  "order_id": "ord_xyz789",
-  "status": "pending",
-  "total_usd": 49.98,
-  "created_at": "2026-05-20T10:30:00Z"
+  "kind": "set_usage_window",
+  "concept_id": "report",
+  "source_id": "policy",
+  "usage_window": {"from": "2026-07-01", "to": "2026-07-31"}
 }
 ```
 
-# Errors
+Use one exact `source` object without `id` for an anonymous source:
 
-| Code | Meaning |
-|------|---------|
-| 400 | Некорректный request body |
-| 401 | Missing or invalid auth token |
-| 409 | Duplicate `idempotency_key` |
-| 429 | Превышен [rate limit](/policies/rate-limits.md) |
-
-# Rate Limits
-
-Подчиняется [rate limiting](/policies/rate-limits.md). См. headers `X-RateLimit-*`.
-````
-
-### policies/rate-limits.md
-
-```markdown
----
-type: Policy
-title: Rate Limits
-description: Rate limits по тарифным планам для всех API endpoints.
-tags: [policy, rate-limit, api]
-timestamp: 2026-05-20T10:00:00Z
----
-
-# Limits by Plan
-
-| Plan | Requests/min | Burst |
-|------|--------------|-------|
-| Free | 60 | 10 |
-| Pro | 600 | 100 |
-| Enterprise | 6000 | 1000 |
-
-# Response Headers
-
-Каждый response включает:
-
-- `X-RateLimit-Limit`: max requests per window
-- `X-RateLimit-Remaining`: оставшиеся requests в window
-- `X-RateLimit-Reset`: Unix timestamp сброса window
-
-# When Exceeded
-
-Возвращает `429 Too Many Requests`. Повторять после `X-RateLimit-Reset`.
-Применяется ко всем endpoints, включая [create order](/endpoints/create-order.md).
+```json
+{
+  "kind": "set_usage_window",
+  "concept_id": "report",
+  "source": {"resource": "policy.md", "title": "Policy"},
+  "usage_window": {"from": "2026-07-01", "to": "2026-07-31"}
+}
 ```
+
+Empty `source_id`, both selector fields together, unknown selector/source
+fields, an `id` inside the exact anonymous `source`, and ambiguous exact
+anonymous matches are rejected. Use `usage_window: null` with the same selector
+forms to remove the selected window.
+
+## MCP `remove_source` selector examples
+
+Remove an identified source with one non-empty `source_id`:
+
+```json
+{
+  "kind": "remove_source",
+  "concept_id": "report",
+  "source_id": "policy"
+}
+```
+
+Remove an anonymous source with one exact `source` object without `id`:
+
+```json
+{
+  "kind": "remove_source",
+  "concept_id": "report",
+  "source": {"resource": "policy.md", "title": "Policy"}
+}
+```
+
+`remove_source` has no shared selector form. Empty `source_id`, both selector
+fields together, unknown selector/source fields, an `id` inside the exact
+anonymous `source`, and ambiguous exact anonymous matches are rejected.

@@ -32,16 +32,28 @@ func lockExclusive(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
 }
 
-func lockShared(f *os.File) error {
-	return syscall.Flock(int(f.Fd()), syscall.LOCK_SH|syscall.LOCK_NB)
-}
-
 func unlockFile(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 }
 
-func leaseRetryable(err error) bool {
+func rootLockRetryable(err error) bool {
 	return errors.Is(err, syscall.EINTR) || errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK)
+}
+
+// openRootLockDescriptor returns a new open-file description for the already
+// pinned root inode. Locking the directory itself avoids a mutable lock
+// pathname and keeps independent Store handles/processes coherent even when
+// the bundle has no private namespace yet.
+func openRootLockDescriptor(root *os.File) (*os.File, error) {
+	fd, err := unix.Openat(int(root.Fd()), ".", unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	if err != nil {
+		return nil, noFollowErr(err)
+	}
+	lock := os.NewFile(uintptr(fd), "okf-root-lock")
+	if err := verifyRootLockIdentity(root, lock); err != nil {
+		return nil, errors.Join(err, lock.Close())
+	}
+	return lock, nil
 }
 
 // openRootCapabilities walks every requested absolute path component from the
@@ -113,13 +125,19 @@ func openPinnedRoot(name string) (*os.File, error) {
 	return os.NewFile(uintptr(fd), name), nil
 }
 
-// Darwin's /var is an OS-owned fixed alias for /private/var. It is the only
-// pathname normalization allowed before the descriptor walk.
+// Darwin's /var and /tmp are OS-owned fixed aliases for /private/var and
+// /private/tmp. They are the only pathname normalizations allowed before the
+// descriptor walk.
 func normalizeDarwinVolumeAlias(name string) string {
-	if runtime.GOOS != "darwin" || (name != "/var" && !strings.HasPrefix(name, "/var/")) {
+	if runtime.GOOS != "darwin" {
 		return name
 	}
-	return "/private" + name
+	for _, alias := range []string{"/var", "/tmp"} {
+		if name == alias || strings.HasPrefix(name, alias+"/") {
+			return "/private" + name
+		}
+	}
+	return name
 }
 
 func noFollowErr(err error) error {
@@ -271,53 +289,147 @@ func (s *Store) fdLstat(name string) (fs.FileInfo, error) {
 	return info, errors.Join(statErr, f.Close(), d.Close())
 }
 
-func (s *Store) fdRemove(name string) error {
-	d, base, err := s.parentFD(name, false, 0)
-	if err != nil {
-		return err
-	}
-	if err := s.runDescriptorBarrier("remove"); err != nil {
-		return errors.Join(err, d.Close())
-	}
-	if err := s.verifyParent(name, d); err != nil {
-		return errors.Join(err, d.Close())
-	}
-	return errors.Join(noFollowErr(unix.Unlinkat(int(d.Fd()), base, 0)), d.Close())
+// fdRemoveClaimOwned is the sole terminal unlink primitive. Its target type
+// cannot represent a path outside the pinned, mode-validated claims zone.
+func (s *Store) fdRemoveClaimOwned(target claimsZonePath, expected fs.FileInfo, wantDirectory bool) (bool, error) {
+	return s.fdRemoveClaimOwnedMode(target, expected, wantDirectory, true)
 }
 
-func (s *Store) fdRemoveDir(name string) error {
-	d, base, err := s.parentFD(name, false, 0)
+func (s *Store) fdRemoveClaimOwnedMode(target claimsZonePath, expected fs.FileInfo, wantDirectory, observe bool) (bool, error) {
+	zone, err := s.fdOpen(claimDirectory, os.O_RDONLY, 0)
+	if errors.Is(err, unix.ENOENT) {
+		return false, nil
+	}
 	if err != nil {
-		return err
+		return false, err
 	}
-	if err := s.runDescriptorBarrier("remove_dir"); err != nil {
-		return errors.Join(err, d.Close())
+	zoneInfo, statErr := zone.Stat()
+	pathInfo, pathErr := s.rootFD.Lstat(claimDirectory)
+	if statErr != nil || pathErr != nil || zoneInfo == nil || pathInfo == nil || !zoneInfo.IsDir() || zoneInfo.Mode().Perm() != 0o700 || !os.SameFile(zoneInfo, pathInfo) {
+		return false, errors.Join(errArtifactClaimConflict, statErr, pathErr, zone.Close())
 	}
-	if err := s.verifyParent(name, d); err != nil {
-		return errors.Join(err, d.Close())
+	parts := strings.Split(target.relative, "/")
+	d := zone
+	for _, component := range parts[:len(parts)-1] {
+		fd, openErr := unix.Openat(int(d.Fd()), component, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+		if openErr != nil {
+			return false, errors.Join(noFollowErr(openErr), d.Close())
+		}
+		child := os.NewFile(uintptr(fd), component)
+		info, childStatErr := child.Stat()
+		if childStatErr != nil || info == nil || !info.IsDir() || info.Mode().Perm() != 0o700 {
+			return false, errors.Join(errArtifactClaimConflict, childStatErr, child.Close(), d.Close())
+		}
+		if d != zone {
+			if closeErr := d.Close(); closeErr != nil {
+				return false, errors.Join(closeErr, child.Close(), zone.Close())
+			}
+		}
+		d = child
 	}
-	return errors.Join(noFollowErr(unix.Unlinkat(int(d.Fd()), base, unix.AT_REMOVEDIR)), d.Close())
+	base := parts[len(parts)-1]
+	closeAll := func() error {
+		if d == zone {
+			return zone.Close()
+		}
+		return errors.Join(d.Close(), zone.Close())
+	}
+	operation := "remove"
+	flags := unix.O_RDONLY | unix.O_NOFOLLOW | unix.O_NONBLOCK | unix.O_CLOEXEC
+	unlinkFlags := 0
+	if wantDirectory {
+		operation = "remove_dir"
+		flags |= unix.O_DIRECTORY
+		unlinkFlags = unix.AT_REMOVEDIR
+	}
+	if observe {
+		if err := s.runDescriptorBarrier(operation); err != nil {
+			return false, errors.Join(err, closeAll())
+		}
+	}
+	currentZone, zonePathErr := s.rootFD.Lstat(claimDirectory)
+	if zonePathErr != nil || currentZone == nil || !currentZone.IsDir() || currentZone.Mode().Perm() != 0o700 || !os.SameFile(zoneInfo, currentZone) {
+		return false, errors.Join(errArtifactClaimConflict, zonePathErr, closeAll())
+	}
+	fd, openErr := unix.Openat(int(d.Fd()), base, flags, 0)
+	if errors.Is(openErr, unix.ENOENT) || errors.Is(openErr, unix.ELOOP) || errors.Is(openErr, unix.ENOTDIR) {
+		return false, closeAll()
+	}
+	if openErr != nil {
+		return false, errors.Join(noFollowErr(openErr), closeAll())
+	}
+	currentFile := os.NewFile(uintptr(fd), base)
+	current, statErr := currentFile.Stat()
+	closeErr := currentFile.Close()
+	if statErr != nil || closeErr != nil {
+		return false, errors.Join(statErr, closeErr, closeAll())
+	}
+	if expected == nil || current.IsDir() != wantDirectory || !os.SameFile(expected, current) {
+		return false, closeAll()
+	}
+	removeErr := noFollowErr(unix.Unlinkat(int(d.Fd()), base, unlinkFlags))
+	if errors.Is(removeErr, unix.ENOENT) {
+		return false, closeAll()
+	}
+	return removeErr == nil, errors.Join(removeErr, closeAll())
 }
 
-func (s *Store) fdRename(from, to string) error {
+func (s *Store) fdRenameGuarded(from, to string, expectedSource fs.FileInfo, expected mutationTargetIdentity) (fs.FileInfo, error) {
 	fd, fb, err := s.parentFD(from, false, 0)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	td, tb, err := s.parentFD(to, true, 0o755)
 	if err != nil {
-		return errors.Join(err, fd.Close())
+		return nil, errors.Join(err, fd.Close())
 	}
 	if err := s.runDescriptorBarrier("rename"); err != nil {
-		return errors.Join(err, td.Close(), fd.Close())
+		return nil, errors.Join(err, td.Close(), fd.Close())
 	}
 	if err := s.verifyParent(from, fd); err != nil {
-		return errors.Join(err, td.Close(), fd.Close())
+		return nil, errors.Join(err, td.Close(), fd.Close())
 	}
 	if err := s.verifyParent(to, td); err != nil {
-		return errors.Join(err, td.Close(), fd.Close())
+		return nil, errors.Join(err, td.Close(), fd.Close())
 	}
-	return errors.Join(noFollowErr(unix.Renameat(int(fd.Fd()), fb, int(td.Fd()), tb)), td.Close(), fd.Close())
+	var source *os.File
+	var sourceIdentity fs.FileInfo
+	if expectedSource != nil {
+		sourceFD, openErr := unix.Openat(int(fd.Fd()), fb, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
+		if openErr != nil {
+			return nil, errors.Join(noFollowErr(openErr), td.Close(), fd.Close())
+		}
+		source = os.NewFile(uintptr(sourceFD), fb)
+		actual, statErr := source.Stat()
+		if statErr != nil || !actual.Mode().IsRegular() || !os.SameFile(expectedSource, actual) {
+			return nil, errors.Join(errMutationTargetChanged(from), statErr, source.Close(), td.Close(), fd.Close())
+		}
+		sourceIdentity = actual
+	}
+	closeSource := func() error {
+		if source == nil {
+			return nil
+		}
+		return source.Close()
+	}
+	current, statErr := s.rootFD.Lstat(to)
+	if expected.absent {
+		if statErr == nil {
+			return nil, errors.Join(errMutationTargetChanged(to), closeSource(), td.Close(), fd.Close())
+		}
+		if !errors.Is(statErr, os.ErrNotExist) {
+			return nil, errors.Join(statErr, closeSource(), td.Close(), fd.Close())
+		}
+	} else if expected.info != nil {
+		if statErr != nil || !current.Mode().IsRegular() || !os.SameFile(expected.info, current) {
+			return nil, errors.Join(errMutationTargetChanged(to), statErr, closeSource(), td.Close(), fd.Close())
+		}
+	}
+	renameErr := errors.Join(noFollowErr(unix.Renameat(int(fd.Fd()), fb, int(td.Fd()), tb)), closeSource(), td.Close(), fd.Close())
+	if renameErr != nil {
+		return nil, renameErr
+	}
+	return sourceIdentity, nil
 }
 
 func (s *Store) fdSyncDir(name string) error {

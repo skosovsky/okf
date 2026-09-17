@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/read_concept.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_path", "concept_id"],
+  "$defs": {
+    "concept_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\\\x00-\\x1F\\x7F]+(?:/[^/\\\\\\x00-\\x1F\\x7F]+)*$",
+      "allOf": [
+        {"not": {"pattern": "(^|/)\\."}},
+        {"not": {"pattern": "(^|/)(index|log)(/|$)"}},
+        {"not": {"pattern": "\\.md$"}},
+        {"not": {"pattern": ":"}},
+        {"not": {"pattern": "^\\s"}},
+        {"not": {"pattern": "\\s$"}}
+      ]
+    }
+  },
+  "properties": {
+    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "concept_id": {
+      "allOf": [
+        {"$ref": "#/$defs/concept_id"},
+        {"maxLength": 4096}
+      ]
+    }
+  }
+}

@@ -1,0 +1,3314 @@
+{
+  "schema_version": 1,
+  "scope": "behavioral reorganization of 64 historical regression test files",
+  "baseline": {
+    "file_count": 64,
+    "top_level_test_fuzz_count": 401,
+    "source_state": "untracked pre-reorganization files",
+    "body_equivalence_claimed": false,
+    "loc_policy": "null unless preserved by an authoritative baseline artifact"
+  },
+  "files": [
+    {
+      "before_path": "bundle/index_v3_phase2_test.go",
+      "sha256": "7bfa650f8300d5a387a0e447ac26ce7269468e43c398234589afde2307320413",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/index_install_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_install_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase3_unix_test.go",
+      "sha256": "d012d17eef60e36d463609a15332e275f5ac2ed47711ba3dd3465eca41cf36ab",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_rollback_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_rollback_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4a_test.go",
+      "sha256": "4eacc69946b8333a44d45ddc0e91baf85cb47517298488b389fa9b8772ac77e1",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/index_recovery_classifier_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_classifier_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4b1_unix_test.go",
+      "sha256": "fda37f17f6b8eb02edfc627081b5af170fe7a6252935424747b5851959933a65",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_recovery_pre_new_rollback_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_pre_new_rollback_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4b2_unix_test.go",
+      "sha256": "0d47451199808f2883b181d570ad03b6690e3bac6d2778feeeb721f554d0ff88",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_recovery_existing_rollback_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_existing_rollback_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4b3_unix_test.go",
+      "sha256": "93cccf45ad00756c95834aa92026d2bafe7c8e0cc875b466abf55fdef10ad30a",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_recovery_create_only_rollback_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_create_only_rollback_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4b4_unix_test.go",
+      "sha256": "2d8deac4b20e42fd4beaccc1545e485aab76a22ff82c7771e7fe16d17047037f",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_recovery_commit_boundary_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_commit_boundary_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/index_v3_phase4c_unix_test.go",
+      "sha256": "d4b15bff1bb7e112828113c47d3ae05baea8b048b639f5ec810c37c8ec9c2472",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "unix",
+      "after_paths": [
+        "bundle/index_recovery_cleanup_unix_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/index_recovery_cleanup_unix_test.go": "darwin || linux"
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase1_context_test.go",
+      "sha256": "532340c13c88bc39d9fcf1ce740f4fba5f8704546730f2cd0634f49ee40afd55",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/computation_attribution_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/computation_attribution_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase2_context_test.go",
+      "sha256": "5979fffac02defa7cce58c37856ea74c5c8894356e8f38ad142a5a2087aca9d3",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/version_path_observation_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/version_path_observation_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase3_context_test.go",
+      "sha256": "230b6a605953547d91d7fe66e94039240bd63588b97233e1b50599c4f5ede520",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/verification_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/verification_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase4_render_context_test.go",
+      "sha256": "212e1cecaa254e546732d448e9e159e0c24d35878e8123c194ae7f36810d9792",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/yaml_rendering_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/yaml_rendering_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5a_parse_context_test.go",
+      "sha256": "857057339c61e79c0117ded3e41934bfca5704300fc3a2f84a40f1a4c6cf3490",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/parse_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/parse_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5b_observation_context_test.go",
+      "sha256": "94ed4fe9988a7ebba67b2877e875fe703ac844cb7a0cd066c8cb16f2a3991de7",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/reachable_observation_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/reachable_observation_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5c_semantic_node_context_test.go",
+      "sha256": "c444007b0026dfd16e7ae35556fdc1aedef4622159ec0e3c97c6681bbadb8702",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/semantic_node_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/semantic_node_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5d_relations_context_test.go",
+      "sha256": "b04d74a435daa81f30d31514a1d8b5a3b581979878f54af0fda11c8484f47ed2",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/relation_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/relation_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5e_load_graph_context_test.go",
+      "sha256": "d3bc384ba941635403dc4e8d2fff338bff6c0497593f066393eafd40103c3179",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/source_traversal_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/source_traversal_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5f_attribution_context_test.go",
+      "sha256": "1cb4e7fd15b03660bf1aa26573abb568e96478ff1127997b9bf7fd69d05aec5f",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/attribution_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/attribution_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5g_projection_context_test.go",
+      "sha256": "3225afe0a0f0362cc93adb45cd322ed244335f2920ceb647e6d99b3437fb7842",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/projection_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/projection_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5h_path_resolve_context_test.go",
+      "sha256": "6a7d0103f3d063ad3dca66957e8417c29763e8d97ab80269643e23af939001c3",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/path_resolution_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/path_resolution_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5i_markdown_limit_contract_test.go",
+      "sha256": "3ec0fc2b0b35c991ceeacd478859c7b5f13165e19bc2a20cb73a9c0e5c02f2d9",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/markdown_limit_contract_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/markdown_limit_contract_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5j_projection_hash_context_test.go",
+      "sha256": "99ca48d11c877282eff6f132dfff41228608f5ff73fbf17c01fc32fe0403ade9",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/projection_hash_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/projection_hash_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task10_phase5k_source_root_context_test.go",
+      "sha256": "a3174d5fc7add93a92289b4da615f8766a06ec705f9664ea95633bf62addf5c5",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/source_root_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/source_root_context_test.go": null
+      }
+    },
+    {
+      "before_path": "bundle/task12_graph_context_test.go",
+      "sha256": "6a558f76f9c37377a5889f070be8296ac774c0b6b971ef2240378c727ec061cb",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "bundle/graph_lifecycle_context_test.go",
+        "bundle/graph_lookup_cancellation_test.go",
+        "bundle/graph_path_resolution_context_test.go"
+      ],
+      "after_build_constraints": {
+        "bundle/graph_lifecycle_context_test.go": null,
+        "bundle/graph_lookup_cancellation_test.go": null,
+        "bundle/graph_path_resolution_context_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/markdownowner/task10_phase5i_markdown_limit_test.go",
+      "sha256": "1f065b75a2c9c2573c48eed8261512dadd71e487a06e1bb55456d1b575805428",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/markdownowner/markdown_limit_contract_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/markdownowner/markdown_limit_contract_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "sha256": "83101427f7aa08cb4da6fbdec91b2e105b8acb9099154a27daaed791bdc48c3a",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/mcpserver/durable_commit_outcome_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/mcpserver/durable_commit_outcome_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/mcpserver/migration_receipt_task20_test.go",
+      "sha256": "ae1774865792bd9205f19ebb8ec01a43ad8f3dd2034f56f8414be5d287caa148",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/mcpserver/migration_commit_receipt_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/mcpserver/migration_commit_receipt_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/mcpserver/task20_all_tool_input_boundary_test.go",
+      "sha256": "253d68799f59c10e82d926478b71bd6f5a5ece95f5f517c68bf9a15c48014830",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/mcpserver/input_contract_boundary_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/mcpserver/input_contract_boundary_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/mcpserver/task20_legacy_input_schema_test.go",
+      "sha256": "ca68c7df40abf94df9f974336e264747688dbe9c05eed15e842a023bfca77c3a",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/mcpserver/contracts_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/mcpserver/contracts_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/document_session_task19_test.go",
+      "sha256": "754b8c5c4ffa31944bb8211c8aaf2586da999ad8a59b87cade575c4256fdd010",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/document_session_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/document_session_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "sha256": "1515f689a2e5e473fb7fdf2aa2f8284ed7cb4d7ad196629bca0de9821fad2da8",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/commit_outcome_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/commit_outcome_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/migrate_noop_cas_task19_test.go",
+      "sha256": "cba680295f2a7ecae3056648704c007e2cb61c7726f6f28b78bd65bb2d40805c",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/noop_cas_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/noop_cas_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/migrate_recovery_task19_test.go",
+      "sha256": "5dfd8ee6b95f4876bffcf19c16309d3f89a1e66fd42f86e0484a88ce2ffd4876",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/renderers_task19_test.go",
+      "sha256": "4b3baeea90089a6031add2036b45b512a174dc91b474bd15712a3064099ec4f1",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/text_rendering_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/text_rendering_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/stderr_task19_test.go",
+      "sha256": "283298f3396847ff9914f8f27d6c2a2772510fbc1b3ef610223d7c1769076c18",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/error_output_handling_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/error_output_handling_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/task19_test.go",
+      "sha256": "d01c542de4b075971c66f98b0ecf891de59e83b73d7a4ee88619965d3b35ce48",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/args_test.go",
+        "internal/okfcli/citation_mappings_test.go",
+        "internal/okfcli/fmt_test.go",
+        "internal/okfcli/graph_test.go",
+        "internal/okfcli/index_test.go",
+        "internal/okfcli/migration_test.go",
+        "internal/okfcli/output_handling_test.go",
+        "internal/okfcli/parse_test.go",
+        "internal/okfcli/version_resolution_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/args_test.go": null,
+        "internal/okfcli/citation_mappings_test.go": null,
+        "internal/okfcli/fmt_test.go": null,
+        "internal/okfcli/graph_test.go": null,
+        "internal/okfcli/index_test.go": null,
+        "internal/okfcli/migration_test.go": null,
+        "internal/okfcli/output_handling_test.go": null,
+        "internal/okfcli/parse_test.go": null,
+        "internal/okfcli/version_resolution_test.go": null
+      }
+    },
+    {
+      "before_path": "internal/okfcli/validate_fatal_task19_test.go",
+      "sha256": "4959017758ff1e604f189df31299687e148f00258fdc1cd89b58cf4398611978",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "internal/okfcli/fatal_validation_test.go"
+      ],
+      "after_build_constraints": {
+        "internal/okfcli/fatal_validation_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/migration_task15_core_regression_test.go",
+      "sha256": "2485cd614439b6abc36ff0f8ea89a0bd5ff918178faa5e85363c3325f0823c86",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/migration_claim_replay_test.go",
+        "mutation/migration_computation_boundary_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/migration_claim_replay_test.go": null,
+        "mutation/migration_computation_boundary_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/presentation_task13_adversarial_test.go",
+      "sha256": "e133adf168d84447d90db3c6486e1db3a51da13c59528def73550dd8887ae68c",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/yaml_mutation_structural_ownership_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/yaml_mutation_structural_ownership_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/presentation_task13_deferred_shadow_test.go",
+      "sha256": "03f868c48d233353e4b03a451ceefcc3c849f41aa5656ebc2683ed4464c748d0",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/yaml_mutation_opaque_siblings_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/yaml_mutation_opaque_siblings_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/presentation_task13_shadow_test.go",
+      "sha256": "1164c1513d1cf500fcf3e9a4b7d73b4795da678fcdbc6fe3a03d6da593e81b89",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/yaml_mutation_shadow_state_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/yaml_mutation_shadow_state_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/presentation_task13_test.go",
+      "sha256": "725763375c1b6cef776e893beeb4912bfcca14551d088fc6ecaf4447c301b26c",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/yaml_mutation_basics_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/yaml_mutation_basics_test.go": null
+      }
+    },
+    {
+      "before_path": "mutation/task13_sequence_traversal_regression_test.go",
+      "sha256": "c2dd9c91bfc14b28498b4f7ea8e82173a40679056dde2ec580f7ffdeeaf96c54",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "mutation/yaml_mutation_shadow_state_regression_test.go",
+        "mutation/yaml_resolver_semantic_context_test.go"
+      ],
+      "after_build_constraints": {
+        "mutation/yaml_mutation_shadow_state_regression_test.go": null,
+        "mutation/yaml_resolver_semantic_context_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_boundary_matrix_test.go",
+      "sha256": "deea676ba576c5aabfc405dd5d02817e749e187fe9be5039f7ff732732ea651d",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/durability_boundary_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/durability_boundary_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r10_test.go",
+      "sha256": "782b45232ecffc1053abac6864ce113ecc22a8fb3100d21df80c1e52a85e0395",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/receipt_binding_authentication_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/receipt_binding_authentication_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r11_test.go",
+      "sha256": "c58a01cdd3babc2c6954c50f16afb1861c4e89e036741e1934576ac1cca9a610",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/receipt_binding_field_authentication_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/receipt_binding_field_authentication_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r2_test.go",
+      "sha256": "db262ecb7afd32e21be60ac88577554a48c5e89da6f55c15edd2264f6e5a2f1a",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/durability_ownership_recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/durability_ownership_recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r3_test.go",
+      "sha256": "ea415cc8e9d3f34dd31c600ff1017b3753992ee9ea55e25f8eed56b20bec2e37",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/recovery_io_classification_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/recovery_io_classification_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r4_claim_test.go",
+      "sha256": "36e3410483b3b2d344cc1b3d58e9e16dee099ed42f788f747aea83b8cf228bbe",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/artifact_claim_recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/artifact_claim_recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r5_io_test.go",
+      "sha256": "8bae4ff2051998dae6ceea253bbc6835b51d154837d5562703a9731d68f7251f",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/recovery_metadata_io_classification_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/recovery_metadata_io_classification_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r5_proof_test.go",
+      "sha256": "1048ac9b3ed80e403aa0a9f0eaefae19a57c7f6ee9ba06c1aafac8322b3d20ba",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/artifact_proof_recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/artifact_proof_recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r6_io_test.go",
+      "sha256": "0411e2b427e78d4f9900609a5d6740a40caca62fe64484dbca2f8706a9cb1630",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/recovery_close_precedence_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/recovery_close_precedence_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r6_proof_test.go",
+      "sha256": "7565fad645ca6c0a49c19d215cda43d780eacd1c360192d8fe2eaab78496a89d",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/closed_artifact_proof_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/closed_artifact_proof_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_claims_zone_test.go",
+      "sha256": "a664961aa780e358c6ad41c24aa91b82d481acf29388eca0d7ac552cc38ac7ee",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/artifact_claim_zone_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/artifact_claim_zone_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_close_rebind_test.go",
+      "sha256": "42e057d81fa94906c7448b659ef32ea0a56084be8c33cd2c39ea3af9e6ce62b9",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/pinned_read_rebind_precedence_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/pinned_read_rebind_precedence_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_private_claim_test.go",
+      "sha256": "cf16fe3ed369572b0b8aa91774414a5734770deb97a1ba598bb14ee3614fe8fd",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/private_receipt_claim_recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/private_receipt_claim_recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_proof_test.go",
+      "sha256": "b94bd39e7bbd70949674396c7808b48b515c15ed91d526c4f67fedb80894e1f2",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/durable_artifact_proof_matrix_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/durable_artifact_proof_matrix_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_scratch_test.go",
+      "sha256": "0255ac004feddf42961b585c0f1a3517604f13174d5e12de296b357276c39570",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/scratch_recovery_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/scratch_recovery_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r7_visible_proof_test.go",
+      "sha256": "59448dcd46f858f183a40ffa299ebd3bbaf492b4c798a50d141dec1a7309aeb9",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/visible_recovery_proof_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/visible_recovery_proof_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r8_io_test.go",
+      "sha256": "4ef863de499d86d6fcfcc1b4bf6cc6adb7a0e214d19335a06bcb3b5f78a12e63",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/early_read_io_classification_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/early_read_io_classification_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r8_role_test.go",
+      "sha256": "fd78dc5f961c9cebb6f44c4159d24f02eb331055895c74113b36ce8fb7751e4d",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/artifact_role_receipt_authentication_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/artifact_role_receipt_authentication_test.go": null
+      }
+    },
+    {
+      "before_path": "store/fs/task17_r9_test.go",
+      "sha256": "1b8091689e9f3d90a77f872ad9800cb35aa6884c53ba9ea631da3f8d8f6da8c6",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "store/fs/artifact_naming_role_io_test.go"
+      ],
+      "after_build_constraints": {
+        "store/fs/artifact_naming_role_io_test.go": null
+      }
+    },
+    {
+      "before_path": "validator/task10_phase5i_validator_tail_test.go",
+      "sha256": "b6fb013751159c4237415c829dc5b3897c77c774db28bf76efc70ce36e2c7116",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "validator/markdown_limit_validation_test.go"
+      ],
+      "after_build_constraints": {
+        "validator/markdown_limit_validation_test.go": null
+      }
+    },
+    {
+      "before_path": "validator/task11_phase1_context_test.go",
+      "sha256": "2b9a6e8d44cd078ec8305e976911058ca18b65d2d75c6beb2251870110ec79ba",
+      "loc": null,
+      "loc_status": "unavailable: original untracked source was not retained",
+      "platform_class": "portable",
+      "after_paths": [
+        "validator/context_cancellation_integrity_test.go"
+      ],
+      "after_build_constraints": {
+        "validator/context_cancellation_integrity_test.go": null
+      }
+    }
+  ],
+  "functions": [
+    {
+      "before_file": "bundle/index_v3_phase2_test.go",
+      "before_name": "TestGuardedConsumeIndexNewInstallNeverOverwritesForeignTarget",
+      "after_file": "bundle/index_install_test.go",
+      "after_name": "TestGuardedConsumeIndexNewInstallNeverOverwritesForeignTarget"
+    },
+    {
+      "before_file": "bundle/index_v3_phase2_test.go",
+      "before_name": "TestGuardedConsumeIndexNewInstallStateCuts",
+      "after_file": "bundle/index_install_test.go",
+      "after_name": "TestGuardedConsumeIndexNewInstallStateCuts"
+    },
+    {
+      "before_file": "bundle/index_v3_phase3_unix_test.go",
+      "before_name": "TestIndexV3ActiveCreateOnlyRollback",
+      "after_file": "bundle/index_rollback_unix_test.go",
+      "after_name": "TestIndexV3ActiveCreateOnlyRollback"
+    },
+    {
+      "before_file": "bundle/index_v3_phase3_unix_test.go",
+      "before_name": "TestIndexV3ActiveExistingRollbackStateCuts",
+      "after_file": "bundle/index_rollback_unix_test.go",
+      "after_name": "TestIndexV3ActiveExistingRollbackStateCuts"
+    },
+    {
+      "before_file": "bundle/index_v3_phase3_unix_test.go",
+      "before_name": "TestIndexV3DiscardMismatchCompensation",
+      "after_file": "bundle/index_rollback_unix_test.go",
+      "after_name": "TestIndexV3DiscardMismatchCompensation"
+    },
+    {
+      "before_file": "bundle/index_v3_phase3_unix_test.go",
+      "before_name": "TestIndexV3RollbackManifestCleanupBoundary",
+      "after_file": "bundle/index_rollback_unix_test.go",
+      "after_name": "TestIndexV3RollbackManifestCleanupBoundary"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4a_test.go",
+      "before_name": "TestIndexBatchV3RecoveryClassifierLegalStates",
+      "after_file": "bundle/index_recovery_classifier_test.go",
+      "after_name": "TestIndexBatchV3RecoveryClassifierLegalStates"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4a_test.go",
+      "before_name": "TestIndexBatchV3RecoveryClassifierRejectsIllegalStatesWithoutMutation",
+      "after_file": "bundle/index_recovery_classifier_test.go",
+      "after_name": "TestIndexBatchV3RecoveryClassifierRejectsIllegalStatesWithoutMutation"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4a_test.go",
+      "before_name": "TestIndexBatchV3RecoveryPhaseMixtures",
+      "after_file": "bundle/index_recovery_classifier_test.go",
+      "after_name": "TestIndexBatchV3RecoveryStateMixtures"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4a_test.go",
+      "before_name": "TestIndexBatchV3RejectsLegacyAndUnknownReservedNames",
+      "after_file": "bundle/index_recovery_classifier_test.go",
+      "after_name": "TestIndexBatchV3RejectsLegacyAndUnknownReservedNames"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b1_unix_test.go",
+      "before_name": "TestIndexV3Phase4B1PreNewVacatedRollback",
+      "after_file": "bundle/index_recovery_pre_new_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryPreNewVacatedRollback"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b1_unix_test.go",
+      "before_name": "TestIndexV3Phase4B1RecoveryCrashCuts",
+      "after_file": "bundle/index_recovery_pre_new_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryPreNewRollbackCrashCuts"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b1_unix_test.go",
+      "before_name": "TestIndexV3Phase4B1RecoverySubprocessHelper",
+      "after_file": "bundle/index_recovery_pre_new_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryPreNewRollbackSubprocessHelper"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b2_unix_test.go",
+      "before_name": "TestIndexV3Phase4B2PublishedRollback",
+      "after_file": "bundle/index_recovery_existing_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryExistingPublishedRollback"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b2_unix_test.go",
+      "before_name": "TestIndexV3Phase4B2RecoverySubprocessHelper",
+      "after_file": "bundle/index_recovery_existing_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryExistingRollbackSubprocessHelper"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b2_unix_test.go",
+      "before_name": "TestIndexV3Phase4B2ResumeStatesAndCrashCuts",
+      "after_file": "bundle/index_recovery_existing_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryExistingResumeStatesAndCrashCuts"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b3_unix_test.go",
+      "before_name": "TestIndexV3Phase4B3CreateOnlyPublishedRollback",
+      "after_file": "bundle/index_recovery_create_only_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryCreateOnlyPublishedRollback"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b3_unix_test.go",
+      "before_name": "TestIndexV3Phase4B3DiscardCrashCuts",
+      "after_file": "bundle/index_recovery_create_only_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryCreateOnlyRollbackDiscardCrashCuts"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b3_unix_test.go",
+      "before_name": "TestIndexV3Phase4B3MissingTargetInstallAndDiscardFailsClosed",
+      "after_file": "bundle/index_recovery_create_only_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryCreateOnlyRollbackMissingTargetInstallAndDiscardFailsClosed"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b3_unix_test.go",
+      "before_name": "TestIndexV3Phase4B3RecoverySubprocessHelper",
+      "after_file": "bundle/index_recovery_create_only_rollback_unix_test.go",
+      "after_name": "TestIndexRecoveryCreateOnlyRollbackSubprocessHelper"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b4_unix_test.go",
+      "before_name": "TestIndexV3Phase4B4AllPublishedCommitBoundary",
+      "after_file": "bundle/index_recovery_commit_boundary_unix_test.go",
+      "after_name": "TestIndexRecoveryAllPublishedCommitBoundary"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b4_unix_test.go",
+      "before_name": "TestIndexV3Phase4B4DriftBeforeManifestBoundaryFailsHard",
+      "after_file": "bundle/index_recovery_commit_boundary_unix_test.go",
+      "after_name": "TestIndexRecoveryDriftBeforeManifestBoundaryFailsHard"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b4_unix_test.go",
+      "before_name": "TestIndexV3Phase4B4ManifestRemovalFailureRetainsProof",
+      "after_file": "bundle/index_recovery_commit_boundary_unix_test.go",
+      "after_name": "TestIndexRecoveryManifestRemovalFailureRetainsProof"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4b4_unix_test.go",
+      "before_name": "TestIndexV3Phase4B4MixedRollbackBoundary",
+      "after_file": "bundle/index_recovery_commit_boundary_unix_test.go",
+      "after_name": "TestIndexRecoveryMixedRollbackBoundary"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CCleanupCrashRestartEveryBoundary",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupCrashRestartEveryBoundary"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CCleanupSubprocessHelper",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupSubprocessHelper"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CDriftFailsHard",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupDriftFailsHard"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CNoManifestCommitCleanup",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupNoManifestCommitCleanup"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CNoManifestMixedRollbackCleanup",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupNoManifestMixedRollbackCleanup"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CNoManifestPreNewRestoredCleanup",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupNoManifestPreNewRestoredCleanup"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CProofArtifactsAreLast",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupProofArtifactsAreLast"
+    },
+    {
+      "before_file": "bundle/index_v3_phase4c_unix_test.go",
+      "before_name": "TestIndexV3Phase4CUnknownAndV2FailClosed",
+      "after_file": "bundle/index_recovery_cleanup_unix_test.go",
+      "after_name": "TestIndexRecoveryCleanupUnknownAndV2FailClosed"
+    },
+    {
+      "before_file": "bundle/task10_phase1_context_test.go",
+      "before_name": "TestTask10Phase1AttributionContextBackgroundParityAndOwnership",
+      "after_file": "bundle/computation_attribution_context_test.go",
+      "after_name": "TestComputationAttributionContextBackgroundParityAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase1_context_test.go",
+      "before_name": "TestTask10Phase1AttributionContextCancelsInsideLargeProvenanceSource",
+      "after_file": "bundle/computation_attribution_context_test.go",
+      "after_name": "TestComputationAttributionContextCancelsInsideLargeProvenanceSource"
+    },
+    {
+      "before_file": "bundle/task10_phase1_context_test.go",
+      "before_name": "TestTask10Phase1ComputationContextBackgroundParityAndOwnership",
+      "after_file": "bundle/computation_attribution_context_test.go",
+      "after_name": "TestComputationContextBackgroundParityAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase1_context_test.go",
+      "before_name": "TestTask10Phase1ComputationContextCancelsInsideLargeTypeAndContractScalars",
+      "after_file": "bundle/computation_attribution_context_test.go",
+      "after_name": "TestComputationContextCancelsInsideLargeTypeAndContractScalars"
+    },
+    {
+      "before_file": "bundle/task10_phase1_context_test.go",
+      "before_name": "TestTask10Phase1ProvenanceSourceOwnerCancelsInsideLargeScalar",
+      "after_file": "bundle/computation_attribution_context_test.go",
+      "after_name": "TestProvenanceSourceOwnerCancelsInsideLargeScalar"
+    },
+    {
+      "before_file": "bundle/task10_phase2_context_test.go",
+      "before_name": "TestTask10Phase2PathObservationsCancelInsideLargeSemanticScalars",
+      "after_file": "bundle/version_path_observation_context_test.go",
+      "after_name": "TestVersionPathObservationPathObservationsCancelInsideLargeSemanticScalars"
+    },
+    {
+      "before_file": "bundle/task10_phase2_context_test.go",
+      "before_name": "TestTask10Phase2VersionBackgroundErrorsRemainStable",
+      "after_file": "bundle/version_path_observation_context_test.go",
+      "after_name": "TestVersionPathObservationVersionBackgroundErrorsRemainStable"
+    },
+    {
+      "before_file": "bundle/task10_phase2_context_test.go",
+      "before_name": "TestTask10Phase2VersionDeclarationContextCancellationParityAndErrors",
+      "after_file": "bundle/version_path_observation_context_test.go",
+      "after_name": "TestVersionPathObservationVersionDeclarationContextCancellationParityAndErrors"
+    },
+    {
+      "before_file": "bundle/task10_phase2_context_test.go",
+      "before_name": "TestTask10Phase2VersionResolutionContextCancelsWithoutOutcome",
+      "after_file": "bundle/version_path_observation_context_test.go",
+      "after_name": "TestVersionPathObservationVersionResolutionContextCancelsWithoutOutcome"
+    },
+    {
+      "before_file": "bundle/task10_phase3_context_test.go",
+      "before_name": "TestTask10Phase3VerificationBackgroundParityNilShapeAndOwnership",
+      "after_file": "bundle/verification_context_test.go",
+      "after_name": "TestVerificationBackgroundParityNilShapeAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase3_context_test.go",
+      "before_name": "TestTask10Phase3VerificationDateCanonicalUTCAndActorWrapperParity",
+      "after_file": "bundle/verification_context_test.go",
+      "after_name": "TestVerificationDateCanonicalUTCAndActorWrapperParity"
+    },
+    {
+      "before_file": "bundle/task10_phase3_context_test.go",
+      "before_name": "TestTask10Phase3VerificationStatesCancelInsideLargeScalarActorAndDate",
+      "after_file": "bundle/verification_context_test.go",
+      "after_name": "TestVerificationStatesCancelInsideLargeScalarActorAndDate"
+    },
+    {
+      "before_file": "bundle/task10_phase4_render_context_test.go",
+      "before_name": "TestTask10Phase4SemanticObservationBackgroundParityAndOwnership",
+      "after_file": "bundle/yaml_rendering_context_test.go",
+      "after_name": "TestStableYAMLSemanticObservationBackgroundParityAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase4_render_context_test.go",
+      "before_name": "TestTask10Phase4StableYAMLRenderCancelsInsideDeepBoundedGraph",
+      "after_file": "bundle/yaml_rendering_context_test.go",
+      "after_name": "TestStableYAMLRenderCancelsInsideDeepBoundedGraph"
+    },
+    {
+      "before_file": "bundle/task10_phase4_render_context_test.go",
+      "before_name": "TestTask10Phase4StableYAMLRenderCancelsInsideScalarAndEncoding",
+      "after_file": "bundle/yaml_rendering_context_test.go",
+      "after_name": "TestStableYAMLRenderCancelsInsideScalarAndEncoding"
+    },
+    {
+      "before_file": "bundle/task10_phase4_render_context_test.go",
+      "before_name": "TestTask10Phase4StableYAMLRenderMatchesYAMLv3Bytes",
+      "after_file": "bundle/yaml_rendering_context_test.go",
+      "after_name": "TestStableYAMLRenderMatchesYAMLv3Bytes"
+    },
+    {
+      "before_file": "bundle/task10_phase4_render_context_test.go",
+      "before_name": "TestTask10Phase4StableYAMLRenderPreservesGraphFailurePrecedence",
+      "after_file": "bundle/yaml_rendering_context_test.go",
+      "after_name": "TestStableYAMLRenderPreservesGraphFailurePrecedence"
+    },
+    {
+      "before_file": "bundle/task10_phase5a_parse_context_test.go",
+      "before_name": "TestTask10Phase5AFrontmatterDecoderMatchesYAMLUnmarshalErrorsAndBytes",
+      "after_file": "bundle/parse_context_test.go",
+      "after_name": "TestParseFrontmatterDecoderMatchesYAMLUnmarshalErrorsAndBytes"
+    },
+    {
+      "before_file": "bundle/task10_phase5a_parse_context_test.go",
+      "before_name": "TestTask10Phase5AParseBackgroundBytesErrorsLocationsAndOwnership",
+      "after_file": "bundle/parse_context_test.go",
+      "after_name": "TestParseBackgroundBytesErrorsLocationsAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase5a_parse_context_test.go",
+      "before_name": "TestTask10Phase5AParseDocumentContextCancelsAcrossBoundaryAndCopies",
+      "after_file": "bundle/parse_context_test.go",
+      "after_name": "TestParseDocumentContextCancelsAcrossBoundaryAndCopies"
+    },
+    {
+      "before_file": "bundle/task10_phase5a_parse_context_test.go",
+      "before_name": "TestTask10Phase5AParseFrontmatterContextCancelsInsideYAMLDecodeAndRawCopy",
+      "after_file": "bundle/parse_context_test.go",
+      "after_name": "TestParseFrontmatterContextCancelsInsideYAMLDecodeAndRawCopy"
+    },
+    {
+      "before_file": "bundle/task10_phase5a_parse_context_test.go",
+      "before_name": "TestTask10Phase5AParseHelpersCancelInsideEveryExpensivePhase",
+      "after_file": "bundle/parse_context_test.go",
+      "after_name": "TestParseHelpersCancelInsideEveryExpensivePhase"
+    },
+    {
+      "before_file": "bundle/task10_phase5b_observation_context_test.go",
+      "before_name": "TestTask10Phase5BObservationBackgroundParityNilShapeAndOwnership",
+      "after_file": "bundle/reachable_observation_context_test.go",
+      "after_name": "TestObservationBackgroundParityNilShapeAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase5b_observation_context_test.go",
+      "before_name": "TestTask10Phase5BReachableObservationCancellationInsideScalarOwners",
+      "after_file": "bundle/reachable_observation_context_test.go",
+      "after_name": "TestReachableObservationCancellationInsideScalarOwners"
+    },
+    {
+      "before_file": "bundle/task10_phase5c_semantic_node_context_test.go",
+      "before_name": "TestTask10Phase5CSemanticNodeBackgroundExactParityAndDeepOwnership",
+      "after_file": "bundle/semantic_node_context_test.go",
+      "after_name": "TestSemanticNodeBackgroundExactParityAndDeepOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase5c_semantic_node_context_test.go",
+      "before_name": "TestTask10Phase5CSemanticNodeContextCancelsInsideDeepBroadBoundedGraph",
+      "after_file": "bundle/semantic_node_context_test.go",
+      "after_name": "TestSemanticNodeContextCancelsInsideDeepBroadBoundedGraph"
+    },
+    {
+      "before_file": "bundle/task10_phase5c_semantic_node_context_test.go",
+      "before_name": "TestTask10Phase5CSemanticNodeContextCancelsInsideResolutionCloneAndScalarCopy",
+      "after_file": "bundle/semantic_node_context_test.go",
+      "after_name": "TestSemanticNodeContextCancelsInsideResolutionCloneAndScalarCopy"
+    },
+    {
+      "before_file": "bundle/task10_phase5c_semantic_node_context_test.go",
+      "before_name": "TestTask10Phase5CSemanticNodeGraphErrorPrecedence",
+      "after_file": "bundle/semantic_node_context_test.go",
+      "after_name": "TestSemanticNodeGraphErrorPrecedence"
+    },
+    {
+      "before_file": "bundle/task10_phase5d_relations_context_test.go",
+      "before_name": "TestTask10Phase5DExtractRelationsContextCancelsInsideTargetParser",
+      "after_file": "bundle/relation_context_test.go",
+      "after_name": "TestRelationExtractRelationsContextCancelsInsideTargetParser"
+    },
+    {
+      "before_file": "bundle/task10_phase5d_relations_context_test.go",
+      "before_name": "TestTask10Phase5DRelationContextBackgroundParityAndOwnership",
+      "after_file": "bundle/relation_context_test.go",
+      "after_name": "TestRelationContextBackgroundParityAndOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase5d_relations_context_test.go",
+      "before_name": "TestTask10Phase5DRelationOwnersCancelInsideAttackerStrings",
+      "after_file": "bundle/relation_context_test.go",
+      "after_name": "TestRelationOwnersCancelInsideAttackerStrings"
+    },
+    {
+      "before_file": "bundle/task10_phase5d_relations_context_test.go",
+      "before_name": "TestTask10Phase5DTargetExistsAndProjectionSortCancelInsideIdentityAndComparator",
+      "after_file": "bundle/relation_context_test.go",
+      "after_name": "TestRelationTargetExistsAndProjectionSortCancelInsideIdentityAndComparator"
+    },
+    {
+      "before_file": "bundle/task10_phase5e_load_graph_context_test.go",
+      "before_name": "TestTask10Phase5ELinkContextBackgroundParity",
+      "after_file": "bundle/source_traversal_context_test.go",
+      "after_name": "TestSourceTraversalLinkContextBackgroundParity"
+    },
+    {
+      "before_file": "bundle/task10_phase5e_load_graph_context_test.go",
+      "before_name": "TestTask10Phase5ELinkOwnersCancelInsideBodyTargetAndIdentity",
+      "after_file": "bundle/source_traversal_context_test.go",
+      "after_name": "TestSourceTraversalLinkOwnersCancelInsideBodyTargetAndIdentity"
+    },
+    {
+      "before_file": "bundle/task10_phase5e_load_graph_context_test.go",
+      "before_name": "TestTask10Phase5ELoadCancelsInsideBYOTPathCopyAndSortBeforeReads",
+      "after_file": "bundle/source_traversal_context_test.go",
+      "after_name": "TestSourceTraversalLoadCancelsInsideBYOTPathCopyAndSortBeforeReads"
+    },
+    {
+      "before_file": "bundle/task10_phase5e_load_graph_context_test.go",
+      "before_name": "TestTask10Phase5ELoadGraphCancellationReturnsNilAndStopsReads",
+      "after_file": "bundle/source_traversal_context_test.go",
+      "after_name": "TestSourceTraversalLoadGraphCancellationReturnsNilAndStopsReads"
+    },
+    {
+      "before_file": "bundle/task10_phase5e_load_graph_context_test.go",
+      "before_name": "TestTask10Phase5ESourceFromFSCancelsInsideEntryNameSort",
+      "after_file": "bundle/source_traversal_context_test.go",
+      "after_name": "TestSourceTraversalSourceFromFSCancelsInsideEntryNameSort"
+    },
+    {
+      "before_file": "bundle/task10_phase5f_attribution_context_test.go",
+      "before_name": "TestTask10Phase5FAttributionOwnersCancelInsideAttackerStrings",
+      "after_file": "bundle/attribution_context_test.go",
+      "after_name": "TestAttributionOwnersCancelInsideAttackerStrings"
+    },
+    {
+      "before_file": "bundle/task10_phase5f_attribution_context_test.go",
+      "before_name": "TestTask10Phase5FAttributionsContextCancelsInsideRealNormalizationAndSort",
+      "after_file": "bundle/attribution_context_test.go",
+      "after_name": "TestAttributionsContextCancelsInsideRealNormalizationAndSort"
+    },
+    {
+      "before_file": "bundle/task10_phase5f_attribution_context_test.go",
+      "before_name": "TestTask10Phase5FAttributionsContextDefinitionReferenceAndBackgroundParity",
+      "after_file": "bundle/attribution_context_test.go",
+      "after_name": "TestAttributionsContextDefinitionReferenceAndBackgroundParity"
+    },
+    {
+      "before_file": "bundle/task10_phase5g_projection_context_test.go",
+      "before_name": "TestTask10Phase5GConceptIdentityAndCloneOwnersCancelInsideSegments",
+      "after_file": "bundle/projection_context_test.go",
+      "after_name": "TestProjectionConceptIdentityAndCloneOwnersCancelInsideSegments"
+    },
+    {
+      "before_file": "bundle/task10_phase5g_projection_context_test.go",
+      "before_name": "TestTask10Phase5GProjectionBackgroundParityAndDeepOwnership",
+      "after_file": "bundle/projection_context_test.go",
+      "after_name": "TestProjectionBackgroundParityAndDeepOwnership"
+    },
+    {
+      "before_file": "bundle/task10_phase5g_projection_context_test.go",
+      "before_name": "TestTask10Phase5GPublicLookupsCancelInsideConceptIdentity",
+      "after_file": "bundle/projection_context_test.go",
+      "after_name": "TestProjectionPublicLookupsCancelInsideConceptIdentity"
+    },
+    {
+      "before_file": "bundle/task10_phase5g_projection_context_test.go",
+      "before_name": "TestTask10Phase5GPublicProjectionsCancelWithoutPartialPublication",
+      "after_file": "bundle/projection_context_test.go",
+      "after_name": "TestProjectionPublicProjectionsCancelWithoutPartialPublication"
+    },
+    {
+      "before_file": "bundle/task10_phase5h_path_resolve_context_test.go",
+      "before_name": "TestTask10Phase5HBackgroundParity",
+      "after_file": "bundle/path_resolution_context_test.go",
+      "after_name": "TestPathResolutionBackgroundParity"
+    },
+    {
+      "before_file": "bundle/task10_phase5h_path_resolve_context_test.go",
+      "before_name": "TestTask10Phase5HPathAndResolveOwnersCancelInsideAttackerInput",
+      "after_file": "bundle/path_resolution_context_test.go",
+      "after_name": "TestPathAndResolveOwnersCancelInsideAttackerInput"
+    },
+    {
+      "before_file": "bundle/task10_phase5i_markdown_limit_contract_test.go",
+      "before_name": "TestTask10Phase5iPublicMarkdownCallersRejectOversizeWithoutPublication",
+      "after_file": "bundle/markdown_limit_contract_test.go",
+      "after_name": "TestMarkdownLimitPublicMarkdownCallersRejectOversizeWithoutPublication"
+    },
+    {
+      "before_file": "bundle/task10_phase5i_markdown_limit_contract_test.go",
+      "before_name": "TestTask10Phase5iPublicMarkdownResourceContract",
+      "after_file": "bundle/markdown_limit_contract_test.go",
+      "after_name": "TestMarkdownLimitPublicMarkdownResourceContract"
+    },
+    {
+      "before_file": "bundle/task10_phase5j_projection_hash_context_test.go",
+      "before_name": "TestTask10Phase5JBackgroundParity",
+      "after_file": "bundle/projection_hash_context_test.go",
+      "after_name": "TestProjectionHashBackgroundParity"
+    },
+    {
+      "before_file": "bundle/task10_phase5j_projection_hash_context_test.go",
+      "before_name": "TestTask10Phase5JProjectionMapOwnersCancelInsidePreparedKeys",
+      "after_file": "bundle/projection_hash_context_test.go",
+      "after_name": "TestProjectionHashProjectionMapOwnersCancelInsidePreparedKeys"
+    },
+    {
+      "before_file": "bundle/task10_phase5j_projection_hash_context_test.go",
+      "before_name": "TestTask10Phase5JReachableProjectionsCancelWithAttackerKeys",
+      "after_file": "bundle/projection_hash_context_test.go",
+      "after_name": "TestProjectionHashReachableProjectionsCancelWithAttackerKeys"
+    },
+    {
+      "before_file": "bundle/task10_phase5k_source_root_context_test.go",
+      "before_name": "TestTask10Phase5KBackgroundRootTraversalParity",
+      "after_file": "bundle/source_root_context_test.go",
+      "after_name": "TestSourceRootBackgroundRootTraversalParity"
+    },
+    {
+      "before_file": "bundle/task10_phase5k_source_root_context_test.go",
+      "before_name": "TestTask10Phase5KOpenRootContextPreCanceledReturnsZero",
+      "after_file": "bundle/source_root_context_test.go",
+      "after_name": "TestSourceRootOpenRootContextPreCanceledReturnsZero"
+    },
+    {
+      "before_file": "bundle/task10_phase5k_source_root_context_test.go",
+      "before_name": "TestTask10Phase5KRootComponentOwnerCancelsBeforeFilesystemOpen",
+      "after_file": "bundle/source_root_context_test.go",
+      "after_name": "TestRootComponentOwnerCancelsBeforeFilesystemOpen"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12Phase1GraphBundleProjectionPrecancelPrecedence",
+      "after_file": "bundle/graph_lifecycle_context_test.go",
+      "after_name": "TestGraphBundleProjectionPrecancelPrecedence"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12Phase1GraphBundleProjectionsAreContextOwned",
+      "after_file": "bundle/graph_lifecycle_context_test.go",
+      "after_name": "TestGraphBundleProjectionsAreContextOwned"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12Phase2TopologyLifecycleAccessorsAreContextOwned",
+      "after_file": "bundle/graph_lifecycle_context_test.go",
+      "after_name": "TestTopologyLifecycleAccessorsAreContextOwned"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12Phase3ResolvePathValueProjectionIsContextOwned",
+      "after_file": "bundle/graph_path_resolution_context_test.go",
+      "after_name": "TestResolvePathValueProjectionIsContextOwned"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12R2AuthoritativeLookupsCancelAfterIdentityPreparation",
+      "after_file": "bundle/graph_lookup_cancellation_test.go",
+      "after_name": "TestAuthoritativeLookupsCancelAfterIdentityPreparation"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12R3AResolvePathValueOwnsUncapturedAndURLClassification",
+      "after_file": "bundle/graph_path_resolution_context_test.go",
+      "after_name": "TestResolvePathValueOwnsUncapturedAndURLClassification"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12R4AuthoritativePathFamiliesAndSixteenMiBBoundary",
+      "after_file": "bundle/graph_path_resolution_context_test.go",
+      "after_name": "TestAuthoritativePathFamiliesAndSixteenMiBBoundary"
+    },
+    {
+      "before_file": "bundle/task12_graph_context_test.go",
+      "before_name": "TestTask12R5PathScannersOwnExactPublicLimitAndLookupPrecedesUse",
+      "after_file": "bundle/graph_path_resolution_context_test.go",
+      "after_name": "TestPathScannersOwnExactPublicLimitAndLookupPrecedesUse"
+    },
+    {
+      "before_file": "internal/markdownowner/task10_phase5i_markdown_limit_test.go",
+      "before_name": "TestTask10Phase5iHeadingIDsContextUsesSameBoundedParserContract",
+      "after_file": "internal/markdownowner/markdown_limit_contract_test.go",
+      "after_name": "TestHeadingIDsContextUsesSameBoundedParserContract"
+    },
+    {
+      "before_file": "internal/markdownowner/task10_phase5i_markdown_limit_test.go",
+      "before_name": "TestTask10Phase5iMarkdownParserBoundary",
+      "after_file": "internal/markdownowner/markdown_limit_contract_test.go",
+      "after_name": "TestMarkdownParserBoundary"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestApplyPatchCommitWithStoreMapsOrdinaryCancellation",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestApplyPatchCommitWithStoreMapsOrdinaryCancellation"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestApplyPatchCommitWithStoreProjectsCommittedConflictAsSuccess",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestApplyPatchCommitWithStoreProjectsCommittedConflictAsSuccess"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestClassifyMCPPatchCommitOutcomeRejectsForeignCommittedReceiptBeforeConflictMapping",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestClassifyMCPPatchCommitOutcomeRejectsForeignCommittedReceiptBeforeConflictMapping"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestClassifyMCPPatchCommitOutcomeTreatsAuthenticatedCommittedErrorAsSuccess",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestClassifyMCPPatchCommitOutcomeTreatsAuthenticatedCommittedErrorAsSuccess"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestClassifyMCPWriteCommitOutcomeAcceptsAuthenticatedReplayFromOriginalBase",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestClassifyMCPWriteCommitOutcomeAcceptsAuthenticatedReplayFromOriginalBase"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestClassifyMCPWriteCommitOutcomeAndPostCommitContextPreserveDurableSuccess",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestClassifyMCPWriteCommitOutcomeAndPostCommitContextPreserveDurableSuccess"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestClassifyMCPWriteCommitOutcomePreservesOrdinaryErrorIdentity",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestClassifyMCPWriteCommitOutcomePreservesOrdinaryErrorIdentity"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestDurableWriteOutcomeAdversarialReceiptMatrix",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestDurableWriteOutcomeAdversarialReceiptMatrix"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestWriteConceptCommitTreatsCommittedCancellationAndCloseFailureAsDurableSuccess",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestWriteConceptCommitTreatsCommittedCancellationAndCloseFailureAsDurableSuccess"
+    },
+    {
+      "before_file": "internal/mcpserver/durable_write_outcome_task20_test.go",
+      "before_name": "TestWriteConceptErrorPrioritizesReceiptAuthentication",
+      "after_file": "internal/mcpserver/durable_commit_outcome_test.go",
+      "after_name": "TestWriteConceptErrorPrioritizesReceiptAuthentication"
+    },
+    {
+      "before_file": "internal/mcpserver/migration_receipt_task20_test.go",
+      "before_name": "TestApplyMigrationPlanWithStoreClassifiesReceiptOutcomes",
+      "after_file": "internal/mcpserver/migration_commit_receipt_test.go",
+      "after_name": "TestApplyMigrationPlanWithStoreClassifiesReceiptOutcomes"
+    },
+    {
+      "before_file": "internal/mcpserver/migration_receipt_task20_test.go",
+      "before_name": "TestClassifyMCPMigrationCommitOutcomeClonesAndAuthenticates",
+      "after_file": "internal/mcpserver/migration_commit_receipt_test.go",
+      "after_name": "TestClassifyMCPMigrationCommitOutcomeClonesAndAuthenticates"
+    },
+    {
+      "before_file": "internal/mcpserver/migration_receipt_task20_test.go",
+      "before_name": "TestClassifyMCPMigrationCommitOutcomePreservesRejectedErrorIdentity",
+      "after_file": "internal/mcpserver/migration_commit_receipt_test.go",
+      "after_name": "TestClassifyMCPMigrationCommitOutcomePreservesRejectedErrorIdentity"
+    },
+    {
+      "before_file": "internal/mcpserver/migration_receipt_task20_test.go",
+      "before_name": "TestValidateMCPMigrationReceiptAcceptsStructuralProofAndCanonicalReceiptRefOrders",
+      "after_file": "internal/mcpserver/migration_commit_receipt_test.go",
+      "after_name": "TestValidateMCPMigrationReceiptAcceptsStructuralProofAndCanonicalReceiptRefOrders"
+    },
+    {
+      "before_file": "internal/mcpserver/migration_receipt_task20_test.go",
+      "before_name": "TestValidateMCPMigrationReceiptUsesPlannerDerivedIdempotencyKey",
+      "after_file": "internal/mcpserver/migration_commit_receipt_test.go",
+      "after_name": "TestValidateMCPMigrationReceiptUsesPlannerDerivedIdempotencyKey"
+    },
+    {
+      "before_file": "internal/mcpserver/task20_all_tool_input_boundary_test.go",
+      "before_name": "TestTask20AdvertisedStringAndCollectionCapsRejectBeforeIO",
+      "after_file": "internal/mcpserver/input_contract_boundary_test.go",
+      "after_name": "TestAdvertisedStringAndCollectionCapsRejectBeforeIO"
+    },
+    {
+      "before_file": "internal/mcpserver/task20_all_tool_input_boundary_test.go",
+      "before_name": "TestTask20AllNineToolsRejectCanonicalInputFailuresBeforeIO",
+      "after_file": "internal/mcpserver/input_contract_boundary_test.go",
+      "after_name": "TestAllNineToolsRejectCanonicalInputFailuresBeforeIO"
+    },
+    {
+      "before_file": "internal/mcpserver/task20_all_tool_input_boundary_test.go",
+      "before_name": "TestTask20LegacyDomainAndWritePayloadFailuresPrecedeIO",
+      "after_file": "internal/mcpserver/input_contract_boundary_test.go",
+      "after_name": "TestLegacyDomainAndWritePayloadFailuresPrecedeIO"
+    },
+    {
+      "before_file": "internal/mcpserver/task20_legacy_input_schema_test.go",
+      "before_name": "TestTask20ConceptIDDefinitionMaterializationDoesNotDrift",
+      "after_file": "internal/mcpserver/contracts_test.go",
+      "after_name": "TestConceptIDDefinitionMaterializationDoesNotDrift"
+    },
+    {
+      "before_file": "internal/mcpserver/task20_legacy_input_schema_test.go",
+      "before_name": "TestTask20LegacyInputContractsCompileAndConceptIDSchemaIsClosed",
+      "after_file": "internal/mcpserver/contracts_test.go",
+      "after_name": "TestLegacyInputContractsCompileAndConceptIDSchemaIsClosed"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionFmtFailureMatrixPreservesIdentitiesAndStdoutPurity",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionFmtFailureMatrixPreservesIdentitiesAndStdoutPurity"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionFmtPreviewAndWriteHaveOneLifecycle",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionFmtPreviewAndWriteHaveOneLifecycle"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionParseJoinsProjectionAndCloseErrorsWithoutOutput",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionParseJoinsProjectionAndCloseErrorsWithoutOutput"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionParseOpenAndCloseFailuresHaveNoOutput",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionParseOpenAndCloseFailuresHaveNoOutput"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionParseUsesOneCapturedRevisionAndClosesBeforeOutput",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionParseUsesOneCapturedRevisionAndClosesBeforeOutput"
+    },
+    {
+      "before_file": "internal/okfcli/document_session_task19_test.go",
+      "before_name": "TestDocumentSessionProductionPathsHaveNoLegacyResolverOrDirectDocumentIO",
+      "after_file": "internal/okfcli/document_session_test.go",
+      "after_name": "TestDocumentSessionProductionPathsHaveNoLegacyResolverOrDirectDocumentIO"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestBuildMigrationReportClassifiesCommitOutcomes",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestBuildMigrationReportClassifiesCommitOutcomes"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestCitationMappingsHandleClosesBeforeMigrationSourceOpens",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestCitationMappingsHandleClosesBeforeMigrationSourceOpens"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestCitationMappingsReaderClosesExactlyOnceAndJoinsFailures",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestCitationMappingsReaderClosesExactlyOnceAndJoinsFailures"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestClassifyMigrationCommitOutcomeClonesAcceptedReceipts",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestClassifyMigrationCommitOutcomeClonesAcceptedReceipts"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestClassifyMigrationCommitOutcomePreservesExactErrors",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestClassifyMigrationCommitOutcomePreservesExactErrors"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestClassifyMigrationCommitOutcomeValidatesCommittedErrorReceipt",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestClassifyMigrationCommitOutcomeValidatesCommittedErrorReceipt"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestMigrateCommittedErrorStillProjectsDeferredCloseDiagnostics",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestMigrateCommittedErrorStillProjectsDeferredCloseDiagnostics"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestMigrateLifecycleAppliedModesCrossStoreAndSourceCleanupFailures",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestMigrateLifecycleAppliedModesCrossStoreAndSourceCleanupFailures"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestMigrateLifecyclePlainAppliedReportHasEmptyCleanupArrayAndTextSection",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestMigrateLifecyclePlainAppliedReportHasEmptyCleanupArrayAndTextSection"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestMigrateLifecyclePostReceiptCleanupIsReportedAndNonRetryable",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestMigrateLifecyclePostReceiptCleanupIsReportedAndNonRetryable"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestMigrateLifecyclePreReceiptCloseFailureSuppressesOutputAndPreservesErrors",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestMigrateLifecyclePreReceiptCloseFailureSuppressesOutputAndPreservesErrors"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestRunMigrateMatchingCommittedErrorIsSuccessfulAndSilent",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestRunMigrateMatchingCommittedErrorIsSuccessfulAndSilent"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_lifecycle_task19_test.go",
+      "before_name": "TestRunMigratePostReceiptCleanupReturnsSuccessWithoutStderr",
+      "after_file": "internal/okfcli/commit_outcome_test.go",
+      "after_name": "TestRunMigratePostReceiptCleanupReturnsSuccessWithoutStderr"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_noop_cas_task19_test.go",
+      "before_name": "TestMigrateApplyRejectsStaleR1ToR2Preview",
+      "after_file": "internal/okfcli/noop_cas_test.go",
+      "after_name": "TestMigrateApplyRejectsStalePreview"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_noop_cas_task19_test.go",
+      "before_name": "TestMigratePlannedNoopDryRunAndApplyUseSameProof",
+      "after_file": "internal/okfcli/noop_cas_test.go",
+      "after_name": "TestMigratePlannedNoopDryRunAndApplyUseSameProof"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_noop_cas_task19_test.go",
+      "before_name": "TestMigrateTargetNoopApplyCommitsCASAndReplaysReceipt",
+      "after_file": "internal/okfcli/noop_cas_test.go",
+      "after_name": "TestMigrateTargetNoopApplyCommitsCASAndReplaysReceipt"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_noop_cas_task19_test.go",
+      "before_name": "TestMigrateTargetNoopDryRunBuildsProofWithoutOpeningStore",
+      "after_file": "internal/okfcli/noop_cas_test.go",
+      "after_name": "TestMigrateTargetNoopDryRunBuildsProofWithoutOpeningStore"
+    },
+    {
+      "before_file": "internal/okfcli/migrate_recovery_task19_test.go",
+      "before_name": "TestMigrateApplyFaultReopenRetryRecoversAtomicState",
+      "after_file": "internal/okfcli/recovery_test.go",
+      "after_name": "TestMigrateApplyFaultReopenRetryRecoversAtomicState"
+    },
+    {
+      "before_file": "internal/okfcli/renderers_task19_test.go",
+      "before_name": "TestInfoTextEscapesDocumentAndFilesystemStrings",
+      "after_file": "internal/okfcli/text_rendering_test.go",
+      "after_name": "TestInfoTextEscapesDocumentAndFilesystemStrings"
+    },
+    {
+      "before_file": "internal/okfcli/renderers_task19_test.go",
+      "before_name": "TestMigrationTextAndJSONRenderEveryExternalStringWithExactQuotingParity",
+      "after_file": "internal/okfcli/text_rendering_test.go",
+      "after_name": "TestMigrationTextAndJSONRenderEveryExternalStringWithExactQuotingParity"
+    },
+    {
+      "before_file": "internal/okfcli/renderers_task19_test.go",
+      "before_name": "TestMigrationTextRendererGoldenAuditEvidenceByOutcome",
+      "after_file": "internal/okfcli/text_rendering_test.go",
+      "after_name": "TestMigrationTextRendererGoldenAuditEvidenceByOutcome"
+    },
+    {
+      "before_file": "internal/okfcli/renderers_task19_test.go",
+      "before_name": "TestParseTextAndJSONTypedProjectionGoldenParity",
+      "after_file": "internal/okfcli/text_rendering_test.go",
+      "after_name": "TestParseTextAndJSONTypedProjectionGoldenParity"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestHelpDocumentsReservedCitationReplayEvidenceContract",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestHelpDocumentsReservedCitationReplayEvidenceContract"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestInlineStringFlagsPermitDashLeadingLiterals",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestInlineStringFlagsPermitDashLeadingLiterals"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestRunIndexPublicationConflictIsSingleLineAndDoesNotRetry",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestRunIndexPublicationConflictIsSingleLineAndDoesNotRetry"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestRunRendersEveryUsageErrorAsOneCanonicalEscapedStderrLine",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestRunRendersEveryUsageErrorAsOneCanonicalEscapedStderrLine"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestRunRendersOperationalPathErrorAsOneCanonicalEscapedStderrLine",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestRunRendersOperationalPathErrorAsOneCanonicalEscapedStderrLine"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestRunRendersStdoutWriterErrorAsOneCanonicalEscapedStderrLine",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestRunRendersStdoutWriterErrorAsOneCanonicalEscapedStderrLine"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestRunValidateUsageErrorsPrecedeBundleDependencies",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestRunValidateUsageErrorsPrecedeBundleDependencies"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestSeparatedStringFlagsRejectDashLeadingValuesBeforeIO",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestSeparatedStringFlagsRejectDashLeadingValuesBeforeIO"
+    },
+    {
+      "before_file": "internal/okfcli/stderr_task19_test.go",
+      "before_name": "TestValidateCompatibilityAliasesShareCanonicalIdentityBeforeDependencies",
+      "after_file": "internal/okfcli/error_output_handling_test.go",
+      "after_name": "TestValidateCompatibilityAliasesShareCanonicalIdentityBeforeDependencies"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestAllPositionalCommandsAcceptDashPathAfterTerminator",
+      "after_file": "internal/okfcli/args_test.go",
+      "after_name": "TestAllPositionalCommandsAcceptDashPathAfterTerminator"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestArgumentParserSupportsOrderTerminatorAndRejectsDuplicates",
+      "after_file": "internal/okfcli/args_test.go",
+      "after_name": "TestArgumentParserSupportsOrderTerminatorAndRejectsDuplicates"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCanonicalFlagFormsAndTrueShortInventory",
+      "after_file": "internal/okfcli/args_test.go",
+      "after_name": "TestCanonicalFlagFormsAndTrueShortInventory"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCitationMappingPathsMatchSharedMigrationClassifier",
+      "after_file": "internal/okfcli/citation_mappings_test.go",
+      "after_name": "TestCitationMappingPathsMatchSharedMigrationClassifier"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCitationMappingsPreserveExactMultilineLegacyEntry",
+      "after_file": "internal/okfcli/citation_mappings_test.go",
+      "after_name": "TestCitationMappingsPreserveExactMultilineLegacyEntry"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCitationMappingsRejectMalformedUnboundedAndAmbiguousInput",
+      "after_file": "internal/okfcli/citation_mappings_test.go",
+      "after_name": "TestCitationMappingsRejectMalformedUnboundedAndAmbiguousInput"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCitationMappingsStrictBoundedContractAndCanonicalization",
+      "after_file": "internal/okfcli/citation_mappings_test.go",
+      "after_name": "TestCitationMappingsStrictBoundedContractAndCanonicalization"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestCompatibilityOnlyFlagsAndProfileSynonymsAreRejected",
+      "after_file": "internal/okfcli/args_test.go",
+      "after_name": "TestCompatibilityOnlyFlagsAndProfileSynonymsAreRejected"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestConcurrentIndexCLIInvocationsPublishOneCompleteGeneration",
+      "after_file": "internal/okfcli/index_test.go",
+      "after_name": "TestConcurrentIndexCLIInvocationsPublishOneCompleteGeneration"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestFmtPreservesUnknownKeysAndDoesNotWriteByDefault",
+      "after_file": "internal/okfcli/fmt_test.go",
+      "after_name": "TestFmtPreservesUnknownKeysAndDoesNotWriteByDefault"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphAutoPreservesDomainVersionResolutionSource",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphAutoPreservesDomainVersionResolutionSource"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphCanonicalAppendixANTriplesMatchesFrozenSemanticGolden",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphCanonicalAppendixANTriplesMatchesFrozenSemanticGolden"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphDefaultProfileFollowsEffectiveVersion",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphDefaultProfileFollowsEffectiveVersion"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphForwardsExtensionRelationPolicy",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphForwardsExtensionRelationPolicy"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphRelationRefWirePreservesStructuralIdentityAndJSONEscaping",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphRelationRefWirePreservesStructuralIdentityAndJSONEscaping"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestGraphUsesExplicitToolkitProfile",
+      "after_file": "internal/okfcli/graph_test.go",
+      "after_name": "TestGraphUsesExplicitToolkitProfile"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestIndexFutureSelectorAutoPreservesAndExplicitSelectorsRejectWithoutWrites",
+      "after_file": "internal/okfcli/index_test.go",
+      "after_name": "TestIndexFutureSelectorAutoPreservesAndExplicitSelectorsRejectWithoutWrites"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestIndexMalformedDeclarationAndSymlinkDestinationFailBeforeAnyWrite",
+      "after_file": "internal/okfcli/index_test.go",
+      "after_name": "TestIndexMalformedDeclarationAndSymlinkDestinationFailBeforeAnyWrite"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestIndexPreservesFutureRootVersionAndKeepsNestedIndexUnstamped",
+      "after_file": "internal/okfcli/index_test.go",
+      "after_name": "TestIndexPreservesFutureRootVersionAndKeepsNestedIndexUnstamped"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestIndexSelectorUsesSingleTransactionalDomainContract",
+      "after_file": "internal/okfcli/index_test.go",
+      "after_name": "TestIndexSelectorUsesSingleTransactionalDomainContract"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestInfoEvaluatesInclusiveStaleBoundary",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestInfoEvaluatesInclusiveStaleBoundary"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestInfoRejectsExplicitVersionConflictWithoutPayload",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestInfoRejectsExplicitVersionConflictWithoutPayload"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMalformedRootIndexVersionFailsClosedAcrossStandaloneAndIndexCommands",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestMalformedRootIndexVersionFailsClosedAcrossStandaloneAndIndexCommands"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateCanonicalLegacyCitationsRequiresExplicitMapping",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateCanonicalLegacyCitationsRequiresExplicitMapping"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateCitationMappingsCoverRootAndNestedMarkdownWithoutInventingActor",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateCitationMappingsCoverRootAndNestedMarkdownWithoutInventingActor"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateCitationMappingsSelectExactRawCRLFAndUnnumberedBullet",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateCitationMappingsSelectExactRawCRLFAndUnnumberedBullet"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateInvalidCitationMappingsRejectBeforeStoreAndLeaveBytesUnchanged",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateInvalidCitationMappingsRejectBeforeStoreAndLeaveBytesUnchanged"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateMissingActorReturnsDomainManualAction",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateMissingActorReturnsDomainManualAction"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateNormalizedMappingCollisionBlocksTargetNoopWithoutWrites",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateNormalizedMappingCollisionBlocksTargetNoopWithoutWrites"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateOneBadFileReturnsBlockerAndZeroWrites",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateOneBadFileReturnsBlockerAndZeroWrites"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateReceiptUsesFrozenLexicalV1RefOrderAndCanonicalJSONWire",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateReceiptUsesFrozenLexicalV1RefOrderAndCanonicalJSONWire"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateRejectsInvalidDomainInputBeforeReadingMissingSource",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateRejectsInvalidDomainInputBeforeReadingMissingSource"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestMigrateResolvesOnceAndRejectsFrozenResolutionTamperBeforeStore",
+      "after_file": "internal/okfcli/migration_test.go",
+      "after_name": "TestMigrateResolvesOnceAndRejectsFrozenResolutionTamperBeforeStore"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseAndFmtRejectRootVersionConflictForNestedConceptWithoutWrite",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestParseAndFmtRejectRootVersionConflictForNestedConceptWithoutWrite"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseAndFmtRejectSymlinkDocumentScope",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestParseAndFmtRejectSymlinkDocumentScope"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseAndFmtResolveVersionFromDeclaringBundleRoot",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestParseAndFmtResolveVersionFromDeclaringBundleRoot"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseAuditPreservesAbsentEmptyAndInvalidOptionalFamilies",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestParseAuditPreservesAbsentEmptyAndInvalidOptionalFamilies"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseGeneratedFieldPresenceControlsTimestampFallback",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestParseGeneratedFieldPresenceControlsTimestampFallback"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestParseLegacyFallbackAggregateCoversEveryActiveFamily",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestParseLegacyFallbackAggregateCoversEveryActiveFamily"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestProjectDocumentContextCancellationReturnsNoPartialProjection",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestProjectDocumentContextCancellationReturnsNoPartialProjection"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestStandaloneConceptLocalVersionIsPreservedButNeverDeclaresContract",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestStandaloneConceptLocalVersionIsPreservedButNeverDeclaresContract"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestTextCommandsPropagateFailingAndShortStdout",
+      "after_file": "internal/okfcli/output_handling_test.go",
+      "after_name": "TestTextCommandsPropagateFailingAndShortStdout"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestValidateReportsSelectorMismatchAsPolicyFailure",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestValidateReportsSelectorMismatchAsPolicyFailure"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestValidateStrictV02HasNoLegacyCitationsFalsePositive",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestValidateStrictV02HasNoLegacyCitationsFalsePositive"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestValidateStrictV02HasNoLegacyTimestampFalsePositive",
+      "after_file": "internal/okfcli/parse_test.go",
+      "after_name": "TestValidateStrictV02HasNoLegacyTimestampFalsePositive"
+    },
+    {
+      "before_file": "internal/okfcli/task19_test.go",
+      "before_name": "TestVersionJSONContract",
+      "after_file": "internal/okfcli/version_resolution_test.go",
+      "after_name": "TestVersionJSONContract"
+    },
+    {
+      "before_file": "internal/okfcli/validate_fatal_task19_test.go",
+      "before_name": "TestValidateFatalDependencyErrorsPreserveIdentityAndProduceNoReport",
+      "after_file": "internal/okfcli/fatal_validation_test.go",
+      "after_name": "TestValidateFatalDependencyErrorsPreserveIdentityAndProduceNoReport"
+    },
+    {
+      "before_file": "internal/okfcli/validate_fatal_task19_test.go",
+      "before_name": "TestValidateRealCapturedRootRejectsFatalYAMLGraphsWithoutPartialReport",
+      "after_file": "internal/okfcli/fatal_validation_test.go",
+      "after_name": "TestValidateRealCapturedRootRejectsFatalYAMLGraphsWithoutPartialReport"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestApplyComputationBoundary_CreatesOneExplicitInlineBoundaryAndReplays",
+      "after_file": "mutation/migration_computation_boundary_test.go",
+      "after_name": "TestApplyComputationBoundary_CreatesOneExplicitInlineBoundaryAndReplays"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestApplyComputationBoundary_CreationDoesNotAdoptExistingInvalidBoundary",
+      "after_file": "mutation/migration_computation_boundary_test.go",
+      "after_name": "TestApplyComputationBoundary_CreationDoesNotAdoptExistingInvalidBoundary"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestMigrationPlannerPreview_CitationReplayEvidenceAcrossDocumentRoles",
+      "after_file": "mutation/migration_claim_replay_test.go",
+      "after_name": "TestMigrationPlannerPreview_CitationReplayEvidenceAcrossDocumentRoles"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestMigrationPlannerPreview_CreatesMissingInlineBoundaryAndTargetReplayIsNoop",
+      "after_file": "mutation/migration_computation_boundary_test.go",
+      "after_name": "TestMigrationPlannerPreview_CreatesMissingInlineBoundaryAndTargetReplayIsNoop"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestMigrationPlannerPreview_NumberOnlyCitationNeedsDurableReplayEvidence",
+      "after_file": "mutation/migration_claim_replay_test.go",
+      "after_name": "TestMigrationPlannerPreview_NumberOnlyCitationNeedsDurableReplayEvidence"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestMigrationPlannerPreview_NumberOnlyConceptUsesStructuredSourceProjection",
+      "after_file": "mutation/migration_claim_replay_test.go",
+      "after_name": "TestMigrationPlannerPreview_NumberOnlyConceptUsesStructuredSourceProjection"
+    },
+    {
+      "before_file": "mutation/migration_task15_core_regression_test.go",
+      "before_name": "TestMigrationPlannerPreview_TargetReservedNumberOnlyWithoutProjectionFailsClosed",
+      "after_file": "mutation/migration_claim_replay_test.go",
+      "after_name": "TestMigrationPlannerPreview_TargetReservedNumberOnlyWithoutProjectionFailsClosed"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "FuzzYAMLMutationComplexKeyOwnership",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "FuzzYAMLMutationComplexKeyOwnership"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "FuzzYAMLStructuralMutation",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "FuzzYAMLStructuralMutation"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_BatchStateRejectsDuplicatesAndCoalescesDistinctInserts",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_BatchStateRejectsDuplicatesAndCoalescesDistinctInserts"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_CollectionEntryOwnershipIsRecursive",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_CollectionEntryOwnershipIsRecursive"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_ComplexMappingKeysNeverOwnMutationPaths",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_ComplexMappingKeysNeverOwnMutationPaths"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_ConcurrentIndependentPlanningSurvivesCallerMutation",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_ConcurrentIndependentPlanningSurvivesCallerMutation"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_DeleteCompactSequenceMappingEntryPreservesDash",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_DeleteCompactSequenceMappingEntryPreservesDash"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_EnsureRejectsSelectorDesiredDrift",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_EnsureRejectsSelectorDesiredDrift"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_FlowPlainHashIsDataNotComment",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_FlowPlainHashIsDataNotComment"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_MixedSequenceAndInvalidUTF8FailClosed",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_MixedSequenceAndInvalidUTF8FailClosed"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_SelectorNoopStillRequiresFullProvenance",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_SelectorNoopStillRequiresFullProvenance"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_SequenceSelectorsAreRouteAware",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_SequenceSelectorsAreRouteAware"
+    },
+    {
+      "before_file": "mutation/presentation_task13_adversarial_test.go",
+      "before_name": "TestYAMLMutation_UnindexedMappingChildNeverOwnsMutationPath",
+      "after_file": "mutation/yaml_mutation_structural_ownership_test.go",
+      "after_name": "TestYAMLMutation_UnindexedMappingChildNeverOwnsMutationPath"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestPlanRemoveSource_PreservesUnselectedOpaqueSibling",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestPlanRemoveSource_PreservesUnselectedOpaqueSibling"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestPlanRemoveSource_SelectedOpaqueItemHasTypedZeroStageFailure",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestPlanRemoveSource_SelectedOpaqueItemHasTypedZeroStageFailure"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestPlanSetLifecycle_PreservesOpaqueRootAndNestedExtensions",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestPlanSetLifecycle_PreservesOpaqueRootAndNestedExtensions"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestPlanSetLifecycle_TouchedDuplicateHasTypedZeroStageFailure",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestPlanSetLifecycle_TouchedDuplicateHasTypedZeroStageFailure"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_AnonymousExactSelectorFailsOnUnresolvedOpaqueIdentity",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_AnonymousExactSelectorFailsOnUnresolvedOpaqueIdentity"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_FieldSelectorsSkipOpaqueItemsWithProvablyMissingIdentity",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_FieldSelectorsSkipOpaqueItemsWithProvablyMissingIdentity"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_GranularMappingPrimitivesPreserveOpaqueUnrelatedState",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_GranularMappingPrimitivesPreserveOpaqueUnrelatedState"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_GranularMappingTouchedDuplicateStillFailsTyped",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_GranularMappingTouchedDuplicateStillFailsTyped"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_GranularSequenceEditsPreserveOpaqueUnselectedSibling",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_GranularSequenceEditsPreserveOpaqueUnselectedSibling"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_SelectedOpaqueItemFailsWithDeferredTypedError",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_SelectedOpaqueItemFailsWithDeferredTypedError"
+    },
+    {
+      "before_file": "mutation/presentation_task13_deferred_shadow_test.go",
+      "before_name": "TestYAMLMutation_WholeSequenceMaterializationFailsClosedOnOpaqueSibling",
+      "after_file": "mutation/yaml_mutation_opaque_siblings_test.go",
+      "after_name": "TestYAMLMutation_WholeSequenceMaterializationFailsClosedOnOpaqueSibling"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationBaseRelativeAdditionOrder",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationBaseRelativeAdditionOrder"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationIdentityOrderFold",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationIdentityOrderFold"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationLineageAndDuplicateFold",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationLineageAndDuplicateFold"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationLoneTagAndTerminalAlias",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationLoneTagAndTerminalAlias"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationMappingEntryUniqueness",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationMappingEntryUniqueness"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationMappingOrderThreeWay",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationMappingOrderThreeWay"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationShadowBatch",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationShadowBatch"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "FuzzYAMLMutationUnifiedState",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "FuzzYAMLMutationUnifiedState"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_AnchoredOwningSequenceFailsBeforeMutation",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_AnchoredOwningSequenceFailsBeforeMutation"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_BaseRelativeBranchAdditionOrder",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_BaseRelativeBranchAdditionOrder"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_CRLFNestedAndFlowSafety",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_CRLFNestedAndFlowSafety"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_DeleteAndInsertAtSameBoundaryBothOrders",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_DeleteAndInsertAtSameBoundaryBothOrders"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_DiagnosticAnchorsAreOwnedAndNonEmpty",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_DiagnosticAnchorsAreOwnedAndNonEmpty"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_DuplicateIdentityIngressMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_DuplicateIdentityIngressMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_FieldSelectorPreservesOpaqueSiblingComment",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_FieldSelectorPreservesOpaqueSiblingComment"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_GenericSequenceDuplicatesRemainSupported",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_GenericSequenceDuplicatesRemainSupported"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_GlobalSameBoundaryScheduler",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_GlobalSameBoundaryScheduler"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_ImmutableSequenceLineageMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_ImmutableSequenceLineageMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_LastFlowItemWholeFamilyDelete",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_LastFlowItemWholeFamilyDelete"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_LoneNonSpecificTagRawProvenance",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_LoneNonSpecificTagRawProvenance"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_MappingEntryUniquenessIngressMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_MappingEntryUniquenessIngressMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_MappingOrderThreeWayRenderState",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_MappingOrderThreeWayRenderState"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_MultiShadowMaterializationIsDeterministic",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_MultiShadowMaterializationIsDeterministic"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_OpaqueUntouchedSequenceSemantics",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_OpaqueUntouchedSequenceSemantics"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_OrdinaryIdentityMutationMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_OrdinaryIdentityMutationMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_PoisonAndRepeatedScalarReplacement",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_PoisonAndRepeatedScalarReplacement"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_ProvenSelectorIdentityWithOpaqueSiblings",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_ProvenSelectorIdentityWithOpaqueSiblings"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_RelationTargetStructuralTupleIdentity",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_RelationTargetStructuralTupleIdentity"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_ShadowSequenceOperationOrders",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_ShadowSequenceOperationOrders"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_StableSequenceIdentityMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_StableSequenceIdentityMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_TemporalSelectorCanonicalization",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_TemporalSelectorCanonicalization"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_TerminalAliasTaxonomy",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_TerminalAliasTaxonomy"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_UnifiedMappingAndCollectionState",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_UnifiedMappingAndCollectionState"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_WholeGranularIdenticalMappingOrders",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_WholeGranularIdenticalMappingOrders"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_WholeReplacementOrderEquivalenceMatrix",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_WholeReplacementOrderEquivalenceMatrix"
+    },
+    {
+      "before_file": "mutation/presentation_task13_shadow_test.go",
+      "before_name": "TestYAMLMutation_WholeReplacementSupersedesDescendants",
+      "after_file": "mutation/yaml_mutation_shadow_state_test.go",
+      "after_name": "TestYAMLMutation_WholeReplacementSupersedesDescendants"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutationBatch_RootAndNestedMappingEntriesTyped",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutationBatch_RootAndNestedMappingEntriesTyped"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_BareMappingBecomesUniqueSelectorSequence",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_BareMappingBecomesUniqueSelectorSequence"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_CRLFAndOutsideSpanPreservation",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_CRLFAndOutsideSpanPreservation"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_RemoveSequenceItemOwnsOnlySelectedItem",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_RemoveSequenceItemOwnsOnlySelectedItem"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_SequenceSelectorRejectsDuplicates",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_SequenceSelectorRejectsDuplicates"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_StructuralOwnershipRejectsCommentsAliasAndDuplicateKey",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_StructuralOwnershipRejectsCommentsAliasAndDuplicateKey"
+    },
+    {
+      "before_file": "mutation/presentation_task13_test.go",
+      "before_name": "TestYAMLMutation_WholeFlowCollectionReplacementIsAtomic",
+      "after_file": "mutation/yaml_mutation_basics_test.go",
+      "after_name": "TestYAMLMutation_WholeFlowCollectionReplacementIsAtomic"
+    },
+    {
+      "before_file": "mutation/task13_sequence_traversal_regression_test.go",
+      "before_name": "TestFuzzC0CReplacementShadowRegression",
+      "after_file": "mutation/yaml_mutation_shadow_state_regression_test.go",
+      "after_name": "TestFuzzC0CReplacementShadowRegression"
+    },
+    {
+      "before_file": "mutation/task13_sequence_traversal_regression_test.go",
+      "before_name": "TestMappingTraversalDeepCancellationReturnsZero",
+      "after_file": "mutation/yaml_resolver_semantic_context_test.go",
+      "after_name": "TestMappingTraversalDeepCancellationReturnsZero"
+    },
+    {
+      "before_file": "mutation/task13_sequence_traversal_regression_test.go",
+      "before_name": "TestReplacementDescendantMixedSequenceFailsClosed",
+      "after_file": "mutation/yaml_mutation_shadow_state_regression_test.go",
+      "after_name": "TestReplacementDescendantMixedSequenceFailsClosed"
+    },
+    {
+      "before_file": "mutation/task13_sequence_traversal_regression_test.go",
+      "before_name": "TestReplacementShadowCanonicalStateTransitions",
+      "after_file": "mutation/yaml_mutation_shadow_state_regression_test.go",
+      "after_name": "TestReplacementShadowCanonicalStateTransitions"
+    },
+    {
+      "before_file": "store/fs/task17_boundary_matrix_test.go",
+      "before_name": "TestTask17DurableBoundaryOutcomeMatrix",
+      "after_file": "store/fs/durability_boundary_test.go",
+      "after_name": "TestDurableBoundaryOutcomeMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_boundary_matrix_test.go",
+      "before_name": "TestTask17PostBoundaryContextRetainsValuesWithoutCancellation",
+      "after_file": "store/fs/durability_boundary_test.go",
+      "after_name": "TestPostBoundaryContextRetainsValuesWithoutCancellation"
+    },
+    {
+      "before_file": "store/fs/task17_boundary_matrix_test.go",
+      "before_name": "TestTask17PreBoundaryCleanupPreservesForeignPrivateArtifactInodes",
+      "after_file": "store/fs/durability_boundary_test.go",
+      "after_name": "TestPreBoundaryCleanupPreservesForeignPrivateArtifactInodes"
+    },
+    {
+      "before_file": "store/fs/task17_boundary_matrix_test.go",
+      "before_name": "TestTask17PreBoundaryCleanupPreservesSameBytesForeignJournalInode",
+      "after_file": "store/fs/durability_boundary_test.go",
+      "after_name": "TestPreBoundaryCleanupPreservesSameBytesForeignJournalInode"
+    },
+    {
+      "before_file": "store/fs/task17_boundary_matrix_test.go",
+      "before_name": "TestTask17RecoveryCancellationOwnershipBoundary",
+      "after_file": "store/fs/durability_boundary_test.go",
+      "after_name": "TestRecoveryCancellationOwnershipBoundary"
+    },
+    {
+      "before_file": "store/fs/task17_r10_test.go",
+      "before_name": "TestTask17R10ReceiptBindingOnlyAuthenticatesBeforeRepair",
+      "after_file": "store/fs/receipt_binding_authentication_test.go",
+      "after_name": "TestReceiptBindingOnlyAuthenticatesBeforeRepair"
+    },
+    {
+      "before_file": "store/fs/task17_r11_test.go",
+      "before_name": "TestTask17R11ReceiptBindingFieldsAuthenticateIndependently",
+      "after_file": "store/fs/receipt_binding_field_authentication_test.go",
+      "after_name": "TestReceiptBindingFieldsAuthenticateIndependently"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2ActiveOwnershipRejectsForeignJournalAndPayload",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestActiveOwnershipRejectsForeignJournalAndPayload"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2AtomicRenameGuardsScratchSourceAfterBarrier",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestAtomicRenameGuardsScratchSourceAfterBarrier"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2OwnedRemoveRevalidatesAfterDescriptorBarrier",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestOwnedRemoveRevalidatesAfterDescriptorBarrier"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2PreBoundaryCleanupOrdersJournalProofBeforeStage",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestPreBoundaryCleanupOrdersJournalProofBeforeStage"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2PreDurableContextPropagation",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestPreDurableContextPropagation"
+    },
+    {
+      "before_file": "store/fs/task17_r2_test.go",
+      "before_name": "TestTask17R2RecoveryClassificationAndReceiptProjection",
+      "after_file": "store/fs/durability_ownership_recovery_test.go",
+      "after_name": "TestRecoveryClassificationAndReceiptProjection"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3AtomicInstallBindsRenamedSourceIdentity",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestAtomicInstallBindsRenamedSourceIdentity"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3JournalReadPinsOneIdentityThroughOwnership",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestJournalReadPinsOneIdentityThroughOwnership"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3PayloadStructuralFailuresRemainCorruption",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestPayloadStructuralFailuresRemainCorruption"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3RecoveredReceiptSurvivesOrphanTailFailure",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestRecoveredReceiptSurvivesOrphanTailFailure"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3RecoveryDescriptorIOClassification",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestRecoveryDescriptorIOClassification"
+    },
+    {
+      "before_file": "store/fs/task17_r3_test.go",
+      "before_name": "TestTask17R3RecoveryIOWinsOverCancellation",
+      "after_file": "store/fs/recovery_io_classification_test.go",
+      "after_name": "TestRecoveryIOWinsOverCancellation"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ClaimBindingIsClosed",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestClaimBindingIsClosed"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ClaimCleanupBatchesOwnedStageBoundaries",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestClaimCleanupBatchesOwnedStageBoundaries"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ClaimCleanupPostFaultConvergesByNamedDirectoryPhase",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestClaimCleanupPostFaultConvergesByNamedDirectoryPhase"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ClaimProtocolAdversarialMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestClaimProtocolAdversarialMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4DirectoryClaimUsesDurableSentinel",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestDirectoryClaimUsesDurableSentinel"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ForeignBindingIsPreservedExactly",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestForeignBindingIsPreservedExactly"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4InstallProtocolAdversarialMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestInstallProtocolAdversarialMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4JournalHasSinglePublicationBoundary",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestJournalHasSinglePublicationBoundary"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalCompensationProofTail",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalCompensationProofTail"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalContradictoryClaimIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalContradictoryClaimIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalForeignSourceIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalForeignSourceIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalForeignWitnessIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalForeignWitnessIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalRegularProofCompensation",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalRegularProofCompensation"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PreJournalWrongBindingIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPreJournalWrongBindingIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4PrivateSyncStepClassificationIsClosed",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestPrivateSyncStepClassificationIsClosed"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ProofLastTailCutsConvergeTwice",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestProofLastTailCutsConvergeTwice"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4RoleClaimTerminalSwapOutcome",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestRoleClaimTerminalSwapOutcome"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ScratchSourceForeignSwapMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestScratchSourceForeignSwapMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4StageClaimParentSyncCutIsIdempotent",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestStageClaimParentSyncCutIsIdempotent"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4StageNamespaceClaimsRecoverDeepestFirst",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestStageNamespaceClaimsRecoverDeepestFirst"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4StageNamespaceLifecycleMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestStageNamespaceLifecycleMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4StageNamespaceParentSyncCutsRetry",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestStageNamespaceParentSyncCutsRetry"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4StageNamespaceRejectsContradictoryStates",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestStageNamespaceRejectsContradictoryStates"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4TerminalClaimSwapIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestTerminalClaimSwapIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4ValidatedJournalCleansInstalledRegularProof",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestValidatedJournalCleansInstalledRegularProof"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleCreateCrashRetryMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleCreateCrashRetryMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleCreateForeignDestinationIsPreserved",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleCreateForeignDestinationIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleDeleteAbsentExpectation",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleDeleteAbsentExpectation"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleDeleteCrashRetryMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleDeleteCrashRetryMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleDeleteForeignSwapMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleDeleteForeignSwapMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleForeignSwapMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleForeignSwapMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleOverwriteCrashRetryMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleOverwriteCrashRetryMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r4_claim_test.go",
+      "before_name": "TestTask17R4VisibleRollbackTailRetryMatrix",
+      "after_file": "store/fs/artifact_claim_recovery_test.go",
+      "after_name": "TestVisibleRollbackTailRetryMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5MetadataIOWinsOverCancellation",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestMetadataIOWinsOverCancellation"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5MetadataStructuralControlsRemainCorruption",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestMetadataStructuralControlsRemainCorruption"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5OrphanDirectoryIOIsOperational",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestOrphanDirectoryIOIsOperational"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5PrivateDirectorySyncIOIsOperational",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestPrivateDirectorySyncIOIsOperational"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5ProvenanceIOAndStructuralClassification",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestProvenanceIOAndStructuralClassification"
+    },
+    {
+      "before_file": "store/fs/task17_r5_io_test.go",
+      "before_name": "TestTask17R5TransactionReadDirIOIsOperational",
+      "after_file": "store/fs/recovery_metadata_io_classification_test.go",
+      "after_name": "TestTransactionReadDirIOIsOperational"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5CanceledStageBuildCompensatesAttemptProof",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestCanceledStageBuildCompensatesAttemptProof"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5ConsumeNeverSynthesizesUnboundProof",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestConsumeNeverSynthesizesUnboundProof"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5DirectoryNoReplaceCrashRetry",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestDirectoryNoReplaceCrashRetry"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5DirectoryNoReplacePinsSourceAndTarget",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestDirectoryNoReplacePinsSourceAndTarget"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5DirectoryProofMatrix",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestDirectoryProofMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5DirectoryWrongSourcePreservesClaim",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestDirectoryWrongSourcePreservesClaim"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5OwnedStageForeignPayloadIsPreserved",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestOwnedStageForeignPayloadIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5PrivateDirectoryAlreadyPrivateStillConvergesDurability",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestPrivateDirectoryAlreadyPrivateStillConvergesDurability"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5PrivateDirectoryCancellationPreservesContextValue",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestPrivateDirectoryCancellationPreservesContextValue"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5PrivateDirectoryFaultMatrixConvergesOnRetryAndReopen",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestPrivateDirectoryFaultMatrixConvergesOnRetryAndReopen"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5PrivateDirectorySwapIsStructuralAndForeignIsUntouched",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestPrivateDirectorySwapIsStructuralAndForeignIsUntouched"
+    },
+    {
+      "before_file": "store/fs/task17_r5_proof_test.go",
+      "before_name": "TestTask17R5ScratchRecoveryPreservesUnboundTempExactly",
+      "after_file": "store/fs/artifact_proof_recovery_test.go",
+      "after_name": "TestScratchRecoveryPreservesUnboundTempExactly"
+    },
+    {
+      "before_file": "store/fs/task17_r6_io_test.go",
+      "before_name": "TestTask17R6CloseOnlyAndCancellationRemainOperational",
+      "after_file": "store/fs/recovery_close_precedence_test.go",
+      "after_name": "TestCloseOnlyAndCancellationRemainOperational"
+    },
+    {
+      "before_file": "store/fs/task17_r6_io_test.go",
+      "before_name": "TestTask17R6StructuralCloseFailurePreservesOrderedFacts",
+      "after_file": "store/fs/recovery_close_precedence_test.go",
+      "after_name": "TestStructuralCloseFailurePreservesOrderedFacts"
+    },
+    {
+      "before_file": "store/fs/task17_r6_proof_test.go",
+      "before_name": "TestTask17R6DurableJournalFreshVisibleInstallIsBindingFirst",
+      "after_file": "store/fs/closed_artifact_proof_test.go",
+      "after_name": "TestDurableJournalFreshVisibleInstallIsBindingFirst"
+    },
+    {
+      "before_file": "store/fs/task17_r6_proof_test.go",
+      "before_name": "TestTask17R6RecoveryConsumesExactDirectoryProof",
+      "after_file": "store/fs/closed_artifact_proof_test.go",
+      "after_name": "TestRecoveryConsumesExactDirectoryProof"
+    },
+    {
+      "before_file": "store/fs/task17_r6_proof_test.go",
+      "before_name": "TestTask17R6RecoveryRequiresClosedDirectoryProof",
+      "after_file": "store/fs/closed_artifact_proof_test.go",
+      "after_name": "TestRecoveryRequiresClosedDirectoryProof"
+    },
+    {
+      "before_file": "store/fs/task17_r6_proof_test.go",
+      "before_name": "TestTask17R6VisibleExactBindingConverges",
+      "after_file": "store/fs/closed_artifact_proof_test.go",
+      "after_name": "TestVisibleExactBindingConverges"
+    },
+    {
+      "before_file": "store/fs/task17_r6_proof_test.go",
+      "before_name": "TestTask17R6VisibleWitnessWithoutBindingIsPreserved",
+      "after_file": "store/fs/closed_artifact_proof_test.go",
+      "after_name": "TestVisibleWitnessWithoutBindingIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r7_claims_zone_test.go",
+      "before_name": "TestTask17R7ClaimsZoneHandleRevalidatesModeAndRootBinding",
+      "after_file": "store/fs/artifact_claim_zone_test.go",
+      "after_name": "TestClaimsZoneHandleRevalidatesModeAndRootBinding"
+    },
+    {
+      "before_file": "store/fs/task17_r7_claims_zone_test.go",
+      "before_name": "TestTask17R7ClaimsZonePathRejectsNonClaimsBeforeMutation",
+      "after_file": "store/fs/artifact_claim_zone_test.go",
+      "after_name": "TestClaimsZonePathRejectsNonClaimsBeforeMutation"
+    },
+    {
+      "before_file": "store/fs/task17_r7_close_rebind_test.go",
+      "before_name": "TestTask17R7ActualPinnedReadCloseAndRebindPrecedence",
+      "after_file": "store/fs/pinned_read_rebind_precedence_test.go",
+      "after_name": "TestActualPinnedReadCloseAndRebindPrecedence"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7CapabilityForeignReplacementIsPreserved",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestCapabilityForeignReplacementIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7ReceiptPruneClaimPhaseMatrix",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestReceiptPruneClaimPhaseMatrix"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7ReceiptPrunePostFaultResumesClosedBinding",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestReceiptPrunePostFaultResumesClosedBinding"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7ReceiptPrunePreservesForeignProof",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestReceiptPrunePreservesForeignProof"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7ReceiptPrunePrivatePhaseOwnersAreClosed",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestReceiptPrunePrivatePhaseOwnersAreClosed"
+    },
+    {
+      "before_file": "store/fs/task17_r7_private_claim_test.go",
+      "before_name": "TestTask17R7RetainedCrashMarkerSurvivesComposition",
+      "after_file": "store/fs/private_receipt_claim_recovery_test.go",
+      "after_name": "TestRetainedCrashMarkerSurvivesComposition"
+    },
+    {
+      "before_file": "store/fs/task17_r7_proof_test.go",
+      "before_name": "TestTask17R7RecoveryAcceptsExactFullProof",
+      "after_file": "store/fs/durable_artifact_proof_matrix_test.go",
+      "after_name": "TestRecoveryAcceptsExactFullProof"
+    },
+    {
+      "before_file": "store/fs/task17_r7_proof_test.go",
+      "before_name": "TestTask17R7RecoveryRequiresClosedProofForEveryDurableArtifact",
+      "after_file": "store/fs/durable_artifact_proof_matrix_test.go",
+      "after_name": "TestRecoveryRequiresClosedProofForEveryDurableArtifact"
+    },
+    {
+      "before_file": "store/fs/task17_r7_scratch_test.go",
+      "before_name": "TestTask17R7ScratchAttemptCompensatesEveryProofPhase",
+      "after_file": "store/fs/scratch_recovery_test.go",
+      "after_name": "TestScratchAttemptCompensatesEveryProofPhase"
+    },
+    {
+      "before_file": "store/fs/task17_r7_scratch_test.go",
+      "before_name": "TestTask17R7ScratchForeignReplacementIsPreserved",
+      "after_file": "store/fs/scratch_recovery_test.go",
+      "after_name": "TestScratchForeignReplacementIsPreserved"
+    },
+    {
+      "before_file": "store/fs/task17_r7_scratch_test.go",
+      "before_name": "TestTask17R7ScratchPostFaultLeavesClosedEvidenceForRecovery",
+      "after_file": "store/fs/scratch_recovery_test.go",
+      "after_name": "TestScratchPostFaultLeavesClosedEvidenceForRecovery"
+    },
+    {
+      "before_file": "store/fs/task17_r7_visible_proof_test.go",
+      "before_name": "TestTask17R7VisibleRecoveryRequiresClosedSourceProof",
+      "after_file": "store/fs/visible_recovery_proof_test.go",
+      "after_name": "TestVisibleRecoveryRequiresClosedSourceProof"
+    },
+    {
+      "before_file": "store/fs/task17_r7_visible_proof_test.go",
+      "before_name": "TestTask17R7VisibleTailRequiresBothOldAndInstalledProof",
+      "after_file": "store/fs/visible_recovery_proof_test.go",
+      "after_name": "TestVisibleTailRequiresBothOldAndInstalledProof"
+    },
+    {
+      "before_file": "store/fs/task17_r8_io_test.go",
+      "before_name": "TestTask17R8EarlyReadCloseOnlyRemainsOperational",
+      "after_file": "store/fs/early_read_io_classification_test.go",
+      "after_name": "TestEarlyReadCloseOnlyRemainsOperational"
+    },
+    {
+      "before_file": "store/fs/task17_r8_io_test.go",
+      "before_name": "TestTask17R8EarlyStructuralReadKeepsCloseOperationalFirst",
+      "after_file": "store/fs/early_read_io_classification_test.go",
+      "after_name": "TestEarlyStructuralReadKeepsCloseOperationalFirst"
+    },
+    {
+      "before_file": "store/fs/task17_r8_role_test.go",
+      "before_name": "TestTask17R8ForgedPrivateRoleProofIsInert",
+      "after_file": "store/fs/artifact_role_receipt_authentication_test.go",
+      "after_name": "TestForgedPrivateRoleProofIsInert"
+    },
+    {
+      "before_file": "store/fs/task17_r8_role_test.go",
+      "before_name": "TestTask17R8ReceiptRecoveryAuthenticatesBeforeRepair",
+      "after_file": "store/fs/artifact_role_receipt_authentication_test.go",
+      "after_name": "TestReceiptRecoveryAuthenticatesBeforeRepair"
+    },
+    {
+      "before_file": "store/fs/task17_r9_test.go",
+      "before_name": "TestTask17R9CanonicalTempArtifactNameIsExact",
+      "after_file": "store/fs/artifact_naming_role_io_test.go",
+      "after_name": "TestCanonicalTempArtifactNameIsExact"
+    },
+    {
+      "before_file": "store/fs/task17_r9_test.go",
+      "before_name": "TestTask17R9CompleteForgedRoleProofCannotReachAlias",
+      "after_file": "store/fs/artifact_naming_role_io_test.go",
+      "after_name": "TestCompleteForgedRoleProofCannotReachAlias"
+    },
+    {
+      "before_file": "store/fs/task17_r9_test.go",
+      "before_name": "TestTask17R9InvalidClockCannotCreateTempArtifact",
+      "after_file": "store/fs/artifact_naming_role_io_test.go",
+      "after_name": "TestInvalidClockCannotCreateTempArtifact"
+    },
+    {
+      "before_file": "store/fs/task17_r9_test.go",
+      "before_name": "TestTask17R9JournalBeforeReadGrowthPreservesErrorFacts",
+      "after_file": "store/fs/artifact_naming_role_io_test.go",
+      "after_name": "TestJournalBeforeReadGrowthPreservesErrorFacts"
+    },
+    {
+      "before_file": "validator/task10_phase5i_validator_tail_test.go",
+      "before_name": "TestTask10Phase5iValidateSourceRejectsOversizeHeadingTargetWithoutPublication",
+      "after_file": "validator/markdown_limit_validation_test.go",
+      "after_name": "TestMarkdownLimitValidateSourceRejectsOversizeHeadingTargetWithoutPublication"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase1PublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestPublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase2StrictV02RoutesContextThroughSemanticAndScalarOwners",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestStrictV02RoutesContextThroughSemanticAndScalarOwners"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase3DiagnosticComparatorCancelsInsideLargeFields",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestDiagnosticComparatorCancelsInsideLargeFields"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase3DiagnosticSortCancellationHasZeroPublicReport",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestDiagnosticSortCancellationHasZeroPublicReport"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase4APathAndKeyOwnersCancelThroughPublicValidation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestPathAndKeyOwnersCancelThroughPublicValidation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase4BDiagnosticPublicationCancellationIsExactZero",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestDiagnosticPublicationCancellationIsExactZero"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase4BStrictDedupeCollisionAndMessageCancellation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestStrictDedupeCollisionAndMessageCancellation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase4CRelationFieldAndRelativePathBuildersCancel",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestRelationFieldAndRelativePathBuildersCancel"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11Phase4CStrictCallerRejectsOnlyExactDuplicatesUnderDigestCollision",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestStrictCallerRejectsOnlyExactDuplicatesUnderDigestCollision"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R3AuthoritativeBucketEqualityCancelsInsideLargeCollision",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestAuthoritativeBucketEqualityCancelsInsideLargeCollision"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R3AuthoritativeBucketsPreserveExactKeysUnderCollision",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestAuthoritativeBucketsPreserveExactKeysUnderCollision"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R3CapturedBundleValidationIgnoresPostLoadFilesystemMutation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestCapturedBundleValidationIgnoresPostLoadFilesystemMutation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R3ParserAndFormatterPostPreparationCancellation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestParserAndFormatterPostPreparationCancellation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R4FinalCheckpointsCancelThroughPublicValidation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestFinalCheckpointsCancelThroughPublicValidation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R4LinkExistenceUsesAuthoritativeCapturedPathBucket",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestLinkExistenceUsesAuthoritativeCapturedPathBucket"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R4RelationSegmentProjectionCancelsInsideAndAtFinal",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestRelationSegmentProjectionCancelsInsideAndAtFinal"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R5AbsentCapturedPathRemainsMissingUnderForcedDigestCollision",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestAbsentCapturedPathRemainsMissingUnderForcedDigestCollision"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R5RelationProjectionContextPhasesThroughPublicCaller",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestRelationProjectionContextPhasesThroughPublicCaller"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11R5ResolveLinkPathCallersPropagateExactCancellation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestResolveLinkPathCallersPropagateExactCancellation"
+    },
+    {
+      "before_file": "validator/task11_phase1_context_test.go",
+      "before_name": "TestTask11ValidateSourceErrorMaterializationHonorsCancellation",
+      "after_file": "validator/context_cancellation_integrity_test.go",
+      "after_name": "TestValidateSourceErrorMaterializationHonorsCancellation"
+    }
+  ],
+  "package_inventory": [
+    {
+      "package": "bundle",
+      "baseline_functions": 94,
+      "successor_functions": 94
+    },
+    {
+      "package": "internal/markdownowner",
+      "baseline_functions": 2,
+      "successor_functions": 2
+    },
+    {
+      "package": "internal/mcpserver",
+      "baseline_functions": 20,
+      "successor_functions": 20
+    },
+    {
+      "package": "internal/okfcli",
+      "baseline_functions": 85,
+      "successor_functions": 85
+    },
+    {
+      "package": "mutation",
+      "baseline_functions": 78,
+      "successor_functions": 78
+    },
+    {
+      "package": "store/fs",
+      "baseline_functions": 101,
+      "successor_functions": 101
+    },
+    {
+      "package": "validator",
+      "baseline_functions": 21,
+      "successor_functions": 21
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-description: "Symlinked markdown files are ignored by the scanner and as link targets"
+description: "Ignored symlinks are absent from the captured bundle and cannot satisfy link targets"
 run:
   path: "."
   strict: false
@@ -6,4 +6,6 @@ run:
   check_orphans: false
 expected:
   exit_code: 0
-  diagnostics: []
+  diagnostics:
+    - severity: INFO
+      message_contains: "broken link"

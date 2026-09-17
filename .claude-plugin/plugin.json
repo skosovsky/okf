@@ -1,8 +1,8 @@
 {
   "name": "okf",
   "displayName": "Open Knowledge Format",
-  "description": "Open Knowledge Format CLI, Go library, and Russian-language agent skill.",
-  "version": "0.1.0",
+  "description": "OKF toolkit and agent skill for v0.2 authoring, legacy consumption, validation, and explicit migration.",
+  "version": "0.2.0",
   "author": {
     "name": "Sergey Kosovsky"
   },
@@ -14,7 +14,9 @@
     "knowledge-format",
     "agent-skill",
     "markdown",
-    "frontmatter"
+    "frontmatter",
+    "provenance",
+    "migration"
   ],
   "skills": "./skills"
 }

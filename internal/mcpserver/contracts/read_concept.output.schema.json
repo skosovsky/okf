@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/read_concept.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "path", "version", "version_declaration", "frontmatter_yaml", "body", "projection", "legacy_fallback"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "path": {"type": "string", "minLength": 1},
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared", "effective", "resolution", "compatibility"],
+      "properties": {
+        "declared": {"type": ["string", "null"]},
+        "effective": {"type": ["string", "null"]},
+        "resolution": {"enum": ["declared", "default", "explicit", "future-best-effort", null]},
+        "compatibility": {"enum": ["native", "legacy", "best-effort", null]}
+      }
+    },
+    "version_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "valid", "raw", "value"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "valid": {"type": "boolean"},
+        "raw": {"type": ["string", "null"]},
+        "value": {"type": ["string", "null"]}
+      }
+    },
+    "frontmatter_yaml": {"type": "string"},
+    "body": {"type": "string"},
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "description", "resource", "tags", "sources", "attributions", "usage_window", "generated", "verified", "trust", "status", "status_state", "stale_after", "computation"],
+      "properties": {
+        "type": {"type": ["string", "null"]},
+        "title": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        "resource": {"type": ["string", "null"]},
+        "tags": {"type": "array", "maxItems": 10000, "items": {"type": "string"}},
+        "sources": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "resource", "title", "author", "usage_count", "last_modified", "usage_window"],
+            "properties": {
+              "id": {"type": "string"},
+              "resource": {"type": "string"},
+              "title": {"type": "string"},
+              "author": {"type": "string"},
+              "usage_count": {"type": ["string", "null"], "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
+              "last_modified": {"type": ["string", "null"], "format": "date"},
+              "usage_window": {
+                "type": ["object", "null"],
+                "additionalProperties": false,
+                "required": ["from", "to"],
+                "properties": {
+                  "from": {"type": "string", "format": "date"},
+                  "to": {"type": "string", "format": "date"}
+                }
+              }
+            }
+          }
+        },
+        "attributions": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "normalized_id", "sources", "references", "definitions"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "normalized_id": {"type": "string", "minLength": 1},
+              "sources": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "resource", "title", "author", "usage_count", "last_modified", "usage_window"],
+                  "properties": {
+                    "id": {"type": "string"},
+                    "resource": {"type": "string"},
+                    "title": {"type": "string"},
+                    "author": {"type": "string"},
+                    "usage_count": {"type": ["string", "null"], "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
+                    "last_modified": {"type": ["string", "null"], "format": "date"},
+                    "usage_window": {
+                      "type": ["object", "null"],
+                      "additionalProperties": false,
+                      "required": ["from", "to"],
+                      "properties": {
+                        "from": {"type": "string", "format": "date"},
+                        "to": {"type": "string", "format": "date"}
+                      }
+                    }
+                  }
+                }
+              },
+              "references": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "raw"],
+                  "properties": {
+                    "id": {"type": "string", "minLength": 1},
+                    "raw": {"type": "string", "minLength": 1}
+                  }
+                }
+              },
+              "definitions": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["id", "text", "raw"],
+                  "properties": {
+                    "id": {"type": "string", "minLength": 1},
+                    "text": {"type": "string"},
+                    "raw": {"type": "string", "minLength": 1}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "usage_window": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["from", "to"],
+          "properties": {
+            "from": {"type": "string", "format": "date"},
+            "to": {"type": "string", "format": "date"}
+          }
+        },
+        "generated": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["by", "at"],
+          "properties": {
+            "by": {"type": ["string", "null"], "minLength": 1},
+            "at": {"type": ["string", "null"], "format": "date-time"}
+          }
+        },
+        "verified": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["by", "at"],
+            "properties": {
+              "by": {"type": "string", "minLength": 1},
+              "at": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+        "trust": {"type": "string"},
+        "status": {"type": ["string", "null"]},
+        "status_state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "valid", "raw", "effective"],
+          "properties": {
+            "present": {"type": "boolean"},
+            "valid": {"type": "boolean"},
+            "raw": {"type": ["string", "null"]},
+            "effective": {"type": ["string", "null"]}
+          }
+        },
+        "stale_after": {"type": ["string", "null"], "format": "date"},
+        "computation": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["runtime", "parameters", "computation", "executor", "attester"],
+          "properties": {
+            "runtime": {"type": "string"},
+            "parameters": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "type", "required"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "type": {"type": "string"},
+                  "required": {"type": "boolean"}
+                }
+              }
+            },
+            "computation": {"type": "string"},
+            "executor": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "required": ["resource", "receipt"],
+              "properties": {
+                "resource": {"type": "string"},
+                "receipt": {"type": "array", "maxItems": 256, "items": {"type": "string"}}
+              }
+            },
+            "attester": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "required": ["resource"],
+              "properties": {
+                "resource": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "legacy_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generated_from_timestamp", "sources_from_citations"],
+      "properties": {
+        "generated_from_timestamp": {"type": "boolean"},
+        "sources_from_citations": {"type": "boolean"}
+      }
+    }
+  }
+}

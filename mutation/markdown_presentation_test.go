@@ -21,7 +21,7 @@ func TestCollectMarkdownDestinations_GoldmarkBackedSpans(t *testing.T) {
 	source := []byte("---\r\ntype: thing\r\n---\r\n[link](<one(a).md#x> \"title\") ![image](two.md)\r\n[full][r] [collapsed][] [shortcut]\r\n\r\n[r]: <three.md> \"title\"\r\n[collapsed]: four.md\r\n[shortcut]: five.md\r\n`[code](six.md)`\r\n```md\r\n[fenced](seven.md)\r\n```\r\n")
 
 	// Act
-	destinations, err := collectMarkdownDestinations(source)
+	destinations, err := collectMarkdownDestinationsContext(context.Background(), source)
 
 	// Assert
 	if err != nil {
@@ -40,13 +40,13 @@ func TestCollectMarkdownDestinations_GoldmarkBackedSpans(t *testing.T) {
 func TestRewriteMarkdownDestinations_PreservesEverythingOutsideSpans(t *testing.T) {
 	// Arrange
 	source := []byte("---\ntype: thing\n---\n[one](old.md) [ref]: <old.md#part>\n")
-	before, err := collectMarkdownDestinations(source)
+	before, err := collectMarkdownDestinationsContext(context.Background(), source)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Act
-	updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+	updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 		if value == "old.md" {
 			return "new.md", true
 		}
@@ -61,7 +61,7 @@ func TestRewriteMarkdownDestinations_PreservesEverythingOutsideSpans(t *testing.
 		t.Fatalf("updated = %q", updated)
 	}
 	patches := []bytePatch{{Start: before[0].Span.Start, End: before[0].Span.End, Text: []byte("new.md")}}
-	if !bytesOutsidePatchesEqual(source, updated, patches) {
+	if !bytesOutsidePatchesEqualForTest(t, source, updated, patches) {
 		t.Fatal("bytes outside destination span changed")
 	}
 }
@@ -69,14 +69,14 @@ func TestRewriteMarkdownDestinations_PreservesEverythingOutsideSpans(t *testing.
 func TestRewriteMarkdownDestinations_EmptyInlineDestination(t *testing.T) {
 	for _, source := range []string{"[link]()\n", "![image](  )\n"} {
 		t.Run(source, func(t *testing.T) {
-			before, err := collectMarkdownDestinations([]byte(source))
+			before, err := collectMarkdownDestinationsContext(context.Background(), []byte(source))
 			if err != nil {
 				t.Fatal(err)
 			}
 			if len(before) != 1 || before[0].Value != "" || before[0].Span.Start != before[0].Span.End {
 				t.Fatalf("destination = %#v", before)
 			}
-			updated, err := rewriteMarkdownDestinations([]byte(source), func(value string) (string, bool) {
+			updated, err := rewriteMarkdownDestinationsContext(context.Background(), []byte(source), func(value string) (string, bool) {
 				return "target.md", value == ""
 			})
 			if err != nil {
@@ -91,7 +91,7 @@ func TestRewriteMarkdownDestinations_EmptyInlineDestination(t *testing.T) {
 
 func TestRewriteMarkdownDestinations_NestedImageAndLinkOwnDistinctSpans(t *testing.T) {
 	source := []byte("[![image](a.md)](a.md)\n")
-	destinations, err := collectMarkdownDestinations(source)
+	destinations, err := collectMarkdownDestinationsContext(context.Background(), source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,15 +102,15 @@ func TestRewriteMarkdownDestinations_NestedImageAndLinkOwnDistinctSpans(t *testi
 	second := bytes.LastIndex(source, []byte("a.md"))
 	wantOwners := []MarkdownDestination{{Kind: MarkdownImageDestination, Span: SourceSpan{Start: first, End: first + len("a.md")}, Value: "a.md"}, {Kind: MarkdownLinkDestination, Span: SourceSpan{Start: second, End: second + len("a.md")}, Value: "a.md"}}
 	assertExactMarkdownDestinations(t, source, wantOwners, destinations)
-	identityUpdated, err := applyBytePatches(source, []bytePatch{{Start: wantOwners[0].Span.Start, End: wantOwners[0].Span.End, Text: []byte("image.md")}, {Start: wantOwners[1].Span.Start, End: wantOwners[1].Span.End, Text: []byte("link.md")}})
+	identityUpdated, err := applyBytePatchesContext(context.Background(), source, []bytePatch{{Start: wantOwners[0].Span.Start, End: wantOwners[0].Span.End, Text: []byte("image.md")}, {Start: wantOwners[1].Span.Start, End: wantOwners[1].Span.End, Text: []byte("link.md")}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	identityOwners, err := collectMarkdownDestinations(identityUpdated)
+	identityOwners, err := collectMarkdownDestinationsContext(context.Background(), identityUpdated)
 	if err != nil || len(identityOwners) != 2 || identityOwners[0].Kind != MarkdownImageDestination || identityOwners[0].Value != "image.md" || identityOwners[1].Kind != MarkdownLinkDestination || identityOwners[1].Value != "link.md" {
 		t.Fatalf("distinct nested owners = %#v, err=%v", identityOwners, err)
 	}
-	updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+	updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 		return "new.md", value == "a.md"
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func TestCollectMarkdownDestinations_LeavesRawHTMLUntouched(t *testing.T) {
 	source := []byte("<div>[not-a-link](old.md)</div>\n")
 
 	// Act
-	destinations, err := collectMarkdownDestinations(source)
+	destinations, err := collectMarkdownDestinationsContext(context.Background(), source)
 
 	// Assert
 	if err != nil {
@@ -142,7 +142,7 @@ func TestRewriteMarkdownDestinations_AnchorsEachGoldmarkNode(t *testing.T) {
 	source := []byte("<span>[decoy](old.md)</span> [link [nested]](old.md) ![image](old.md) ` [code](old.md) ` <https://old.md>\n\n[full][ref] [collapsed][] [shortcut]\n\n[ref]: <old.md> \"title\"\n[collapsed]: old.md\n[shortcut]: old.md\n\n```md\n[decoy](old.md)\n```\n<a href=\"old.md\">raw</a>\n")
 
 	// Act
-	updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+	updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 		if value == "old.md" {
 			return "new.md", true
 		}
@@ -196,7 +196,7 @@ func TestRewriteMarkdownDestinations_MultilineReferenceDefinition(t *testing.T) 
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			updated, err := rewriteMarkdownDestinations([]byte(tt.source), func(value string) (string, bool) {
+			updated, err := rewriteMarkdownDestinationsContext(context.Background(), []byte(tt.source), func(value string) (string, bool) {
 				if value == "old.md" {
 					return "new.md", true
 				}
@@ -243,8 +243,8 @@ func TestRewriteMarkdownDestinations_UsesOpaqueASTDescendantOwnership(t *testing
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act.
-			destinations, collectErr := collectMarkdownDestinations(tt.source)
-			updated, rewriteErr := rewriteMarkdownDestinations(tt.source, func(string) (string, bool) {
+			destinations, collectErr := collectMarkdownDestinationsContext(context.Background(), tt.source)
+			updated, rewriteErr := rewriteMarkdownDestinationsContext(context.Background(), tt.source, func(string) (string, bool) {
 				return "new", true
 			})
 
@@ -267,8 +267,8 @@ func TestMarkdownParserFailureFailsClosed(t *testing.T) {
 	before := append([]byte(nil), source...)
 
 	// Act.
-	_, collectErr := collectMarkdownDestinations(source)
-	updated, rewriteErr := rewriteMarkdownDestinations(source, func(string) (string, bool) {
+	_, collectErr := collectMarkdownDestinationsContext(context.Background(), source)
+	updated, rewriteErr := rewriteMarkdownDestinationsContext(context.Background(), source, func(string) (string, bool) {
 		return "rewritten", true
 	})
 
@@ -322,7 +322,7 @@ func TestRewriteMarkdownDestinations_DoesNotTreatParagraphContinuationAsReferenc
 	source := []byte("[paragraph](keep.md)\n[ref]: old.md\n")
 
 	// Act
-	updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+	updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 		if value == "old.md" {
 			return "new.md", true
 		}
@@ -344,7 +344,7 @@ func TestRewriteMarkdownDestinations_ReferenceDefinitionASTAnchoring(t *testing.
 		source := []byte("[0]:0 0\n\n[0]:0\n")
 
 		// Act
-		updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+		updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 			return "new.md", value == "0"
 		})
 
@@ -370,7 +370,7 @@ func TestRewriteMarkdownDestinations_ReferenceDefinitionASTAnchoring(t *testing.
 			source := []byte(tt.source)
 
 			// Act
-			updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+			updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 				return "new.md", value == "old.md"
 			})
 
@@ -433,7 +433,7 @@ func FuzzRewriteMarkdownDestinations(f *testing.F) {
 		original := append([]byte(nil), data...)
 		fuzzMarkdownSupportedSubset(t, data)
 		independentBefore, independentErr := markdownGoldmarkASTProjection(data)
-		before, beforeErr := collectMarkdownDestinations(data)
+		before, beforeErr := collectMarkdownDestinationsContext(context.Background(), data)
 		if beforeErr != nil {
 			assertMarkdownFuzzError(t, beforeErr, len(data))
 			if !bytes.Equal(data, original) {
@@ -464,7 +464,7 @@ func FuzzRewriteMarkdownDestinations(f *testing.F) {
 		}
 
 		// Act
-		updated, err := rewriteMarkdownDestinations(data, func(value string) (string, bool) {
+		updated, err := rewriteMarkdownDestinationsContext(context.Background(), data, func(value string) (string, bool) {
 			replacement, rewrite := rewrites[value]
 			return replacement, rewrite
 		})
@@ -476,7 +476,7 @@ func FuzzRewriteMarkdownDestinations(f *testing.F) {
 		if !bytes.Equal(data, original) {
 			t.Fatal("rewrite mutated source input")
 		}
-		after, afterErr := collectMarkdownDestinations(updated)
+		after, afterErr := collectMarkdownDestinationsContext(context.Background(), updated)
 		if afterErr != nil {
 			t.Fatalf("updated source does not reparse: %v", afterErr)
 		}
@@ -485,7 +485,7 @@ func FuzzRewriteMarkdownDestinations(f *testing.F) {
 		if !equalMarkdownProjection(expected, after) {
 			t.Fatalf("ordered AST projection = %#v, want %#v", after, expected)
 		}
-		if !bytesOutsidePatchesEqual(data, updated, patches) {
+		if !bytesOutsidePatchesEqualForTest(t, data, updated, patches) {
 			t.Fatal("bytes outside actual destination patches changed")
 		}
 	})
@@ -518,7 +518,7 @@ func fuzzMarkdownSupportedSubsetVariant(t *testing.T, seed []byte, variant int) 
 		t.Fatalf("generated supported Markdown did not parse independently: %v", err)
 	}
 	assertMarkdownSemanticProjectionEqual(t, expected, independent, "constructed fixture", "Goldmark AST")
-	collected, err := collectMarkdownDestinations(source)
+	collected, err := collectMarkdownDestinationsContext(context.Background(), source)
 	if err != nil {
 		t.Fatalf("generated supported Markdown variant %d was rejected: %v", variant, err)
 	}
@@ -533,16 +533,16 @@ func fuzzMarkdownSupportedSubsetVariant(t *testing.T, seed []byte, variant int) 
 		}
 		patches = append(patches, bytePatch{Start: destination.Span.Start, End: destination.Span.End, Text: replacement})
 	}
-	updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+	updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 		return "supported-rewrite.md", true
 	})
 	if err != nil {
 		t.Fatalf("generated supported Markdown variant %d rewrite was rejected: %v", variant, err)
 	}
-	if !bytesOutsidePatchesEqual(source, updated, patches) {
+	if !bytesOutsidePatchesEqualForTest(t, source, updated, patches) {
 		t.Fatalf("generated supported Markdown variant %d changed bytes outside destinations", variant)
 	}
-	after, err := collectMarkdownDestinations(updated)
+	after, err := collectMarkdownDestinationsContext(context.Background(), updated)
 	if err != nil {
 		t.Fatalf("generated supported Markdown variant %d rewrite did not reparse: %v", variant, err)
 	}
@@ -638,7 +638,7 @@ func assertMarkdownMatchesGoldmarkAST(t *testing.T, source []byte, collected []M
 }
 
 func markdownGoldmarkASTProjection(source []byte) ([]markdownASTSemantic, error) {
-	bodyStart, err := markdownBodyStart(source)
+	bodyStart, err := markdownBodyStartContext(context.Background(), source)
 	if err != nil {
 		return nil, err
 	}

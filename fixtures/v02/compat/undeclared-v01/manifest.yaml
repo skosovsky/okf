@@ -1,0 +1,9 @@
+description: "Undeclared legacy timestamp and Citations are consumed by v0.2 fallbacks"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

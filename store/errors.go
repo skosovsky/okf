@@ -23,6 +23,54 @@ var (
 	ErrStorageCorrupt = errors.New("storage corruption")
 )
 
+// CommittedError reports a failure observed after a commit became durable.
+// Callers must treat Receipt as the successful commit result and must not
+// retry the request as a new transaction. The receipt passed to
+// NewCommittedError must satisfy ValidateCommitReceipt.
+type CommittedError struct {
+	receipt CommitReceipt
+	cause   error
+}
+
+// NewCommittedError preserves a validated durable receipt and the exact
+// post-commit failure. Invalid receipts and nil causes are programmer errors,
+// not committed outcomes, and therefore return a plain validation error.
+func NewCommittedError(receipt CommitReceipt, cause error) error {
+	if cause == nil {
+		return errors.New("store committed error: nil cause")
+	}
+	if err := ValidateCommitReceipt(receipt); err != nil {
+		return fmt.Errorf("store committed error: invalid receipt: %w", err)
+	}
+	return &CommittedError{receipt: receipt.Clone(), cause: cause}
+}
+
+func (e *CommittedError) Error() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if e.cause == nil {
+		return "store commit completed durably"
+	}
+	return fmt.Sprintf("store commit completed durably: %v", e.cause)
+}
+
+// Unwrap exposes the exact failure observed after the durable boundary.
+func (e *CommittedError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.cause
+}
+
+// Receipt returns a copy safe for caller mutation.
+func (e *CommittedError) Receipt() CommitReceipt {
+	if e == nil {
+		return CommitReceipt{}
+	}
+	return e.receipt.Clone()
+}
+
 // Diagnostic is a stable machine-readable validation finding. Code must remain
 // stable across compatible releases; Message is for people and may improve.
 type Diagnostic struct {

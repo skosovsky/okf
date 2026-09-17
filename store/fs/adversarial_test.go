@@ -3,12 +3,16 @@ package fs
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,7 +79,7 @@ func TestCancelledValidationDoesNotPublishPreviewCommitOrReplace(t *testing.T) {
 	_, replaceErr := s.ReplaceConcept(ctx, replace, store.CommitOptions{IdempotencyKey: "cancelled-replace"})
 	after := adversarialSnapshot(t, s)
 	afterBytes, readErr := after.ReadFile(context.Background(), "a.md")
-	_, found, receiptErr := s.lookupReceipt("cancelled-commit", "")
+	_, found, receiptErr := s.lookupReceiptContext(t.Context(), "cancelled-commit", "")
 
 	// Assert.
 	for name, callErr := range map[string]error{"Preview": previewErr, "Commit": commitErr, "ReplaceConcept": replaceErr} {
@@ -103,30 +107,49 @@ func TestAdversarialRecoveryRejectsUnsafeAndTamperedJournals(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange.
-			root, _ := adversarialStore(t, Config{})
+			root, s := adversarialStore(t, Config{})
+			base := adversarialSnapshot(t, s)
 			next, err := newSnapshot(context.Background(), map[string][]byte{"b.md": []byte(adversarialDocument("B"))})
 			if err != nil {
 				t.Fatal(err)
 			}
-			files := []journalFile{{Path: tc.path, Payload: "payload-00000", Size: 1, Digest: "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}
-			if tc.name == "result revision mismatch" {
-				files = []journalFile{{Path: "b.md", Payload: "payload-00000", Size: 1, Digest: "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}
+			receipt := testJournalReceipt(base.Revision(), next.Revision(), "tampered-v5", "")
+			journalName, raw := adversarialLiveDurableJournal(t, root, s, next, receipt)
+			var malicious journal
+			if err := json.Unmarshal(raw, &malicious); err != nil {
+				t.Fatal(err)
 			}
-			raw, err := json.Marshal(journal{Version: 1, Files: files, Receipt: testJournalReceipt(next.Revision(), next.Revision(), "tampered", "")})
+			if tc.name != "result revision mismatch" {
+				malicious.Files[0].Path = tc.path
+			} else {
+				malicious.Receipt.ResultRevision = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+				malicious.BaseBinding, err = journalBaseBinding(malicious.Receipt, malicious.Base)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			raw, err = json.Marshal(malicious)
 			if err != nil {
 				t.Fatal(err)
 			}
-			journalPath := filepath.Join(root, internalDirectory, "transactions", "tampered.json")
-			if err := writeDurableFixture(journalPath, raw); err != nil {
+			adversarialRewriteSameInode(t, filepath.Join(root, filepath.FromSlash(journalName)), raw)
+			if err := s.Close(); err != nil {
 				t.Fatal(err)
 			}
 
 			// Act.
-			_, openErr := Open(root, Config{})
+			_, openErr := openObserved(root, Config{})
 
 			// Assert.
-			if openErr == nil {
-				t.Fatal("Open() accepted a malicious or tampered journal")
+			if !errors.Is(openErr, store.ErrStorageCorrupt) {
+				t.Fatalf("Open() error=%v, want storage corruption", openErr)
+			}
+			wantGate := "invalid journal file manifest"
+			if tc.name == "result revision mismatch" {
+				wantGate = "journal staged content does not match receipt revision"
+			}
+			if !strings.Contains(openErr.Error(), wantGate) {
+				t.Fatalf("Open() error=%v, want intended %q gate", openErr, wantGate)
 			}
 			if tc.name == "parent traversal" {
 				if _, err := os.Stat(filepath.Join(filepath.Dir(root), "outside.md")); !errors.Is(err, os.ErrNotExist) {
@@ -139,47 +162,86 @@ func TestAdversarialRecoveryRejectsUnsafeAndTamperedJournals(t *testing.T) {
 
 func TestRecoveryRejectsStrictJournalClassesBeforePublication(t *testing.T) {
 	tests := []struct {
-		name string
-		raw  func(t *testing.T, root string) []byte
+		name          string
+		wantGate      string
+		invalidBundle bool
+		mutate        func(t *testing.T, raw []byte) []byte
 	}{
-		{name: "zero receipt", raw: func(t *testing.T, _ string) []byte {
+		{name: "zero receipt", wantGate: "receipt fields are incomplete or unknown", mutate: func(t *testing.T, raw []byte) []byte {
 			t.Helper()
-			return []byte(`{"version":1,"files":{},"receipt":{}}`)
-		}},
-		{name: "unknown field", raw: func(t *testing.T, _ string) []byte {
-			t.Helper()
-			return []byte(`{"version":1,"files":{},"receipt":{},"surprise":true}`)
-		}},
-		{name: "invalid staged bundle", raw: func(t *testing.T, _ string) []byte {
-			t.Helper()
-			content := []byte("not an OKF document\n")
-			revision, err := store.RevisionFromManifest([]store.ManifestEntry{{Path: "published.md", Content: content}})
+			var j journal
+			if err := json.Unmarshal(raw, &j); err != nil {
+				t.Fatal(err)
+			}
+			receiptRaw, err := json.Marshal(j.Receipt)
 			if err != nil {
 				t.Fatal(err)
 			}
-			j := journal{Version: 1, Files: []journalFile{{Path: "published.md", Payload: "payload-00000", Size: int64(len(content)), Digest: "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}, Receipt: testJournalReceipt(revision, revision, "invalid-stage", "")}
-			raw, err := json.Marshal(j)
-			if err != nil {
-				t.Fatal(err)
+			zeroed := bytes.Replace(raw, receiptRaw, []byte("{}"), 1)
+			if bytes.Equal(zeroed, raw) {
+				t.Fatal("zero-receipt fixture did not replace receipt")
 			}
-			return raw
+			return zeroed
 		}},
+		{name: "unknown field", wantGate: `unknown field "surprise"`, mutate: func(t *testing.T, raw []byte) []byte {
+			t.Helper()
+			trimmed := bytes.TrimSuffix(raw, []byte("}"))
+			out := append([]byte(nil), trimmed...)
+			return append(out, []byte(`,"surprise":true}`)...)
+		}},
+		{name: "invalid staged bundle", wantGate: "journal staged post-state fails validation", invalidBundle: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Arrange.
-			root, _ := adversarialStore(t, Config{})
-			if err := writeDurableFixture(filepath.Join(root, internalDirectory, "transactions", "malicious.json"), tc.raw(t, root)); err != nil {
+			root, s := adversarialStore(t, Config{})
+			base := adversarialSnapshot(t, s)
+			validContent := []byte(adversarialDocument("published"))
+			next, err := newSnapshot(context.Background(), map[string][]byte{"published.md": validContent})
+			if err != nil {
+				t.Fatal(err)
+			}
+			receipt := testJournalReceipt(base.Revision(), next.Revision(), "strict-"+tc.name, "")
+			journalName, raw := adversarialLiveDurableJournal(t, root, s, next, receipt)
+			if tc.invalidBundle {
+				invalidContent := []byte("not an OKF document\n")
+				var j journal
+				if err := json.Unmarshal(raw, &j); err != nil {
+					t.Fatal(err)
+				}
+				payloadPath := filepath.Join(root, filepath.FromSlash(path.Join(j.Stage, j.Files[0].Payload)))
+				adversarialRewriteSameInode(t, payloadPath, invalidContent)
+				sum := sha256.Sum256(invalidContent)
+				j.Files[0].Size = int64(len(invalidContent))
+				j.Files[0].Digest = "sha256:" + hex.EncodeToString(sum[:])
+				invalidNext, snapshotErr := newSnapshot(context.Background(), map[string][]byte{"published.md": invalidContent})
+				if snapshotErr != nil {
+					t.Fatal(snapshotErr)
+				}
+				j.Receipt.ResultRevision = invalidNext.Revision()
+				j.BaseBinding, err = journalBaseBinding(j.Receipt, j.Base)
+				if err != nil {
+					t.Fatal(err)
+				}
+				raw, err = json.Marshal(j)
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				raw = tc.mutate(t, raw)
+			}
+			adversarialRewriteSameInode(t, filepath.Join(root, filepath.FromSlash(journalName)), raw)
+			if err := s.Close(); err != nil {
 				t.Fatal(err)
 			}
 
 			// Act.
-			_, err := Open(root, Config{})
+			_, openErr := openObserved(root, Config{})
 			_, statErr := os.Stat(filepath.Join(root, "published.md"))
 
 			// Assert.
-			if err == nil || !errors.Is(statErr, os.ErrNotExist) {
-				t.Fatalf("Open() err=%v published=%v", err, statErr)
+			if !errors.Is(openErr, store.ErrStorageCorrupt) || !strings.Contains(openErr.Error(), tc.wantGate) || !errors.Is(statErr, os.ErrNotExist) {
+				t.Fatalf("Open() err=%v published=%v", openErr, statErr)
 			}
 		})
 	}
@@ -188,19 +250,15 @@ func TestRecoveryRejectsStrictJournalClassesBeforePublication(t *testing.T) {
 func TestAdversarialRecoveryRejectsIncompleteJournalsDeterministically(t *testing.T) {
 	// Arrange.
 	root, _ := adversarialStore(t, Config{})
-	for name, body := range map[string]string{"a.json": "first", "b.json": "second"} {
-		files, err := json.Marshal(map[string]string{"result.md": base64.StdEncoding.EncodeToString([]byte(adversarialDocument(body)))})
-		if err != nil {
-			t.Fatal(err)
-		}
-		raw := []byte(`{"version":1,"files":` + string(files) + `,"receipt":{}}`)
+	for name := range map[string]string{"a.json": "first", "b.json": "second"} {
+		raw := []byte(`{"version":5,"hash_algorithm":"sha256","stage":".okf/staging/txn-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/payload","files":[],"receipt":{}}`)
 		if err := writeDurableFixture(filepath.Join(root, internalDirectory, "transactions", name), raw); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	// Act.
-	_, err := Open(root, Config{})
+	_, err := openObserved(root, Config{})
 	got, readErr := os.ReadFile(filepath.Join(root, "result.md"))
 	entries, dirErr := os.ReadDir(filepath.Join(root, internalDirectory, "transactions"))
 
@@ -214,14 +272,15 @@ func TestAdversarialRecoveryRejectsIncompleteJournalsDeterministically(t *testin
 	}
 }
 
-func TestAdversarialLeaseCancellationAndCrossStoreCoherence(t *testing.T) {
+func TestAdversarialRootLockCancellationAndCrossStoreCoherence(t *testing.T) {
 	// Arrange.
 	root, first := adversarialStore(t, Config{LeaseTimeout: time.Second})
-	second, err := Open(root, Config{LeaseTimeout: time.Second})
+	second, err := openObserved(root, Config{LeaseTimeout: time.Second})
 	if err != nil {
 		t.Fatal(err)
 	}
-	lock := adversarialExclusiveLock(t, root)
+	registerStoreCleanup(t, second)
+	lock := adversarialExclusiveRootLock(t, root)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -246,7 +305,7 @@ func TestAdversarialLeaseCancellationAndCrossStoreCoherence(t *testing.T) {
 	// Arrange a barriered writer; its journal write is inside the exclusive lease.
 	entered := make(chan struct{})
 	release := make(chan struct{})
-	writer, err := Open(root, Config{LeaseTimeout: time.Second, Fault: func(step Step) error {
+	writer, err := openObserved(root, Config{LeaseTimeout: time.Second, Fault: func(step Step) error {
 		if step == StepFileWrite {
 			select {
 			case entered <- struct{}{}:
@@ -256,9 +315,11 @@ func TestAdversarialLeaseCancellationAndCrossStoreCoherence(t *testing.T) {
 		}
 		return nil
 	}})
+
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, writer)
 	base := adversarialSnapshot(t, writer)
 	commitDone := make(chan struct{})
 	var receipt store.CommitReceipt
@@ -305,24 +366,31 @@ func TestCommitCancellationAfterJournalPersistsReceipt(t *testing.T) {
 	base := adversarialSnapshot(t, s)
 	change := adversarialChange(t, "cancel-after-journal", base.Revision(), "depends_on")
 	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
+	done := make(chan struct {
+		receipt store.CommitReceipt
+		err     error
+	}, 1)
 	go func() {
-		_, err := s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "cancel-after-journal"})
-		done <- err
+		receipt, err := s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "cancel-after-journal"})
+		done <- struct {
+			receipt store.CommitReceipt
+			err     error
+		}{receipt: receipt, err: err}
 	}()
 	<-entered
 	cancel()
 	close(release)
 
 	// Act.
-	err := <-done
-	receipt, found, replayErr := s.lookupReceipt("cancel-after-journal", mustDigest(t, change))
+	result := <-done
+	receipt, found, replayErr := s.lookupReceiptContext(t.Context(), "cancel-after-journal", mustDigest(t, change))
 
 	// Assert.
-	if !errors.Is(err, context.Canceled) {
-		t.Fatalf("Commit() error = %v, want context cancellation", err)
+	var committed *store.CommittedError
+	if !errors.Is(result.err, context.Canceled) || !errors.As(result.err, &committed) || !reflect.DeepEqual(result.receipt, committed.Receipt()) {
+		t.Fatalf("Commit() receipt=%#v error=%v, want receipt-bearing cancellation", result.receipt, result.err)
 	}
-	if replayErr != nil || !found || receipt.ResultRevision == base.Revision() {
+	if replayErr != nil || !found || receipt.ResultRevision == base.Revision() || !reflect.DeepEqual(receipt, result.receipt) {
 		t.Fatalf("persisted receipt = %#v, found=%v, err=%v", receipt, found, replayErr)
 	}
 }
@@ -382,17 +450,14 @@ func TestAdversarialMetadataModesAndRetentionFloor(t *testing.T) {
 
 	// Act.
 	_, commitErr := s.Commit(context.Background(), adversarialChange(t, "metadata", base.Revision(), "depends_on"), store.CommitOptions{IdempotencyKey: "metadata-key"})
-	leaseInfo, leaseErr := os.Stat(filepath.Join(root, internalDirectory, "lease"))
+	_, leaseErr := os.Stat(filepath.Join(root, internalDirectory, "lease"))
 	receiptEntries, receiptErr := os.ReadDir(filepath.Join(root, internalDirectory, "receipts"))
 	invalidConfigErr := (Config{MinimumReceipts: 999}).Validate()
 	defaultConfig := DefaultConfig()
 
 	// Assert.
-	if commitErr != nil || leaseErr != nil || receiptErr != nil || len(receiptEntries) != 1 {
+	if commitErr != nil || !errors.Is(leaseErr, os.ErrNotExist) || receiptErr != nil || len(receiptEntries) != 1 {
 		t.Fatalf("metadata creation: commit=%v lease=%v receipts=%v entries=%d", commitErr, leaseErr, receiptErr, len(receiptEntries))
-	}
-	if leaseInfo.Mode().Perm() != 0o600 {
-		t.Fatalf("lease mode = %o, want 600", leaseInfo.Mode().Perm())
 	}
 	if invalidConfigErr == nil || defaultConfig.MinimumReceipts < 1000 {
 		t.Fatalf("retention floor: validation=%v default=%d", invalidConfigErr, defaultConfig.MinimumReceipts)
@@ -401,24 +466,48 @@ func TestAdversarialMetadataModesAndRetentionFloor(t *testing.T) {
 
 func TestAdversarialReceiptRetentionKeepsDeterministicMinimum(t *testing.T) {
 	// Arrange.
-	_, s := adversarialStore(t, Config{ReceiptRetention: time.Nanosecond, MinimumReceipts: 1000})
+	root, s := adversarialStore(t, Config{ReceiptRetention: time.Nanosecond, MinimumReceipts: 1000})
 	oldest := store.IdempotencyKey("receipt-0000")
 	base := time.Unix(0, 0).UTC()
 	revision := store.Revision("sha256:0000000000000000000000000000000000000000000000000000000000000000")
 	digest := "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+	if err := os.MkdirAll(filepath.Join(root, internalDirectory, "receipts"), 0o700); err != nil {
+		t.Fatal(err)
+	}
 	for i := 0; i < 1001; i++ {
 		key := store.IdempotencyKey("receipt-" + formatReceiptNumber(i))
 		receipt := store.CommitReceipt{FormatVersion: store.CommitReceiptFormatVersion, ChangeSetID: store.ChangeSetID("change-" + formatReceiptNumber(i)), IdempotencyKey: key, RequestDigest: digest, BaseRevision: revision, ResultRevision: revision, CommitTime: base.Add(time.Duration(i) * time.Second)}
-		if err := s.writeReceipt(receipt); err != nil {
+		raw, err := json.Marshal(receiptFile{
+			Version: 2,
+			Key:     string(key),
+			Digest:  digest,
+			Receipt: receipt,
+		})
+		if err != nil {
 			t.Fatal(err)
 		}
+		// The subject is one prune operation over a complete inventory. Build
+		// that inventory directly instead of running the durable publication
+		// protocol (and its own prune scan) 1001 times during setup.
+		if err := os.WriteFile(
+			filepath.Join(root, filepath.FromSlash(s.receiptPath(key))),
+			raw,
+			0o600,
+		); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var pruneTrace []Step
+	s.config.PostFault = func(step Step) error {
+		pruneTrace = append(pruneTrace, step)
+		return nil
 	}
 
 	// Act.
 	err := s.pruneReceipts()
-	_, oldestFound, oldestErr := s.lookupReceipt(oldest, digest)
-	_, newestFound, newestErr := s.lookupReceipt("receipt-1000", digest)
-	entries, entriesErr := os.ReadDir(filepath.Join(s.root, internalDirectory, "receipts"))
+	_, oldestFound, oldestErr := s.lookupReceiptContext(t.Context(), oldest, digest)
+	_, newestFound, newestErr := s.lookupReceiptContext(t.Context(), "receipt-1000", digest)
+	entries, entriesErr := os.ReadDir(filepath.Join(root, internalDirectory, "receipts"))
 
 	// Assert.
 	if err != nil || oldestErr != nil || newestErr != nil {
@@ -426,6 +515,18 @@ func TestAdversarialReceiptRetentionKeepsDeterministicMinimum(t *testing.T) {
 	}
 	if oldestFound || !newestFound || entriesErr != nil || len(entries) != 1000 {
 		t.Fatalf("retention result: oldest=%v newest=%v entries=%d err=%v", oldestFound, newestFound, len(entries), entriesErr)
+	}
+	var claimProofSyncs, pruneBoundaries int
+	for _, step := range pruneTrace {
+		switch step {
+		case StepClaimDirectorySync:
+			claimProofSyncs++
+		case StepReceiptPrune:
+			pruneBoundaries++
+		}
+	}
+	if claimProofSyncs == 0 || pruneBoundaries != 1 || len(pruneTrace) < 2 || pruneTrace[len(pruneTrace)-2] != StepReceiptDirectorySync || pruneTrace[len(pruneTrace)-1] != StepReceiptPrune {
+		t.Fatalf("prune post-fault trace=%v, want named claim proof phases and one final receipts sync/prune boundary", pruneTrace)
 	}
 }
 
@@ -438,7 +539,124 @@ func adversarialStore(t *testing.T, cfg Config) (string, *Store) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	return root, s
+}
+
+func adversarialLiveDurableJournal(t *testing.T, root string, s *Store, next *snapshot, receipt store.CommitReceipt) (string, []byte) {
+	t.Helper()
+	crash := errors.New("retain live adversarial journal")
+	s.config.PostFault = func(step Step) error {
+		if step == StepJournalDirectorySync {
+			return crash
+		}
+		return nil
+	}
+	if err := s.publish(context.Background(), next, receipt); !errors.Is(err, crash) {
+		t.Fatalf("publish live durable journal: %v", err)
+	}
+	s.config.PostFault = nil
+	journalName, err := journalPath(receipt.RequestDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(journalName)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return journalName, raw
+}
+
+func adversarialRewriteSameInode(t *testing.T, filename string, raw []byte) {
+	t.Helper()
+	before, err := os.Stat(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_TRUNC, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write(raw); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Sync(); err != nil {
+		_ = f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.Stat(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(before, after) {
+		t.Fatal("same-inode fixture rewrite replaced the installed artifact")
+	}
+}
+
+func adversarialRewriteLivePostState(t *testing.T, root, journalName string, raw []byte, files map[string][]byte) {
+	t.Helper()
+	var j journal
+	if err := json.Unmarshal(raw, &j); err != nil {
+		t.Fatal(err)
+	}
+	byPath := make(map[string]*journalFile, len(j.Files))
+	for i := range j.Files {
+		byPath[j.Files[i].Path] = &j.Files[i]
+	}
+	for name, content := range files {
+		entry := byPath[name]
+		if entry == nil {
+			t.Fatalf("live journal has no payload for %q", name)
+		}
+		adversarialRewriteSameInode(t, filepath.Join(root, filepath.FromSlash(path.Join(j.Stage, entry.Payload))), content)
+		sum := sha256.Sum256(content)
+		entry.Size = int64(len(content))
+		entry.Digest = "sha256:" + hex.EncodeToString(sum[:])
+	}
+	next, err := newSnapshot(context.Background(), files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	j.Receipt.ResultRevision = next.Revision()
+	j.BaseBinding, err = journalBaseBinding(j.Receipt, j.Base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutated, err := json.Marshal(j)
+	if err != nil {
+		t.Fatal(err)
+	}
+	adversarialRewriteSameInode(t, filepath.Join(root, filepath.FromSlash(journalName)), mutated)
+}
+
+func adversarialV5JournalFixture(t *testing.T, root string, resultFiles map[string][]byte, id string) journal {
+	t.Helper()
+	baseFiles, err := readVisibleRoot(context.Background(), mustOpenRoot(t, root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err := newSnapshot(context.Background(), baseFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, err := newSnapshot(context.Background(), resultFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt := testJournalReceipt(base.Revision(), next.Revision(), id, "")
+	raw, err := encodeJournalFixture(t, root, next, receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var j journal
+	if err := json.Unmarshal(raw, &j); err != nil {
+		t.Fatal(err)
+	}
+	return j
 }
 
 func adversarialSnapshot(t *testing.T, s *Store) store.Snapshot {
@@ -493,10 +711,9 @@ func itoa(i int) string {
 	return string(digits[n:])
 }
 
-func adversarialExclusiveLock(t *testing.T, root string) *os.File {
+func adversarialExclusiveRootLock(t *testing.T, root string) *os.File {
 	t.Helper()
-	path := filepath.Join(root, internalDirectory, "lease")
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	f, err := os.Open(root)
 	if err != nil {
 		t.Fatal(err)
 	}

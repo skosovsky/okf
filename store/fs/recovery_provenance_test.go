@@ -28,15 +28,18 @@ func TestRecoveryProvenanceGateRejectsBeforeStagedPayloadRead(t *testing.T) {
 			t.Fatal(err)
 		}
 		receipt := testJournalReceipt(base.Revision(), next.Revision(), "streaming-provenance", "")
-		raw, err := encodeJournalFixture(t, root, next, receipt)
+		j, raw, err := s.prepareJournalContext(context.Background(), next, receipt, replaceReplay{}, productionJournalManifestByteLimits())
 		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := s.stageJournalPayloadsObserved(context.Background(), next, j); err != nil {
 			t.Fatal(err)
 		}
 		jp, err := journalPath(receipt.RequestDigest)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := s.writePrivateDurableAt(jp, raw); err != nil {
+		if _, err := s.writeJournalObserved(context.Background(), jp, raw); err != nil {
 			t.Fatal(err)
 		}
 		// A missing payload would normally fail recovery; provenance must win.
@@ -80,7 +83,7 @@ func TestRecoveryProvenanceGateRejectsBeforeStagedPayloadRead(t *testing.T) {
 					reads++
 				}
 			}
-			err := s.recoverContext(context.Background())
+			err := s.recoverForTest(context.Background())
 			if !errors.Is(err, store.ErrStorageCorrupt) || !strings.Contains(err.Error(), "base/result state mismatch") {
 				t.Fatalf("recover=%v, want provenance corruption", err)
 			}
@@ -118,15 +121,18 @@ func TestRecoveryRejectsEditorDriftBeforeMissingPayload(t *testing.T) {
 		t.Fatal(err)
 	}
 	receipt := testJournalReceipt(base.Revision(), next.Revision(), "drift-before-payload", "")
-	raw, err := encodeJournalFixture(t, root, next, receipt)
+	j, raw, err := s.prepareJournalContext(context.Background(), next, receipt, replaceReplay{}, productionJournalManifestByteLimits())
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.stageJournalPayloadsObserved(context.Background(), next, j); err != nil {
 		t.Fatal(err)
 	}
 	jp, err := journalPath(receipt.RequestDigest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.writePrivateDurableAt(jp, raw); err != nil {
+	if _, err := s.writeJournalObserved(context.Background(), jp, raw); err != nil {
 		t.Fatal(err)
 	}
 	stage, err := journalStage(receipt.RequestDigest)
@@ -138,7 +144,7 @@ func TestRecoveryRejectsEditorDriftBeforeMissingPayload(t *testing.T) {
 	}
 	before := []byte(adversarialDocument("editor-third-state"))
 	writeTestFile(t, root, "a.md", string(before))
-	err = s.recoverContext(context.Background())
+	err = s.recoverForTest(context.Background())
 	if !errors.Is(err, store.ErrStorageCorrupt) || !strings.Contains(err.Error(), "base/result state mismatch") {
 		t.Fatalf("recover=%v, want provenance corruption before payload", err)
 	}

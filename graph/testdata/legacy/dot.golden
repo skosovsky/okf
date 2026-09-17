@@ -1,0 +1,4 @@
+digraph okf {
+  rankdir=LR; node [shape=box, fontsize=10];
+  "a" -> "b";
+}

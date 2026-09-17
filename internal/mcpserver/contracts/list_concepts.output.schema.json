@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/list_concepts.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "version_declaration", "as_of", "concepts"],
+  "properties": {
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declared", "effective", "resolution", "compatibility"],
+      "properties": {
+        "declared": {"type": ["string", "null"]},
+        "effective": {"type": ["string", "null"]},
+        "resolution": {"enum": ["declared", "default", "explicit", "future-best-effort", null]},
+        "compatibility": {"enum": ["native", "legacy", "best-effort", null]}
+      }
+    },
+    "version_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present", "valid", "raw", "value"],
+      "properties": {
+        "present": {"type": "boolean"},
+        "valid": {"type": "boolean"},
+        "raw": {"type": ["string", "null"]},
+        "value": {"type": ["string", "null"]}
+      }
+    },
+    "as_of": {"type": ["string", "null"], "format": "date"},
+    "concepts": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "path", "status", "status_state", "trust", "stale", "stale_after", "generated_at", "source_count", "computation", "legacy_derived"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "type": {"type": "string"},
+          "title": {"type": "string"},
+          "path": {"type": "string", "minLength": 1},
+          "status": {"type": ["string", "null"]},
+          "status_state": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["present", "valid", "raw", "effective"],
+            "properties": {
+              "present": {"type": "boolean"},
+              "valid": {"type": "boolean"},
+              "raw": {"type": ["string", "null"]},
+              "effective": {"type": ["string", "null"]}
+            }
+          },
+          "trust": {"enum": ["unverified", "machine-confirmed", "human-reviewed"]},
+          "stale": {"type": ["boolean", "null"]},
+          "stale_after": {"type": ["string", "null"], "format": "date"},
+          "generated_at": {"type": ["string", "null"], "format": "date-time"},
+          "source_count": {"type": "integer", "minimum": 0},
+          "computation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["present", "runtime", "executor", "attester"],
+            "properties": {
+              "present": {"type": "boolean"},
+              "runtime": {"type": ["string", "null"]},
+              "executor": {"type": ["string", "null"]},
+              "attester": {"type": ["string", "null"]}
+            }
+          },
+          "legacy_derived": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["generated", "citations"],
+            "properties": {
+              "generated": {"type": "boolean"},
+              "citations": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

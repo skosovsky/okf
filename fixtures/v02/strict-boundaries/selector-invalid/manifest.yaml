@@ -1,0 +1,16 @@
+description: "Malformed explicit selector is a policy failure, not a silent default"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+  spec: "v0.2"
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "invalid OKF version declaration"
+      code: "version_assertion_failed"
+      spec_ref: "toolkit#version-selector-assertion"
+      field_path: "okf_version"
+      policy_failure: true

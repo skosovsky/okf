@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,7 +18,8 @@ type Document struct {
 	Body        string
 	// HasFrontmatter reports whether the document text had a YAML frontmatter
 	// block delimited by --- at the beginning of the file.
-	HasFrontmatter bool
+	HasFrontmatter  bool
+	frontmatterYAML []byte
 }
 
 // NewDocument creates a document from frontmatter and Markdown body.
@@ -39,15 +41,30 @@ func NewDocument(frontmatter Frontmatter, body string) Document {
 // Split/Join must not reconstruct that slice: literal and folded scalars treat
 // a missing final newline as a different semantic Value.
 func ParseDocument(text string) (Document, error) {
+	return ParseDocumentContext(context.Background(), text)
+}
+
+// ParseDocumentContext is the cancellation-aware form of ParseDocument.
+func ParseDocumentContext(ctx context.Context, text string) (Document, error) {
+	if err := ctx.Err(); err != nil {
+		return Document{}, err
+	}
 	// strings and yaml.v3 can otherwise accept malformed input after replacing
 	// invalid byte sequences with U+FFFD. The source bytes are part of the OKF
 	// document contract, so reject them before inspecting delimiters or YAML.
-	if !utf8.ValidString(text) {
+	valid, err := validUTF8StringContext(ctx, text)
+	if err != nil {
+		return Document{}, err
+	}
+	if !valid {
 		return Document{}, fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)
 	}
 
-	data := []byte(text)
-	layout, ok, err := documentlayout.Split(data)
+	data, err := bytesFromStringContext(ctx, text)
+	if err != nil {
+		return Document{}, err
+	}
+	layout, ok, err := documentlayout.SplitContext(ctx, data)
 	if errors.Is(err, documentlayout.ErrUnterminatedFrontmatter) {
 		return Document{}, ErrUnterminatedFrontmatter
 	}
@@ -55,15 +72,25 @@ func ParseDocument(text string) (Document, error) {
 		return Document{}, err
 	}
 	if !ok {
+		if err := ctx.Err(); err != nil {
+			return Document{}, err
+		}
 		return Document{Frontmatter: NewFrontmatter(), Body: text}, nil
 	}
 
-	frontmatter, err := ParseFrontmatter(string(data[layout.YAMLStart:layout.YAMLEnd]))
+	frontmatterText, err := stringFromBytesContext(ctx, data[layout.YAMLStart:layout.YAMLEnd])
+	if err != nil {
+		return Document{}, err
+	}
+	frontmatter, err := ParseFrontmatterContext(ctx, frontmatterText)
 	if err != nil {
 		return Document{}, err
 	}
 
-	body := string(data[layout.BodyStart:])
+	body, err := stringFromBytesContext(ctx, data[layout.BodyStart:])
+	if err != nil {
+		return Document{}, err
+	}
 	switch {
 	case strings.HasPrefix(body, "\r\n"):
 		body = body[len("\r\n"):]
@@ -77,7 +104,15 @@ func ParseDocument(text string) (Document, error) {
 		body = strings.TrimSuffix(body, "\n")
 	}
 
-	return NewDocument(frontmatter, body), nil
+	document := NewDocument(frontmatter, body)
+	document.frontmatterYAML, err = copySourceBytesContext(ctx, data[layout.YAMLStart:layout.YAMLEnd])
+	if err != nil {
+		return Document{}, err
+	}
+	if err := ctx.Err(); err != nil {
+		return Document{}, err
+	}
+	return document, nil
 }
 
 // Serialize renders the document as frontmatter delimited by "---" followed by
@@ -90,6 +125,9 @@ func (d Document) Serialize() (string, error) {
 	frontmatter, err := d.Frontmatter.YAMLString()
 	if err != nil {
 		return "", err
+	}
+	if frontmatter != "" && !strings.HasSuffix(frontmatter, "\n") && !strings.HasSuffix(frontmatter, "\r") {
+		frontmatter += "\n"
 	}
 
 	body := d.Body
@@ -105,12 +143,27 @@ func (d Document) Links() []Link {
 	return ExtractLinks(d.Body)
 }
 
+// LinksContext is the cancellation-aware form of Links.
+func (d Document) LinksContext(ctx context.Context) ([]Link, error) {
+	return ExtractLinksContext(ctx, d.Body)
+}
+
 // Citations extracts numbered entries from the document body's Citations section.
 func (d Document) Citations() []Citation {
+	if !d.LegacyFallbackObservation().CitationsActive {
+		return nil
+	}
 	return ExtractCitations(d.Body)
 }
 
-// ValidateConformance checks the hard OKF v0.1 document requirement: non-empty string type.
+// FrontmatterYAML returns an owned, byte-exact copy of the YAML bytes captured
+// between the delimiters by ParseDocument. It preserves comments, style, key
+// order, and line endings. Documents built with NewDocument return nil.
+func (d Document) FrontmatterYAML() []byte {
+	return append([]byte(nil), d.frontmatterYAML...)
+}
+
+// ValidateConformance checks the hard OKF document requirement: non-empty string type.
 func (d Document) ValidateConformance() error {
 	if _, ok := d.Frontmatter.Type(); !ok {
 		return fmt.Errorf("%w: type", ErrMissingFrontmatterKeys)

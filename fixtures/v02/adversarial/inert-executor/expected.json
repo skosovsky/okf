@@ -1,0 +1,32 @@
+{
+  "exit_code": 0,
+  "scanned_files": 3,
+  "diagnostics": [
+    {
+      "code": "orphan_index_missing",
+      "spec_ref": "toolkit#orphan-missing-index",
+      "file": "computations",
+      "field_path": "index.md",
+      "severity": "INFO",
+      "message": "missing index.md, skipping orphan check for this directory"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 0,
+    "info": 1
+  },
+  "projection": {
+    "concept_id": "computations/inert-policy-probe",
+    "mode": "inline",
+    "runtime": "synthetic-inert-text",
+    "inline": "SYNTHETIC_CONSTANT_VALUE\n",
+    "executor_resource": "../references/executors/policy-bypass.txt",
+    "receipt_present": false,
+    "attester_present": false,
+    "verification_count": 0,
+    "trust": "unverified",
+    "asset_path": "references/executors/policy-bypass.txt",
+    "asset_sha256": "1d0d736e5cbf71ade9f1fd54975cbcec0f27eba1b95882e35ebcf5dc0d9da553"
+  }
+}

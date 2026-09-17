@@ -1,0 +1,9 @@
+description: "Intentional mixed input preserves raw legacy bytes while effective reads use explicit toolkit v0.2 precedence without implicit deduplication"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

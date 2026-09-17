@@ -1,0 +1,34 @@
+description: "Malformed optional v0.2 families are strict warnings, not base conformance errors"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "'generated' should be a mapping"
+      code: "generated_invalid"
+      spec_ref: "okf-v0.2#5.2"
+      field_path: "generated"
+    - severity: "WARN"
+      message_contains: "'sources' should be a YAML sequence of mappings"
+      code: "sources_invalid"
+      spec_ref: "okf-v0.2#5.1"
+      field_path: "sources"
+    - severity: "WARN"
+      message_contains: "'stale_after' should be YYYY-MM-DD"
+      code: "stale_after_invalid"
+      spec_ref: "okf-v0.2#5.5"
+      field_path: "stale_after"
+    - severity: "WARN"
+      message_contains: "'status' should be draft, stable, or deprecated"
+      code: "status_invalid"
+      spec_ref: "okf-v0.2#5.4"
+      field_path: "status"
+    - severity: "WARN"
+      message_contains: "'verified' should be a mapping or sequence of mappings"
+      code: "verified_invalid"
+      spec_ref: "okf-v0.2#5.2"
+      field_path: "verified"

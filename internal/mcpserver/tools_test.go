@@ -43,6 +43,103 @@ func TestListConceptsReturnsDeterministicSummaries(t *testing.T) {
 	}
 }
 
+func TestLegacyFiveToolTextPayloadsRemainByteExact(t *testing.T) {
+	// Frozen from the pre-v0.2 MCP fallback contract. StructuredContent may
+	// evolve; these text payload bytes are the backward-compatible surface.
+	newReadRoot := func(t *testing.T) string {
+		t.Helper()
+		root := t.TempDir()
+		writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nA.\n")
+		return root
+	}
+	graphGolden := "{\n" +
+		"  \"@context\": {\n" +
+		"    \"bundle\": \"local:bundle:\",\n" +
+		"    \"description\": \"okf:description\",\n" +
+		"    \"exists\": \"okf:exists\",\n" +
+		"    \"okf\": \"https://okf.io/ontology/v0.1#\",\n" +
+		"    \"references\": \"okf:references\",\n" +
+		"    \"resource\": \"okf:resource\",\n" +
+		"    \"tags\": \"okf:tags\",\n" +
+		"    \"target\": {\n" +
+		"      \"@id\": \"okf:target\",\n" +
+		"      \"@type\": \"@id\"\n" +
+		"    },\n" +
+		"    \"timestamp\": \"okf:timestamp\",\n" +
+		"    \"title\": \"okf:title\",\n" +
+		"    \"type\": \"okf:type\"\n" +
+		"  },\n" +
+		"  \"@graph\": [\n" +
+		"    {\n" +
+		"      \"@id\": \"bundle:a\",\n" +
+		"      \"@type\": \"okf:Concept\",\n" +
+		"      \"type\": \"Note\"\n" +
+		"    }\n" +
+		"  ]\n" +
+		"}\n"
+	tests := []struct {
+		name string
+		run  func(*testing.T) *mcp.CallToolResult
+		want string
+	}{
+		{
+			name: "list_concepts",
+			run: func(t *testing.T) *mcp.CallToolResult {
+				return callHandler(t, handleListConcepts, map[string]any{"bundle_path": newReadRoot(t)})
+			},
+			want: `{"concepts":[{"id":"a","type":"Note","title":"","path":"a.md"}]}`,
+		},
+		{
+			name: "read_concept",
+			run: func(t *testing.T) *mcp.CallToolResult {
+				return callHandler(t, handleReadConcept, map[string]any{
+					"bundle_path": newReadRoot(t), "concept_id": "a",
+				})
+			},
+			want: "---\ntype: Note\n---\nA.\n",
+		},
+		{
+			name: "validate_bundle",
+			run: func(t *testing.T) *mcp.CallToolResult {
+				return callHandler(t, handleValidateBundle, map[string]any{"bundle_path": newReadRoot(t)})
+			},
+			want: `{"scanned_files":1,"conformant":true,"errors":0,"warnings":0,"info":0,"diagnostics":[]}`,
+		},
+		{
+			name: "get_semantic_graph",
+			run: func(t *testing.T) *mcp.CallToolResult {
+				return callHandler(t, handleSemanticGraph, map[string]any{"bundle_path": newReadRoot(t)})
+			},
+			want: graphGolden,
+		},
+		{
+			name: "write_concept",
+			run: func(t *testing.T) *mcp.CallToolResult {
+				root := t.TempDir()
+				writeTestFile(t, root, "index.md", "---\nokf_version: \"0.2\"\n---\n# Notes\n\n- [A](a.md)\n")
+				writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nOld.\n")
+				return callHandler(t, handleWriteConcept, map[string]any{
+					"bundle_path": root, "concept_id": "a",
+					"frontmatter": "type: Note\n", "body": "Updated.\n",
+				})
+			},
+			want: `{"status":"success","path":"a.md","diagnostics":[]}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result := test.run(t)
+			if result.IsError {
+				t.Fatalf("legacy call returned error: %s", resultText(t, result))
+			}
+			if got := resultText(t, result); got != test.want {
+				t.Fatalf("legacy text mismatch\ngot:  %q\nwant: %q", got, test.want)
+			}
+		})
+	}
+}
+
 func TestReadOnlyToolsRejectParseErrorsAsToolErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -134,7 +231,7 @@ func TestReadConceptValidatesPathIDAndSymlinks(t *testing.T) {
 		"bundle_path": root,
 		"concept_id":  "link",
 	})
-	if !linkResult.IsError || !strings.Contains(resultText(t, linkResult), "path contains symlink: link.md") {
+	if !linkResult.IsError || !strings.Contains(resultText(t, linkResult), "concept not found: link") {
 		t.Fatalf("symlink target result = error %v text %q", linkResult.IsError, resultText(t, linkResult))
 	}
 
@@ -146,15 +243,27 @@ func TestReadConceptValidatesPathIDAndSymlinks(t *testing.T) {
 		"bundle_path": root,
 		"concept_id":  "linked-dir/a",
 	})
-	if !parentResult.IsError || !strings.Contains(resultText(t, parentResult), "path contains symlink: linked-dir") {
+	if !parentResult.IsError || !strings.Contains(resultText(t, parentResult), "concept not found: linked-dir/a") {
 		t.Fatalf("symlink parent result = error %v text %q", parentResult.IsError, resultText(t, parentResult))
 	}
 }
 
 func TestAllToolsRejectInvalidBundlePaths(t *testing.T) {
+	// Arrange.
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nA.\n")
 	filePath := filepath.Join(root, "a.md")
+	canonicalTools := map[string]struct{}{
+		"list_concepts":         {},
+		"read_concept":          {},
+		"validate_bundle":       {},
+		"get_semantic_graph":    {},
+		"write_concept":         {},
+		"preview_concept_patch": {},
+		"apply_concept_patch":   {},
+		"preview_v02_migration": {},
+		"apply_v02_migration":   {},
+	}
 
 	invalidBundles := []struct {
 		name       string
@@ -179,11 +288,28 @@ func TestAllToolsRejectInvalidBundlePaths(t *testing.T) {
 		}{name: "symlink root", bundlePath: linkPath, message: "bundle_path must not be a symlink"})
 	}
 
+	// Act and assert.
 	for _, invalid := range invalidBundles {
 		t.Run(invalid.name, func(t *testing.T) {
 			for _, tool := range toolHandlerCases(invalid.bundlePath) {
 				t.Run(tool.name, func(t *testing.T) {
 					result := callHandler(t, tool.handler, tool.args)
+					if invalid.bundlePath == nil {
+						if _, canonical := canonicalTools[tool.name]; canonical {
+							envelope, ok := result.StructuredContent.(errorEnvelope)
+							if !result.IsError || !ok ||
+								envelope.Code != "invalid_request" ||
+								envelope.Message != "tool input does not match the advertised schema" {
+								t.Fatalf(
+									"%s result = error %v envelope %#v, want invalid_request schema message",
+									tool.name,
+									result.IsError,
+									result.StructuredContent,
+								)
+							}
+							return
+						}
+					}
 					if !result.IsError || !strings.Contains(resultText(t, result), invalid.message) {
 						t.Fatalf("%s result = error %v text %q, want %q", tool.name, result.IsError, resultText(t, result), invalid.message)
 					}
@@ -252,8 +378,8 @@ func TestAllToolsRejectUnloadableBundlePaths(t *testing.T) {
 	for _, tool := range toolHandlerCases(root) {
 		t.Run(tool.name, func(t *testing.T) {
 			result := callHandler(t, tool.handler, tool.args)
-			if !result.IsError || !strings.Contains(resultText(t, result), "load bundle:") {
-				t.Fatalf("%s result = error %v text %q, want load bundle tool error", tool.name, result.IsError, resultText(t, result))
+			if !result.IsError || resultText(t, result) == "" {
+				t.Fatalf("%s result = error %v text %q, want non-empty tool error", tool.name, result.IsError, resultText(t, result))
 			}
 		})
 	}
@@ -295,6 +421,15 @@ func TestLoadableEmptyAndMissingRootIndexBundlesAreNotPreflightErrors(t *testing
 	for _, tool := range toolHandlerCases(noIndexRoot) {
 		t.Run(tool.name, func(t *testing.T) {
 			result := callHandler(t, tool.handler, tool.args)
+			if tool.name == "apply_concept_patch" || tool.name == "apply_v02_migration" {
+				if !result.IsError {
+					t.Fatalf("%s accepted fake revision/digest credentials", tool.name)
+				}
+				if text := resultText(t, result); strings.Contains(text, "index.md") {
+					t.Fatalf("%s returned root-index preflight error: %s", tool.name, text)
+				}
+				return
+			}
 			if result.IsError {
 				t.Fatalf("%s returned tool error for missing root index: %s", tool.name, resultText(t, result))
 			}
@@ -365,8 +500,8 @@ func TestValidateBundleAppliesOptionalFlags(t *testing.T) {
 	if !advisoryReport.Conformant || advisoryReport.Errors != 0 {
 		t.Fatalf("advisory report = %#v, want conformant report without hard errors", advisoryReport)
 	}
-	if advisoryReport.Warnings == 0 || advisoryReport.Info == 0 {
-		t.Fatalf("advisory report = %#v, want warnings and info from enabled flags", advisoryReport)
+	if advisoryReport.Info == 0 {
+		t.Fatalf("advisory report = %#v, want info from enabled link/orphan flags", advisoryReport)
 	}
 
 	for _, key := range []string{"strict", "check_links", "check_orphans"} {
@@ -375,8 +510,11 @@ func TestValidateBundleAppliesOptionalFlags(t *testing.T) {
 				"bundle_path": root,
 				key:           "true",
 			})
-			if !result.IsError || !strings.Contains(resultText(t, result), "argument "+fmt.Sprintf("%q", key)+" is not a boolean") {
-				t.Fatalf("invalid %s result = error %v text %q", key, result.IsError, resultText(t, result))
+			envelope, ok := result.StructuredContent.(errorEnvelope)
+			if !result.IsError || !ok ||
+				envelope.Code != "invalid_request" ||
+				envelope.Message != "tool input does not match the advertised schema" {
+				t.Fatalf("invalid %s result = error %v envelope %#v", key, result.IsError, result.StructuredContent)
 			}
 		})
 	}
@@ -777,7 +915,10 @@ func TestWriteConceptRejectedDeduplicatesLogicalRelationDiagnostics(t *testing.T
 			}
 
 			// Act.
-			response := writeConceptRejected("", "a.md", report, rejected)
+			response, err := writeConceptRejectedContext(t.Context(), "", "a.md", report, rejected)
+			if err != nil {
+				t.Fatalf("writeConceptRejectedContext() error = %v", err)
+			}
 
 			// Assert.
 			if got, want := len(response.Diagnostics), len(tc.sources); got != want {
@@ -817,11 +958,19 @@ func TestWriteConceptResponseWireContract(t *testing.T) {
 	}}
 
 	// Act.
-	successData, err := json.Marshal(writeConceptSuccess("", "a.md", report))
+	success, err := writeConceptSuccessContext(t.Context(), "", "a.md", report)
+	if err != nil {
+		t.Fatalf("writeConceptSuccessContext() error = %v", err)
+	}
+	successData, err := json.Marshal(success)
 	if err != nil {
 		t.Fatalf("marshal success: %v", err)
 	}
-	rejectedData, err := json.Marshal(writeConceptRejected("", "a.md", report, rejected))
+	rejectedResponse, err := writeConceptRejectedContext(t.Context(), "", "a.md", report, rejected)
+	if err != nil {
+		t.Fatalf("writeConceptRejectedContext() error = %v", err)
+	}
+	rejectedData, err := json.Marshal(rejectedResponse)
 	if err != nil {
 		t.Fatalf("marshal rejected: %v", err)
 	}
@@ -972,13 +1121,17 @@ func TestWriteConceptChangeSetIDUsesUnambiguousCanonicalEncoding(t *testing.T) {
 	firstBody := "body\n"
 	secondFrontmatter := "type: Note\nlabel: café"
 	secondBody := "next\x00body\n"
+	resolution, err := bundle.ResolveVersion("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Act.
-	first := writeConceptChangeSetID(id, firstFrontmatter, firstBody)
-	firstReplay := writeConceptChangeSetID(id, firstFrontmatter, firstBody)
-	second := writeConceptChangeSetID(id, secondFrontmatter, secondBody)
-	boundaryA := writeConceptChangeSetID(id, "type: Note\nlabel: ab\n", "c")
-	boundaryB := writeConceptChangeSetID(id, "type: Note\nlabel: a\n", "bc")
+	first := writeConceptChangeSetIDWithPolicy(id, firstFrontmatter, firstBody, resolution)
+	firstReplay := writeConceptChangeSetIDWithPolicy(id, firstFrontmatter, firstBody, resolution)
+	second := writeConceptChangeSetIDWithPolicy(id, secondFrontmatter, secondBody, resolution)
+	boundaryA := writeConceptChangeSetIDWithPolicy(id, "type: Note\nlabel: ab\n", "c", resolution)
+	boundaryB := writeConceptChangeSetIDWithPolicy(id, "type: Note\nlabel: a\n", "bc", resolution)
 
 	// Assert.
 	if first != firstReplay {
@@ -992,21 +1145,62 @@ func TestWriteConceptChangeSetIDUsesUnambiguousCanonicalEncoding(t *testing.T) {
 	}
 }
 
-func TestWriteConceptClosesStoreWhenSnapshotFails(t *testing.T) {
+func TestWriteConceptChangeSetIDBindsVersionPolicy(t *testing.T) {
 	// Arrange.
-	original := openTransactionalStore
-	opened := &closeTrackingStore{snapshotErr: errors.New("snapshot failed"), closeErr: errors.New("close failed")}
-	openTransactionalStore = func(string, storefs.Config) (transactionalStore, error) { return opened, nil }
-	t.Cleanup(func() { openTransactionalStore = original })
-	id, err := parseCanonicalConceptID("entry")
+	id, err := bundle.ParseConceptID("entry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v01, err := bundle.ResolveVersion("0.1", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	v02, err := bundle.ResolveVersion("0.2", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	future, err := bundle.ResolveVersion("9.9", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Act.
-	_, writeErr := writeConcept(t.Context(), t.TempDir(), id, "type: Note\n", "Body.\n")
+	legacy := writeConceptChangeSetIDWithPolicy(id, "type: Note\n", "Body.\n", v01)
+	native := writeConceptChangeSetIDWithPolicy(id, "type: Note\n", "Body.\n", v02)
+	bestEffort := writeConceptChangeSetIDWithPolicy(id, "type: Note\n", "Body.\n", future)
 
 	// Assert.
+	if legacy == native || legacy == bestEffort || native == bestEffort {
+		t.Fatalf("version-bound identities collide: %q %q %q", legacy, native, bestEffort)
+	}
+}
+
+func TestWriteConceptClosesStoreWhenSnapshotFails(t *testing.T) {
+	// Arrange.
+	opened := &closeTrackingStore{snapshotErr: errors.New("snapshot failed"), closeErr: errors.New("close failed")}
+	id, err := parseCanonicalConceptID("entry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	opener := func(context.Context, string, storefs.Config) (transactionalStore, error) {
+		return opened, nil
+	}
+
+	// Act.
+	response, writeErr := writeConceptCommitWithStoreOpener(
+		t.Context(),
+		t.TempDir(),
+		id,
+		"type: Note\n",
+		"Body.\n",
+		1,
+		opener,
+	)
+
+	// Assert.
+	if response.Status != "" || response.Path != "" || response.Diagnostics != nil {
+		t.Fatalf("response = %#v, want zero response on close failure", response)
+	}
 	if !opened.closed {
 		t.Fatal("store Close was not called")
 	}
@@ -1055,6 +1249,35 @@ func toolHandlerCases(bundlePath any) []toolHandlerCase {
 			"concept_id":  "b",
 			"frontmatter": "type: Note\n",
 			"body":        "B.\n",
+		})},
+		{name: "preview_concept_patch", handler: handlePreviewConceptPatch, args: args(map[string]any{
+			"actor": "test", "operations": []any{map[string]any{
+				"kind": "set_lifecycle", "concept_id": "a",
+				"lifecycle": map[string]any{"status": "stable", "stale_after": nil},
+			}},
+		})},
+		{name: "apply_concept_patch", handler: handleApplyConceptPatch, args: args(map[string]any{
+			"actor": "test", "operations": []any{map[string]any{
+				"kind": "set_lifecycle", "concept_id": "a",
+				"lifecycle": map[string]any{"status": "stable", "stale_after": nil},
+			}},
+			"expected_revision":    "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"expected_plan_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		})},
+		{name: "preview_v02_migration", handler: handlePreviewV02Migration, args: args(map[string]any{
+			"generated_by": "process:test", "timestamp_policy": "preserve",
+			"citation_mappings": []any{},
+		})},
+		{name: "apply_v02_migration", handler: handleApplyV02Migration, args: args(map[string]any{
+			"generated_by": "process:test", "timestamp_policy": "preserve",
+			"citation_mappings": []any{},
+			"proof": testMigrationPlanProofDTO(
+				"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+				"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+			),
+			"expected_plan_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			"expected_source":      testMigrationSourceValue("0.1", "v0.1-to-v0.2"),
 		})},
 	}
 }

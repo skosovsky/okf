@@ -18,7 +18,7 @@ import (
 func TestYAMLResolver_ScalarSpanUsesRuneColumnsForMultibyteKeys(t *testing.T) {
 	// Arrange. yaml.v3 Column counts Unicode characters, not bytes.
 	source := []byte("café: old\n")
-	resolver, err := newYAMLResolver(source)
+	resolver, err := newYAMLResolverContext(context.Background(), source)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,15 +43,15 @@ func TestYAMLResolver_ScalarSpanUsesRuneColumnsForMultibyteKeys(t *testing.T) {
 func TestYAMLResolver_ScalarSpanPreservesCRLFCommentAndQuote(t *testing.T) {
 	// Arrange.
 	data := []byte("---\r\ntype: thing\r\nrelations:\r\n  uses:\r\n    - target: 'a#old' # keep\r\n---\r\nbody")
-	p, err := parsePresentation(data)
+	p, err := parsePresentationContext(context.Background(), data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	target := mappingValues(mappingValues(p.root, "relations")[0], "uses")[0].Content[0].Content[1]
+	target := mappingValuesForTest(t, mappingValuesForTest(t, p.root, "relations")[0], "uses")[0].Content[0].Content[1]
 
 	// Act.
 	patch, err := p.resolvedScalarPatch(target, "a#new")
-	updated, patchErr := p.patchYAML([]bytePatch{patch})
+	updated, patchErr := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 
 	// Assert.
 	if err != nil || patchErr != nil {
@@ -63,7 +63,7 @@ func TestYAMLResolver_ScalarSpanPreservesCRLFCommentAndQuote(t *testing.T) {
 	if !bytes.Contains(updated, []byte("target: 'a#new' # keep\r\n")) {
 		t.Fatalf("updated = %q", updated)
 	}
-	if !bytesOutsidePatchesEqual(data, updated, []bytePatch{patch}) {
+	if !bytesOutsidePatchesEqualForTest(t, data, updated, []bytePatch{patch}) {
 		t.Fatal("bytes outside scalar span changed")
 	}
 }
@@ -73,7 +73,7 @@ func TestYAMLResolver_InvalidUTF8FailsBeforeCoordinates(t *testing.T) {
 	data := []byte("---\ntarget: \xff\n---\n")
 
 	// Act.
-	_, err := parsePresentation(data)
+	_, err := parsePresentationContext(context.Background(), data)
 
 	// Assert.
 	if !errors.Is(err, bundle.ErrInvalidEncoding) {
@@ -84,18 +84,18 @@ func TestYAMLResolver_InvalidUTF8FailsBeforeCoordinates(t *testing.T) {
 func TestYAMLResolver_VerifyPatchedRejectsSyntacticallyValidWrongScalar(t *testing.T) {
 	// Arrange.
 	data := []byte("---\nparts:\n  - id: old\n---\nbody\n")
-	p, err := parsePresentation(data)
+	p, err := parsePresentationContext(context.Background(), data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	patch, found, err := fragmentPatch(p, "old", "new")
+	patch, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
 	if err != nil || !found {
 		t.Fatalf("fragment patch = %#v, %t, %v", patch, found, err)
 	}
 	patch.Text = []byte("wrong") // valid YAML, but not the declared edit.
 
 	// Act.
-	_, err = p.patchYAML([]bytePatch{patch})
+	_, err = p.patchYAMLContext(context.Background(), []bytePatch{patch})
 
 	// Assert.
 	if !errors.Is(err, ErrUnsupportedPresentation) {
@@ -112,12 +112,12 @@ func TestParsePresentation_InvalidYAMLUsesTypedContract(t *testing.T) {
 	data := []byte("---\nparts: [\n---\nbody\n")
 
 	// Act.
-	_, err := parsePresentation(data)
+	_, err := parsePresentationContext(context.Background(), data)
 
 	// Assert.
 	var presentation *PresentationError
 	if !errors.Is(err, ErrUnsupportedPresentation) || !errors.As(err, &presentation) {
-		t.Fatalf("parsePresentation() error = %#v", err)
+		t.Fatalf("parsePresentationContext(context.Background(), ) error = %#v", err)
 	}
 	if presentation.Code != "yaml_syntax" || presentation.Format != "yaml" || presentation.Location != (SourceSpan{Start: 0, End: len("parts: [\n")}) {
 		t.Fatalf("PresentationError = %#v", presentation)
@@ -130,11 +130,11 @@ func TestEnsureRelationPreservesUnrelatedMultilineScalar(t *testing.T) {
 	data := []byte("---\nA: \"\n\"\n---\nbody\n")
 
 	// Act.
-	updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+	updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 
 	// Assert.
 	if err != nil || !bytes.Contains(updated, []byte("A: \"\n\"\nrelations:\n  uses:\n    - target: b\n")) {
-		t.Fatalf("ensureRelationPresentation() = %q, %v", updated, err)
+		t.Fatalf("ensureRelationPresentationContext(context.Background(), ) = %q, %v", updated, err)
 	}
 }
 
@@ -164,13 +164,13 @@ func TestEnsureRelationInsertionBoundaryIgnoresOpaqueUnrelatedSubtrees(t *testin
 			data := []byte("---\n" + tt.yaml + "---\nbody\n")
 
 			// Act.
-			updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+			updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 
 			// Assert.
 			if err != nil || !bytes.Contains(updated, []byte(tt.want)) {
 				t.Fatalf("updated = %q, error=%v", updated, err)
 			}
-			if _, err := parsePresentation(updated); err != nil {
+			if _, err := parsePresentationContext(context.Background(), updated); err != nil {
 				t.Fatalf("updated presentation does not reparse: %v", err)
 			}
 		})
@@ -181,14 +181,14 @@ func TestRenameFragmentPreservesUnrelatedMergeProvenance(t *testing.T) {
 	// Arrange. The merge contributes only an opaque label; the explicit id is
 	// still the single owned identity route.
 	data := []byte("---\nbase: &base\n  label: keep\nparts:\n  - <<: *base\n    id: old\n---\nbody\n")
-	p, err := parsePresentation(data)
+	p, err := parsePresentationContext(context.Background(), data)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Act.
-	patch, found, err := fragmentPatch(p, "old", "new")
-	updated, patchErr := p.patchYAML([]bytePatch{patch})
+	patch, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
+	updated, patchErr := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 
 	// Assert.
 	if err != nil || patchErr != nil || !found || !bytes.Contains(updated, []byte("  - <<: *base\n    id: new\n")) {
@@ -206,7 +206,7 @@ func TestEnsureRelationAppendsAfterEntireSupportedSequence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			nl := tt.newline
 			data := []byte("---" + nl + "type: thing" + nl + "relations:" + nl + "  uses:" + nl + "    - target: a # retain" + nl + "      note: keep-a" + nl + "    - target: c" + nl + "      note: keep-c" + nl + "---" + nl + "body")
-			updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+			updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -214,9 +214,9 @@ func TestEnsureRelationAppendsAfterEntireSupportedSequence(t *testing.T) {
 			if !bytes.Contains(updated, []byte(want)) {
 				t.Fatalf("sequence order/comment/newline = %q", updated)
 			}
-			after, err := parsePresentation(updated)
-			if err != nil || !equalStrings(yamlRootRelationTargetsForType(after.root, "uses"), []string{"a", "c", "b"}) {
-				t.Fatalf("targets = %q, err=%v", yamlRootRelationTargetsForType(after.root, "uses"), err)
+			after, err := parsePresentationContext(context.Background(), updated)
+			if err != nil || !equalStrings(yamlRootRelationTargetsForType(t, after.root, "uses"), []string{"a", "c", "b"}) {
+				t.Fatalf("targets = %q, err=%v", yamlRootRelationTargetsForType(t, after.root, "uses"), err)
 			}
 		})
 	}
@@ -263,7 +263,7 @@ func TestEnsureRelationAllowsQuotedExtensionMarkerData(t *testing.T) {
 				data := []byte("---\r\nrelations:\r\n  uses:\r\n    - target: a # keep\r\n      note: " + quote + value + quote + "\r\n---\r\nbody\r\n")
 
 				// Act.
-				updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+				updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 
 				// Assert.
 				if err != nil {
@@ -682,7 +682,7 @@ func TestBlockPlainScalarResolverPreservesPunctuationAcrossOperations(t *testing
 				if err != nil {
 					t.Fatal(err)
 				}
-				updated, _ := result.Staged.ReadFile(context.Background(), "a.md")
+				updated := readSourceFileForTest(t, result.Staged, "a.md")
 				if !bytes.Contains(updated, []byte("target: moved/"+raw+" # retain")) {
 					t.Fatalf("updated = %q", updated)
 				}
@@ -696,7 +696,7 @@ func TestBlockPlainScalarResolverPreservesPunctuationAcrossOperations(t *testing
 		if err != nil {
 			t.Fatal(err)
 		}
-		updated, _ := result.Staged.ReadFile(context.Background(), "a.md")
+		updated := readSourceFileForTest(t, result.Staged, "a.md")
 		if !bytes.Contains(updated, []byte("id: renamed # retain")) {
 			t.Fatalf("updated = %q", updated)
 		}
@@ -711,7 +711,7 @@ func TestBlockPlainScalarResolverPreservesPunctuationAcrossOperations(t *testing
 		if err != nil {
 			t.Fatal(err)
 		}
-		updated, _ := result.Staged.ReadFile(context.Background(), "a.md")
+		updated := readSourceFileForTest(t, result.Staged, "a.md")
 		if !bytes.Contains(updated, []byte("id: part,one\n    relations:\n      uses:\n        - target: b")) {
 			t.Fatalf("updated = %q", updated)
 		}
@@ -730,7 +730,7 @@ func TestBlockPlainScalarResolverSupportsMultilineSemanticValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, _ := result.Staged.ReadFile(context.Background(), "a.md")
+	updated := readSourceFileForTest(t, result.Staged, "a.md")
 	if !bytes.Contains(updated, []byte("- id: renamed\n")) || bytes.Contains(updated, []byte("      one\n")) {
 		t.Fatalf("updated = %q", updated)
 	}
@@ -741,11 +741,11 @@ func TestEnsureRelationRejectsMixedSequenceBeforeInsertion(t *testing.T) {
 	// supported peer. A mixed sequence has no lossless ownership grammar.
 	data := []byte("---\nrelations:\n uses:\n    - 0\n    - target: 0\n---\nbody\n")
 
-	updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+	updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 
 	var presentation *PresentationError
 	if updated != nil || !errors.Is(err, ErrUnsupportedPresentation) || !errors.As(err, &presentation) || presentation.Code != "relation_item_presentation" {
-		t.Fatalf("ensureRelationPresentation() = %q, %#v", updated, err)
+		t.Fatalf("ensureRelationPresentationContext(context.Background(), ) = %q, %#v", updated, err)
 	}
 }
 
@@ -767,6 +767,94 @@ func TestPlan_InvalidYAMLReturnsPresentationErrorWithoutStage(t *testing.T) {
 	}
 	if result.Staged != nil || len(result.Preview.Writes) != 0 {
 		t.Fatalf("Plan() staged invalid YAML: %#v", result)
+	}
+}
+
+func TestPlanRejectsNonMappingFrontmatterWithTypedConcreteLocation(t *testing.T) {
+	tests := []struct {
+		name string
+		yaml string
+	}{
+		{name: "scalar", yaml: "value\n"},
+		{name: "sequence", yaml: "- value\n"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Arrange.
+			data := []byte("---\n" + test.yaml + "---\n[A](a.md)\n")
+			source := memorySource{
+				"a.md":      []byte("---\ntype: thing\n---\nA\n"),
+				"broken.md": append([]byte(nil), data...),
+			}
+			before := append([]byte(nil), source["broken.md"]...)
+
+			// Act.
+			presentation, directErr := parsePresentationContext(context.Background(), data)
+			result, planErr := Plan(
+				context.Background(),
+				source,
+				change(t, source, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}),
+			)
+
+			// Assert.
+			var direct *PresentationError
+			if presentation != nil || !errors.Is(directErr, ErrUnsupportedPresentation) ||
+				!errors.As(directErr, &direct) || direct.Code != "invalid_frontmatter" ||
+				direct.Format != "yaml" || direct.Location.Start < 0 ||
+				direct.Location.Start >= direct.Location.End || direct.Location.End > len(test.yaml) {
+				t.Fatalf("direct presentation/error = %#v / %#v", presentation, directErr)
+			}
+			var planned *PresentationError
+			if !errors.Is(planErr, ErrUnsupportedPresentation) || !errors.As(planErr, &planned) ||
+				planned.Code != "invalid_frontmatter" || planned.Format != "yaml" ||
+				planned.Path != "broken.md" || planned.Operation != "move_concept" ||
+				planned.Location.Start < 0 || planned.Location.Start >= planned.Location.End ||
+				planned.Location.End > len(data) {
+				t.Fatalf("Plan() error = %#v", planErr)
+			}
+			if result.Staged != nil || len(result.Preview.Writes) != 0 ||
+				len(result.Preview.Renames) != 0 || len(result.Preview.Plan) != 0 {
+				t.Fatalf("rejected Plan() exposed mutation: %#v", result)
+			}
+			if !bytes.Equal(source["broken.md"], before) {
+				t.Fatal("rejected Plan() mutated source")
+			}
+		})
+	}
+}
+
+func TestPlanEmptyYAMLDocumentMapsAbsentLocalSpanToCompleteSource(t *testing.T) {
+	// Arrange.
+	data := []byte("---\n---\nbody\n")
+	source := memorySource{
+		"a.md": append([]byte(nil), data...),
+		"b.md": []byte("---\ntype: thing\n---\nB\n"),
+	}
+
+	// Act.
+	result, err := Plan(
+		context.Background(),
+		source,
+		change(t, source, store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}),
+	)
+
+	// Assert.
+	if err == nil {
+		t.Fatal("Plan() accepted an empty YAML document")
+	}
+	if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Renames) != 0 || len(result.Preview.Plan) != 0 {
+		t.Fatalf("rejected Plan() exposed mutation: %#v, err=%v", result, err)
+	}
+	var presentation *PresentationError
+	if !errors.Is(err, ErrUnsupportedPresentation) || !errors.As(err, &presentation) ||
+		presentation.Code != "yaml_syntax" || presentation.Format != "yaml" {
+		t.Fatalf("Plan() error = %#v, want YAML yaml_syntax", err)
+	}
+	if presentation.Location != (SourceSpan{Start: 4, End: 5}) {
+		t.Fatalf("public empty-document location = %#v, want closing delimiter [4,5)", presentation.Location)
+	}
+	if !bytes.Equal(source["a.md"], data) {
+		t.Fatal("rejected Plan() mutated source")
 	}
 }
 
@@ -853,6 +941,7 @@ func TestPlannerMapsGeneratedYAMLSyntaxFailureToOriginalInsertionRange(t *testin
 
 func FuzzYAMLResolver(f *testing.F) {
 	for _, seed := range [][]byte{
+		[]byte("\r0\n"),
 		[]byte("relations:\n  uses:\n    - target: plain\nparts:\n  - id: old\n"),
 		[]byte("relations:\r\n  uses:\r\n    - target: 'single''quote' # comment\r\nparts:\r\n  - anchor: old\r\n"),
 		[]byte("relations:\n  uses:\n    - target: \"double\\\\quote\"\nparts:\n  - id: old\n"),
@@ -881,7 +970,7 @@ func FuzzYAMLResolver(f *testing.F) {
 		before := append([]byte(nil), data...)
 
 		// Act.
-		p, err := parsePresentation(data)
+		p, err := parsePresentationContext(context.Background(), data)
 		fuzzYAMLPlannerAtomicRejection(t, data)
 
 		// Assert. Arbitrary valid UTF-8 must either be rejected through the
@@ -943,43 +1032,43 @@ func fuzzYAMLSupportedSubset(t *testing.T, seed []byte) {
 	if bytes.Count(data, generated.oldFragment) != 1 || bytes.Count(data, generated.oldTarget) != 1 {
 		t.Fatal("constructed YAML fixture lost its independently known raw projection")
 	}
-	p, err := parsePresentation(data)
+	p, err := parsePresentationContext(context.Background(), data)
 	if err != nil {
 		t.Fatalf("generated supported YAML was rejected: %v", err)
 	}
-	fragment, found, err := fragmentPatch(p, "old", "fuzz-fragment")
+	fragment, found, err := fragmentPatchContext(context.Background(), p, "old", "fuzz-fragment")
 	if err != nil || !found {
 		t.Fatalf("generated supported fragment route = found %t, err %v", found, err)
 	}
-	fragmentUpdated, err := p.patchYAML([]bytePatch{fragment})
-	if err != nil || p.VerifyPatched(fragmentUpdated, []bytePatch{fragment}) != nil {
+	fragmentUpdated, err := p.patchYAMLContext(context.Background(), []bytePatch{fragment})
+	if err != nil || p.VerifyPatchedContext(context.Background(), fragmentUpdated, []bytePatch{fragment}) != nil {
 		t.Fatalf("generated supported fragment patch failed: %v", err)
 	}
-	if _, err := parsePresentation(fragmentUpdated); err != nil || bytes.Count(fragmentUpdated, generated.newFragment) != 1 || bytes.Contains(fragmentUpdated, generated.oldFragment) {
+	if _, err := parsePresentationContext(context.Background(), fragmentUpdated); err != nil || bytes.Count(fragmentUpdated, generated.newFragment) != 1 || bytes.Contains(fragmentUpdated, generated.oldFragment) {
 		t.Fatalf("generated supported fragment raw projection = %q, err %v", fragmentUpdated, err)
 	}
-	if !bytesOutsidePatchesEqual(data, fragmentUpdated, []bytePatch{fragment}) {
+	if !bytesOutsidePatchesEqualForTest(t, data, fragmentUpdated, []bytePatch{fragment}) {
 		t.Fatal("generated supported fragment changed bytes outside its patch")
 	}
-	targets, err := relationTargetPatches(p, ref(t, "old").ID, ref(t, "fuzz-target").ID, "", "")
+	targets, err := relationTargetPatchesContext(context.Background(), p, ref(t, "old").ID, ref(t, "fuzz-target").ID, "", "")
 	if err != nil || len(targets) != 1 {
 		t.Fatalf("generated supported target route = %d patches, err %v", len(targets), err)
 	}
-	targetUpdated, err := p.patchYAML(targets)
-	if err != nil || p.VerifyPatched(targetUpdated, targets) != nil {
+	targetUpdated, err := p.patchYAMLContext(context.Background(), targets)
+	if err != nil || p.VerifyPatchedContext(context.Background(), targetUpdated, targets) != nil {
 		t.Fatalf("generated supported target patch failed: %v", err)
 	}
-	if _, err := parsePresentation(targetUpdated); err != nil || bytes.Count(targetUpdated, generated.newTarget) != 1 || bytes.Contains(targetUpdated, generated.oldTarget) {
+	if _, err := parsePresentationContext(context.Background(), targetUpdated); err != nil || bytes.Count(targetUpdated, generated.newTarget) != 1 || bytes.Contains(targetUpdated, generated.oldTarget) {
 		t.Fatalf("generated supported target raw projection = %q, err %v", targetUpdated, err)
 	}
-	if !bytesOutsidePatchesEqual(data, targetUpdated, targets) {
+	if !bytesOutsidePatchesEqualForTest(t, data, targetUpdated, targets) {
 		t.Fatal("generated supported target changed bytes outside its patch")
 	}
-	ensured, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+	ensured, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 	if err != nil {
 		t.Fatalf("generated supported ensure route was rejected: %v", err)
 	}
-	if _, err := parsePresentation(ensured); err != nil || bytes.Count(ensured, generated.oldTarget) != 1 || bytes.Count(ensured, generated.ensured) != 1 {
+	if _, err := parsePresentationContext(context.Background(), ensured); err != nil || bytes.Count(ensured, generated.oldTarget) != 1 || bytes.Count(ensured, generated.ensured) != 1 {
 		t.Fatalf("generated supported ensure raw projection = %q, err %v", ensured, err)
 	}
 }
@@ -1413,7 +1502,7 @@ func assertYAMLFuzzLocation(t *testing.T, presentation *PresentationError, sourc
 
 func fuzzYAMLFragmentRoute(t *testing.T, p *presentation) {
 	t.Helper()
-	patch, found, err := fragmentPatch(p, "old", "fuzz-fragment")
+	patch, found, err := fragmentPatchContext(context.Background(), p, "old", "fuzz-fragment")
 	if err != nil {
 		assertYAMLFuzzError(t, err, len(p.data))
 		return
@@ -1421,27 +1510,27 @@ func fuzzYAMLFragmentRoute(t *testing.T, p *presentation) {
 	if !found {
 		return
 	}
-	updated, err := p.patchYAML([]bytePatch{patch})
+	updated, err := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 	if err != nil {
 		t.Fatalf("accepted fragment patch rejected: %v", err)
 	}
-	if err := p.VerifyPatched(updated, []bytePatch{patch}); err != nil {
+	if err := p.VerifyPatchedContext(context.Background(), updated, []bytePatch{patch}); err != nil {
 		t.Fatalf("VerifyPatched(fragment) = %v", err)
 	}
-	if !bytesOutsidePatchesEqual(p.data, updated, []bytePatch{patch}) {
+	if !bytesOutsidePatchesEqualForTest(t, p.data, updated, []bytePatch{patch}) {
 		t.Fatal("fragment patch changed bytes outside its actual span")
 	}
-	after, err := parsePresentation(updated)
-	if err != nil || canonicalFragmentCount(after.root, "fuzz-fragment") != 1 {
+	after, err := parsePresentationContext(context.Background(), updated)
+	if err != nil || canonicalFragmentCount(t, after.root, "fuzz-fragment") != 1 {
 		t.Fatalf("fragment semantic projection = %#v, err=%v", after, err)
 	}
 }
 
 func fuzzYAMLRelationTargetRoute(t *testing.T, p *presentation) {
 	t.Helper()
-	before := yamlRelationTargets(p.root)
-	hasDuplicate := yamlHasDuplicateUpdateTarget(p.root, ref(t, "old").ID, "")
-	patches, err := relationTargetPatches(p, ref(t, "old").ID, ref(t, "fuzz-target").ID, "", "")
+	before := yamlRelationTargets(t, p.root)
+	hasDuplicate := yamlHasDuplicateUpdateTarget(t, p.root, ref(t, "old").ID, "")
+	patches, err := relationTargetPatchesContext(context.Background(), p, ref(t, "old").ID, ref(t, "fuzz-target").ID, "", "")
 	if err != nil {
 		assertYAMLFuzzError(t, err, len(p.data))
 		return
@@ -1452,17 +1541,17 @@ func fuzzYAMLRelationTargetRoute(t *testing.T, p *presentation) {
 	if len(patches) == 0 {
 		return
 	}
-	updated, err := p.patchYAML(patches)
+	updated, err := p.patchYAMLContext(context.Background(), patches)
 	if err != nil {
 		t.Fatalf("accepted target patches rejected: %v", err)
 	}
-	if err := p.VerifyPatched(updated, patches); err != nil {
+	if err := p.VerifyPatchedContext(context.Background(), updated, patches); err != nil {
 		t.Fatalf("VerifyPatched(targets) = %v", err)
 	}
-	if !bytesOutsidePatchesEqual(p.data, updated, patches) {
+	if !bytesOutsidePatchesEqualForTest(t, p.data, updated, patches) {
 		t.Fatal("relation target patch changed bytes outside actual spans")
 	}
-	after, err := parsePresentation(updated)
+	after, err := parsePresentationContext(context.Background(), updated)
 	if err != nil {
 		t.Fatalf("target output did not reparse: %v", err)
 	}
@@ -1472,78 +1561,91 @@ func fuzzYAMLRelationTargetRoute(t *testing.T, p *presentation) {
 			want[i] = "fuzz-target"
 		}
 	}
-	if !equalStrings(yamlRelationTargets(after.root), want) {
-		t.Fatalf("ordered relation targets = %q, want %q", yamlRelationTargets(after.root), want)
+	if !equalStrings(yamlRelationTargets(t, after.root), want) {
+		t.Fatalf("ordered relation targets = %q, want %q", yamlRelationTargets(t, after.root), want)
 	}
 }
 
-func yamlHasDuplicateUpdateTarget(root *yaml.Node, id bundle.ConceptID, fragment string) bool {
+func yamlHasDuplicateUpdateTarget(t *testing.T, root *yaml.Node, id bundle.ConceptID, fragment string) bool {
+	t.Helper()
 	duplicate := false
-	walkMappings(root, func(mapping *yaml.Node) {
-		for _, relations := range mappingValues(mapping, "relations") {
+	err := walkMappingsContext(context.Background(), root, includeRootMapping, func(mapping *yaml.Node) error {
+		for _, relations := range mappingValuesForTest(t, mapping, "relations") {
 			relations = yamlAliasTarget(relations)
 			if relations == nil || relations.Kind != yaml.MappingNode {
 				continue
 			}
 			for index := 1; index < len(relations.Content); index += 2 {
-				if len(duplicateRelationTargetsInSequence(relations.Content[index], id, fragment)) > 1 {
+				duplicates, err := duplicateRelationTargetsInSequenceContext(context.Background(), relations.Content[index], id, fragment)
+				if err != nil {
+					t.Fatalf("duplicateRelationTargetsInSequenceContext() error = %v", err)
+				}
+				if len(duplicates) > 1 {
 					duplicate = true
 				}
 			}
 		}
+		return nil
 	})
+	if err != nil {
+		t.Fatalf("walkMappingsContext() error = %v", err)
+	}
 	return duplicate
 }
 
 func fuzzYAMLEnsureRoute(t *testing.T, data []byte) {
 	t.Helper()
-	p, err := parsePresentation(data)
+	p, err := parsePresentationContext(context.Background(), data)
 	if err != nil {
 		t.Fatal(err)
 	}
-	beforeUses := yamlRootRelationTargetsForType(p.root, "uses")
-	beforeOther := yamlRootRelationTargetsExceptType(p.root, "uses")
-	updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+	beforeUses := yamlRootRelationTargetsForType(t, p.root, "uses")
+	beforeOther := yamlRootRelationTargetsExceptType(t, p.root, "uses")
+	updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 	if err != nil {
 		assertYAMLFuzzError(t, err, len(data))
 		return
 	}
-	after, err := parsePresentation(updated)
+	after, err := parsePresentationContext(context.Background(), updated)
 	if err != nil {
 		t.Fatalf("ensure output did not reparse: %v", err)
 	}
-	gotUses := yamlRootRelationTargetsForType(after.root, "uses")
+	gotUses := yamlRootRelationTargetsForType(t, after.root, "uses")
 	wantUses := intendedEnsureTargets(beforeUses, "b")
 	if !equalStrings(gotUses, wantUses) {
 		t.Fatalf("ensure uses projection = %q, want %q", gotUses, wantUses)
 	}
-	if gotOther := yamlRootRelationTargetsExceptType(after.root, "uses"); !equalStrings(gotOther, beforeOther) {
+	if gotOther := yamlRootRelationTargetsExceptType(t, after.root, "uses"); !equalStrings(gotOther, beforeOther) {
 		t.Fatalf("ensure changed untouched relation targets: got %q, want %q", gotOther, beforeOther)
 	}
 }
 
-func yamlRelationTargets(n *yaml.Node) []string {
+func yamlRelationTargets(t *testing.T, n *yaml.Node) []string {
 	var out []string
-	walkMappings(n, func(mapping *yaml.Node) {
-		for _, relations := range mappingValues(mapping, "relations") {
+	err := walkMappingsContext(context.Background(), n, includeRootMapping, func(mapping *yaml.Node) error {
+		for _, relations := range mappingValuesForTest(t, mapping, "relations") {
 			if relations.Kind != yaml.MappingNode {
 				continue
 			}
 			for i := 1; i < len(relations.Content); i += 2 {
 				for _, item := range relations.Content[i].Content {
-					for _, target := range mappingValues(item, "target") {
+					for _, target := range mappingValuesForTest(t, item, "target") {
 						out = append(out, target.Value)
 					}
 				}
 			}
 		}
+		return nil
 	})
+	if err != nil {
+		t.Fatalf("walkMappingsContext() error = %v", err)
+	}
 	return out
 }
 
-func yamlRootRelationTargetsForType(root *yaml.Node, wantedType string) []string {
+func yamlRootRelationTargetsForType(t *testing.T, root *yaml.Node, wantedType string) []string {
 	var out []string
-	for _, relations := range mappingValues(root, "relations") {
+	for _, relations := range mappingValuesForTest(t, root, "relations") {
 		if relations.Kind != yaml.MappingNode {
 			continue
 		}
@@ -1552,7 +1654,7 @@ func yamlRootRelationTargetsForType(root *yaml.Node, wantedType string) []string
 				continue
 			}
 			for _, item := range relations.Content[i+1].Content {
-				for _, target := range mappingValues(item, "target") {
+				for _, target := range mappingValuesForTest(t, item, "target") {
 					out = append(out, target.Value)
 				}
 			}
@@ -1561,9 +1663,9 @@ func yamlRootRelationTargetsForType(root *yaml.Node, wantedType string) []string
 	return out
 }
 
-func yamlRootRelationTargetsExceptType(root *yaml.Node, excludedType string) []string {
+func yamlRootRelationTargetsExceptType(t *testing.T, root *yaml.Node, excludedType string) []string {
 	var out []string
-	for _, relations := range mappingValues(root, "relations") {
+	for _, relations := range mappingValuesForTest(t, root, "relations") {
 		if relations.Kind != yaml.MappingNode {
 			continue
 		}
@@ -1572,7 +1674,7 @@ func yamlRootRelationTargetsExceptType(root *yaml.Node, excludedType string) []s
 				continue
 			}
 			for _, item := range relations.Content[i+1].Content {
-				for _, target := range mappingValues(item, "target") {
+				for _, target := range mappingValuesForTest(t, item, "target") {
 					out = append(out, target.Value)
 				}
 			}
@@ -1581,14 +1683,19 @@ func yamlRootRelationTargetsExceptType(root *yaml.Node, excludedType string) []s
 	return out
 }
 
-func canonicalFragmentCount(root *yaml.Node, want string) int {
+func canonicalFragmentCount(t *testing.T, root *yaml.Node, want string) int {
+	t.Helper()
 	count := 0
-	walkNestedMappings(root, func(mapping *yaml.Node) {
+	err := walkMappingsContext(context.Background(), root, excludeRootMapping, func(mapping *yaml.Node) error {
 		identity := bundle.ResolveMappingIdentity(mapping)
 		if identity.State == bundle.MappingIdentityValid && identity.Fragment == want {
 			count++
 		}
+		return nil
 	})
+	if err != nil {
+		t.Fatalf("walkMappingsContext() error = %v", err)
+	}
 	return count
 }
 

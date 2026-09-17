@@ -1,4 +1,4 @@
-description: "Future root okf_version is consumed best-effort"
+description: "Native root okf_version 0.2 accepts documented legacy fallback input"
 run:
   path: "."
   strict: false

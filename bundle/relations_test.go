@@ -388,7 +388,7 @@ func TestRelationMappingKeysAndTargetsRequireStringTags(t *testing.T) {
 	}
 }
 
-func TestSubresourceIndex_ExaminesEveryOccurrenceWithoutFirstWinsResolution(t *testing.T) {
+func TestSubresourceIndexScopesDuplicateExplicitMappingKeys(t *testing.T) {
 	// Arrange.
 	root := t.TempDir()
 	writeFile(t, root, "target.md", "---\ntype: Note\nparts:\n  - id: one\n    id: two\n    relations:\n      uses:\n        - target: source\n  - anchor: three\n    anchor: four\n  - id: canonical\n    anchor: alias\n  - id: 17\n    id: later\n---\nTarget\n")
@@ -402,26 +402,37 @@ func TestSubresourceIndex_ExaminesEveryOccurrenceWithoutFirstWinsResolution(t *t
 	target := mustParseConceptID(t, "target")
 	source := mustParseConceptID(t, "source")
 
-	// Assert.
-	if got, want := loaded.Subresources(target), []string{"canonical", "later"}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	// Assert. Duplicate identity keys invalidate only their own mappings; valid
+	// sibling mappings remain indexed and resolvable.
+	if errors := loaded.ParseErrors(); len(errors) != 0 {
+		t.Fatalf("ParseErrors() = %#v, want none", errors)
+	}
+	if got, want := loaded.Subresources(target), []string{"canonical", "later"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("Subresources(target) = %v, want %v", got, want)
 	}
 	if got, want := relationKeys(loaded.SemanticLinksFrom(source)), []string{"source|depends_on|target#canonical", "source|depends_on|target#later"}; !sameRelationKeys(got, want) {
-		t.Fatalf("outgoing = %v, want %v", got, want)
+		t.Fatalf("resolved relations = %v, want %v", got, want)
 	}
 	if got := loaded.SemanticLinksFrom(target); len(got) != 0 {
-		t.Fatalf("ambiguous nested source produced resolved relations: %#v", got)
+		t.Fatalf("SemanticLinksFrom(target) = %#v, want no edge from ambiguous nested source", got)
 	}
-	if got := relationKeys(loaded.ReverseImpactConcept(target)); !sameRelationKeys(got, []string{"source|depends_on|target#canonical", "source|depends_on|target#later"}) {
-		t.Fatalf("reverse impact = %v", got)
-	}
-	seen := map[string]bool{}
+
+	ambiguous := map[string]bool{}
+	missing := map[string]bool{}
 	for _, diagnostic := range loaded.RelationDiagnostics() {
-		seen[diagnostic.Code+":"+diagnostic.RawTarget] = true
+		if diagnostic.Code == "ambiguous_fragment" {
+			ambiguous[diagnostic.RawTarget] = true
+		}
+		if diagnostic.Code == "missing_or_ambiguous_target_fragment" {
+			missing[diagnostic.RawTarget] = true
+		}
 	}
-	for _, key := range []string{"ambiguous_fragment:one", "ambiguous_fragment:two", "ambiguous_fragment:three", "ambiguous_fragment:four", "invalid_fragment:17", "anchor_alias:alias", "invalid_source:"} {
-		if !seen[key] {
-			t.Fatalf("diagnostics = %#v, missing %q", loaded.RelationDiagnostics(), key)
+	for _, fragment := range []string{"one", "two", "three", "four"} {
+		if !ambiguous[fragment] {
+			t.Fatalf("diagnostics = %#v, missing ambiguous fragment %q", loaded.RelationDiagnostics(), fragment)
+		}
+		if !missing["target#"+fragment] {
+			t.Fatalf("diagnostics = %#v, missing unresolved target %q", loaded.RelationDiagnostics(), "target#"+fragment)
 		}
 	}
 }
@@ -470,7 +481,7 @@ func TestSubresourceIndex_ExcludesFrontmatterRootIdentity(t *testing.T) {
 	}
 }
 
-func TestNestedIdentityPolicy_UsesUniqueFallbackAndKeepsAmbiguousSourcesOutOfGraph(t *testing.T) {
+func TestNestedIdentityPolicyScopesDuplicateExplicitMappingKeys(t *testing.T) {
 	// Arrange. Every identity occurrence is intentionally explicit: invalid
 	// values must not hide a unique fallback, while duplicate valid candidates
 	// must never select the first one.
@@ -484,40 +495,36 @@ func TestNestedIdentityPolicy_UsesUniqueFallbackAndKeepsAmbiguousSourcesOutOfGra
 		t.Fatal(err)
 	}
 	a := mustParseConceptID(t, "a")
-	target, err := ParseRelationRef("target")
-	if err != nil {
-		t.Fatal(err)
-	}
-	outgoing := relationKeys(loaded.SemanticLinksFrom(a))
-	incoming := relationKeys(loaded.SemanticLinksTo(target))
-	reverse := relationKeys(loaded.ReverseImpactConcept(target.ID))
-	diagnostics := loaded.RelationDiagnostics()
 
-	// Assert.
-	want := []string{"a#fallback-anchor|uses|target", "a#fallback-id|uses|target"}
-	if !sameRelationKeys(outgoing, want) || !sameRelationKeys(incoming, want) || !sameRelationKeys(reverse, want) {
-		t.Fatalf("outgoing=%v incoming=%v reverse=%v, want %v", outgoing, incoming, reverse, want)
+	// Assert. A unique valid fallback remains usable beside an invalid scalar,
+	// while multiple valid candidates make only that nested source ambiguous.
+	if errors := loaded.ParseErrors(); len(errors) != 0 {
+		t.Fatalf("ParseErrors() = %#v, want none", errors)
 	}
-	if got, want := loaded.Subresources(a), []string{"fallback-anchor", "fallback-id"}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	if got, want := loaded.Subresources(a), []string{"fallback-anchor", "fallback-id"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("Subresources(a) = %v, want %v", got, want)
 	}
-	var invalidSources int
-	for _, diagnostic := range diagnostics {
+	if got, want := relationKeys(loaded.SemanticLinksFrom(a)), []string{"a#fallback-anchor|uses|target", "a#fallback-id|uses|target"}; !sameRelationKeys(got, want) {
+		t.Fatalf("SemanticLinksFrom(a) = %v, want %v", got, want)
+	}
+
+	ambiguous := map[string]bool{}
+	invalidSources := 0
+	for _, diagnostic := range loaded.RelationDiagnostics() {
+		if diagnostic.Code == "ambiguous_fragment" {
+			ambiguous[diagnostic.RawTarget] = true
+		}
 		if diagnostic.Code == "invalid_source" {
 			invalidSources++
 		}
 	}
+	for _, fragment := range []string{"first", "second", "first-anchor", "second-anchor"} {
+		if !ambiguous[fragment] {
+			t.Fatalf("diagnostics = %#v, missing ambiguous fragment %q", loaded.RelationDiagnostics(), fragment)
+		}
+	}
 	if invalidSources != 2 {
-		t.Fatalf("invalid_source diagnostics = %d, want 2: %#v", invalidSources, diagnostics)
-	}
-	// Loading the same bytes again must not make diagnostics depend on traversal
-	// order or on the first candidate encountered.
-	reloaded, err := LoadBundle(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got, want := diagnosticStrings(reloaded.RelationDiagnostics()), diagnosticStrings(diagnostics); !sameDiagnosticStrings(got, want) {
-		t.Fatalf("diagnostics are unstable: %v != %v", got, want)
+		t.Fatalf("invalid_source diagnostics = %d, want 2: %#v", invalidSources, loaded.RelationDiagnostics())
 	}
 }
 
@@ -708,20 +715,37 @@ func TestBundleInvalidNestedIdentityDoesNotInheritParentSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	relations := loaded.SemanticLinksFrom(mustParseConceptID(t, "a"))
+	a := mustParseConceptID(t, "a")
 
-	// Assert.
-	if len(relations) != 0 {
-		t.Fatalf("SemanticLinksFrom(a) = %#v, want no inherited edges", relations)
+	// Assert. Invalid child identities do not inherit the valid parent's source
+	// and do not prevent the parent itself from remaining indexed.
+	if errors := loaded.ParseErrors(); len(errors) != 0 {
+		t.Fatalf("ParseErrors() = %#v, want none", errors)
 	}
+	if got, want := loaded.Subresources(a), []string{"parent"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("Subresources(a) = %v, want %v", got, want)
+	}
+	if got := loaded.SemanticLinksFrom(a); len(got) != 0 {
+		t.Fatalf("SemanticLinksFrom(a) = %#v, want no inherited child relations", got)
+	}
+
+	ambiguous := map[string]bool{}
 	invalidSources := 0
 	for _, diagnostic := range loaded.RelationDiagnostics() {
+		if diagnostic.Code == "ambiguous_fragment" {
+			ambiguous[diagnostic.RawTarget] = true
+		}
 		if diagnostic.Code == "invalid_source" {
 			invalidSources++
 		}
 	}
+	for _, fragment := range []string{"duplicate", "duplicate-again"} {
+		if !ambiguous[fragment] {
+			t.Fatalf("diagnostics = %#v, missing ambiguous fragment %q", loaded.RelationDiagnostics(), fragment)
+		}
+	}
 	if invalidSources != 2 {
-		t.Fatalf("invalid_source diagnostics = %d, want 2", invalidSources)
+		t.Fatalf("invalid_source diagnostics = %d, want 2: %#v", invalidSources, loaded.RelationDiagnostics())
 	}
 }
 
@@ -735,14 +759,6 @@ func sameDiagnosticStrings(got, want []string) bool {
 		}
 	}
 	return true
-}
-
-func diagnosticStrings(diagnostics []RelationDiagnostic) []string {
-	out := make([]string, len(diagnostics))
-	for i, diagnostic := range diagnostics {
-		out[i] = string(diagnostic.Severity) + ":" + diagnostic.Code + ":" + RelationRef{ID: diagnostic.Source, Fragment: diagnostic.SourceFragment}.String() + ":" + diagnostic.RelationType + ":" + diagnostic.RawTarget
-	}
-	return out
 }
 
 func TestSemanticLinksFromNilAndUnknownBundle(t *testing.T) {

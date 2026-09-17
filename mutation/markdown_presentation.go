@@ -1,11 +1,9 @@
 package mutation
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -40,9 +38,11 @@ type MarkdownDestination struct {
 }
 
 type markdownInlineDestinationNode struct {
-	node  ast.Node
-	kind  MarkdownDestinationKind
-	value []byte
+	node    ast.Node
+	kind    MarkdownDestinationKind
+	value   []byte
+	depth   int
+	ordinal int
 }
 
 // collectMarkdownDestinations maps every eligible Goldmark node directly to
@@ -50,9 +50,6 @@ type markdownInlineDestinationNode struct {
 // bounded node-local window; a reference definition starts in its own
 // LinkReferenceDefinition block segment. The small lexical reader proves one
 // and only one raw token against the node's parsed Destination value.
-func collectMarkdownDestinations(source []byte) ([]MarkdownDestination, error) {
-	return collectMarkdownDestinationsContext(context.Background(), source)
-}
 
 func collectMarkdownDestinationsContext(ctx context.Context, source []byte) ([]MarkdownDestination, error) {
 	if err := ctx.Err(); err != nil {
@@ -65,7 +62,7 @@ func collectMarkdownDestinationsContext(ctx context.Context, source []byte) ([]M
 	if !valid {
 		return nil, invalidUTF8PresentationErrorAt("markdown", invalid)
 	}
-	bodyStart, err := markdownBodyStart(source)
+	bodyStart, err := markdownBodyStartContext(ctx, source)
 	if err != nil {
 		return nil, markdownPresentationErrorAt("frontmatter_boundary", fmt.Errorf("%w: %w", ErrUnsupportedPresentation, err), SourceSpan{Start: 0, End: len(source)})
 	}
@@ -88,12 +85,26 @@ func collectMarkdownDestinationsContext(ctx context.Context, source []byte) ([]M
 			if n.Reference != nil {
 				return ast.WalkContinue, nil
 			}
-			inlineNodes = append(inlineNodes, markdownInlineDestinationNode{node: n, kind: MarkdownLinkDestination, value: n.Destination})
+			depth, err := markdownNodeDepthContext(ctx, n)
+			if err != nil {
+				return ast.WalkStop, err
+			}
+			inlineNodes = append(inlineNodes, markdownInlineDestinationNode{
+				node: n, kind: MarkdownLinkDestination, value: n.Destination,
+				depth: depth, ordinal: len(inlineNodes),
+			})
 		case *ast.Image:
 			if n.Reference != nil {
 				return ast.WalkContinue, nil
 			}
-			inlineNodes = append(inlineNodes, markdownInlineDestinationNode{node: n, kind: MarkdownImageDestination, value: n.Destination})
+			depth, err := markdownNodeDepthContext(ctx, n)
+			if err != nil {
+				return ast.WalkStop, err
+			}
+			inlineNodes = append(inlineNodes, markdownInlineDestinationNode{
+				node: n, kind: MarkdownImageDestination, value: n.Destination,
+				depth: depth, ordinal: len(inlineNodes),
+			})
 		}
 		return ast.WalkContinue, nil
 	})
@@ -102,9 +113,10 @@ func collectMarkdownDestinationsContext(ctx context.Context, source []byte) ([]M
 	}
 	out := make([]MarkdownDestination, 0, len(inlineNodes))
 	resolvedInline := make(map[ast.Node]SourceSpan, len(inlineNodes))
-	sort.SliceStable(inlineNodes, func(i, j int) bool {
-		return markdownNodeDepth(inlineNodes[i].node) > markdownNodeDepth(inlineNodes[j].node)
-	})
+	inlineNodes, err = sortedMarkdownInlineDestinationNodesContext(ctx, inlineNodes)
+	if err != nil {
+		return nil, err
+	}
 	for _, item := range inlineNodes {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -162,10 +174,32 @@ func collectMarkdownDestinationsContext(ctx context.Context, source []byte) ([]M
 		definition.Span.End += bodyStart
 		out = append(out, definition)
 	}
-	if err := validateMarkdownDestinationSpansContext(ctx, source, out); err != nil {
+	out, err = validateMarkdownDestinationSpansContext(ctx, source, out)
+	if err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+func sortedMarkdownInlineDestinationNodesContext(ctx context.Context, input []markdownInlineDestinationNode) ([]markdownInlineDestinationNode, error) {
+	ordered := make([]markdownInlineDestinationNode, len(input))
+	for index := range input {
+		if index&4095 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		ordered[index] = input[index]
+	}
+	if err := sortSliceContext(ctx, ordered, func(left, right markdownInlineDestinationNode) bool {
+		if left.depth != right.depth {
+			return left.depth > right.depth
+		}
+		return left.ordinal < right.ordinal
+	}); err != nil {
+		return nil, err
+	}
+	return ordered, ctx.Err()
 }
 
 // protectedGoldmarkParse contains the only recovery boundary around Goldmark.
@@ -204,9 +238,6 @@ func protectedGoldmarkParse(ctx context.Context, source []byte) (doc ast.Node, p
 // markdownInlineDestination reads precisely the construct beginning at node's
 // Goldmark Pos(). The owning block's real source segments bound the reader, so
 // a decoy in code, raw HTML, or another node cannot satisfy this node.
-func markdownInlineDestination(source []byte, node ast.Node, want []byte, followingStart int, excluded []SourceSpan) (SourceSpan, []byte, bool, error) {
-	return markdownInlineDestinationContext(context.Background(), source, node, want, followingStart, excluded)
-}
 
 func markdownInlineDestinationContext(ctx context.Context, source []byte, node ast.Node, want []byte, followingStart int, excluded []SourceSpan) (SourceSpan, []byte, bool, error) {
 	if err := ctx.Err(); err != nil {
@@ -235,17 +266,15 @@ func markdownNodeDescendsFrom(node, ancestor ast.Node) bool {
 	return false
 }
 
-func markdownNodeDepth(node ast.Node) int {
+func markdownNodeDepthContext(ctx context.Context, node ast.Node) (int, error) {
 	depth := 0
 	for parent := node.Parent(); parent != nil; parent = parent.Parent() {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
 		depth++
 	}
-	return depth
-}
-
-func markdownOpaqueDescendantSpans(owner ast.Node) []SourceSpan {
-	spans, _ := markdownOpaqueDescendantSpansContext(context.Background(), owner)
-	return spans
+	return depth, ctx.Err()
 }
 
 func markdownOpaqueDescendantSpansContext(ctx context.Context, owner ast.Node) ([]SourceSpan, error) {
@@ -281,10 +310,6 @@ func markdownOpaqueDescendantSpansContext(ctx context.Context, owner ast.Node) (
 // separate AST nodes in one block. Node.Pos is only a start marker, so the
 // final node in a block still has to prove its destination from every viable
 // source candidate in the remaining node-local window.
-func markdownFollowingInlineStart(node ast.Node) int {
-	start, _ := markdownFollowingInlineStartContext(context.Background(), node)
-	return start
-}
 
 func markdownFollowingInlineStartContext(ctx context.Context, node ast.Node) (int, error) {
 	for sibling := node.NextSibling(); sibling != nil; sibling = sibling.NextSibling() {
@@ -413,10 +438,6 @@ func markdownReferenceDestinationsContext(ctx context.Context, source []byte, do
 // single real Goldmark definition node. Its Lines segments are the complete
 // source boundary, including destination-on-continuation forms; paragraph text
 // which merely resembles a definition never reaches this function.
-func markdownDefinitionNodeToken(source []byte, definition *ast.LinkReferenceDefinition) (SourceSpan, []byte, []byte, bool) {
-	span, label, value, ok, _ := markdownDefinitionNodeTokenContext(context.Background(), source, definition)
-	return span, label, value, ok
-}
 
 func markdownDefinitionNodeTokenContext(ctx context.Context, source []byte, definition *ast.LinkReferenceDefinition) (SourceSpan, []byte, []byte, bool, error) {
 	if err := ctx.Err(); err != nil {
@@ -440,11 +461,6 @@ func markdownDefinitionNodeTokenContext(ctx context.Context, source []byte, defi
 		return SourceSpan{}, nil, nil, false, nil
 	}
 	return span, label, value, true, ctx.Err()
-}
-
-func markdownNodeWindow(source []byte, node ast.Node) (SourceSpan, bool) {
-	span, ok, _ := markdownNodeWindowContext(context.Background(), source, node)
-	return span, ok
 }
 
 func markdownNodeWindowContext(ctx context.Context, source []byte, node ast.Node) (SourceSpan, bool, error) {
@@ -480,10 +496,6 @@ func markdownNodeWindowContext(ctx context.Context, source []byte, node ast.Node
 		return SourceSpan{Start: start, End: end}, start < end, nil
 	}
 	return SourceSpan{}, false, ctx.Err()
-}
-
-func markdownInlineToken(source []byte, start, limit int, want []byte, excluded []SourceSpan) (SourceSpan, []byte, bool, error) {
-	return markdownInlineTokenContext(context.Background(), source, start, limit, want, excluded)
 }
 
 func markdownInlineTokenContext(ctx context.Context, source []byte, start, limit int, want []byte, excluded []SourceSpan) (SourceSpan, []byte, bool, error) {
@@ -656,11 +668,6 @@ func markdownSpanExcluded(span SourceSpan, excluded []SourceSpan) bool {
 	return false
 }
 
-func markdownSemanticDestination(raw []byte) string {
-	value, _ := markdownSemanticDestinationContext(context.Background(), raw)
-	return value
-}
-
 func markdownSemanticDestinationContext(ctx context.Context, raw []byte) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
@@ -681,10 +688,6 @@ func markdownSemanticDestinationContext(ctx context.Context, raw []byte) (string
 		return "", err
 	}
 	return string(value), ctx.Err()
-}
-
-func encodeMarkdownDestination(value string, preferAngle bool) ([]byte, error) {
-	return encodeMarkdownDestinationContext(context.Background(), value, preferAngle)
 }
 
 func encodeMarkdownDestinationContext(ctx context.Context, value string, preferAngle bool) ([]byte, error) {
@@ -725,11 +728,6 @@ func encodeMarkdownDestinationContext(ctx context.Context, value string, preferA
 	return encoded, ctx.Err()
 }
 
-func markdownEscaped(source []byte, at int) bool {
-	escaped, _ := markdownEscapedContext(context.Background(), source, at)
-	return escaped
-}
-
 func markdownEscapedContext(ctx context.Context, source []byte, at int) (bool, error) {
 	backslashes := 0
 	for at > 0 && source[at-1] == '\\' {
@@ -742,11 +740,6 @@ func markdownEscapedContext(ctx context.Context, source []byte, at int) (bool, e
 		at--
 	}
 	return backslashes%2 == 1, ctx.Err()
-}
-
-func markdownDefinitionToken(source []byte, start, limit int) (SourceSpan, []byte, []byte, bool) {
-	span, label, value, ok, _ := markdownDefinitionTokenContext(context.Background(), source, start, limit)
-	return span, label, value, ok
 }
 
 func markdownDefinitionTokenContext(ctx context.Context, source []byte, start, limit int) (SourceSpan, []byte, []byte, bool, error) {
@@ -781,11 +774,6 @@ func markdownDefinitionTokenContext(ctx context.Context, source []byte, start, l
 	return span, source[at+1 : labelEnd], value, true, ctx.Err()
 }
 
-func markdownBracketClosure(source []byte, open, limit int) (int, bool) {
-	at, ok, _ := markdownBracketClosureContext(context.Background(), source, open, limit)
-	return at, ok
-}
-
 func markdownBracketClosureContext(ctx context.Context, source []byte, open, limit int) (int, bool, error) {
 	depth := 0
 	for at := open; at < limit; at++ {
@@ -811,11 +799,6 @@ func markdownBracketClosureContext(ctx context.Context, source []byte, open, lim
 	return 0, false, ctx.Err()
 }
 
-func markdownSkipSpace(source []byte, at, limit int) int {
-	at, _ = markdownSkipSpaceContext(context.Background(), source, at, limit)
-	return at
-}
-
 func markdownSkipSpaceContext(ctx context.Context, source []byte, at, limit int) (int, error) {
 	for at < limit {
 		if at&4095 == 0 {
@@ -836,10 +819,6 @@ func markdownSkipSpaceContext(ctx context.Context, source []byte, at, limit int)
 // markdownDestinationToken is intentionally node-local. Its grammar mirrors
 // Goldmark's parseLinkDestination enough to locate the source token; equality
 // with the node's Destination is the proof that it is that token.
-func markdownDestinationToken(source []byte, at, limit int) (SourceSpan, []byte, bool) {
-	span, value, ok, _ := markdownDestinationTokenContext(context.Background(), source, at, limit)
-	return span, value, ok
-}
 
 func markdownDestinationTokenContext(ctx context.Context, source []byte, at, limit int) (SourceSpan, []byte, bool, error) {
 	if err := ctx.Err(); err != nil {
@@ -904,47 +883,70 @@ func markdownDestinationTokenContext(ctx context.Context, source []byte, at, lim
 	return SourceSpan{}, nil, false, ctx.Err()
 }
 
-func validateMarkdownDestinationSpansContext(ctx context.Context, source []byte, destinations []MarkdownDestination) error {
+type markdownDestinationProjection struct {
+	destination MarkdownDestination
+	ordinal     int
+}
+
+func validateMarkdownDestinationSpansContext(ctx context.Context, source []byte, destinations []MarkdownDestination) ([]MarkdownDestination, error) {
 	if err := ctx.Err(); err != nil {
-		return err
+		return nil, err
 	}
-	sort.Slice(destinations, func(i, j int) bool {
-		if destinations[i].Span.Start != destinations[j].Span.Start {
-			return destinations[i].Span.Start < destinations[j].Span.Start
+	ordered := make([]markdownDestinationProjection, len(destinations))
+	for index, destination := range destinations {
+		if index&4095 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 		}
-		if destinations[i].Span.End != destinations[j].Span.End {
-			return destinations[i].Span.End < destinations[j].Span.End
+		ordered[index] = markdownDestinationProjection{destination: destination, ordinal: index}
+	}
+	if err := sortSliceContext(ctx, ordered, func(left, right markdownDestinationProjection) bool {
+		if left.destination.Span.Start != right.destination.Span.Start {
+			return left.destination.Span.Start < right.destination.Span.Start
 		}
-		return destinations[i].Kind < destinations[j].Kind
-	})
-	if err := ctx.Err(); err != nil {
-		return err
+		if left.destination.Span.End != right.destination.Span.End {
+			return left.destination.Span.End < right.destination.Span.End
+		}
+		if left.destination.Kind != right.destination.Kind {
+			return left.destination.Kind < right.destination.Kind
+		}
+		return left.ordinal < right.ordinal
+	}); err != nil {
+		return nil, err
 	}
 	end := 0
 	previous := SourceSpan{}
-	for _, destination := range destinations {
+	for _, projection := range ordered {
 		if err := ctx.Err(); err != nil {
-			return err
+			return nil, err
 		}
+		destination := projection.destination
 		if !destination.Span.valid(len(source)) || destination.Span.Start < end {
 			span := diagnosticMarkdownSpan(source, destination.Span)
 			if destination.Span.Start < end && previous != (SourceSpan{}) {
 				span = unionSourceSpans(previous, span)
 			}
-			return markdownPresentationErrorAt("invalid_source_span", ErrUnsupportedPresentation, span)
+			return nil, markdownPresentationErrorAt("invalid_source_span", ErrUnsupportedPresentation, span)
 		}
 		end = destination.Span.End
 		previous = destination.Span
 	}
-	return nil
+	sorted := make([]MarkdownDestination, len(ordered))
+	for index := range ordered {
+		if index&4095 == 0 {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+		}
+		sorted[index] = ordered[index].destination
+	}
+	return sorted, ctx.Err()
 }
 
 // rewriteMarkdownDestinations performs all validation before allocating the
 // patched result. Reparse verification is order-sensitive: it compares each
 // AST-owned destination, not a multiset of (kind, value) pairs.
-func rewriteMarkdownDestinations(source []byte, rewrite func(string) (string, bool)) ([]byte, error) {
-	return rewriteMarkdownDestinationsContext(context.Background(), source, rewrite)
-}
 
 func rewriteMarkdownDestinationsContext(ctx context.Context, source []byte, rewrite func(string) (string, bool)) ([]byte, error) {
 	before, err := collectMarkdownDestinationsContext(ctx, source)
@@ -986,7 +988,7 @@ func rewriteMarkdownDestinationsContext(ctx context.Context, source []byte, rewr
 	if err != nil {
 		return nil, err
 	}
-	if err := equalMarkdownDestinationSemantics(expected, after, bytePatchesSpan(patches)); err != nil {
+	if err := equalMarkdownDestinationSemanticsContext(ctx, expected, after, bytePatchesSpan(patches)); err != nil {
 		return nil, err
 	}
 	equal, err := bytesOutsidePatchesEqualContext(ctx, source, out, patches)
@@ -999,16 +1001,19 @@ func rewriteMarkdownDestinationsContext(ctx context.Context, source []byte, rewr
 	return out, nil
 }
 
-func equalMarkdownDestinationSemantics(want, got []MarkdownDestination, patchSpan SourceSpan) error {
+func equalMarkdownDestinationSemanticsContext(ctx context.Context, want, got []MarkdownDestination, patchSpan SourceSpan) error {
 	if len(want) != len(got) {
 		return markdownPresentationErrorAt("semantic_span_mismatch", fmt.Errorf("%w: semantic count %d, source count %d", ErrUnsupportedPresentation, len(want), len(got)), patchSpan)
 	}
 	for i := range want {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if want[i].Kind != got[i].Kind || want[i].Value != got[i].Value {
 			return markdownPresentationErrorAt("semantic_span_mismatch", ErrUnsupportedPresentation, patchSpan)
 		}
 	}
-	return nil
+	return ctx.Err()
 }
 
 func diagnosticMarkdownSpan(source []byte, span SourceSpan) SourceSpan {
@@ -1030,66 +1035,8 @@ func unionSourceSpans(left, right SourceSpan) SourceSpan {
 	return SourceSpan{Start: min(left.Start, right.Start), End: max(left.End, right.End)}
 }
 
-// bytesOutsidePatchesEqual compares the unchanged source segments while
-// allowing replacements to have different lengths.
-func bytesOutsidePatchesEqual(before, after []byte, patches []bytePatch) bool {
-	equal, _ := bytesOutsidePatchesEqualContext(context.Background(), before, after, patches)
-	return equal
-}
-
-func bytesOutsidePatchesEqualContext(ctx context.Context, before, after []byte, patches []bytePatch) (bool, error) {
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-	sort.Slice(patches, func(i, j int) bool { return patches[i].Start < patches[j].Start })
-	oldAt, newAt := 0, 0
-	for _, patch := range patches {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-		width := patch.Start - oldAt
-		if width < 0 || patch.Start > len(before) || patch.End < patch.Start || patch.End > len(before) || newAt+width > len(after) {
-			return false, nil
-		}
-		equal, err := bytesEqualContext(ctx, before[oldAt:patch.Start], after[newAt:newAt+width])
-		if err != nil {
-			return false, err
-		}
-		if !equal {
-			return false, nil
-		}
-		oldAt = patch.End
-		newAt += width + len(patch.Text)
-	}
-	if newAt > len(after) {
-		return false, nil
-	}
-	return bytesEqualContext(ctx, before[oldAt:], after[newAt:])
-}
-
-func bytesEqualContext(ctx context.Context, left, right []byte) (bool, error) {
-	if len(left) != len(right) {
-		return false, nil
-	}
-	const chunkSize = 64 << 10
-	for len(left) > 0 {
-		if err := ctx.Err(); err != nil {
-			return false, err
-		}
-		n := min(len(left), chunkSize)
-		if !bytes.Equal(left[:n], right[:n]) {
-			return false, nil
-		}
-		left, right = left[n:], right[n:]
-	}
-	if err := ctx.Err(); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func markdownBodyStart(source []byte) (int, error) {
-	layout, ok, err := documentlayout.Split(source)
+func markdownBodyStartContext(ctx context.Context, source []byte) (int, error) {
+	layout, ok, err := documentlayout.SplitContext(ctx, source)
 	if err != nil {
 		return 0, err
 	}

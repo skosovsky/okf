@@ -154,7 +154,7 @@ func TestOverlay_RenameTombstoneAndCopies(t *testing.T) {
 	if _, err := o.ReadFile(context.Background(), "a.md"); err == nil {
 		t.Fatal("old path fell back to base")
 	}
-	fresh, _ := o.ReadFile(context.Background(), "b.md")
+	fresh := readSourceFileForTest(t, o, "b.md")
 	if string(fresh) != "old" {
 		t.Fatalf("overlay leaked caller mutation: %q", fresh)
 	}
@@ -178,12 +178,13 @@ func TestYAMLScalarToken_RoundTripsExactValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act.
+			token, tokenErr := yamlScalarTokenContext(context.Background(), tt.value, tt.preferred)
 			var got map[string]string
-			err := yaml.Unmarshal([]byte("value: "+yamlScalarToken(tt.value, tt.preferred)+"\n"), &got)
+			err := yaml.Unmarshal([]byte("value: "+token+"\n"), &got)
 
 			// Assert.
-			if err != nil || got["value"] != tt.value {
-				t.Fatalf("token %q parsed as %#v, %v; want %q", yamlScalarToken(tt.value, tt.preferred), got, err, tt.value)
+			if tokenErr != nil || err != nil || got["value"] != tt.value {
+				t.Fatalf("token %q parsed as %#v, errors %v/%v; want %q", token, got, tokenErr, err, tt.value)
 			}
 		})
 	}
@@ -577,28 +578,28 @@ func TestFragmentPatch_UsesSemanticCanonicalIdentity(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange.
-			p, err := parsePresentation([]byte(tt.input))
+			p, err := parsePresentationContext(context.Background(), []byte(tt.input))
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			// Act.
-			patch, found, err := fragmentPatch(p, tt.from, "new")
+			patch, found, err := fragmentPatchContext(context.Background(), p, tt.from, "new")
 
 			// Assert.
 			if tt.wantErr {
 				if err == nil {
-					t.Fatal("fragmentPatch() error = nil, want typed presentation error")
+					t.Fatal("fragmentPatchContext(context.Background(), ) error = nil, want typed presentation error")
 				}
 				if !errors.Is(err, ErrUnsupportedPresentation) && !errors.Is(err, ErrAmbiguousPresentation) {
-					t.Fatalf("fragmentPatch() error = %v, want Unsupported or Ambiguous", err)
+					t.Fatalf("fragmentPatchContext(context.Background(), ) error = %v, want Unsupported or Ambiguous", err)
 				}
 				return
 			}
 			if err != nil || !found {
-				t.Fatalf("fragmentPatch() = (%#v, %t, %v), want patch", patch, found, err)
+				t.Fatalf("fragmentPatchContext(context.Background(), ) = (%#v, %t, %v), want patch", patch, found, err)
 			}
-			got, err := p.patchYAML([]bytePatch{patch})
+			got, err := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -626,29 +627,51 @@ func TestEnsureRelation_RejectsDuplicateMappingKeys(t *testing.T) {
 }
 
 func TestRenameFragment_PreservesDuplicateUnrelatedKeys(t *testing.T) {
+	// Arrange.
 	s := memorySource{"a.md": []byte("---\ntype: thing\nparts:\n  - anchor: old\n    label: one\n    label: two\n---\nA\n")}
-	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+
+	// Act.
+	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{
+		Concept: ref(t, "a").ID,
+		From:    "old",
+		To:      "new",
+	}))
+	var got []byte
+	if err == nil {
+		got, err = result.Staged.ReadFile(context.Background(), "a.md")
+	}
+
+	// Assert.
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, readErr := result.Staged.ReadFile(context.Background(), "a.md")
-	if readErr != nil || !bytes.Contains(updated, []byte("- anchor: new\n    label: one\n    label: two")) {
-		t.Fatalf("updated = %q, error=%v", updated, readErr)
+	want := []byte("---\ntype: thing\nparts:\n  - anchor: new\n    label: one\n    label: two\n---\nA\n")
+	if !bytes.Equal(got, want) {
+		t.Fatalf("unrelated duplicate keys changed:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
 
 func TestMoveConcept_PreservesDuplicateUnrelatedRelationExtensions(t *testing.T) {
+	// Arrange.
 	s := memorySource{
 		"a.md": []byte("---\ntype: thing\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n      note: one\n      note: two\n---\nB\n"),
 	}
+
+	// Act.
 	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	var got []byte
+	if err == nil {
+		got, err = result.Staged.ReadFile(context.Background(), "b.md")
+	}
+
+	// Assert.
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, readErr := result.Staged.ReadFile(context.Background(), "b.md")
-	if readErr != nil || !bytes.Contains(updated, []byte("target: moved/a\n      note: one\n      note: two")) {
-		t.Fatalf("updated = %q, error=%v", updated, readErr)
+	want := []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: moved/a\n      note: one\n      note: two\n---\nB\n")
+	if !bytes.Equal(got, want) {
+		t.Fatalf("unrelated relation extensions changed:\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }
 
@@ -1117,7 +1140,7 @@ func TestPlanYAML_TouchedFlowRelationNeverStages(t *testing.T) {
 			if !errors.As(err, &invalidChange) || invalidChange.Code != "invalid_presentation" || result.Staged != nil {
 				t.Fatalf("result/error = %#v / %v", result, err)
 			}
-			got, _ := s.ReadFile(context.Background(), "b.md")
+			got := readSourceFileForTest(t, s, "b.md")
 			if !bytes.Equal(got, raw) {
 				t.Fatalf("source changed: %q", got)
 			}
@@ -1128,14 +1151,14 @@ func TestPlanYAML_TouchedFlowRelationNeverStages(t *testing.T) {
 func TestPlanYAML_UnrelatedFlowRelationDoesNotVetoMove(t *testing.T) {
 	// Arrange.
 	raw := []byte("---\ntype: thing\nrelations: {uses: [{target: c}]}\n---\nB\n")
-	p, err := parsePresentation(raw)
+	p, err := parsePresentationContext(context.Background(), raw)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Act.
-	patches, err := relationTargetPatches(p, ref(t, "a").ID, ref(t, "moved/a").ID, "", "")
-	updated, patchErr := p.patchYAML(patches)
+	patches, err := relationTargetPatchesContext(context.Background(), p, ref(t, "a").ID, ref(t, "moved/a").ID, "", "")
+	updated, patchErr := p.patchYAMLContext(context.Background(), patches)
 
 	// Assert.
 	if err != nil || patchErr != nil || len(patches) != 0 || !bytes.Equal(updated, raw) {
@@ -1232,33 +1255,33 @@ func TestPlanMoveConcept_AmbiguousMarkdownLocationIsFullFile(t *testing.T) {
 
 func TestApplyBytePatches_RejectsOverlap(t *testing.T) {
 	// Arrange / Act.
-	_, err := applyBytePatches([]byte("abcd"), []bytePatch{{Start: 1, End: 3}, {Start: 2, End: 4}})
+	_, err := applyBytePatchesContext(context.Background(), []byte("abcd"), []bytePatch{{Start: 1, End: 3}, {Start: 2, End: 4}})
 
 	// Assert.
 	if !errors.Is(err, ErrUnsupportedPresentation) {
 		t.Fatalf("error = %v, want ErrUnsupportedPresentation", err)
 	}
 	var presentation *PresentationError
-	if !errors.As(err, &presentation) || presentation.Code != "invalid_patch" {
+	if !errors.As(err, &presentation) || presentation.Code != yamlCodeOverlappingPatch {
 		t.Fatalf("presentation = %#v", presentation)
 	}
 }
 
 func TestRelationTargetPatchesPropagatesInvalidSourceRange(t *testing.T) {
 	// Arrange.
-	p, err := parsePresentation([]byte("---\nrelations:\n  uses:\n    - target: b\n---\n"))
+	p, err := parsePresentationContext(context.Background(), []byte("---\nrelations:\n  uses:\n    - target: b\n---\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	target := mappingValues(mappingValues(mappingValues(p.root, "relations")[0], "uses")[0].Content[0], "target")[0]
+	target := mappingValuesForTest(t, mappingValuesForTest(t, mappingValuesForTest(t, p.root, "relations")[0], "uses")[0].Content[0], "target")[0]
 	target.Line = 99
 
 	// Act.
-	_, err = relationTargetPatches(p, ref(t, "b").ID, ref(t, "moved").ID, "", "")
+	_, err = relationTargetPatchesContext(context.Background(), p, ref(t, "b").ID, ref(t, "moved").ID, "", "")
 
 	// Assert.
 	if !errors.Is(err, ErrUnsupportedPresentation) {
-		t.Fatalf("relationTargetPatches() error = %v, want ErrUnsupportedPresentation", err)
+		t.Fatalf("relationTargetPatchesContext(context.Background(), ) error = %v, want ErrUnsupportedPresentation", err)
 	}
 	var presentationErr *PresentationError
 	if !errors.As(err, &presentationErr) || presentationErr.Code != "invalid_coordinate" || presentationErr.Location.Start >= presentationErr.Location.End {
@@ -1345,7 +1368,7 @@ func TestPlanRenameFragment_RewritesIncomingReference(t *testing.T) {
 	if len(links) != 1 || links[0].Target.String() != "a#new" {
 		t.Fatalf("links = %#v", links)
 	}
-	data, _ := result.Staged.ReadFile(context.Background(), "a.md")
+	data := readSourceFileForTest(t, result.Staged, "a.md")
 	if !contains(string(data), "label: preserve") || !contains(string(data), "id: root-metadata") || !contains(string(data), "anchor: root-anchor") {
 		t.Fatalf("unknown nested field lost: %s", data)
 	}
@@ -1383,7 +1406,7 @@ func TestPlanMoveConcept_RewritesSemanticAndIndexLinks(t *testing.T) {
 	if len(links) != 2 || links[0].Target.String() != "nested/a" || links[1].Target.String() != "nested/a#fragment" {
 		t.Fatalf("links = %#v", links)
 	}
-	index, _ := result.Staged.ReadFile(context.Background(), "index.md")
+	index := readSourceFileForTest(t, result.Staged, "index.md")
 	if !contains(string(index), "(nested/a.md)") {
 		t.Fatalf("index not rewritten: %s", index)
 	}
@@ -1464,15 +1487,15 @@ func TestPlanMoveConcept_RewritesLinksWhenMovingOutOfNestedDirectory(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	moved, _ := result.Staged.ReadFile(context.Background(), "a.md")
+	moved := readSourceFileForTest(t, result.Staged, "a.md")
 	if !contains(string(moved), "[self](a.md)") {
 		t.Fatalf("moved file link not recalculated: %s", moved)
 	}
-	nested, _ := result.Staged.ReadFile(context.Background(), "nested/c.md")
+	nested := readSourceFileForTest(t, result.Staged, "nested/c.md")
 	if !contains(string(nested), "[target](../a.md)") {
 		t.Fatalf("nested link not rewritten: %s", nested)
 	}
-	root, _ := result.Staged.ReadFile(context.Background(), "index.md")
+	root := readSourceFileForTest(t, result.Staged, "index.md")
 	if !contains(string(root), "[target](a.md)") {
 		t.Fatalf("root link not rewritten: %s", root)
 	}
@@ -1661,11 +1684,11 @@ func TestParsePresentationRejectsInvalidUTF8BeforeYAMLParsing(t *testing.T) {
 	t.Parallel()
 
 	// Act.
-	_, err := parsePresentation([]byte("---\ntitle: " + string([]byte{0xff}) + "\n---\nbody\n"))
+	_, err := parsePresentationContext(context.Background(), []byte("---\ntitle: "+string([]byte{0xff})+"\n---\nbody\n"))
 
 	// Assert.
 	if !errors.Is(err, bundle.ErrInvalidEncoding) {
-		t.Fatalf("parsePresentation() error = %v, want ErrInvalidEncoding", err)
+		t.Fatalf("parsePresentationContext(context.Background(), ) error = %v, want ErrInvalidEncoding", err)
 	}
 }
 

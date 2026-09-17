@@ -1,0 +1,2 @@
+# This fixture's exact CRLF bytes are part of its attestation digest.
+fixtures/v02/positive/durability/references/computations/revenue.sql -text whitespace=cr-at-eol

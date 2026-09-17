@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/list_concepts.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_path"],
+  "properties": {
+    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "as_of": {"type": "string", "format": "date"}
+  }
+}

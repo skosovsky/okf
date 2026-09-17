@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
 	"sort"
 	"strings"
 	"time"
@@ -95,10 +94,10 @@ type Preview struct {
 
 // Clone returns a deep copy of Preview's slice fields (operations are immutable values).
 func (p Preview) Clone() Preview {
-	p.Reads = append([]Read(nil), p.Reads...)
+	p.Reads = cloneSlice(p.Reads)
 	p.Writes = cloneWrites(p.Writes)
-	p.Deletes = append([]string(nil), p.Deletes...)
-	p.Renames = append([]Rename(nil), p.Renames...)
+	p.Deletes = cloneSlice(p.Deletes)
+	p.Renames = cloneSlice(p.Renames)
 	p.AffectedRefs = cloneRefs(p.AffectedRefs)
 	p.ReverseImpact = cloneRefs(p.ReverseImpact)
 	p.Diagnostics = cloneDiagnostics(p.Diagnostics)
@@ -140,23 +139,20 @@ func (r CommitReceipt) MarshalJSON() ([]byte, error) {
 		ChangedRefs    []string       `json:"ChangedRefs"`
 		ChangedFiles   []FileChange   `json:"ChangedFiles"`
 	}
-	refs := make([]string, len(r.ChangedRefs))
-	for i, ref := range r.ChangedRefs {
+	orderedRefs := cloneRefs(r.ChangedRefs)
+	sort.Slice(orderedRefs, func(i, j int) bool {
+		return orderedRefs[i].String() < orderedRefs[j].String()
+	})
+	refs := make([]string, len(orderedRefs))
+	for i, ref := range orderedRefs {
 		refs[i] = ref.String()
 	}
-	sort.Strings(refs)
 	// Durable receipts use non-null arrays even for an empty change set; nil
 	// would be a second, ambiguous wire representation of the same receipt.
 	files := make([]FileChange, len(r.ChangedFiles))
 	copy(files, r.ChangedFiles)
 	sort.Slice(files, func(i, j int) bool {
-		if files[i].Path != files[j].Path {
-			return files[i].Path < files[j].Path
-		}
-		if files[i].Kind != files[j].Kind {
-			return files[i].Kind < files[j].Kind
-		}
-		return files[i].From < files[j].From
+		return fileChangeIdentityOf(files[i]).less(fileChangeIdentityOf(files[j]))
 	})
 	return json.Marshal(wire{FormatVersion: r.FormatVersion, ChangeSetID: r.ChangeSetID, IdempotencyKey: r.IdempotencyKey, RequestDigest: r.RequestDigest, BaseRevision: r.BaseRevision, ResultRevision: r.ResultRevision, CommitTime: r.CommitTime.UTC(), ChangedRefs: refs, ChangedFiles: files})
 }
@@ -165,17 +161,6 @@ func (r CommitReceipt) MarshalJSON() ([]byte, error) {
 // durable commit evidence, so accepting ambiguous JSON here would make public
 // transport and on-disk recovery disagree about the same value.
 func (r *CommitReceipt) UnmarshalJSON(data []byte) error {
-	type wire struct {
-		FormatVersion  uint16         `json:"FormatVersion"`
-		ChangeSetID    ChangeSetID    `json:"ChangeSetID"`
-		IdempotencyKey IdempotencyKey `json:"IdempotencyKey"`
-		RequestDigest  string         `json:"RequestDigest"`
-		BaseRevision   Revision       `json:"BaseRevision"`
-		ResultRevision Revision       `json:"ResultRevision"`
-		CommitTime     time.Time      `json:"CommitTime"`
-		ChangedRefs    []string       `json:"ChangedRefs"`
-		ChangedFiles   []FileChange   `json:"ChangedFiles"`
-	}
 	decoded, err := decodeCommitReceipt(data)
 	if err != nil {
 		return err
@@ -232,7 +217,7 @@ func decodeCommitReceipt(data []byte) (CommitReceipt, error) {
 	}
 	refs := make([]bundle.RelationRef, len(w.ChangedRefs))
 	for i, raw := range w.ChangedRefs {
-		ref, err := bundle.ParseRelationRef(raw)
+		ref, err := parseCanonicalReceiptRef(raw)
 		if err != nil {
 			return CommitReceipt{}, invalidReceipt(fmt.Errorf("invalid changed ref %q: %w", raw, err))
 		}
@@ -337,26 +322,66 @@ func ValidateCommitReceipt(r CommitReceipt) error {
 	if r.CommitTime.IsZero() || name != "UTC" || offset != 0 {
 		return invalidReceipt(errors.New("receipt commit time must be non-zero UTC"))
 	}
+	seenRefs := make(map[relationRefIdentity]struct{}, len(r.ChangedRefs))
 	previous := ""
+	havePrevious := false
 	for _, ref := range r.ChangedRefs {
 		value := ref.String()
-		if _, err := bundle.ParseRelationRef(value); err != nil || value <= previous {
+		parsed, err := parseCanonicalReceiptRef(value)
+		identity := relationRefIdentityOf(ref)
+		if err != nil || relationRefIdentityOf(parsed) != identity {
 			return invalidReceipt(errors.New("receipt changed refs must be valid, sorted, and unique"))
 		}
-		previous = value
+		if _, duplicate := seenRefs[identity]; duplicate || havePrevious && value <= previous {
+			return invalidReceipt(errors.New("receipt changed refs must be valid, sorted, and unique"))
+		}
+		seenRefs[identity] = struct{}{}
+		previous, havePrevious = value, true
 	}
-	previous = ""
+	var previousFile fileChangeIdentity
+	havePreviousFile := false
 	for _, file := range r.ChangedFiles {
 		if !validReceiptFileChange(file) {
 			return invalidReceipt(errors.New("invalid receipt changed file"))
 		}
-		key := file.Path + "\x00" + string(file.Kind) + "\x00" + file.From
-		if key <= previous {
+		identity := fileChangeIdentityOf(file)
+		if havePreviousFile && !previousFile.less(identity) {
 			return invalidReceipt(errors.New("receipt changed files must be sorted and unique"))
 		}
-		previous = key
+		previousFile, havePreviousFile = identity, true
 	}
 	return nil
+}
+
+func parseCanonicalReceiptRef(raw string) (bundle.RelationRef, error) {
+	ref, err := bundle.ParseRelationRef(raw)
+	if err != nil {
+		return bundle.RelationRef{}, err
+	}
+	if ref.String() != raw {
+		return bundle.RelationRef{}, errors.New("relation ref is not canonically serialized")
+	}
+	return ref, nil
+}
+
+type fileChangeIdentity struct {
+	path string
+	kind FileChangeKind
+	from string
+}
+
+func fileChangeIdentityOf(file FileChange) fileChangeIdentity {
+	return fileChangeIdentity{path: file.Path, kind: file.Kind, from: file.From}
+}
+
+func (left fileChangeIdentity) less(right fileChangeIdentity) bool {
+	if left.path != right.path {
+		return left.path < right.path
+	}
+	if left.kind != right.kind {
+		return left.kind < right.kind
+	}
+	return left.from < right.from
 }
 
 func validReceiptDigest(value string) bool {
@@ -369,21 +394,17 @@ func validReceiptDigest(value string) bool {
 }
 
 func validReceiptFileChange(file FileChange) bool {
-	if !validReceiptPath(file.Path) {
+	if bundle.ValidateRevisionPath(file.Path) != nil {
 		return false
 	}
 	switch file.Kind {
 	case FileWrite, FileDelete:
 		return file.From == ""
 	case FileRename:
-		return validReceiptPath(file.From) && file.From != file.Path
+		return bundle.ValidateRevisionPath(file.From) == nil && file.From != file.Path
 	default:
 		return false
 	}
-}
-
-func validReceiptPath(value string) bool {
-	return value != "" && !strings.HasPrefix(value, "/") && !strings.Contains(value, "\\") && path.Clean(value) == value && value != "." && value != ".." && !strings.HasPrefix(value, "../") && value != ".okf" && !strings.HasPrefix(value, ".okf/")
 }
 
 func invalidReceipt(err error) error {
@@ -458,32 +479,43 @@ func walkJSONValue(decoder *json.Decoder) error {
 // Clone returns a copy safe for caller mutation.
 func (r CommitReceipt) Clone() CommitReceipt {
 	r.ChangedRefs = cloneRefs(r.ChangedRefs)
-	r.ChangedFiles = append([]FileChange(nil), r.ChangedFiles...)
+	r.ChangedFiles = cloneSlice(r.ChangedFiles)
 	return r
 }
 
 func cloneRefs(in []bundle.RelationRef) []bundle.RelationRef {
-	return append([]bundle.RelationRef(nil), in...)
+	return cloneSlice(in)
 }
 func cloneWrites(in []Write) []Write {
-	out := append([]Write(nil), in...)
+	out := cloneSlice(in)
 	for i := range out {
-		out[i].Content = append([]byte(nil), out[i].Content...)
+		out[i].Content = cloneSlice(out[i].Content)
 	}
 	return out
 }
 func cloneDiagnostics(in []Diagnostic) []Diagnostic {
-	out := append([]Diagnostic(nil), in...)
+	out := cloneSlice(in)
 	for i := range out {
 		out[i].Refs = cloneRefs(out[i].Refs)
 	}
 	return out
 }
 func clonePlan(in []OperationPlan) []OperationPlan {
-	out := append([]OperationPlan(nil), in...)
+	out := cloneSlice(in)
 	for i := range out {
 		out[i].AffectedRefs = cloneRefs(out[i].AffectedRefs)
-		out[i].Details = append([]string(nil), out[i].Details...)
+		out[i].Details = cloneSlice(out[i].Details)
 	}
+	return out
+}
+
+// cloneSlice preserves the caller-visible distinction between nil and an
+// allocated empty slice while returning independent backing storage.
+func cloneSlice[S ~[]E, E any](in S) S {
+	if in == nil {
+		return nil
+	}
+	out := make(S, len(in))
+	copy(out, in)
 	return out
 }

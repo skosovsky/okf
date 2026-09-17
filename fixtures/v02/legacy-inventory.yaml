@@ -1,0 +1,164 @@
+policy: >
+  timestamp and # Citations are allowed only as pinned specification history,
+  explicit v0.1 regression evidence, or mixed-input migration evidence. Their
+  presence does not authorize implicit rewrite.
+occurrence_lock:
+  algorithm: sha256
+  count: 339
+  sha256: ebe8271c6bb9757aeb0126ca792ed95d33aef14005cd8f04f737cb8c3d913a4c
+  reason: locks exact path, byte offset, and matched legacy spelling so listed files are not blanket allowlists
+canonical_compatibility_cases:
+  - compat/declared-v01/index.md
+  - compat/declared-v01/legacy.md
+  - compat/undeclared-v01/legacy.md
+  - compat/mixed-provenance/mixed.md
+adversarial_legacy_cases:
+  - adversarial/optional-shapes/malformed.md
+pinned_specification_history:
+  - skills/open-knowledge-format/references/spec-v02.md
+migration_guidance_paths:
+  - README.md
+  - README.ru.md
+  - docs/contracts/okf-v0.2.md
+  - docs/contracts/okf-v0.2-conformance.md
+  - docs/adr/0001-okf-v02-graph-projection.md
+  - docs/index.md
+  - docs/migration.md
+  - docs/skill.md
+  - docs/toolkit.md
+  - docs/ru/index.md
+  - docs/ru/migration.md
+  - docs/ru/skill.md
+  - docs/ru/toolkit.md
+  - docs/development/v0.2/tasks/README.md
+  - docs/development/v0.2/tasks/task09.md
+  - docs/development/v0.2/tasks/task10.md
+  - docs/development/v0.2/tasks/task11.md
+  - docs/development/v0.2/tasks/task12.md
+  - docs/development/v0.2/tasks/task13.md
+  - docs/development/v0.2/tasks/task14.md
+  - docs/development/v0.2/tasks/task15.md
+  - docs/development/v0.2/tasks/task16.md
+  - docs/development/v0.2/tasks/task17.md
+  - docs/development/v0.2/tasks/task18.md
+  - docs/development/v0.2/tasks/task19.md
+  - docs/development/v0.2/tasks/task20.md
+  - docs/development/v0.2/tasks/task21.md
+  - docs/releases/v0.2.2.md
+  - examples/README.md
+  - examples/README.ru.md
+  - skills/open-knowledge-format/SKILL.md
+  - skills/open-knowledge-format/references/adversarial-v02.md
+  - skills/open-knowledge-format/references/conversion.md
+  - skills/open-knowledge-format/references/examples.md
+  - skills/open-knowledge-format/references/migration-v01-v02.md
+contract_metadata_paths:
+  - .codex-plugin/plugin.json
+  - fixtures/strict/citation-heading-level/expected.json
+  - fixtures/strict/citation-heading-level/manifest.yaml
+  - fixtures/strict/citation-missing-section/expected.json
+  - fixtures/strict/citation-missing-section/manifest.yaml
+  - fixtures/strict/citation-not-bottom/expected.json
+  - fixtures/strict/citation-not-bottom/manifest.yaml
+  - fixtures/strict/invalid-timestamp/expected.json
+  - fixtures/strict/invalid-timestamp/manifest.yaml
+  - fixtures/strict/missing-recommended-fields/expected.json
+  - fixtures/strict/missing-recommended-fields/manifest.yaml
+  - fixtures/strict/timestamp-non-scalar/expected.json
+  - fixtures/strict/timestamp-non-scalar/manifest.yaml
+  - fixtures/v02/compat/declared-v01/manifest.yaml
+  - fixtures/v02/compat/undeclared-v01/manifest.yaml
+  - fixtures/v02/legacy-inventory.yaml
+  - fixtures/v02/provenance.yaml
+  - fixtures/v02/strict-boundaries/families/expected.json
+  - fixtures/v02/strict-boundaries/families/manifest.yaml
+pre_v02_regression_files:
+  - fixtures/forward-compat/mystery.md
+  - fixtures/negative/index-nested-okf-version/sub/index.md
+  - fixtures/negative/root-index-extra-frontmatter-key/index.md
+  - fixtures/negative/root-index-non-string-version/index.md
+  - fixtures/spec-abstract-concept/playbook.md
+  - fixtures/spec-minimal/datasets/sales.md
+  - fixtures/spec-minimal/tables/customers.md
+  - fixtures/spec-minimal/tables/orders.md
+  - fixtures/spec-resource-concept/orders.md
+  - fixtures/strict/citation-heading-level/bad.md
+  - fixtures/strict/citation-invalid-target/bad.md
+  - fixtures/strict/citation-marker-in-code/good.md
+  - fixtures/strict/citation-missing-section/claim.md
+  - fixtures/strict/citation-not-bottom/bad.md
+  - fixtures/strict/citation-numbering/bad.md
+  - fixtures/strict/claims-without-citations/claim.md
+  - fixtures/strict/examples-concrete-prose/good.md
+  - fixtures/strict/examples-empty/bad.md
+  - fixtures/strict/examples-prose/bad.md
+  - fixtures/strict/index-description-mismatch/a.md
+  - fixtures/strict/invalid-resource/bad.md
+  - fixtures/strict/invalid-timestamp/bad.md
+  - fixtures/strict/resource-bool/bad.md
+  - fixtures/strict/resource-non-scalar/bad.md
+  - fixtures/strict/schema-heading-level/bad.md
+  - fixtures/strict/tags-non-string-item/bad.md
+  - fixtures/strict/tags-string/bad.md
+  - fixtures/strict/timestamp-non-scalar/bad.md
+  - fixtures/v02/strict-boundaries/families/tags-and-time.md
+  - fixtures/versioning/root-0.1/a.md
+  - fixtures/versioning/root-0.1/index.md
+  - fixtures/versioning/root-0.2/a.md
+intentional_file_reasons:
+  .codex-plugin/plugin.json: published package description documents explicit legacy v0.1 migration support
+  fixtures/strict/citation-heading-level/expected.json: expected legacy Citations heading-level diagnostic
+  fixtures/strict/citation-heading-level/manifest.yaml: manifest for legacy Citations heading-level rejection
+  fixtures/strict/citation-missing-section/expected.json: expected missing legacy Citations section diagnostic
+  fixtures/strict/citation-missing-section/manifest.yaml: manifest for missing legacy Citations section rejection
+  fixtures/strict/citation-not-bottom/expected.json: expected legacy Citations placement diagnostic
+  fixtures/strict/citation-not-bottom/manifest.yaml: manifest for legacy Citations placement rejection
+  fixtures/strict/invalid-timestamp/expected.json: expected legacy timestamp format diagnostic
+  fixtures/strict/invalid-timestamp/manifest.yaml: manifest for legacy timestamp format rejection
+  fixtures/strict/missing-recommended-fields/expected.json: expected pre-v0.2 timestamp recommendation diagnostic
+  fixtures/strict/missing-recommended-fields/manifest.yaml: manifest for pre-v0.2 timestamp recommendation diagnostic
+  fixtures/strict/timestamp-non-scalar/expected.json: expected legacy timestamp scalar-shape diagnostic
+  fixtures/strict/timestamp-non-scalar/manifest.yaml: manifest for legacy timestamp scalar-shape rejection
+  fixtures/v02/compat/declared-v01/manifest.yaml: fixture manifest documents intentional declared v0.1 compatibility
+  fixtures/v02/compat/undeclared-v01/manifest.yaml: fixture manifest documents intentional timestamp and Citations fallbacks
+  fixtures/v02/legacy-inventory.yaml: inventory policy and reasons necessarily name the locked legacy representations
+  fixtures/v02/provenance.yaml: provenance metadata identifies declared v0.1 compatibility evidence
+  fixtures/v02/strict-boundaries/families/expected.json: expected v0.2 diagnostic retains the legacy timestamp field name
+  fixtures/v02/strict-boundaries/families/manifest.yaml: strict boundary manifest names the legacy timestamp diagnostic
+  compat/declared-v01/index.md: explicit v0.1 declaration compatibility case
+  compat/declared-v01/legacy.md: declared v0.1 timestamp and Citations fallback case
+  compat/undeclared-v01/legacy.md: undeclared timestamp and Citations fallback case
+  compat/mixed-provenance/mixed.md: simultaneous legacy and v0.2 precedence case
+  adversarial/optional-shapes/malformed.md: malformed replacement suppresses legacy fallback
+  fixtures/forward-compat/mystery.md: pre-v0.2 unknown-field regression keeps legacy timestamp
+  fixtures/negative/index-nested-okf-version/sub/index.md: rejects legacy declaration outside the root index
+  fixtures/negative/root-index-extra-frontmatter-key/index.md: rejects extra root-index keys around a legacy declaration
+  fixtures/negative/root-index-non-string-version/index.md: rejects an unquoted numeric legacy declaration
+  fixtures/spec-abstract-concept/playbook.md: pinned pre-v0.2 abstract-concept example
+  fixtures/spec-minimal/datasets/sales.md: pinned pre-v0.2 minimal example
+  fixtures/spec-minimal/tables/customers.md: pinned pre-v0.2 minimal example
+  fixtures/spec-minimal/tables/orders.md: pinned pre-v0.2 minimal example
+  fixtures/spec-resource-concept/orders.md: pinned pre-v0.2 resource-concept example
+  fixtures/strict/citation-heading-level/bad.md: legacy Citations heading-level rejection
+  fixtures/strict/citation-invalid-target/bad.md: legacy Citations invalid-target rejection
+  fixtures/strict/citation-marker-in-code/good.md: legacy numeric marker code-ownership regression
+  fixtures/strict/citation-missing-section/claim.md: legacy citation marker without section regression
+  fixtures/strict/citation-not-bottom/bad.md: legacy Citations placement rejection
+  fixtures/strict/citation-numbering/bad.md: legacy Citations numbering rejection
+  fixtures/strict/claims-without-citations/claim.md: legacy claim-without-Citations regression
+  fixtures/strict/examples-concrete-prose/good.md: pre-v0.2 strict example with timestamp
+  fixtures/strict/examples-empty/bad.md: pre-v0.2 strict example with timestamp
+  fixtures/strict/examples-prose/bad.md: pre-v0.2 strict example with timestamp
+  fixtures/strict/index-description-mismatch/a.md: pre-v0.2 index-description regression concept
+  fixtures/strict/invalid-resource/bad.md: pre-v0.2 resource regression with timestamp
+  fixtures/strict/invalid-timestamp/bad.md: legacy timestamp format rejection
+  fixtures/strict/resource-bool/bad.md: pre-v0.2 resource type regression with timestamp
+  fixtures/strict/resource-non-scalar/bad.md: pre-v0.2 resource shape regression with timestamp
+  fixtures/strict/schema-heading-level/bad.md: pre-v0.2 schema regression with timestamp
+  fixtures/strict/tags-non-string-item/bad.md: pre-v0.2 tags regression with timestamp
+  fixtures/strict/tags-string/bad.md: pre-v0.2 tags regression with timestamp
+  fixtures/strict/timestamp-non-scalar/bad.md: legacy timestamp scalar-shape rejection
+  fixtures/v02/strict-boundaries/families/tags-and-time.md: v0.2 exact strict golden for malformed legacy timestamp fallback tagging
+  fixtures/versioning/root-0.1/a.md: explicit v0.1 version-selection regression concept
+  fixtures/versioning/root-0.1/index.md: explicit v0.1 version-selection declaration
+  fixtures/versioning/root-0.2/a.md: v0.2 selector regression retains legacy fallback input

@@ -1,0 +1,14 @@
+description: "Present malformed string okf_version is a hard reserved-index error, never absence or default conformance"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 1
+  diagnostics:
+    - severity: "ERROR"
+      message_contains: "should use canonical <major>.<minor> syntax"
+      code: "index_structure_invalid"
+      spec_ref: "okf-v0.2#12"
+      field_path: "okf_version"

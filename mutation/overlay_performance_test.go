@@ -103,6 +103,15 @@ func (s *countingOverlaySource) ReadFile(_ context.Context, name string) ([]byte
 	return append([]byte(nil), data...), nil
 }
 
+func cloneOverlayForTest(tb testing.TB, overlay *Overlay) *Overlay {
+	tb.Helper()
+	cloned, err := overlay.cloneContext(context.Background())
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return cloned
+}
+
 func TestOverlayCloneSharesPrivatePayloadAndPathsCache(t *testing.T) {
 	// Arrange.
 	base := &countingOverlaySource{paths: []string{"base.md"}, files: map[string][]byte{"base.md": []byte("base")}}
@@ -110,7 +119,7 @@ func TestOverlayCloneSharesPrivatePayloadAndPathsCache(t *testing.T) {
 	if err := o.Put("changed.md", []byte("changed")); err != nil {
 		t.Fatal(err)
 	}
-	clone := o.clone()
+	clone := cloneOverlayForTest(t, o)
 
 	// Act.
 	first, err := o.Paths(context.Background())
@@ -275,7 +284,7 @@ func TestOverlayPerformanceGates_NoPayloadCopiesOrUnchangedHashes(t *testing.T) 
 	putHashes := algorithm.newCalls
 
 	// Act.
-	clone := o.clone()
+	clone := cloneOverlayForTest(t, o)
 	if err := clone.Rename(context.Background(), "from.md", "to.md"); err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +297,7 @@ func TestOverlayPerformanceGates_NoPayloadCopiesOrUnchangedHashes(t *testing.T) 
 	if got := algorithm.newCalls; got != putHashes {
 		t.Fatalf("unchanged hash constructions = %d, want %d", got, putHashes)
 	}
-	if small, large := cloneAllocsForPayload(64), cloneAllocsForPayload(1<<20); small != large {
+	if small, large := cloneAllocsForPayload(t, 64), cloneAllocsForPayload(t, 1<<20); small != large {
 		t.Fatalf("clone allocations depend on payload size: small=%v large=%v", small, large)
 	}
 }
@@ -301,13 +310,14 @@ func (a *overlayPerformanceHash) New() hash.Hash {
 	return sha256.New()
 }
 
-func cloneAllocsForPayload(size int) float64 {
+func cloneAllocsForPayload(tb testing.TB, size int) float64 {
+	tb.Helper()
 	payload := make([]byte, size)
 	o := NewOverlay(&countingOverlaySource{files: map[string][]byte{}})
 	if err := o.Put("payload.md", payload); err != nil {
-		panic(err)
+		tb.Fatal(err)
 	}
-	return testing.AllocsPerRun(100, func() { _ = o.clone() })
+	return testing.AllocsPerRun(100, func() { cloneOverlayForTest(tb, o) })
 }
 
 func TestOverlayConcurrentPathsAndReadsAreSafe(t *testing.T) {
@@ -361,7 +371,7 @@ func BenchmarkOverlayClone(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				clone := o.clone()
+				clone := cloneOverlayForTest(b, o)
 				if len(clone.changed) != files {
 					b.Fatalf("clone files = %d, want %d", len(clone.changed), files)
 				}
@@ -384,7 +394,7 @@ func BenchmarkOverlayRename(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					candidate := o.clone()
+					candidate := cloneOverlayForTest(b, o)
 					if err := candidate.Rename(context.Background(), "file0.md", "renamed.md"); err != nil {
 						b.Fatal(err)
 					}

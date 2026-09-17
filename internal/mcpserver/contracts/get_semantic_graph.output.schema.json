@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/get_semantic_graph.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["@context", "@graph"],
+  "properties": {
+    "@context": {
+      "type": "object",
+      "description": "Projection-profile vocabulary extension point owned by package graph.",
+      "additionalProperties": true
+    },
+    "@graph": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "description": "Projection-profile node extension point owned by package graph.",
+        "additionalProperties": true,
+        "properties": {
+          "@id": {"type": "string"},
+          "projectionVersion": {"type": "string"},
+          "declaredOKFVersion": {"type": "string"},
+          "effectiveOKFVersion": {"type": "string"}
+        }
+      }
+    }
+  }
+}

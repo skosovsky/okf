@@ -1,0 +1,29 @@
+description: "Strict footnote ownership ignores code and diagnoses only prose-owned duplicate, unknown, and orphan cases"
+run:
+  path: "."
+  strict: true
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics:
+    - severity: "WARN"
+      message_contains: "footnote \"unknown\" has no definition"
+      code: "source_footnote_definition_missing"
+      spec_ref: "toolkit#source-footnote-integrity"
+      field_path: "body.footnotes[unknown]"
+    - severity: "WARN"
+      message_contains: "footnote \"orphan\" does not match a sources[].id"
+      code: "source_footnote_unknown"
+      spec_ref: "toolkit#source-footnote-integrity"
+      field_path: "body.footnotes[orphan]"
+    - severity: "WARN"
+      message_contains: "footnote \"unknown\" does not match a sources[].id"
+      code: "source_footnote_unknown"
+      spec_ref: "toolkit#source-footnote-integrity"
+      field_path: "body.footnotes[unknown]"
+    - severity: "WARN"
+      message_contains: "source id \"duplicate\" is duplicated"
+      code: "source_id_duplicate"
+      spec_ref: "toolkit#sources-id-unique"
+      field_path: "sources[1].id"

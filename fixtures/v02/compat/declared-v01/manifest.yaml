@@ -1,0 +1,9 @@
+description: "Intentional declared v0.1 fixture remains consumable through documented legacy fallbacks"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

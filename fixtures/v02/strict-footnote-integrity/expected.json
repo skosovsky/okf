@@ -1,0 +1,43 @@
+{
+  "exit_code": 0,
+  "scanned_files": 1,
+  "diagnostics": [
+    {
+      "code": "source_footnote_definition_missing",
+      "spec_ref": "toolkit#source-footnote-integrity",
+      "file": "footnotes.md",
+      "field_path": "body.footnotes[unknown]",
+      "severity": "WARN",
+      "message": "footnote \"unknown\" has no definition"
+    },
+    {
+      "code": "source_footnote_unknown",
+      "spec_ref": "toolkit#source-footnote-integrity",
+      "file": "footnotes.md",
+      "field_path": "body.footnotes[orphan]",
+      "severity": "WARN",
+      "message": "footnote \"orphan\" does not match a sources[].id"
+    },
+    {
+      "code": "source_footnote_unknown",
+      "spec_ref": "toolkit#source-footnote-integrity",
+      "file": "footnotes.md",
+      "field_path": "body.footnotes[unknown]",
+      "severity": "WARN",
+      "message": "footnote \"unknown\" does not match a sources[].id"
+    },
+    {
+      "code": "source_id_duplicate",
+      "spec_ref": "toolkit#sources-id-unique",
+      "file": "footnotes.md",
+      "field_path": "sources[1].id",
+      "severity": "WARN",
+      "message": "source id \"duplicate\" is duplicated"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 4,
+    "info": 0
+  }
+}

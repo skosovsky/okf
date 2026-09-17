@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/skosovsky/okf/bundle"
@@ -39,10 +39,11 @@ func NewPlanner(cfg *validator.ValidatorConfig) Planner { return Planner{Validat
 type trackedSource struct {
 	source bundle.Source
 	paths  map[string]struct{}
+	cache  map[string][]byte
 }
 
 func newTrackedSource(source bundle.Source) *trackedSource {
-	return &trackedSource{source: source, paths: make(map[string]struct{})}
+	return &trackedSource{source: source, paths: make(map[string]struct{}), cache: make(map[string][]byte)}
 }
 
 func (s *trackedSource) Paths(ctx context.Context) ([]string, error) { return s.source.Paths(ctx) }
@@ -51,7 +52,15 @@ func (s *trackedSource) ReadFile(ctx context.Context, name string) ([]byte, erro
 		return nil, err
 	}
 	s.paths[name] = struct{}{}
-	return s.source.ReadFile(ctx, name)
+	if cached, ok := s.cache[name]; ok {
+		return append([]byte(nil), cached...), nil
+	}
+	data, err := s.source.ReadFile(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	s.cache[name] = append([]byte(nil), data...)
+	return append([]byte(nil), data...), nil
 }
 func (s *trackedSource) Manifest() store.Manifest {
 	if source, ok := s.source.(store.ManifestSource); ok {
@@ -86,23 +95,25 @@ func (s *trackedSource) readsContext(ctx context.Context) ([]store.Read, error) 
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	paths := make([]string, 0, len(s.paths))
+	paths := make([]string, 0, boundedProjectionCapacity(len(s.paths)))
 	for name := range s.paths {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		paths = append(paths, name)
 	}
-	sort.Strings(paths)
+	if err := sortSliceContext(ctx, paths, func(left, right string) bool { return left < right }); err != nil {
+		return nil, err
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	out := make([]store.Read, len(paths))
-	for i, name := range paths {
+	out := make([]store.Read, 0, boundedProjectionCapacity(len(paths)))
+	for _, name := range paths {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		out[i] = store.Read{Path: name}
+		out = append(out, store.Read{Path: name})
 	}
 	return out, ctx.Err()
 }
@@ -191,7 +202,7 @@ func (p Planner) Plan(ctx context.Context, source bundle.Source, change store.Ch
 	if err != nil {
 		return Result{}, err
 	}
-	if !validation.IsConformant() || len(blockingRelationDiagnostics) != 0 {
+	if validation.ExitCode() != 0 || len(blockingRelationDiagnostics) != 0 {
 		// The structured error is the error-side representation of the public
 		// diagnostic preview. Do not project semantic diagnostics again: that
 		// loses their file, severity, relation type, and raw target.
@@ -217,30 +228,73 @@ func availableSemanticRefs(ctx context.Context, source bundle.Source) ([]bundle.
 	if err != nil {
 		return nil, err
 	}
-	seen := make(map[string]bundle.RelationRef)
-	add := func(ref bundle.RelationRef) {
-		if ref.String() != "" {
-			seen[ref.String()] = ref
-		}
+	return availableSemanticRefsFromBundle(ctx, b)
+}
+
+// availableSemanticRefsFromBundle projects only the semantic index. In
+// particular, it must not call Bundle.Concepts or Bundle.Get: those APIs clone
+// complete Markdown documents and YAML trees although this projection needs
+// only identifiers, fragments, and relations.
+func availableSemanticRefsFromBundle(ctx context.Context, b *bundle.Bundle) ([]bundle.RelationRef, error) {
+	conceptIDs, err := b.ConceptIDsContext(ctx)
+	if err != nil {
+		return nil, err
 	}
-	for _, concept := range b.Concepts() {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	seen := make(map[relationRefKey]bundle.RelationRef, boundedProjectionCapacity(len(conceptIDs)))
+	add := func(ref bundle.RelationRef) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		key := relationRefIdentity(ref)
+		if key.id != "" {
+			seen[key] = ref
+		}
+		return nil
+	}
+	for _, conceptID := range conceptIDs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		add(bundle.RelationRef{ID: concept.ID})
-		for _, fragment := range b.Subresources(concept.ID) {
+		if err := add(bundle.RelationRef{ID: conceptID}); err != nil {
+			return nil, err
+		}
+		fragments, err := b.SubresourcesContext(ctx, conceptID)
+		if err != nil {
+			return nil, err
+		}
+		for _, fragment := range fragments {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			add(bundle.RelationRef{ID: concept.ID, Fragment: fragment})
+			if err := add(bundle.RelationRef{ID: conceptID, Fragment: fragment}); err != nil {
+				return nil, err
+			}
 		}
-		for _, relation := range b.SemanticLinksFrom(concept.ID) {
+		relations, err := b.SemanticLinksFromContext(ctx, conceptID)
+		if err != nil {
+			return nil, err
+		}
+		for _, relation := range relations {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			add(relation.Source)
-			add(relation.Target)
+			if err := add(relation.Source); err != nil {
+				return nil, err
+			}
+			if err := add(relation.Target); err != nil {
+				return nil, err
+			}
 		}
+	}
+	return materializeSortedRelationRefsContext(ctx, seen)
+}
+
+func materializeSortedRelationRefsContext(ctx context.Context, seen map[relationRefKey]bundle.RelationRef) ([]bundle.RelationRef, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	out := make([]bundle.RelationRef, 0, len(seen))
 	for _, ref := range seen {
@@ -249,15 +303,17 @@ func availableSemanticRefs(ctx context.Context, source bundle.Source) ([]bundle.
 		}
 		out = append(out, ref)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].String() < out[j].String() })
-	if err := ctx.Err(); err != nil {
+	if err := sortRelationRefsContext(ctx, out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
 func blockingRelationDiagnosticsContext(ctx context.Context, in []bundle.RelationDiagnostic) ([]bundle.RelationDiagnostic, error) {
-	out := make([]bundle.RelationDiagnostic, 0, len(in))
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]bundle.RelationDiagnostic, 0, boundedProjectionCapacity(len(in)))
 	for _, diagnostic := range in {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -297,11 +353,14 @@ func (s *planState) cloneContext(ctx context.Context) (*planState, error) {
 	if err != nil {
 		return nil, err
 	}
-	cloned.affected = append([]bundle.RelationRef(nil), s.affected...)
-	if err := ctx.Err(); err != nil {
+	cloned.affected, err = copyRefsContext(ctx, s.affected)
+	if err != nil {
 		return nil, err
 	}
-	cloned.reverse = append([]bundle.RelationRef(nil), s.reverse...)
+	cloned.reverse, err = copyRefsContext(ctx, s.reverse)
+	if err != nil {
+		return nil, err
+	}
 	cloned.plans = append([]store.OperationPlan(nil), s.plans...)
 	cloned.renames = append([]store.Rename(nil), s.renames...)
 	if err := ctx.Err(); err != nil {
@@ -314,6 +373,9 @@ func (s *planState) apply(operation store.Operation) error {
 	if err := s.ctx.Err(); err != nil {
 		return err
 	}
+	if handled, err := applyV02OperationDescriptor(s, operation); handled {
+		return err
+	}
 	switch op := operation.(type) {
 	case store.EnsureRelation:
 		return s.ensure(op)
@@ -321,6 +383,8 @@ func (s *planState) apply(operation store.Operation) error {
 		return s.move(op)
 	case store.RenameFragment:
 		return s.renameFragment(op)
+	case store.MigrateV01ToV02:
+		return s.migrateV01ToV02(op)
 	default:
 		return invalid("unknown_operation", nil, fmt.Errorf("unsupported operation %T", operation))
 	}
@@ -330,36 +394,57 @@ func (s *planState) ensure(op store.EnsureRelation) error {
 	if !s.bundle.Contains(op.Source.ID) || !s.bundle.Contains(op.Target.ID) {
 		return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint does not exist"))
 	}
-	c, ok := s.bundle.Get(op.Source.ID)
+	sourcePath, ok, err := s.bundle.ConceptPathContext(s.ctx, op.Source.ID)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		return invalid("missing_source", nil, errors.New("source missing"))
 	}
-	data := []byte(readBundleFile(s.bundle, c.Path))
+	data, ok, err := readBundleFileContext(s.ctx, s.bundle, sourcePath)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return invalid("missing_source", nil, errors.New("source content missing"))
+	}
 	p, err := parsePresentationContext(s.ctx, data)
 	if err != nil {
 		code := relationPresentationCode(err)
-		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, c.Path, "ensure_relation", data)
+		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, sourcePath, "ensure_relation", data)
 	}
 	sourceMapping, err := mappingForRef(s.ctx, p, p.root, op.Source)
 	if err != nil {
 		code := relationPresentationCode(err)
-		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, c.Path, "ensure_relation", data)
+		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, sourcePath, "ensure_relation", data)
 	}
 	if sourceMapping == nil {
 		return invalid("missing_source_fragment", []store.Diagnostic{{Code: "missing_source_fragment", Refs: []bundle.RelationRef{op.Source}}}, errors.New("fragment missing"))
 	}
 	if op.Target.Fragment != "" {
-		targetConcept, _ := s.bundle.Get(op.Target.ID)
-		targetData := []byte(readBundleFile(s.bundle, targetConcept.Path))
+		targetPath, targetOK, targetPathErr := s.bundle.ConceptPathContext(s.ctx, op.Target.ID)
+		if targetPathErr != nil {
+			return targetPathErr
+		}
+		if !targetOK {
+			return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint does not exist"))
+		}
+		targetData, targetDataOK, targetDataErr := readBundleFileContext(s.ctx, s.bundle, targetPath)
+		if targetDataErr != nil {
+			return targetDataErr
+		}
+		if !targetDataOK {
+			return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint content missing"))
+		}
 		targetPresentation, err := parsePresentationContext(s.ctx, targetData)
 		if err != nil {
 			code := relationPresentationCode(err)
-			return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, targetConcept.Path, "ensure_relation", targetData)
+			return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, targetPath, "ensure_relation", targetData)
 		}
 		targetMapping, err := mappingForRef(s.ctx, targetPresentation, targetPresentation.root, op.Target)
 		if err != nil {
 			code := relationPresentationCode(err)
-			return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, targetConcept.Path, "ensure_relation", targetData)
+			return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, targetPath, "ensure_relation", targetData)
 		}
 		if targetMapping == nil {
 			return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint does not exist"))
@@ -368,14 +453,14 @@ func (s *planState) ensure(op store.EnsureRelation) error {
 	updated, err := ensureRelationPresentationContext(s.ctx, data, op.Source, op.Type, op.Target.String())
 	if err != nil {
 		code := relationPresentationCode(err)
-		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, c.Path, "ensure_relation", data)
+		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, sourcePath, "ensure_relation", data)
 	}
 	equal, err := bytesEqualContext(s.ctx, updated, data)
 	if err != nil {
 		return err
 	}
 	if !equal {
-		if err := s.overlay.PutContext(s.ctx, c.Path, updated); err != nil {
+		if err := s.overlay.PutContext(s.ctx, sourcePath, updated); err != nil {
 			return err
 		}
 	}
@@ -399,20 +484,33 @@ func presentationChangeCode(err error) string {
 }
 
 func (s *planState) move(op store.MoveConcept) error {
-	c, ok := s.bundle.Get(op.From)
+	fromPath, ok, err := s.bundle.ConceptPathContext(s.ctx, op.From)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		return invalid("missing_concept", []store.Diagnostic{{Code: "missing_concept", Refs: []bundle.RelationRef{{ID: op.From}}}}, errors.New("concept missing"))
 	}
 	if s.bundle.Contains(op.To) {
 		return invalid("target_concept_exists", nil, errors.New("move target exists"))
 	}
-	fromPath, toPath := c.Path, conceptPath(op.To)
+	toPath := conceptPath(op.To)
 	if err := s.overlay.Rename(s.ctx, fromPath, toPath); err != nil {
 		return err
 	}
 	s.renames = append(s.renames, store.Rename{From: fromPath, To: toPath})
 	s.add(bundle.RelationRef{ID: op.From}, bundle.RelationRef{ID: op.To})
-	for _, rel := range s.bundle.ReverseImpactConcept(op.From) {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	reverseImpact, err := s.bundle.ReverseImpactConceptContext(s.ctx, op.From)
+	if err != nil {
+		return err
+	}
+	for _, rel := range reverseImpact {
+		if err := s.ctx.Err(); err != nil {
+			return err
+		}
 		s.reverse = append(s.reverse, rel.Source)
 	}
 	yamlImpact, err := s.yamlImpactPathsContext(s.ctx, bundle.RelationRef{ID: op.From})
@@ -421,31 +519,52 @@ func (s *planState) move(op store.MoveConcept) error {
 	}
 	// Rewrite canonical semantic target refs in frontmatter, then rewrite every
 	// Markdown destination which resolves to the moved document.
-	for _, file := range s.bundle.MarkdownFiles() {
+	markdownFiles, err := s.bundle.MarkdownFilesContext(s.ctx)
+	if err != nil {
+		return err
+	}
+	for _, file := range markdownFiles {
 		if err := s.ctx.Err(); err != nil {
 			return err
 		}
-		data := readBundleFile(s.bundle, file)
-		if documentlayout.HasOpeningDelimiter([]byte(data)) {
-			p, err := parsePresentationContext(s.ctx, []byte(data))
+		data, ok, err := readBundleFileContext(s.ctx, s.bundle, file)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return invalid("missing_captured_file", nil, fmt.Errorf("captured Markdown file %q is missing", file))
+		}
+		pathImpact, err := moveDocumentPathImpactContext(s.ctx, s.bundle, file, fromPath)
+		if err != nil {
+			return err
+		}
+		var documentPresentationErr error
+		if documentlayout.HasOpeningDelimiter(data) {
+			p, err := parsePresentationContext(s.ctx, data)
 			if err != nil {
-				if _, need := yamlImpact[file]; need {
-					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", []byte(data))
+				documentPresentationErr = err
+				_, semanticImpact := yamlImpact[file]
+				if semanticImpact || pathImpact {
+					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", data)
 				}
 			} else {
 				patches, err := relationTargetPatchesContext(s.ctx, p, op.From, op.To, "", "")
 				if err != nil {
-					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", []byte(data))
+					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", data)
 				}
 				updated, err := p.patchYAMLContext(s.ctx, patches)
 				if err != nil {
-					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", []byte(data))
+					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", data)
 				}
-				if len(patches) > 0 {
-					out := file
-					if out == fromPath {
-						out = toPath
-					}
+				out := file
+				if out == fromPath {
+					out = toPath
+				}
+				updated, err = rewriteV02PathValuesContext(s.ctx, s.bundle, file, out, fromPath, toPath, updated)
+				if err != nil {
+					return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "move_concept", data)
+				}
+				if !bytes.Equal(updated, data) {
 					if err := s.overlay.PutContext(s.ctx, out, updated); err != nil {
 						return err
 					}
@@ -458,20 +577,30 @@ func (s *planState) move(op store.MoveConcept) error {
 		}
 		current := data
 		if staged, readErr := s.overlay.ReadFile(s.ctx, out); readErr == nil {
-			current = string(staged)
+			current = staged
 		}
-		rewritten, err := rewriteMarkdownDestinationsContext(s.ctx, []byte(current), func(destination string) (string, bool) {
+		rewritten, err := rewriteMarkdownDestinationsContext(s.ctx, current, func(destination string) (string, bool) {
 			value := rewriteDestination(destination, file, out, op.From, op.To, file == fromPath)
 			return value, value != destination
 		})
 		if err != nil {
-			return s.presentationInvalid(presentationChangeCode(err), nil, err, out, "move_concept", []byte(current))
+			return s.presentationInvalid(presentationChangeCode(err), nil, err, out, "move_concept", current)
 		}
-		equal, err := bytesEqualContext(s.ctx, rewritten, []byte(current))
+		equal, err := bytesEqualContext(s.ctx, rewritten, current)
 		if err != nil {
 			return err
 		}
 		if !equal {
+			if documentPresentationErr != nil {
+				return s.presentationInvalid(
+					presentationChangeCode(documentPresentationErr),
+					nil,
+					documentPresentationErr,
+					file,
+					"move_concept",
+					data,
+				)
+			}
 			if err := s.overlay.PutContext(s.ctx, out, rewritten); err != nil {
 				return err
 			}
@@ -482,7 +611,10 @@ func (s *planState) move(op store.MoveConcept) error {
 }
 
 func (s *planState) renameFragment(op store.RenameFragment) error {
-	c, ok := s.bundle.Get(op.Concept)
+	conceptFile, ok, err := s.bundle.ConceptPathContext(s.ctx, op.Concept)
+	if err != nil {
+		return err
+	}
 	if !ok {
 		file := conceptPath(op.Concept)
 		if data, readErr := s.overlay.ReadFile(s.ctx, file); readErr == nil {
@@ -492,18 +624,24 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 		}
 		return invalid("missing_concept", []store.Diagnostic{{Code: "missing_concept", Refs: []bundle.RelationRef{{ID: op.Concept}}}}, errors.New("concept missing"))
 	}
-	data := readBundleFile(s.bundle, c.Path)
-	p, err := parsePresentationContext(s.ctx, []byte(data))
+	data, ok, err := readBundleFileContext(s.ctx, s.bundle, conceptFile)
 	if err != nil {
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return err
+	}
+	if !ok {
+		return invalid("missing_concept", []store.Diagnostic{{Code: "missing_concept", Refs: []bundle.RelationRef{{ID: op.Concept}}}}, errors.New("concept content missing"))
+	}
+	p, err := parsePresentationContext(s.ctx, data)
+	if err != nil {
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	targetAliases, err := canonicalAliasProvenanceContext(s.ctx, p.root, op.To)
 	if err != nil {
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	if len(targetAliases) != 0 {
 		err := p.yamlNodeError("alias_provenance", ErrAmbiguousPresentation, targetAliases...)
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	targetCandidates, err := canonicalFragmentCandidatesContext(s.ctx, p.root, op.To)
 	if err != nil {
@@ -511,14 +649,14 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 	}
 	if len(targetCandidates) > 1 {
 		err := p.yamlNodeError("duplicate_canonical_fragment", ErrAmbiguousPresentation, targetCandidates...)
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	if len(targetCandidates) == 1 {
 		return invalid("target_fragment_exists", nil, errors.New("target fragment exists"))
 	}
 	fragment, found, err := fragmentPatchContext(s.ctx, p, op.From, op.To)
 	if err != nil {
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	if !found {
 		if !s.bundle.FragmentExists(op.Concept, op.From) {
@@ -528,49 +666,69 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 	}
 	patches, err := relationTargetPatchesContext(s.ctx, p, op.Concept, op.Concept, op.From, op.To)
 	if err != nil {
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
 	patches = append(patches, fragment)
 	updated, err := p.patchYAMLContext(s.ctx, patches)
 	if err != nil {
-		return s.presentationInvalid(presentationChangeCode(err), nil, err, c.Path, "rename_fragment", []byte(data))
+		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", []byte(data))
 	}
-	if err := s.overlay.PutContext(s.ctx, c.Path, updated); err != nil {
+	if err := s.overlay.PutContext(s.ctx, conceptFile, updated); err != nil {
 		return err
 	}
-	for _, rel := range s.bundle.ReverseImpactFragment(op.Concept, op.From) {
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
+	reverseImpact, err := s.bundle.ReverseImpactFragmentContext(s.ctx, op.Concept, op.From)
+	if err != nil {
+		return err
+	}
+	for _, rel := range reverseImpact {
+		if err := s.ctx.Err(); err != nil {
+			return err
+		}
 		s.reverse = append(s.reverse, rel.Source)
 	}
 	yamlImpact, err := s.yamlImpactPathsContext(s.ctx, bundle.RelationRef{ID: op.Concept, Fragment: op.From})
 	if err != nil {
 		return err
 	}
-	for _, file := range s.bundle.MarkdownFiles() {
+	markdownFiles, err := s.bundle.MarkdownFilesContext(s.ctx)
+	if err != nil {
+		return err
+	}
+	for _, file := range markdownFiles {
 		if err := s.ctx.Err(); err != nil {
 			return err
 		}
-		if file == c.Path {
+		if file == conceptFile {
 			continue
 		}
-		data := readBundleFile(s.bundle, file)
-		if !documentlayout.HasOpeningDelimiter([]byte(data)) {
+		data, ok, err := readBundleFileContext(s.ctx, s.bundle, file)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return invalid("missing_captured_file", nil, fmt.Errorf("captured Markdown file %q is missing", file))
+		}
+		if !documentlayout.HasOpeningDelimiter(data) {
 			continue
 		}
-		p, err := parsePresentationContext(s.ctx, []byte(data))
+		p, err := parsePresentationContext(s.ctx, data)
 		if err != nil {
 			if _, need := yamlImpact[file]; need {
-				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", []byte(data))
+				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", data)
 			}
 			continue
 		}
 		patches, err := relationTargetPatchesContext(s.ctx, p, op.Concept, op.Concept, op.From, op.To)
 		if err != nil {
-			return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", []byte(data))
+			return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", data)
 		}
 		if len(patches) > 0 {
 			updated, err := p.patchYAMLContext(s.ctx, patches)
 			if err != nil {
-				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", []byte(data))
+				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", data)
 			}
 			if err := s.overlay.PutContext(s.ctx, file, updated); err != nil {
 				return err
@@ -585,27 +743,92 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 // yamlImpactPaths lists Markdown paths whose semantic relations target refs and
 // therefore require a lossless YAML parse before Move/Rename can skip them.
 func (s *planState) yamlImpactPathsContext(ctx context.Context, refs ...bundle.RelationRef) (map[string]struct{}, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	out := make(map[string]struct{})
 	for _, ref := range refs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		var rels []bundle.Relation
+		var err error
 		if ref.Fragment == "" {
-			rels = s.bundle.ReverseImpactConcept(ref.ID)
+			rels, err = s.bundle.ReverseImpactConceptContext(ctx, ref.ID)
 		} else {
-			rels = s.bundle.ReverseImpactFragment(ref.ID, ref.Fragment)
+			rels, err = s.bundle.ReverseImpactFragmentContext(ctx, ref.ID, ref.Fragment)
+		}
+		if err != nil {
+			return nil, err
 		}
 		for _, rel := range rels {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-			if concept, ok := s.bundle.Get(rel.Source.ID); ok {
-				out[concept.Path] = struct{}{}
+			if s.bundle.Contains(rel.Source.ID) {
+				out[conceptPath(rel.Source.ID)] = struct{}{}
 			}
 		}
 	}
 	return out, ctx.Err()
+}
+
+func moveDocumentPathImpactContext(ctx context.Context, loaded *bundle.Bundle, documentPath, movedFrom string) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if documentPath == movedFrom {
+		return true, nil
+	}
+	conceptID, err := bundle.ConceptIDFromPath("", documentPath)
+	if err != nil {
+		return false, nil
+	}
+	observations, found, err := loaded.ConceptPathValueObservationsContext(ctx, conceptID)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+	targetsMovedPath := func(raw string, field bundle.PathValueField) (bool, error) {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		if pathValueHasSurroundingWhitespace(raw) {
+			return false, nil
+		}
+		resolved, ok := loaded.ResolvePathValueFor(documentPath, raw, field)
+		if !ok || !resolved.Exists {
+			return false, nil
+		}
+		if resolved.Kind != bundle.PathValueRelative && resolved.Kind != bundle.PathValueBundleRelative {
+			return false, nil
+		}
+		return resolved.Path == movedFrom, nil
+	}
+	if observations.SourcesPresent && !observations.SourcesSequence {
+		return true, nil
+	}
+	for _, observation := range observations.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		if observation.ParentPresent && !observation.ParentMapping {
+			return true, nil
+		}
+		if observation.Scalar.Present && !observation.Scalar.Valid {
+			return true, nil
+		}
+		if !observation.Scalar.Valid {
+			continue
+		}
+		impacted, err := targetsMovedPath(observation.Scalar.Value, observation.Field)
+		if err != nil || impacted {
+			return impacted, err
+		}
+	}
+	return false, ctx.Err()
 }
 
 func (s *planState) add(refs ...bundle.RelationRef) {
@@ -615,9 +838,9 @@ func (s *planState) previewContext(ctx context.Context, base, result store.Revis
 	if err := ctx.Err(); err != nil {
 		return store.Preview{}, err
 	}
-	writes := make([]store.Write, 0)
-	deletes := make([]string, 0)
-	renames := make([]store.Rename, 0)
+	writes := make([]store.Write, 0, boundedProjectionCapacity(len(s.overlay.changed)))
+	deletes := make([]string, 0, boundedProjectionCapacity(len(s.overlay.deleted)))
+	renames := make([]store.Rename, 0, boundedProjectionCapacity(len(s.renames)))
 	for p, data := range s.overlay.changed {
 		if err := ctx.Err(); err != nil {
 			return store.Preview{}, err
@@ -644,15 +867,22 @@ func (s *planState) previewContext(ctx context.Context, base, result store.Revis
 		}
 		renames = append(renames, rename)
 	}
-	sort.Slice(writes, func(i, j int) bool { return writes[i].Path < writes[j].Path })
-	sort.Strings(deletes)
-	sort.Slice(renames, func(i, j int) bool {
-		if renames[i].From == renames[j].From {
-			return renames[i].To < renames[j].To
+	if err := sortSliceContext(ctx, writes, func(left, right store.Write) bool {
+		return left.Path < right.Path
+	}); err != nil {
+		return store.Preview{}, err
+	}
+	if err := sortSliceContext(ctx, deletes, func(left, right string) bool {
+		return left < right
+	}); err != nil {
+		return store.Preview{}, err
+	}
+	if err := sortSliceContext(ctx, renames, func(left, right store.Rename) bool {
+		if left.From == right.From {
+			return left.To < right.To
 		}
-		return renames[i].From < renames[j].From
-	})
-	if err := ctx.Err(); err != nil {
+		return left.From < right.From
+	}); err != nil {
 		return store.Preview{}, err
 	}
 	reads, err := s.readPaths.readsContext(ctx)
@@ -667,7 +897,10 @@ func (s *planState) previewContext(ctx context.Context, base, result store.Revis
 	if err != nil {
 		return store.Preview{}, err
 	}
-	plans := make([]store.OperationPlan, 0, len(s.plans))
+	if err := ctx.Err(); err != nil {
+		return store.Preview{}, err
+	}
+	plans := make([]store.OperationPlan, 0, boundedProjectionCapacity(len(s.plans)))
 	for _, plan := range s.plans {
 		if err := ctx.Err(); err != nil {
 			return store.Preview{}, err
@@ -676,19 +909,39 @@ func (s *planState) previewContext(ctx context.Context, base, result store.Revis
 		if err != nil {
 			return store.Preview{}, err
 		}
-		plan.Details = append([]string(nil), plan.Details...)
+		plan.Details, err = copyStringsContext(ctx, plan.Details)
+		if err != nil {
+			return store.Preview{}, err
+		}
 		plans = append(plans, plan)
 	}
 	return store.Preview{BaseRevision: base, ResultRevision: result, Reads: reads, Writes: writes, Deletes: deletes, Renames: renames, AffectedRefs: affected, ReverseImpact: reverse, Plan: plans}, ctx.Err()
 }
 
 func copyRefsContext(ctx context.Context, refs []bundle.RelationRef) ([]bundle.RelationRef, error) {
-	out := make([]bundle.RelationRef, 0, len(refs))
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]bundle.RelationRef, 0, boundedProjectionCapacity(len(refs)))
 	for _, ref := range refs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		out = append(out, ref)
+	}
+	return out, ctx.Err()
+}
+
+func copyStringsContext(ctx context.Context, values []string) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, boundedProjectionCapacity(len(values)))
+	for _, value := range values {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		out = append(out, value)
 	}
 	return out, ctx.Err()
 }
@@ -744,7 +997,10 @@ func revision(ctx context.Context, source bundle.Source) (store.Revision, error)
 	if err != nil {
 		return "", err
 	}
-	entries := make([]store.ManifestEntry, 0, len(paths))
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	entries := make([]store.ManifestEntry, 0, boundedProjectionCapacity(len(paths)))
 	for _, p := range paths {
 		if err := ctx.Err(); err != nil {
 			return "", err
@@ -782,12 +1038,16 @@ func (s *planState) presentationInvalid(code string, diagnostics []store.Diagnos
 		if documentlayout.HasOpeningDelimiter(data) {
 			format = "yaml"
 		}
+		location, err := presentationRangeContext(s.ctx, data, format)
+		if err != nil {
+			return err
+		}
 		return invalid(code, diagnostics, &PresentationError{
 			Code:      "parse_presentation",
 			Format:    format,
 			Path:      path,
 			Operation: operation,
-			Location:  presentationRange(data, format),
+			Location:  location,
 			Err:       fmt.Errorf("%w: %w", ErrUnsupportedPresentation, cause),
 		})
 	}
@@ -798,12 +1058,20 @@ func (s *planState) presentationInvalid(code string, diagnostics []store.Diagnos
 	// would nest identical metadata and break errors.Is against copy.Err.
 	copy.Err = presentation.Err
 	if copy.Format == "yaml" && copy.yamlRelative {
-		copy.Location.Start += yamlFrontmatterStart(data)
-		copy.Location.End += yamlFrontmatterStart(data)
+		offset, err := yamlFrontmatterStartContext(s.ctx, data)
+		if err != nil {
+			return err
+		}
+		copy.Location.Start += offset
+		copy.Location.End += offset
 	}
 	if len(data) > 0 && (copy.Location == (SourceSpan{}) || copy.Location.Start == copy.Location.End) {
 		if copy.Location == (SourceSpan{}) {
-			copy.Location = presentationRange(data, copy.Format)
+			location, err := presentationRangeContext(s.ctx, data, copy.Format)
+			if err != nil {
+				return err
+			}
+			copy.Location = location
 		} else if copy.Location.End < len(data) {
 			copy.Location.End++
 		} else if copy.Location.Start > 0 {
@@ -820,29 +1088,63 @@ func yamlFrontmatterStart(data []byte) int {
 	return len(data)
 }
 
-func presentationRange(data []byte, format string) SourceSpan {
+func yamlFrontmatterStartContext(ctx context.Context, data []byte) (int, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	const chunkSize = 64 << 10
+	for offset := 0; offset < len(data); offset += chunkSize {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		end := min(offset+chunkSize, len(data))
+		if relative := bytes.IndexByte(data[offset:end], '\n'); relative >= 0 {
+			return offset + relative + 1, nil
+		}
+	}
+	return len(data), ctx.Err()
+}
+
+func presentationRangeContext(ctx context.Context, data []byte, format string) (SourceSpan, error) {
+	if err := ctx.Err(); err != nil {
+		return SourceSpan{}, err
+	}
 	if len(data) == 0 {
-		return SourceSpan{}
+		return SourceSpan{}, nil
 	}
 	if format == "markdown" {
-		start, err := markdownBodyStart(data)
+		start, err := markdownBodyStartContext(ctx, data)
 		if err == nil && start < len(data) {
-			return SourceSpan{Start: start, End: len(data)}
+			return SourceSpan{Start: start, End: len(data)}, ctx.Err()
 		}
-		return SourceSpan{Start: 0, End: len(data)}
+		if err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+			return SourceSpan{}, err
+		}
+		return SourceSpan{Start: 0, End: len(data)}, ctx.Err()
 	}
-	if layout, ok, err := documentlayout.Split(data); err == nil && ok && layout.YAMLStart < layout.YAMLEnd {
-		return SourceSpan{Start: layout.YAMLStart, End: layout.YAMLEnd}
+	if layout, ok, err := documentlayout.SplitContext(ctx, data); err == nil && ok && layout.YAMLStart < layout.YAMLEnd {
+		return SourceSpan{Start: layout.YAMLStart, End: layout.YAMLEnd}, ctx.Err()
+	} else if err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
+		return SourceSpan{}, err
 	}
-	return SourceSpan{Start: 0, End: len(data)}
+	return SourceSpan{Start: 0, End: len(data)}, ctx.Err()
 }
 func refsForContext(ctx context.Context, in []bundle.RelationRef) ([]bundle.RelationRef, error) {
-	seen := map[string]bundle.RelationRef{}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	seen := make(map[relationRefKey]bundle.RelationRef, boundedProjectionCapacity(len(in)))
 	for _, r := range in {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		seen[r.String()] = r
+		key := relationRefIdentity(r)
+		if key.id != "" {
+			seen[key] = r
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	out := make([]bundle.RelationRef, 0, len(seen))
 	for _, r := range seen {
@@ -851,11 +1153,205 @@ func refsForContext(ctx context.Context, in []bundle.RelationRef) ([]bundle.Rela
 		}
 		out = append(out, r)
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].String() < out[j].String() })
-	if err := ctx.Err(); err != nil {
+	if err := sortRelationRefsContext(ctx, out); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// sortRelationRefsContext performs the deterministic semantic-ref ordering with
+// cancellation checks throughout comparison and materialization. sort.Slice
+// cannot stop once its comparator observes cancellation, which makes it an
+// unsuitable boundary for a large conflict namespace.
+func sortRelationRefsContext(ctx context.Context, refs []bundle.RelationRef) error {
+	return sortSliceContext(ctx, refs, func(left, right bundle.RelationRef) bool {
+		return relationRefKeyLess(relationRefIdentity(left), relationRefIdentity(right))
+	})
+}
+
+type relationRefKey struct {
+	id       string
+	fragment string
+}
+
+func relationRefIdentity(ref bundle.RelationRef) relationRefKey {
+	return relationRefKey{id: ref.ID.String(), fragment: ref.Fragment}
+}
+
+func relationRefKeyLess(left, right relationRefKey) bool {
+	if left.id != right.id {
+		return left.id < right.id
+	}
+	return left.fragment < right.fragment
+}
+
+func relationRefEqual(left, right bundle.RelationRef) bool {
+	return relationRefIdentity(left) == relationRefIdentity(right)
+}
+
+func sortSliceContext[T any](ctx context.Context, values []T, less func(left, right T) bool) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(values) < 2 {
+		return nil
+	}
+	for root := len(values)/2 - 1; root >= 0; root-- {
+		if err := siftSliceContext(ctx, values, less, root, len(values)-1); err != nil {
+			return err
+		}
+	}
+	for end := len(values) - 1; end > 0; end-- {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		values[0], values[end] = values[end], values[0]
+		if err := siftSliceContext(ctx, values, less, 0, end-1); err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+// sortSliceCompareContext is a deterministic in-place heapsort whose
+// comparator may stop expensive comparisons. Callers sort only private
+// projections and must discard them when an error is returned.
+func sortSliceCompareContext[T any](
+	ctx context.Context,
+	values []T,
+	compare func(context.Context, T, T) (int, error),
+) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(values) < 2 {
+		return nil
+	}
+	for root := len(values)/2 - 1; root >= 0; root-- {
+		if err := siftSliceCompareContext(ctx, values, compare, root, len(values)-1); err != nil {
+			return err
+		}
+	}
+	for end := len(values) - 1; end > 0; end-- {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		values[0], values[end] = values[end], values[0]
+		if err := siftSliceCompareContext(ctx, values, compare, 0, end-1); err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+func siftSliceCompareContext[T any](
+	ctx context.Context,
+	values []T,
+	compare func(context.Context, T, T) (int, error),
+	root, end int,
+) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		child := root*2 + 1
+		if child > end {
+			return nil
+		}
+		if child+1 <= end {
+			order, err := compare(ctx, values[child], values[child+1])
+			if err != nil {
+				return err
+			}
+			if order < 0 {
+				child++
+			}
+		}
+		order, err := compare(ctx, values[root], values[child])
+		if err != nil {
+			return err
+		}
+		if order >= 0 {
+			return nil
+		}
+		values[root], values[child] = values[child], values[root]
+		root = child
+	}
+}
+
+func compareStringsContext(ctx context.Context, left, right string) (int, error) {
+	const chunkSize = 64 << 10
+	limit := min(len(left), len(right))
+	for offset := 0; offset < limit; offset += chunkSize {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		end := min(offset+chunkSize, limit)
+		if order := strings.Compare(left[offset:end], right[offset:end]); order != 0 {
+			return order, nil
+		}
+	}
+	if len(left) < len(right) {
+		return -1, ctx.Err()
+	}
+	if len(left) > len(right) {
+		return 1, ctx.Err()
+	}
+	return 0, ctx.Err()
+}
+
+func sortStringsContext(ctx context.Context, values []string) error {
+	return sortSliceCompareContext(ctx, values, compareStringsContext)
+}
+
+func searchStringsContext(ctx context.Context, values []string, target string) (int, error) {
+	low, high := 0, len(values)
+	for low < high {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+		middle := low + (high-low)/2
+		order, err := compareStringsContext(ctx, values[middle], target)
+		if err != nil {
+			return 0, err
+		}
+		if order < 0 {
+			low = middle + 1
+		} else {
+			high = middle
+		}
+	}
+	return low, ctx.Err()
+}
+
+func siftSliceContext[T any](ctx context.Context, values []T, less func(left, right T) bool, root, end int) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		child := root*2 + 1
+		if child > end {
+			return nil
+		}
+		if child+1 <= end {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			if less(values[child], values[child+1]) {
+				child++
+			}
+		}
+		if !less(values[root], values[child]) {
+			return nil
+		}
+		values[root], values[child] = values[child], values[root]
+		root = child
+	}
+}
+
+func boundedProjectionCapacity(length int) int {
+	const initialCapacity = 64
+	return min(length, initialCapacity)
 }
 func checkPreconditions(ctx context.Context, source bundle.Source, b *bundle.Bundle, revision store.Revision, ps []store.Precondition) error {
 	for _, pre := range ps {
@@ -886,10 +1382,18 @@ func checkPreconditions(ctx context.Context, source bundle.Source, b *bundle.Bun
 				ok = digest == p.Digest
 			}
 		case store.RelationExists:
-			ok = hasRelation(b, p.Source, p.Type, p.Target)
+			relationExists, relationErr := hasRelationContext(ctx, b, p.Source, p.Type, p.Target)
+			if relationErr != nil {
+				return relationErr
+			}
+			ok = relationExists
 			refs = []bundle.RelationRef{p.Source, p.Target}
 		case store.RelationAbsent:
-			ok = !hasRelation(b, p.Source, p.Type, p.Target)
+			relationExists, relationErr := hasRelationContext(ctx, b, p.Source, p.Type, p.Target)
+			if relationErr != nil {
+				return relationErr
+			}
+			ok = !relationExists
 			refs = []bundle.RelationRef{p.Source, p.Target}
 		default:
 			return invalid("unknown_precondition", nil, fmt.Errorf("unsupported precondition %T", pre))
@@ -904,18 +1408,29 @@ func checkPreconditions(ctx context.Context, source bundle.Source, b *bundle.Bun
 	}
 	return nil
 }
-func hasRelation(b *bundle.Bundle, source bundle.RelationRef, typ string, target bundle.RelationRef) bool {
-	for _, r := range b.SemanticLinksFrom(source.ID) {
-		if r.Source.String() == source.String() && r.Type == typ && r.Target.String() == target.String() {
-			return true
+func hasRelationContext(ctx context.Context, b *bundle.Bundle, source bundle.RelationRef, typ string, target bundle.RelationRef) (bool, error) {
+	relations, err := b.SemanticLinksFromContext(ctx, source.ID)
+	if err != nil {
+		return false, err
+	}
+	for _, r := range relations {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		if relationRefEqual(r.Source, source) && r.Type == typ && relationRefEqual(r.Target, target) {
+			return true, nil
 		}
 	}
-	return false
+	return false, ctx.Err()
 }
-func readBundleFile(b *bundle.Bundle, file string) string {
-	data, _ := b.ReadFile(file)
-	return string(data)
+
+func readBundleFileContext(ctx context.Context, loaded *bundle.Bundle, file string) ([]byte, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, false, err
+	}
+	return loaded.ReadFileContext(ctx, file)
 }
+
 func conceptPath(id bundle.ConceptID) string { return strings.Join(id.Segments(), "/") + ".md" }
 
 func mappingForRef(ctx context.Context, p *presentation, root *yaml.Node, ref bundle.RelationRef) (*yaml.Node, error) {
@@ -930,43 +1445,42 @@ func mappingForRef(ctx context.Context, p *presentation, root *yaml.Node, ref bu
 		return nil, p.yamlNodeError("alias_provenance", ErrAmbiguousPresentation, alias...)
 	}
 	var found []*yaml.Node
-	var first error
-	walkNestedMappings(root, func(n *yaml.Node) {
-		if first == nil {
-			first = ctx.Err()
-		}
-		if first != nil {
-			return
-		}
-		if err := p.rejectMergedCanonicalFragment(n, ref.Fragment); err != nil {
-			first = err
-			return
+	err = walkMappingsContext(ctx, root, excludeRootMapping, func(n *yaml.Node) error {
+		if err := p.rejectMergedCanonicalFragmentContext(ctx, n, ref.Fragment); err != nil {
+			return err
 		}
 		identity := bundle.ResolveMappingIdentity(n)
 		if identity.State == bundle.MappingIdentityInvalid {
-			if identityMentionsFragment(n, ref.Fragment) {
-				if duplicateCanonicalIdentityCandidate(n, ref.Fragment) {
-					first = p.yamlNodeError("duplicate_canonical_fragment", ErrAmbiguousPresentation, identityKeyNodes(n)...)
+			mentions, err := identityMentionsFragmentContext(ctx, n, ref.Fragment)
+			if err != nil {
+				return err
+			}
+			if mentions {
+				duplicate, err := duplicateCanonicalIdentityCandidateContext(ctx, n, ref.Fragment)
+				if err != nil {
+					return err
+				}
+				if duplicate {
+					return p.yamlNodeError("duplicate_canonical_fragment", ErrAmbiguousPresentation, identityKeyNodes(n)...)
 				} else {
-					first = p.unsupportedIdentityPresentationForFragment(n, ref.Fragment)
+					return p.unsupportedIdentityPresentationForFragmentContext(ctx, n, ref.Fragment)
 				}
 			}
-			return
+			return nil
 		}
 		if identity.State == bundle.MappingIdentityValid && identity.Fragment == ref.Fragment {
 			if err := p.requireTouchedProvenance(identity.Node); err != nil {
-				first = err
-				return
+				return err
 			}
 			if _, err := p.resolver.scalar(identity.Node); err != nil {
-				first = err
-				return
+				return err
 			}
 			found = append(found, n)
 		}
+		return nil
 	})
-	if first != nil {
-		return nil, first
+	if err != nil {
+		return nil, err
 	}
 	if len(found) > 1 {
 		return nil, p.yamlNodeError("duplicate_canonical_fragment", ErrAmbiguousPresentation, found...)
@@ -977,22 +1491,32 @@ func mappingForRef(ctx context.Context, p *presentation, root *yaml.Node, ref bu
 	return found[0], nil
 }
 
-func duplicateCanonicalIdentityCandidate(n *yaml.Node, fragment string) bool {
-	valid := func(key string) []string {
+func duplicateCanonicalIdentityCandidateContext(ctx context.Context, n *yaml.Node, fragment string) (bool, error) {
+	valid := func(key string) ([]string, error) {
 		values := make([]string, 0)
-		for _, value := range mappingValues(n, key) {
+		mappingValues, err := mappingValuesForKeyContext(ctx, n, key)
+		if err != nil {
+			return nil, err
+		}
+		for _, value := range mappingValues {
 			if value != nil && value.Kind == yaml.ScalarNode && value.Tag == "!!str" && bundle.ValidateRelationFragment(value.Value) == nil {
 				values = append(values, value.Value)
 			}
 		}
-		return values
+		return values, ctx.Err()
 	}
-	ids := valid("id")
+	ids, err := valid("id")
+	if err != nil {
+		return false, err
+	}
 	if len(ids) > 0 {
-		return len(ids) > 1 && stringSliceContains(ids, fragment)
+		return len(ids) > 1 && stringSliceContains(ids, fragment), ctx.Err()
 	}
-	anchors := valid("anchor")
-	return len(anchors) > 1 && stringSliceContains(anchors, fragment)
+	anchors, err := valid("anchor")
+	if err != nil {
+		return false, err
+	}
+	return len(anchors) > 1 && stringSliceContains(anchors, fragment), ctx.Err()
 }
 
 func stringSliceContains(values []string, want string) bool {
@@ -1009,38 +1533,42 @@ func identityKeyNodes(n *yaml.Node) []*yaml.Node {
 	return append(nodes, mappingKeyNodes(n, "anchor")...)
 }
 
-// walkNestedMappings applies fn to mappings below the document frontmatter
-// root. Root id/anchor are concept metadata and never establish a fragment.
-func walkNestedMappings(root *yaml.Node, fn func(*yaml.Node)) {
+type mappingRootPolicy bool
+
+const (
+	excludeRootMapping mappingRootPolicy = false
+	includeRootMapping mappingRootPolicy = true
+)
+
+// walkMappingsContext visits mappings in source pre-order. Excluding the root
+// keeps document id/anchor metadata out of fragment identity traversal.
+func walkMappingsContext(ctx context.Context, root *yaml.Node, policy mappingRootPolicy, visitor func(*yaml.Node) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if root == nil {
-		return
+		return nil
+	}
+	if policy == includeRootMapping && root.Kind == yaml.MappingNode {
+		if err := visitor(root); err != nil {
+			return err
+		}
 	}
 	switch root.Kind {
 	case yaml.MappingNode:
-		for i := 1; i < len(root.Content); i += 2 {
-			walkMappings(root.Content[i], fn)
+		for index := 1; index < len(root.Content); index += 2 {
+			if err := walkMappingsContext(ctx, root.Content[index], includeRootMapping, visitor); err != nil {
+				return err
+			}
 		}
 	case yaml.SequenceNode:
 		for _, child := range root.Content {
-			walkMappings(child, fn)
+			if err := walkMappingsContext(ctx, child, includeRootMapping, visitor); err != nil {
+				return err
+			}
 		}
 	}
-}
-func walkMappings(n *yaml.Node, fn func(*yaml.Node)) {
-	if n == nil {
-		return
-	}
-	switch n.Kind {
-	case yaml.MappingNode:
-		fn(n)
-		for i := 1; i < len(n.Content); i += 2 {
-			walkMappings(n.Content[i], fn)
-		}
-	case yaml.SequenceNode:
-		for _, c := range n.Content {
-			walkMappings(c, fn)
-		}
-	}
+	return ctx.Err()
 }
 
 // canonicalFragmentNode implements the same identity rule as the semantic
@@ -1061,12 +1589,19 @@ func canonicalFragmentNode(n *yaml.Node) (string, *yaml.Node, bool) {
 // then every identity field on that mapping must be a supported scalar: an
 // invalid or non-scalar sibling next to a valid matching anchor is Unsupported
 // (not a late staged_validation_failed).
-func (p *presentation) unsupportedIdentityPresentationForFragment(n *yaml.Node, from string) error {
-	if from != "" && !identityMentionsFragment(n, from) {
-		return nil
+func (p *presentation) unsupportedIdentityPresentationForFragmentContext(ctx context.Context, n *yaml.Node, from string) error {
+	if from != "" {
+		mentions, err := identityMentionsFragmentContext(ctx, n, from)
+		if err != nil || !mentions {
+			return err
+		}
 	}
 	for _, key := range []string{"id", "anchor"} {
-		for _, value := range mappingValues(n, key) {
+		values, err := mappingValuesForKeyContext(ctx, n, key)
+		if err != nil {
+			return err
+		}
+		for _, value := range values {
 			if value == nil {
 				continue
 			}
@@ -1138,7 +1673,7 @@ func previewDiagnosticsContext(ctx context.Context, validation validator.Report,
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	out := make([]store.Diagnostic, 0, len(validation.Diagnostics)+len(relations))
+	out := make([]store.Diagnostic, 0, boundedProjectionCapacity(len(validation.Diagnostics)+len(relations)))
 	for _, diagnostic := range validation.Diagnostics {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -1174,24 +1709,30 @@ func previewDiagnosticsContext(ctx context.Context, validation validator.Report,
 			Refs:         []bundle.RelationRef{{ID: relation.Source, Fragment: relation.SourceFragment}},
 		})
 	}
-	type keyedDiagnostic struct {
-		diagnostic store.Diagnostic
-		key        string
-	}
-	keyed := make([]keyedDiagnostic, 0, len(out))
-	for _, diagnostic := range out {
-		key, err := diagnosticKeyContext(ctx, diagnostic)
-		if err != nil {
-			return nil, err
-		}
-		keyed = append(keyed, keyedDiagnostic{diagnostic: diagnostic, key: key})
-	}
-	sort.Slice(keyed, func(i, j int) bool { return keyed[i].key < keyed[j].key })
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	unique := make([]store.Diagnostic, 0, len(keyed))
-	lastKey := ""
+	keyed := make([]keyedDiagnostic, 0, boundedProjectionCapacity(len(out)))
+	for _, diagnostic := range out {
+		key, refs, canonicalRefs, err := diagnosticKeyContext(ctx, diagnostic)
+		if err != nil {
+			return nil, err
+		}
+		if len(canonicalRefs) != 0 {
+			diagnostic.Refs = canonicalRefs
+		}
+		keyed = append(keyed, keyedDiagnostic{diagnostic: diagnostic, key: key, refs: refs})
+	}
+	if err := sortSliceContext(ctx, keyed, func(left, right keyedDiagnostic) bool {
+		return diagnosticKeyLess(left, right)
+	}); err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	unique := make([]store.Diagnostic, 0, boundedProjectionCapacity(len(keyed)))
+	var lastKey diagnosticIdentity
 	for index, item := range keyed {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -1215,17 +1756,114 @@ func validationSeverity(severity validator.Severity) store.DiagnosticSeverity {
 	}
 }
 
-func diagnosticKeyContext(ctx context.Context, diagnostic store.Diagnostic) (string, error) {
+type diagnosticIdentity struct {
+	kind         store.DiagnosticKind
+	severity     store.DiagnosticSeverity
+	code         string
+	file         string
+	relationType string
+	rawTarget    string
+	message      string
+	refsFrame    string
+}
+
+type keyedDiagnostic struct {
+	diagnostic store.Diagnostic
+	key        diagnosticIdentity
+	refs       []relationRefKey
+}
+
+func diagnosticKeyContext(ctx context.Context, diagnostic store.Diagnostic) (diagnosticIdentity, []relationRefKey, []bundle.RelationRef, error) {
 	refs, err := refsForContext(ctx, diagnostic.Refs)
 	if err != nil {
+		return diagnosticIdentity{}, nil, nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return diagnosticIdentity{}, nil, nil, err
+	}
+	parts := make([]relationRefKey, 0, boundedProjectionCapacity(len(refs)))
+	for _, ref := range refs {
+		if err := ctx.Err(); err != nil {
+			return diagnosticIdentity{}, nil, nil, err
+		}
+		parts = append(parts, relationRefIdentity(ref))
+	}
+	refsFrame, err := lengthFrameRelationRefKeysContext(ctx, parts)
+	if err != nil {
+		return diagnosticIdentity{}, nil, nil, err
+	}
+	return diagnosticIdentity{
+		kind:         diagnostic.Kind,
+		severity:     diagnostic.Severity,
+		code:         diagnostic.Code,
+		file:         diagnostic.File,
+		relationType: diagnostic.RelationType,
+		rawTarget:    diagnostic.RawTarget,
+		message:      diagnostic.Message,
+		refsFrame:    refsFrame,
+	}, parts, refs, nil
+}
+
+func diagnosticKeyLess(left, right keyedDiagnostic) bool {
+	switch {
+	case left.key.kind != right.key.kind:
+		return left.key.kind < right.key.kind
+	case left.key.severity != right.key.severity:
+		return left.key.severity < right.key.severity
+	case left.key.code != right.key.code:
+		return left.key.code < right.key.code
+	case left.key.file != right.key.file:
+		return left.key.file < right.key.file
+	case left.key.relationType != right.key.relationType:
+		return left.key.relationType < right.key.relationType
+	case left.key.rawTarget != right.key.rawTarget:
+		return left.key.rawTarget < right.key.rawTarget
+	case left.key.message != right.key.message:
+		return left.key.message < right.key.message
+	default:
+		return relationRefKeySliceLess(left.refs, right.refs)
+	}
+}
+
+func relationRefKeySliceLess(left, right []relationRefKey) bool {
+	limit := min(len(left), len(right))
+	for index := 0; index < limit; index++ {
+		if left[index] != right[index] {
+			return relationRefKeyLess(left[index], right[index])
+		}
+	}
+	return len(left) < len(right)
+}
+
+func lengthFrameRelationRefKeysContext(ctx context.Context, refs []relationRefKey) (string, error) {
+	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	parts := make([]string, len(refs))
-	for i, ref := range refs {
+	values := make([]string, 0, boundedProjectionCapacity(2*len(refs)))
+	for _, ref := range refs {
 		if err := ctx.Err(); err != nil {
 			return "", err
 		}
-		parts[i] = ref.String()
+		values = append(values, ref.id, ref.fragment)
 	}
-	return string(diagnostic.Kind) + "\x00" + string(diagnostic.Severity) + "\x00" + diagnostic.Code + "\x00" + diagnostic.File + "\x00" + diagnostic.RelationType + "\x00" + diagnostic.RawTarget + "\x00" + diagnostic.Message + "\x00" + strings.Join(parts, "\x00"), ctx.Err()
+	return lengthFrameStringsContext(ctx, values)
+}
+
+func lengthFrameStringsContext(ctx context.Context, values []string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	var framed []byte
+	for _, value := range values {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+		framed = strconv.AppendInt(framed, int64(len(value)), 10)
+		framed = append(framed, ':')
+		framed = append(framed, value...)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	return string(framed), nil
 }

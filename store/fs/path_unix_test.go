@@ -17,7 +17,7 @@ func TestSnapshotRejectsInvalidUTF8VisibleFilenameBeforePublication(t *testing.T
 	if err := os.WriteFile(bad, []byte("bad"), 0o600); err != nil {
 		t.Skipf("filesystem does not accept invalid UTF-8 names: %v", err)
 	}
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/preview_v02_migration.output.schema.json",
+  "$comment": "Applicable previews advance the revision and noop previews preserve it; sibling revision comparison and canonical affected_paths ordering are enforced by the MCP output invariant because JSON Schema cannot compare sibling values or reuse the Go revision-path grammar.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "source",
+    "base_revision",
+    "result_revision",
+    "plan_digest",
+    "affected_paths",
+    "diff",
+    "diff_truncated",
+    "blockers",
+    "manual_actions",
+    "diagnostics"
+  ],
+  "properties": {
+    "status": {"enum": ["applicable", "noop", "blocked"]},
+    "source": {"$ref": "#/$defs/source_resolution"},
+    "proof": {"$ref": "#/$defs/plan_proof"},
+    "base_revision": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "result_revision": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "plan_digest": {
+      "type": "string",
+      "pattern": "^(?:|sha256:[0-9a-f]{64})$"
+    },
+    "affected_paths": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/output_path"}
+    },
+    "diff": {"type": "string", "maxLength": 1048576},
+    "diff_truncated": {"type": "boolean"},
+    "blockers": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "path", "location", "message"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "path": {"type": "string"},
+          "location": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start", "end"],
+            "properties": {
+              "start": {"type": "integer", "minimum": 0},
+              "end": {"type": "integer", "minimum": 0}
+            }
+          },
+          "message": {"type": "string"}
+        }
+      }
+    },
+    "manual_actions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "path", "message"],
+        "properties": {
+          "code": {
+            "enum": [
+              "provide_citation_mapping",
+              "disambiguate_citation_entry",
+              "disambiguate_citation_destination",
+              "normalize_citations_section",
+              "reconcile_sources_and_citations",
+              "repair_invalid_utf8",
+              "provide_generated_at",
+              "provide_generated_by"
+            ]
+          },
+          "path": {"type": "string"},
+          "message": {"type": "string"}
+        }
+      }
+    },
+    "diagnostics": {"$ref": "#/$defs/wire_diagnostics"}
+  },
+  "oneOf": [
+    {
+      "required": ["proof"],
+      "properties": {
+        "status": {"const": "applicable"},
+        "source": {"$ref": "#/$defs/applicable_v01_source_resolution"},
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "affected_paths": {"type": "array", "minItems": 1},
+        "diff": {"type": "string", "minLength": 1},
+        "blockers": {"type": "array", "maxItems": 0},
+        "manual_actions": {"type": "array", "maxItems": 0},
+        "diagnostics": {"$ref": "#/$defs/non_error_wire_diagnostics"}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "noop"},
+        "source": {"$ref": "#/$defs/applicable_target_source_resolution"},
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {"const": ""},
+        "affected_paths": {"type": "array", "maxItems": 0},
+        "diff": {"const": ""},
+        "diff_truncated": {"const": false},
+        "blockers": {"type": "array", "maxItems": 0},
+        "manual_actions": {"type": "array", "maxItems": 0},
+        "diagnostics": {"const": []}
+      },
+      "not": {"required": ["proof"]}
+    },
+    {
+      "required": ["proof"],
+      "properties": {
+        "status": {"const": "noop"},
+        "source": {"$ref": "#/$defs/applicable_v01_source_resolution"},
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "affected_paths": {"type": "array", "maxItems": 0},
+        "diff": {"const": ""},
+        "diff_truncated": {"const": false},
+        "blockers": {"type": "array", "maxItems": 0},
+        "manual_actions": {"type": "array", "maxItems": 0},
+        "diagnostics": {"$ref": "#/$defs/non_error_wire_diagnostics"}
+      }
+    },
+    {
+      "properties": {
+        "status": {"const": "blocked"},
+        "source": {"$ref": "#/$defs/preview_blocked_source_resolution"},
+        "result_revision": {"type": "null"},
+        "plan_digest": {"const": ""},
+        "affected_paths": {"type": "array", "maxItems": 0},
+        "diff": {"const": ""},
+        "diff_truncated": {"const": false},
+        "blockers": {"type": "array", "minItems": 1}
+      },
+      "not": {"required": ["proof"]}
+    }
+  ]
+}

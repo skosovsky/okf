@@ -123,6 +123,68 @@ func TestRenderNTriplesRelationIRIEncoding(t *testing.T) {
 	}
 }
 
+func TestGraphRelationRefStructuralIdentityAndProjectionOrder(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	left := relationRefCollisionGraphBundle(t, []string{`source\#part`, "source#part"})
+	right := relationRefCollisionGraphBundle(t, []string{"source#part", `source\#part`})
+	toolkitOptions := Options{
+		Profile:            ProjectionProfileToolkitV02,
+		ExtensionRelations: ExtensionRelationsInclude,
+	}
+	legacyOptions := Options{
+		Profile:            ProjectionProfileLegacyV01,
+		ExtensionRelations: ExtensionRelationsInclude,
+	}
+
+	// Act.
+	var leftJSON, rightJSON, leftToolkitRDF, rightToolkitRDF, legacyRDF strings.Builder
+	leftJSONErr := RenderJSONLDWithOptions(&leftJSON, left, toolkitOptions)
+	rightJSONErr := RenderJSONLDWithOptions(&rightJSON, right, toolkitOptions)
+	leftRDFErr := RenderNTriplesWithOptions(&leftToolkitRDF, left, toolkitOptions)
+	rightRDFErr := RenderNTriplesWithOptions(&rightToolkitRDF, right, toolkitOptions)
+	legacyErr := RenderNTriplesWithOptions(&legacyRDF, left, legacyOptions)
+
+	// Assert.
+	if leftJSONErr != nil || rightJSONErr != nil || leftRDFErr != nil || rightRDFErr != nil || legacyErr != nil {
+		t.Fatalf("render errors = JSON %v/%v toolkit RDF %v/%v legacy RDF %v",
+			leftJSONErr, rightJSONErr, leftRDFErr, rightRDFErr, legacyErr)
+	}
+	if leftJSON.String() != rightJSON.String() || leftToolkitRDF.String() != rightToolkitRDF.String() {
+		t.Fatalf("structural relation order changed under declaration permutation:\nJSON left=%s\nJSON right=%s\nRDF left=%s\nRDF right=%s",
+			leftJSON.String(), rightJSON.String(), leftToolkitRDF.String(), rightToolkitRDF.String())
+	}
+	for _, output := range []struct {
+		name  string
+		value string
+	}{
+		{name: "toolkit JSON-LD", value: leftJSON.String()},
+		{name: "toolkit N-Triples", value: leftToolkitRDF.String()},
+	} {
+		for _, target := range []string{"local:bundle:source%23part", "local:bundle:source#part"} {
+			if !strings.Contains(output.value, target) {
+				t.Fatalf("%s missing structurally distinct target %q:\n%s", output.name, target, output.value)
+			}
+		}
+	}
+	legacy := legacyRDF.String()
+	for _, triple := range []string{
+		`<local:bundle:consumer> <https://okf.io/ontology/v0.1#uses> <local:bundle:source%23part> .`,
+		`<local:bundle:consumer> <https://okf.io/ontology/v0.1#uses> <local:bundle:source#part> .`,
+		`<local:bundle:source#part> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://okf.io/ontology/v0.1#SubResource> .`,
+		`<local:bundle:source#part> <https://okf.io/ontology/v0.1#is_part_of> <local:bundle:source> .`,
+	} {
+		if strings.Count(legacy, triple) != 1 {
+			t.Fatalf("legacy N-Triples count for %q != 1:\n%s", triple, legacy)
+		}
+	}
+	if strings.Contains(legacy,
+		`<local:bundle:source%23part> <https://okf.io/ontology/v0.1#is_part_of>`) {
+		t.Fatalf("escaped root was projected as a fragment:\n%s", legacy)
+	}
+}
+
 func TestRenderNTriplesRelationExistenceContract(t *testing.T) {
 	t.Parallel()
 
@@ -175,6 +237,26 @@ func TestRenderNTriplesRelationExistenceContract(t *testing.T) {
 	if got := second.String(); got != want {
 		t.Fatalf("RenderNTriples() second render =\n%s\nwant:\n%s", got, want)
 	}
+}
+
+func relationRefCollisionGraphBundle(t *testing.T, targets []string) *bundle.Bundle {
+	t.Helper()
+	root := t.TempDir()
+	writeGraphFile(t, root, "index.md",
+		"---\nokf_version: \"0.2\"\n---\n\n# Knowledge\n\n- [Consumer](consumer.md)\n")
+	var relations strings.Builder
+	relations.WriteString("---\ntype: Note\nrelations:\n  uses:\n")
+	for _, target := range targets {
+		relations.WriteString("    - target: '")
+		relations.WriteString(target)
+		relations.WriteString("'\n")
+	}
+	relations.WriteString("---\nBody.\n")
+	writeGraphFile(t, root, "consumer.md", relations.String())
+	writeGraphFile(t, root, "source.md",
+		"---\ntype: Note\nfields:\n  - id: part\n---\nBody.\n")
+	writeGraphFile(t, root, "source#part.md", "---\ntype: Note\n---\nBody.\n")
+	return loadGraphBundle(t, root)
 }
 
 func TestRenderEmptyBundleOutputs(t *testing.T) {

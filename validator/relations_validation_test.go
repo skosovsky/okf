@@ -42,22 +42,25 @@ func TestValidateReportsStructuredSemanticRelationDiagnostics(t *testing.T) {
 	if len(relations) != 0 {
 		t.Fatalf("SemanticLinksFrom(a) = %#v, want no unresolved semantic relation", relations)
 	}
-	if report.IsConformant() {
-		t.Fatalf("IsConformant() = true, diagnostics = %#v", report.Diagnostics)
+	if !report.IsConformant() {
+		t.Fatalf("IsConformant() = false, diagnostics = %#v", report.Diagnostics)
+	}
+	if !report.HasPolicyFailures() || report.ExitCode() != 1 {
+		t.Fatalf("policy outcome = failures:%v exit:%d, want failed policy independent of conformance", report.HasPolicyFailures(), report.ExitCode())
 	}
 	for _, want := range []struct {
-		code, file, source, relationType, rawTarget string
-		severity                                    Severity
+		code, file, fieldPath, source, relationType, rawTarget string
+		severity                                               Severity
 	}{
-		{"missing_target_concept", "a.md", "a", "depends_on", "missing", SeverityError},
-		{"missing_or_ambiguous_target_fragment", "a.md", "a", "uses", "target#missing", SeverityError},
-		{"missing_or_ambiguous_target_fragment", "a.md", "a", "uses", "ambiguous#duplicate", SeverityError},
-		{"relation_not_sequence", "a.md", "a", "writes_to", "", SeverityError},
-		{"anchor_alias", "alias.md", "alias#canonical", "", "legacy", SeverityInfo},
-		{"missing_target_concept", "x.md", "x", "uses", "absent", SeverityError},
-		{"missing_target_concept", "y.md", "y", "uses", "absent", SeverityError},
+		{"missing_target_concept", "a.md", "frontmatter.relations.depends_on", "a", "depends_on", "missing", SeverityWarning},
+		{"missing_or_ambiguous_target_fragment", "a.md", "frontmatter.relations.uses", "a", "uses", "target#missing", SeverityWarning},
+		{"missing_or_ambiguous_target_fragment", "a.md", "frontmatter.relations.uses", "a", "uses", "ambiguous#duplicate", SeverityWarning},
+		{"relation_not_sequence", "a.md", "frontmatter.relations.writes_to", "a", "writes_to", "", SeverityWarning},
+		{"anchor_alias", "alias.md", "frontmatter.fragments[canonical].anchor", "alias#canonical", "", "legacy", SeverityInfo},
+		{"missing_target_concept", "x.md", "frontmatter.relations.uses", "x", "uses", "absent", SeverityWarning},
+		{"missing_target_concept", "y.md", "frontmatter.relations.uses", "y", "uses", "absent", SeverityWarning},
 	} {
-		if !containsRelationValidationDiagnostic(report.Diagnostics, want.code, want.file, want.source, want.relationType, want.rawTarget, want.severity) {
+		if !containsRelationValidationDiagnostic(report.Diagnostics, want.code, want.file, want.fieldPath, want.source, want.relationType, want.rawTarget, want.severity) {
 			t.Fatalf("diagnostics = %#v, missing %#v", report.Diagnostics, want)
 		}
 	}
@@ -98,18 +101,19 @@ func TestValidateRelationPolicyIsOptInAcrossEntryPoints(t *testing.T) {
 	for name, report := range map[string]Report{
 		"path": pathReport, "bundle": bundleReport, "context": contextReport, "source": sourceReport,
 	} {
-		if !report.IsConformant() || containsRelationValidationDiagnostic(report.Diagnostics, "missing_target_concept", "a.md", "a", "uses", "missing", SeverityError) {
+		if !report.IsConformant() || containsRelationValidationDiagnostic(report.Diagnostics, "missing_target_concept", "a.md", "frontmatter.relations.uses", "a", "uses", "missing", SeverityError) {
 			t.Fatalf("%s baseline report = %#v, want base-only conformance", name, report)
 		}
 	}
-	if optIn.IsConformant() || !containsRelationValidationDiagnostic(optIn.Diagnostics, "missing_target_concept", "a.md", "a", "uses", "missing", SeverityError) {
+	if !optIn.IsConformant() || !optIn.HasPolicyFailures() || !containsRelationValidationDiagnostic(optIn.Diagnostics, "missing_target_concept", "a.md", "frontmatter.relations.uses", "a", "uses", "missing", SeverityWarning) {
 		t.Fatalf("opt-in report = %#v, want semantic relation failure", optIn)
 	}
 }
 
-func containsRelationValidationDiagnostic(diagnostics []Diagnostic, code, file, source, relationType, rawTarget string, severity Severity) bool {
+func containsRelationValidationDiagnostic(diagnostics []Diagnostic, code, file, fieldPath, source, relationType, rawTarget string, severity Severity) bool {
 	for _, diagnostic := range diagnostics {
-		if diagnostic.Code == code && diagnostic.File == file && diagnostic.Source.String() == source && diagnostic.RelationType == relationType && diagnostic.RawTarget == rawTarget && diagnostic.Severity == severity && len(diagnostic.Refs) == 1 && diagnostic.Refs[0].String() == source {
+		wantPolicyFailure := severity == SeverityWarning
+		if diagnostic.Code == code && diagnostic.File == file && diagnostic.FieldPath == fieldPath && diagnostic.Source.String() == source && diagnostic.RelationType == relationType && diagnostic.RawTarget == rawTarget && diagnostic.Severity == severity && diagnostic.PolicyFailure == wantPolicyFailure && len(diagnostic.Refs) == 1 && diagnostic.Refs[0].String() == source {
 			return true
 		}
 	}
@@ -132,6 +136,15 @@ func TestInvalidYAMLFrontmatterStillFailsConformance(t *testing.T) {
 	}
 	if !validationDiagnosticsContain(report.Of(SeverityError), "invalid frontmatter") {
 		t.Fatalf("errors = %#v, want invalid frontmatter diagnostic", report.Of(SeverityError))
+	}
+	count := 0
+	for _, diagnostic := range report.Diagnostics {
+		if diagnostic.Code == "concept_unparseable" && diagnostic.File == "bad.md" && diagnostic.FieldPath == "frontmatter" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("concept_unparseable count = %d, want exactly one: %#v", count, report.Diagnostics)
 	}
 }
 

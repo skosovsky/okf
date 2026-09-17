@@ -14,10 +14,11 @@ func TestStorePreviewContract_ProjectsInformationalRelationDiagnostics(t *testin
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "---\ntype: thing\nparts:\n  - id: canonical\n    anchor: legacy\n---\nA\n")
 	writeTestFile(t, root, "b.md", "---\ntype: thing\n---\nB\n")
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	base := adversarialSnapshot(t, s)
 	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "preview-alias", Actor: "tester", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: adversarialRef(t, "a#canonical"), Type: "uses", Target: adversarialRef(t, "b")}}}
 
@@ -43,10 +44,11 @@ func TestStorePreviewContract_ReturnsDiagnosticPreviewAndRevisionDependencies(t 
 	writeTestFile(t, root, "b.md", "---\ntype: thing\nrelations:\n  uses:\n    - target: target#part\n---\nB\n")
 	writeTestFile(t, root, "target.md", "---\ntype: thing\nparts:\n  - id: part\n  - id: part\n---\nTarget\n")
 	writeTestFile(t, root, "asset.bin", "revision-visible but semantically unread")
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	registerStoreCleanup(t, s)
 	base := adversarialSnapshot(t, s)
 	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "preview-invalid", Actor: "tester", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: adversarialRef(t, "a"), Type: "uses", Target: adversarialRef(t, "b")}}}
 

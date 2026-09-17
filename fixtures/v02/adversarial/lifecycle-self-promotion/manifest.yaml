@@ -1,0 +1,9 @@
+description: "Body lifecycle claims cannot promote, demote, or invent structured status and stale_after state"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

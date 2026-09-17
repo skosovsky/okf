@@ -1,0 +1,1039 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/preview_v02_migration.output.schema.json",
+  "$comment": "Applicable previews advance the revision and noop previews preserve it; sibling revision comparison and canonical affected_paths ordering are enforced by the MCP output invariant because JSON Schema cannot compare sibling values or reuse the Go revision-path grammar.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "source",
+    "base_revision",
+    "result_revision",
+    "plan_digest",
+    "affected_paths",
+    "diff",
+    "diff_truncated",
+    "blockers",
+    "manual_actions",
+    "diagnostics"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "applicable",
+        "noop",
+        "blocked"
+      ]
+    },
+    "source": {
+      "$ref": "#/$defs/source_resolution"
+    },
+    "proof": {
+      "$ref": "#/$defs/plan_proof"
+    },
+    "base_revision": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "result_revision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "plan_digest": {
+      "type": "string",
+      "pattern": "^(?:|sha256:[0-9a-f]{64})$"
+    },
+    "affected_paths": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/output_path"
+      }
+    },
+    "diff": {
+      "type": "string",
+      "maxLength": 1048576
+    },
+    "diff_truncated": {
+      "type": "boolean"
+    },
+    "blockers": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "path",
+          "location",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start",
+              "end"
+            ],
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "manual_actions": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "enum": [
+              "provide_citation_mapping",
+              "disambiguate_citation_entry",
+              "disambiguate_citation_destination",
+              "normalize_citations_section",
+              "reconcile_sources_and_citations",
+              "repair_invalid_utf8",
+              "provide_generated_at",
+              "provide_generated_by"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "$ref": "#/$defs/wire_diagnostics"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "proof"
+      ],
+      "properties": {
+        "status": {
+          "const": "applicable"
+        },
+        "source": {
+          "$ref": "#/$defs/applicable_v01_source_resolution"
+        },
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "affected_paths": {
+          "type": "array",
+          "minItems": 1
+        },
+        "diff": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "manual_actions": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/non_error_wire_diagnostics"
+        }
+      }
+    },
+    {
+      "properties": {
+        "status": {
+          "const": "noop"
+        },
+        "source": {
+          "$ref": "#/$defs/applicable_target_source_resolution"
+        },
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {
+          "const": ""
+        },
+        "affected_paths": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diff": {
+          "const": ""
+        },
+        "diff_truncated": {
+          "const": false
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "manual_actions": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diagnostics": {
+          "const": []
+        }
+      },
+      "not": {
+        "required": [
+          "proof"
+        ]
+      }
+    },
+    {
+      "required": [
+        "proof"
+      ],
+      "properties": {
+        "status": {
+          "const": "noop"
+        },
+        "source": {
+          "$ref": "#/$defs/applicable_v01_source_resolution"
+        },
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "affected_paths": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diff": {
+          "const": ""
+        },
+        "diff_truncated": {
+          "const": false
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "manual_actions": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/non_error_wire_diagnostics"
+        }
+      }
+    },
+    {
+      "properties": {
+        "status": {
+          "const": "blocked"
+        },
+        "source": {
+          "$ref": "#/$defs/preview_blocked_source_resolution"
+        },
+        "result_revision": {
+          "type": "null"
+        },
+        "plan_digest": {
+          "const": ""
+        },
+        "affected_paths": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "diff": {
+          "const": ""
+        },
+        "diff_truncated": {
+          "const": false
+        },
+        "blockers": {
+          "type": "array",
+          "minItems": 1
+        }
+      },
+      "not": {
+        "required": [
+          "proof"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "output_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "wire_diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "file",
+        "field",
+        "message",
+        "spec_ref",
+        "policy_failure"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "severity": {
+          "enum": [
+            "ERROR",
+            "WARN",
+            "INFO"
+          ]
+        },
+        "file": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "spec_ref": {
+          "type": "string"
+        },
+        "policy_failure": {
+          "type": "boolean"
+        }
+      }
+    },
+    "wire_diagnostics": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/wire_diagnostic"
+      }
+    },
+    "non_error_wire_diagnostics": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/wire_diagnostics"
+        },
+        {
+          "not": {
+            "contains": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": [
+                "severity"
+              ],
+              "properties": {
+                "severity": {
+                  "const": "ERROR"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "plan_proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format_version",
+        "request_digest",
+        "resolution_digest",
+        "base_revision",
+        "result_revision",
+        "reads",
+        "writes",
+        "deletes",
+        "renames",
+        "affected_refs",
+        "reverse_impact",
+        "changed_files",
+        "changed_refs"
+      ],
+      "properties": {
+        "format_version": {
+          "const": 2
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "resolution_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "base_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "result_revision": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "reads": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "writes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "digest"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "deletes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "renames": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            }
+          }
+        },
+        "affected_refs": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "reverse_impact": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "changed_files": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "path",
+              "from"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "write",
+                  "delete",
+                  "rename"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "from": {
+                "type": "string",
+                "maxLength": 4096
+              }
+            }
+          }
+        },
+        "changed_refs": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      }
+    },
+    "source_resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested_selector",
+        "declaration_present",
+        "declaration_valid",
+        "declaration_raw",
+        "declared_version",
+        "resolved_source",
+        "resolution_source",
+        "from_version",
+        "to_version",
+        "transition",
+        "candidates",
+        "blockers"
+      ],
+      "properties": {
+        "requested_selector": {
+          "enum": [
+            "auto",
+            "0.1",
+            "0.2"
+          ]
+        },
+        "declaration_present": {
+          "type": "boolean"
+        },
+        "declaration_valid": {
+          "type": "boolean"
+        },
+        "declaration_raw": {
+          "type": "string"
+        },
+        "declared_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolved_source": {
+          "type": "string"
+        },
+        "resolution_source": {
+          "enum": [
+            "explicit",
+            "declared",
+            "legacy-probe",
+            "default",
+            "future"
+          ]
+        },
+        "from_version": {
+          "type": "string"
+        },
+        "to_version": {
+          "type": "string"
+        },
+        "transition": {
+          "enum": [
+            "v0.1-to-v0.2",
+            "target-noop",
+            "blocked"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "path",
+              "location"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "timestamp",
+                  "citations"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "location": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "path",
+              "location",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string"
+              },
+              "location": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "applicable_v01_source_resolution": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/source_resolution"
+        },
+        {
+          "properties": {
+            "declaration_valid": {
+              "const": true
+            },
+            "resolved_source": {
+              "const": "0.1"
+            },
+            "from_version": {
+              "const": "0.1"
+            },
+            "to_version": {
+              "const": "0.2"
+            },
+            "transition": {
+              "const": "v0.1-to-v0.2"
+            },
+            "blockers": {
+              "const": []
+            }
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "0.1"
+                },
+                "declaration_present": {
+                  "const": false
+                },
+                "declaration_raw": {
+                  "const": ""
+                },
+                "declared_version": {
+                  "type": "null"
+                },
+                "resolution_source": {
+                  "const": "explicit"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "0.1"
+                },
+                "declaration_present": {
+                  "const": true
+                },
+                "declaration_raw": {
+                  "const": "0.1"
+                },
+                "declared_version": {
+                  "const": "0.1"
+                },
+                "resolution_source": {
+                  "const": "explicit"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "auto"
+                },
+                "declaration_present": {
+                  "const": true
+                },
+                "declaration_raw": {
+                  "const": "0.1"
+                },
+                "declared_version": {
+                  "const": "0.1"
+                },
+                "resolution_source": {
+                  "const": "declared"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "auto"
+                },
+                "declaration_present": {
+                  "const": false
+                },
+                "declaration_raw": {
+                  "const": ""
+                },
+                "declared_version": {
+                  "type": "null"
+                },
+                "resolution_source": {
+                  "const": "legacy-probe"
+                },
+                "candidates": {
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "applicable_target_source_resolution": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/source_resolution"
+        },
+        {
+          "properties": {
+            "declaration_valid": {
+              "const": true
+            },
+            "resolved_source": {
+              "const": "0.2"
+            },
+            "from_version": {
+              "const": "0.2"
+            },
+            "to_version": {
+              "const": "0.2"
+            },
+            "transition": {
+              "const": "target-noop"
+            },
+            "blockers": {
+              "const": []
+            }
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "0.2"
+                },
+                "declaration_present": {
+                  "const": false
+                },
+                "declaration_raw": {
+                  "const": ""
+                },
+                "declared_version": {
+                  "type": "null"
+                },
+                "resolution_source": {
+                  "const": "explicit"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "0.2"
+                },
+                "declaration_present": {
+                  "const": true
+                },
+                "declaration_raw": {
+                  "const": "0.2"
+                },
+                "declared_version": {
+                  "const": "0.2"
+                },
+                "resolution_source": {
+                  "const": "explicit"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "auto"
+                },
+                "declaration_present": {
+                  "const": true
+                },
+                "declaration_raw": {
+                  "const": "0.2"
+                },
+                "declared_version": {
+                  "const": "0.2"
+                },
+                "resolution_source": {
+                  "const": "declared"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            },
+            {
+              "properties": {
+                "requested_selector": {
+                  "const": "auto"
+                },
+                "declaration_present": {
+                  "const": false
+                },
+                "declaration_raw": {
+                  "const": ""
+                },
+                "declared_version": {
+                  "type": "null"
+                },
+                "resolution_source": {
+                  "const": "default"
+                },
+                "candidates": {
+                  "const": []
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "applicable_source_resolution": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/applicable_v01_source_resolution"
+        },
+        {
+          "$ref": "#/$defs/applicable_target_source_resolution"
+        }
+      ]
+    },
+    "blocked_source_resolution": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/source_resolution"
+        },
+        {
+          "properties": {
+            "requested_selector": {
+              "const": "auto"
+            },
+            "declaration_present": {
+              "const": true
+            },
+            "declaration_valid": {
+              "const": true
+            },
+            "declaration_raw": {
+              "type": "string",
+              "minLength": 1
+            },
+            "declared_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "resolved_source": {
+              "type": "string",
+              "minLength": 1
+            },
+            "resolution_source": {
+              "const": "future"
+            },
+            "from_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "transition": {
+              "const": "blocked"
+            },
+            "to_version": {
+              "const": ""
+            },
+            "candidates": {
+              "const": []
+            },
+            "blockers": {
+              "minItems": 1,
+              "maxItems": 1,
+              "items": {
+                "properties": {
+                  "code": {
+                    "const": "unsupported_migration_source"
+                  },
+                  "path": {
+                    "const": "index.md"
+                  },
+                  "location": {
+                    "properties": {
+                      "start": {
+                        "const": 0
+                      },
+                      "end": {
+                        "const": 0
+                      }
+                    }
+                  },
+                  "message": {
+                    "type": "string",
+                    "pattern": "^future declaration .+ cannot be rewritten as v0\\.2$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "preview_blocked_source_resolution": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/applicable_source_resolution"
+        },
+        {
+          "$ref": "#/$defs/blocked_source_resolution"
+        }
+      ]
+    }
+  }
+}

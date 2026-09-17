@@ -33,11 +33,11 @@ func TestParserBackedMarkdownCorpus(t *testing.T) {
 			source := []byte(tt.source)
 
 			// Act.
-			before, err := collectMarkdownDestinations(source)
+			before, err := collectMarkdownDestinationsContext(context.Background(), source)
 			if err != nil {
 				t.Fatal(err)
 			}
-			updated, err := rewriteMarkdownDestinations(source, func(value string) (string, bool) {
+			updated, err := rewriteMarkdownDestinationsContext(context.Background(), source, func(value string) (string, bool) {
 				if strings.HasPrefix(value, "old") {
 					return "new" + strings.TrimPrefix(value, "old"), true
 				}
@@ -56,7 +56,7 @@ func TestParserBackedMarkdownCorpus(t *testing.T) {
 				}
 				got = append(got, string(source[destination.Span.Start:destination.Span.End]))
 				if strings.HasPrefix(destination.Value, "old") {
-					replacement, encodeErr := encodeMarkdownDestination("new"+strings.TrimPrefix(destination.Value, "old"), destination.angle)
+					replacement, encodeErr := encodeMarkdownDestinationContext(context.Background(), "new"+strings.TrimPrefix(destination.Value, "old"), destination.angle)
 					if encodeErr != nil {
 						t.Fatal(encodeErr)
 					}
@@ -66,10 +66,10 @@ func TestParserBackedMarkdownCorpus(t *testing.T) {
 			if !equalStrings(got, tt.want) {
 				t.Fatalf("raw destination spans = %q, want %q", got, tt.want)
 			}
-			if !bytesOutsidePatchesEqual(source, updated, patches) {
+			if !bytesOutsidePatchesEqualForTest(t, source, updated, patches) {
 				t.Fatal("bytes outside the union of destination spans changed")
 			}
-			after, err := collectMarkdownDestinations(updated)
+			after, err := collectMarkdownDestinationsContext(context.Background(), updated)
 			if err != nil || len(after) != len(before) {
 				t.Fatalf("rewritten document did not reparse equivalently: count=%d/%d err=%v", len(after), len(before), err)
 			}
@@ -93,20 +93,20 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 			t.Run(item.name, func(t *testing.T) {
 				// Arrange.
 				data := []byte("---\r\ntype: thing\r\nunknown: café # retain\r\nparts:\r\n  - id: " + item.token + " # retain\r\n    anchor: legacy\r\n---\r\nbody\r\n")
-				p, err := parsePresentation(data)
+				p, err := parsePresentationContext(context.Background(), data)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				// Act.
-				patch, found, err := fragmentPatch(p, "old", "new")
-				updated, patchErr := p.patchYAML([]bytePatch{patch})
+				patch, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
+				updated, patchErr := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 
 				// Assert.
 				if err != nil || !found || patchErr != nil {
 					t.Fatalf("patch = %#v found=%t errors=%v/%v", patch, found, err, patchErr)
 				}
-				if !bytesOutsidePatchesEqual(data, updated, []bytePatch{patch}) || !bytes.Contains(updated, []byte("unknown: café # retain\r\n")) {
+				if !bytesOutsidePatchesEqualForTest(t, data, updated, []bytePatch{patch}) || !bytes.Contains(updated, []byte("unknown: café # retain\r\n")) {
 					t.Fatalf("lossless patch = %q", updated)
 				}
 			})
@@ -117,12 +117,12 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 		// Arrange.
 		data := []byte("---\ntype: thing\nparts:\n  - id: a\nrelations:\n  uses:\n    - target: b\n    - target: b\n---\nA\n")
 		// Act.
-		updated, err := ensureRelationPresentation(data, ref(t, "a"), "uses", "b")
+		updated, err := ensureRelationPresentationContext(context.Background(), data, ref(t, "a"), "uses", "b")
 		// Assert.
 		if !errors.Is(err, ErrAmbiguousPresentation) || updated != nil {
 			t.Fatalf("duplicate result = %q, %v", updated, err)
 		}
-		inserted, err := ensureRelationPresentation([]byte("---\ntype: thing\nparts:\n  - id: a\n---\nA\n"), ref(t, "a"), "uses", "b")
+		inserted, err := ensureRelationPresentationContext(context.Background(), []byte("---\ntype: thing\nparts:\n  - id: a\n---\nA\n"), ref(t, "a"), "uses", "b")
 		if err != nil || !bytes.Contains(inserted, []byte("relations:\n  uses:\n    - target: b\n")) {
 			t.Fatalf("insertion = %q, %v", inserted, err)
 		}
@@ -130,14 +130,14 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 
 	t.Run("quoted-structural-keys", func(t *testing.T) {
 		data := []byte("---\n\"type\": thing\n\"<<\": ordinary-extension\n'parts':\n  - \"id\": old\n\"relations\":\n  'uses':\n    - \"target\": old#frag # retain\n---\nA\n")
-		p, err := parsePresentation(data)
+		p, err := parsePresentationContext(context.Background(), data)
 		if err != nil {
 			t.Fatal(err)
 		}
-		fragment, found, err := fragmentPatch(p, "old", "new")
-		patches, relationErr := relationTargetPatches(p, ref(t, "old").ID, ref(t, "new").ID, "frag", "frag")
+		fragment, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
+		patches, relationErr := relationTargetPatchesContext(context.Background(), p, ref(t, "old").ID, ref(t, "new").ID, "frag", "frag")
 		patches = append(patches, fragment)
-		updated, patchErr := p.patchYAML(patches)
+		updated, patchErr := p.patchYAMLContext(context.Background(), patches)
 		if err != nil || !found || relationErr != nil || patchErr != nil {
 			t.Fatalf("quoted key patch errors = %v/%v/%v", err, relationErr, patchErr)
 		}
@@ -153,15 +153,15 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				data := []byte("---\n" + tt.unknown + "parts:\n  - id: old\n---\nA\n")
-				p, err := parsePresentation(data)
+				p, err := parsePresentationContext(context.Background(), data)
 				if err != nil {
 					t.Fatal(err)
 				}
-				patch, found, err := fragmentPatch(p, "old", "new")
+				patch, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
 				if err != nil || !found {
 					t.Fatalf("fragment patch found=%t err=%v", found, err)
 				}
-				updated, patchErr := p.patchYAML([]bytePatch{patch})
+				updated, patchErr := p.patchYAMLContext(context.Background(), []bytePatch{patch})
 				if patchErr != nil || !bytes.Contains(updated, []byte("- id: new")) {
 					t.Fatalf("scalar marker patch = %q, error=%v", updated, patchErr)
 				}
@@ -171,11 +171,11 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 
 	t.Run("insertion-verification-uses-independent-intent", func(t *testing.T) {
 		data := []byte("---\ntype: thing\n---\nA\n")
-		p, err := parsePresentation(data)
+		p, err := parsePresentationContext(context.Background(), data)
 		if err != nil {
 			t.Fatal(err)
 		}
-		expected, err := p.expectedEnsureRelation(p.root, "uses", "b")
+		expected, err := p.expectedEnsureRelationContext(context.Background(), p.root, "uses", "b")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -192,16 +192,16 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 	t.Run("target-update-and-id-wins-over-anchor", func(t *testing.T) {
 		// Arrange.
 		data := []byte("---\ntype: thing\nparts:\n  - id: old\n    anchor: legacy\nrelations:\n  uses:\n    - target: old#frag # retain\n---\nA\n")
-		p, err := parsePresentation(data)
+		p, err := parsePresentationContext(context.Background(), data)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// Act.
-		fragment, found, err := fragmentPatch(p, "old", "new")
-		patches, relationErr := relationTargetPatches(p, ref(t, "old").ID, ref(t, "new").ID, "frag", "frag")
+		fragment, found, err := fragmentPatchContext(context.Background(), p, "old", "new")
+		patches, relationErr := relationTargetPatchesContext(context.Background(), p, ref(t, "old").ID, ref(t, "new").ID, "frag", "frag")
 		patches = append(patches, fragment)
-		updated, patchErr := p.patchYAML(patches)
+		updated, patchErr := p.patchYAMLContext(context.Background(), patches)
 
 		// Assert.
 		if err != nil || !found || relationErr != nil || patchErr != nil {
@@ -267,7 +267,7 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 
 	t.Run("invalid-utf8", func(t *testing.T) {
 		data := []byte("---\nparts:\n  - id: \xff\n---\nA\n")
-		_, err := parsePresentation(data)
+		_, err := parsePresentationContext(context.Background(), data)
 		if !errors.Is(err, bundle.ErrInvalidEncoding) {
 			t.Fatalf("error = %v", err)
 		}
@@ -281,8 +281,8 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 // still rejecting a payload-proportional copy.
 func TestParserBackedAllocationBaseline(t *testing.T) {
 	// Arrange.
-	small := cloneAllocsForPayload(64)
-	large := cloneAllocsForPayload(1 << 20)
+	small := cloneAllocsForPayload(t, 64)
+	large := cloneAllocsForPayload(t, 1<<20)
 
 	// Act.
 	// AllocsPerRun invokes the same clone operation under a stable allocation

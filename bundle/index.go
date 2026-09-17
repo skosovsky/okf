@@ -2,8 +2,9 @@ package bundle
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -83,45 +84,106 @@ func DefaultSynthesizeDescription(_ string, children []IndexChild) string {
 
 // RegenerateIndexes regenerates every index.md in the bundle.
 func RegenerateIndexes(bundleRoot string) ([]string, error) {
-	return RegenerateIndexesWith(bundleRoot, DefaultSynthesizeDescription)
+	return RegenerateIndexesWithSelector(bundleRoot, "")
 }
 
 // RegenerateIndexesWith regenerates index.md files using a custom synthesizer.
 func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) ([]string, error) {
+	return regenerateIndexesWithHooks(bundleRoot, synthesize, "", indexPublishHooks{})
+}
+
+// RegenerateIndexesWithSelector regenerates index.md files after resolving the
+// root declaration and selector against the same pinned source that is later
+// published. selector is an assertion: pass "" for automatic resolution.
+func RegenerateIndexesWithSelector(bundleRoot, selector string) ([]string, error) {
+	return regenerateIndexesWithHooks(bundleRoot, DefaultSynthesizeDescription, selector, indexPublishHooks{})
+}
+
+func regenerateIndexesWithHooks(
+	bundleRoot string,
+	synthesize SynthesizeDescription,
+	selector string,
+	hooks indexPublishHooks,
+) ([]string, error) {
 	if synthesize == nil {
 		synthesize = DefaultSynthesizeDescription
 	}
 
 	source := &FileSystemSource{Root: bundleRoot}
-	defer source.Close()
+	root, err := source.openRoot()
+	if err != nil {
+		return nil, err
+	}
+	releaseIndexLock, err := acquirePublicationLock(root)
+	if err != nil {
+		_ = source.Close()
+		return nil, err
+	}
+	defer finalizeIndexRegeneration(source, releaseIndexLock, hooks.beforeSourceClose)
+	if hooks.afterIndexLock != nil {
+		if err := hooks.afterIndexLock(); err != nil {
+			return nil, err
+		}
+	}
+	if err := inspectGlobalIndexRecoveryNamespace(root, hooks); err != nil {
+		return nil, err
+	}
 	files, err := source.Paths(context.Background())
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
+		return nil, err
+	}
+	rootIndex, err := resolveRootIndexForPublication(source, selector)
+	if err != nil {
+		return nil, err
+	}
+	if hooks.afterResolve != nil {
+		if err := hooks.afterResolve(); err != nil {
+			return nil, err
 		}
+	}
+	documents, err := preloadIndexDocuments(source, files)
+	if err != nil {
 		return nil, err
 	}
 	directories, err := directoriesToIndex(bundleRoot, files)
 	if err != nil {
 		return nil, err
 	}
+	directoryDepths := make(map[string]int, len(directories))
+	for _, directory := range directories {
+		relative, err := filepath.Rel(bundleRoot, directory)
+		if err != nil {
+			return nil, fmt.Errorf("resolve index directory %q: %w", directory, err)
+		}
+		depth := 0
+		if relative != "." {
+			depth = len(strings.Split(filepath.ToSlash(relative), "/"))
+		}
+		directoryDepths[directory] = depth
+	}
 	sort.SliceStable(directories, func(i, j int) bool {
-		depthI := pathDepth(bundleRoot, directories[i])
-		depthJ := pathDepth(bundleRoot, directories[j])
+		depthI := directoryDepths[directories[i]]
+		depthJ := directoryDepths[directories[j]]
 		if depthI != depthJ {
 			return depthI > depthJ
 		}
 		return directories[i] < directories[j]
 	})
 
-	var written []string
+	outputs := make([]indexOutput, 0, len(directories))
 	dirDescriptions := make(map[string]string)
 	for _, directory := range directories {
 		directoryRel, err := filepath.Rel(bundleRoot, directory)
 		if err != nil {
 			return nil, err
 		}
-		entries, err := indexEntriesForDirectory(source, filepath.ToSlash(directoryRel), files, dirDescriptions)
+		isRoot := directoryRel == "."
+		entries, err := indexEntriesForDirectoryFromDocuments(
+			filepath.ToSlash(directoryRel),
+			files,
+			dirDescriptions,
+			documents,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -131,19 +193,25 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 
 		indexPath := filepath.Join(directory, indexFilename)
 		text := BuildIndexText(entries)
-		if samePath(directory, bundleRoot) {
-			var err error
-			text, err = preserveRootIndexVersion(source, text)
+		if isRoot {
+			text, err = preserveRootIndexVersion(rootIndex, text)
 			if err != nil {
 				return nil, err
 			}
 		}
-		if err := os.WriteFile(indexPath, []byte(text), 0o644); err != nil {
-			return nil, err
+		outputs = append(outputs, indexOutput{
+			relative: filepath.ToSlash(filepath.Join(directoryRel, indexFilename)),
+			absolute: indexPath,
+			data:     []byte(text),
+		})
+		if isRoot {
+			outputs[len(outputs)-1].expectedOriginal = &indexExpectedOriginal{
+				present: rootIndex.present,
+				data:    append([]byte(nil), rootIndex.raw...),
+			}
 		}
-		written = append(written, indexPath)
 
-		if samePath(directory, bundleRoot) {
+		if isRoot {
 			continue
 		}
 
@@ -155,35 +223,124 @@ func RegenerateIndexesWith(bundleRoot string, synthesize SynthesizeDescription) 
 		if len(children) == 1 && children[0].Description != "" {
 			description = children[0].Description
 		} else {
-			rel, _ := filepath.Rel(bundleRoot, directory)
-			description = synthesize(filepath.ToSlash(rel), children)
+			description = synthesize(filepath.ToSlash(directoryRel), children)
 		}
 		dirDescriptions[pathJoin("", strings.TrimPrefix(filepath.ToSlash(directoryRel), "./"))] = description
 	}
 
-	return written, nil
+	return publishIndexOutputs(root, outputs, hooks)
 }
 
-func preserveRootIndexVersion(source Source, body string) (string, error) {
-	document, ok := loadIndexDocument(source, indexFilename)
-	if !ok {
+func finalizeIndexRegeneration(
+	source *FileSystemSource,
+	releaseIndexLock func(),
+	beforeSourceClose func(),
+) {
+	// Release is registered first so the pinned source root is always closed
+	// while both the process-local and cross-process ownership guards remain
+	// held. The nested defers preserve that order even if a test barrier or
+	// Close panics.
+	defer releaseIndexLock()
+	defer func() {
+		_ = source.Close()
+	}()
+	if beforeSourceClose != nil {
+		beforeSourceClose()
+	}
+}
+
+type rootIndexPublicationState struct {
+	present  bool
+	raw      []byte
+	document Document
+}
+
+func resolveRootIndexForPublication(source Source, selector string) (rootIndexPublicationState, error) {
+	raw, err := source.ReadFile(context.Background(), indexFilename)
+	if errors.Is(err, fs.ErrNotExist) {
+		_, resolveErr := ResolveVersion("", selector)
+		return rootIndexPublicationState{}, resolveErr
+	}
+	if err != nil {
+		return rootIndexPublicationState{}, indexDocumentReadError{path: indexFilename, err: err}
+	}
+	document, err := ParseDocumentContext(context.Background(), string(raw))
+	if err != nil {
+		return rootIndexPublicationState{}, fmt.Errorf("parse index document %q: %w", indexFilename, err)
+	}
+	state := document.Frontmatter.VersionDeclarationState()
+	if state.Present && !state.Valid {
+		return rootIndexPublicationState{}, invalidVersionDeclarationError(state)
+	}
+	if _, err := ResolveVersion(state.Value, selector); err != nil {
+		return rootIndexPublicationState{}, err
+	}
+	return rootIndexPublicationState{
+		present:  true,
+		raw:      append([]byte(nil), raw...),
+		document: document,
+	}, nil
+}
+
+func preserveRootIndexVersion(rootIndex rootIndexPublicationState, body string) (string, error) {
+	if !rootIndex.present {
 		return body, nil
 	}
 
-	version, ok := document.Frontmatter.OKFVersion()
-	if !ok {
+	state := rootIndex.document.Frontmatter.VersionDeclarationState()
+	if !state.Present {
 		return body, nil
+	}
+	if !state.Valid {
+		return "", invalidVersionDeclarationError(state)
 	}
 
 	frontmatter := NewFrontmatter()
-	if err := frontmatter.SetString("okf_version", version); err != nil {
+	if err := frontmatter.SetString("okf_version", state.Value); err != nil {
 		return "", err
 	}
 	updated := NewDocument(frontmatter, body)
 	return updated.Serialize()
 }
 
+func invalidVersionDeclarationError(state VersionDeclarationState) error {
+	return fmt.Errorf("%w: %q", ErrInvalidVersionDeclaration, state.Raw)
+}
+
 func indexEntriesForDirectory(source Source, directory string, files []string, dirDescriptions map[string]string) ([]IndexEntry, error) {
+	documents, err := preloadIndexDocuments(source, files)
+	if err != nil {
+		return nil, err
+	}
+	return indexEntriesForDirectoryFromDocuments(directory, files, dirDescriptions, documents)
+}
+
+func preloadIndexDocuments(source Source, files []string) (map[string]Document, error) {
+	ordered := append([]string(nil), files...)
+	sort.Strings(ordered)
+	documents := make(map[string]Document)
+	for _, file := range ordered {
+		if err := ValidateRevisionPath(file); err != nil {
+			return nil, fmt.Errorf("invalid index planning path %q: %w", file, err)
+		}
+		if filepath.Ext(file) != ".md" || isReservedFilename(filepath.Base(filepath.FromSlash(file))) {
+			continue
+		}
+		document, err := loadIndexDocument(source, file)
+		if err != nil {
+			return nil, err
+		}
+		documents[file] = document
+	}
+	return documents, nil
+}
+
+func indexEntriesForDirectoryFromDocuments(
+	directory string,
+	files []string,
+	dirDescriptions map[string]string,
+	documents map[string]Document,
+) ([]IndexEntry, error) {
 	directory = strings.TrimPrefix(directory, "./")
 	if directory == "." {
 		directory = ""
@@ -227,9 +384,9 @@ func indexEntriesForDirectory(source Source, directory string, files []string, d
 			continue
 		}
 
-		document, ok := loadIndexDocument(source, childRel)
+		document, ok := documents[childRel]
 		if !ok {
-			continue
+			return nil, fmt.Errorf("missing preloaded index document %q", childRel)
 		}
 		title, ok := document.Frontmatter.Title()
 		if !ok || title == "" {
@@ -248,20 +405,34 @@ func indexEntriesForDirectory(source Source, directory string, files []string, d
 	return entries, nil
 }
 
-func loadIndexDocument(source Source, path string) (Document, bool) {
+func loadIndexDocument(source Source, path string) (Document, error) {
 	text, err := source.ReadFile(context.Background(), path)
 	if err != nil {
-		return Document{}, false
+		return Document{}, indexDocumentReadError{path: path, err: err}
 	}
-	document, err := ParseDocument(string(text))
+	document, err := ParseDocumentContext(context.Background(), string(text))
 	if err != nil {
-		return Document{}, false
+		return Document{}, fmt.Errorf("parse index document %q: %w", path, err)
 	}
-	return document, true
+	return document, nil
+}
+
+type indexDocumentReadError struct {
+	path string
+	err  error
+}
+
+func (e indexDocumentReadError) Error() string {
+	return fmt.Sprintf("read index document %q", e.path)
+}
+
+func (e indexDocumentReadError) Unwrap() error {
+	return e.err
 }
 
 func directoriesToIndex(bundleRoot string, files []string) ([]string, error) {
 	seen := make(map[string]struct{})
+	cleanRoot := filepath.Clean(bundleRoot)
 	for _, file := range files {
 		if filepath.Ext(file) != ".md" {
 			continue
@@ -269,10 +440,13 @@ func directoriesToIndex(bundleRoot string, files []string) ([]string, error) {
 		dir := filepath.Join(bundleRoot, filepath.FromSlash(filepath.Dir(file)))
 		for {
 			seen[dir] = struct{}{}
-			if samePath(dir, bundleRoot) {
+			if filepath.Clean(dir) == cleanRoot {
 				break
 			}
 			next := filepath.Dir(dir)
+			if next == dir {
+				return nil, fmt.Errorf("index directory %q is outside bundle root %q", dir, bundleRoot)
+			}
 			dir = next
 		}
 	}
@@ -290,19 +464,4 @@ func pathJoin(dir, name string) string {
 		return name
 	}
 	return dir + "/" + name
-}
-
-func pathDepth(root, dir string) int {
-	rel, _ := filepath.Rel(root, dir)
-	if rel == "." {
-		return 0
-	}
-	return len(strings.Split(filepath.ToSlash(rel), "/"))
-}
-
-func samePath(a, b string) bool {
-	cleanA := filepath.Clean(a)
-	cleanB := filepath.Clean(b)
-	rel, err := filepath.Rel(cleanA, cleanB)
-	return err == nil && rel == "."
 }

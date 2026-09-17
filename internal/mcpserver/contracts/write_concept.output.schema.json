@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/write_concept.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "path", "diagnostics"],
+  "properties": {
+    "status": {"const": "success"},
+    "path": {"type": "string", "minLength": 1},
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "message"],
+        "properties": {
+          "severity": {"type": "string"},
+          "file": {"type": "string"},
+          "message": {"type": "string"}
+        }
+      }
+    }
+  }
+}

@@ -12,15 +12,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/skosovsky/okf/bundle"
 	"golang.org/x/sys/unix"
 )
 
-// TestReadPinnedConceptRejectsFinalSpecialFileSwaps exercises the exact
-// Lstat-to-open window synchronously. The timeout is an assertion that the
-// reader cannot hang; cleanup releases a FIFO reader in case of regression so
+// TestBundleCaptureRejectsFinalSpecialFileSwaps exercises the exact
+// Paths-to-ReadFile window synchronously. The timeout is an assertion that the
+// capture cannot hang; cleanup releases a FIFO reader in case of regression so
 // the test itself never leaves a goroutine behind.
-func TestReadPinnedConceptRejectsFinalSpecialFileSwaps(t *testing.T) {
+func TestBundleCaptureRejectsFinalSpecialFileSwaps(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		swap func(root, path string) (func(), error)
@@ -78,17 +78,19 @@ func TestReadPinnedConceptRejectsFinalSpecialFileSwaps(t *testing.T) {
 			var release func()
 			var swapErr error
 			var swapMu sync.Mutex
-			readPinnedConceptBeforeOpen = func() {
-				swapMu.Lock()
-				defer swapMu.Unlock()
-				if err := os.Remove(path); err != nil {
-					swapErr = err
-					return
-				}
-				release, swapErr = tc.swap(root, path)
+			source := &swapBeforeReadBundleSource{
+				FileSystemSource: &bundle.FileSystemSource{Root: root},
+				beforeRead: func() {
+					swapMu.Lock()
+					defer swapMu.Unlock()
+					if err := os.Remove(path); err != nil {
+						swapErr = err
+						return
+					}
+					release, swapErr = tc.swap(root, path)
+				},
 			}
 			t.Cleanup(func() {
-				readPinnedConceptBeforeOpen = nil
 				swapMu.Lock()
 				defer swapMu.Unlock()
 				if release != nil {
@@ -98,25 +100,22 @@ func TestReadPinnedConceptRejectsFinalSpecialFileSwaps(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			resultCh := make(chan *mcp.CallToolResult, 1)
+			resultCh := make(chan error, 1)
 			go func() {
-				result, _ := handleReadConcept(ctx, mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: map[string]any{
-					"bundle_path": root,
-					"concept_id":  "a",
-				}}})
-				resultCh <- result
+				_, err := loadOwnedBundleSourceContext(ctx, source)
+				resultCh <- err
 			}()
 
 			select {
-			case result := <-resultCh:
+			case loadErr := <-resultCh:
 				swapMu.Lock()
 				err := swapErr
 				swapMu.Unlock()
 				if err != nil {
 					t.Fatalf("swap: %v", err)
 				}
-				if result == nil || !result.IsError {
-					t.Fatalf("read_concept result = %#v, want an error", result)
+				if loadErr == nil {
+					t.Fatal("bundle capture succeeded after final special-file swap")
 				}
 			case <-ctx.Done():
 				swapMu.Lock()
@@ -136,14 +135,26 @@ func TestReadPinnedConceptRejectsFinalSpecialFileSwaps(t *testing.T) {
 	}
 }
 
-func TestReadPinnedConceptHonorsCanceledContext(t *testing.T) {
+func TestBundleSourceReadHonorsCanceledContext(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", "safe")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := readPinnedConcept(ctx, root, "a.md")
+	source := &bundle.FileSystemSource{Root: root}
+	_, err := source.ReadFile(ctx, "a.md")
 	if err != context.Canceled {
-		t.Fatalf("readPinnedConcept() error = %v, want context.Canceled", err)
+		t.Fatalf("FileSystemSource.ReadFile() error = %v, want context.Canceled", err)
 	}
+}
+
+type swapBeforeReadBundleSource struct {
+	*bundle.FileSystemSource
+	beforeRead func()
+	once       sync.Once
+}
+
+func (s *swapBeforeReadBundleSource) ReadFile(ctx context.Context, path string) ([]byte, error) {
+	s.once.Do(s.beforeRead)
+	return s.FileSystemSource.ReadFile(ctx, path)
 }

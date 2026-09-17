@@ -1,6 +1,6 @@
 ---
-title: Toolkit
-description: OKF CLI toolkit для создания, проверки, анализа и экспорта Open Knowledge Format bundles.
+title: OKF Toolkit
+description: Version-aware CLI, Go, graph, mutation и MCP surfaces для OKF v0.2.
 permalink: /ru/toolkit/
 ---
 
@@ -8,344 +8,293 @@ permalink: /ru/toolkit/
 
 # Toolkit
 
-`okf` - Go CLI в `cmd/okf`: toolkit для создания, проверки, анализа и экспорта
-Open Knowledge Format bundles. Это deterministic surface для repo-local skill и
-CI workflows.
+Toolkit по умолчанию читает v0.2, сохраняет explicit v0.1 compatibility и
+best-effort потребляет unknown future declarations без потери version.
 
-## Запуск из репозитория
+Version axes независимы: plugin package `0.2.0`, release tag repo/Go module
+`v0.2.1` и document spec `okf_version: "0.2"`. Ни одна ось не выбирает другую.
+Document contract — [pinned spec](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
+
+## Version resolution
+
+Bundle commands используют `--spec auto|0.1|0.2`, где этот selector доступен:
+
+- `auto`: root declaration, иначе v0.2 default с §13 fallbacks;
+- `0.1` или `0.2`: explicit assertion;
+- present malformed declaration: hard reserved-index error, а не отсутствие
+  или default conformance;
+- mismatch declaration/selector: failure, а не silent override;
+- future declaration: best-effort с сохранением declared version.
+
+## Validation
 
 ```sh
-go run ./cmd/okf validate -path ./knowledge
-go run ./cmd/okf info ./knowledge
-go run ./cmd/okf index ./knowledge
-go run ./cmd/okf graph ./knowledge -format json-ld
-go run ./cmd/okf parse ./knowledge/concept.md
-go run ./cmd/okf fmt ./knowledge/concept.md
+okf validate --path <bundle> --spec auto
+okf validate --path <bundle> --spec auto --strict --as-of 2026-07-29
+okf validate --path <bundle> --check-links --check-orphans
 ```
 
-Установка для повторного использования:
+Base errors ограничены parsing/`type` concepts и reserved-file structure.
+Strict mode проверяет присутствующие v0.2 families как guidance. Для
+deterministic staleness используется explicit `--as-of`.
+
+Missing optional fields, unknown types/keys/runtimes, broken links и missing
+indexes не становятся base errors.
+
+## Inspect и parse
 
 ```sh
-go install ./cmd/okf
-okf validate -path ./knowledge
-okf graph ./knowledge -format mermaid
+okf info <bundle> --spec auto --as-of 2026-07-29
+okf parse <concept.md>
 ```
 
-## Pipeline
+Version-aware projections не смешивают:
 
-| Stage | Команда | Назначение |
-| --- | --- | --- |
-| Quality Gate | `okf validate -path <bundle>` | Проверить OKF v0.1 conformance и optional review signals. |
-| Bundle Summary | `okf info <bundle>` | Сводка по concepts, types, links, reserved files и version. |
-| Index Maintenance | `okf index <bundle>` | Регенерировать local `index.md` disclosure surfaces. |
-| Graph Export | `okf graph <bundle>` | Экспортировать Markdown links и YAML semantic `relations`. |
-| Document IO | `okf parse <file>`, `okf fmt <file>` | Проверить или нормализовать один concept document. |
+- declared/effective version и compatibility;
+- generated time и legacy-derived marker;
+- normalized verification events и derived trust;
+- raw/effective lifecycle status;
+- staleness на выбранную дату;
+- sources/attributions;
+- inert Attested Computation summary.
 
-## Quality Gate
+Bare и one-item-list verification дают одинаковую typed semantics без
+перезаписи исходной YAML shape. Trust выводится из `verified`, а не хранится как
+score.
 
-`okf validate` - deterministic layered harness. Output намеренно остается
-plain text с явными labels `[ERROR]`, `[WARN]` и `[INFO]`, чтобы агенты и CI
-могли парсить его без угадывания.
+## Format и index
 
-| Слой | Как включить | Что проверяет | Diagnostic level |
-| --- | --- | --- | --- |
-| Base conformance | по умолчанию | UTF-8, concept frontmatter blocks, непустой string `type`, reserved `index.md`/`log.md`, forward compatibility | `[ERROR]` |
-| Strict guidance | `--strict` | recommended metadata, RFC3339 timestamps, conventional sections, citations, examples, BigQuery schema, index descriptions | `[WARN]` |
-| Link graph | `--check-links` | bundle-relative и relative Markdown links, target files, heading anchors | `[INFO]` для missing files, `[WARN]` для missing anchors |
-| Orphan coverage | `--check-orphans` | покрытие concept files локальным `index.md` | `[WARN]` для orphans, `[INFO]` для missing local indexes |
+```sh
+okf fmt <concept.md>
+okf fmt <concept.md> -w
+okf index <bundle> --spec auto
+```
 
-Semantic relation diagnostics сохраняются для graph и mutation workflows, но не
-являются слоем CLI validation. `--strict` и `--check-links` не меняют эту
-политику. Go-клиент может включить их через `ValidatorConfig.CheckRelations`;
-mutation и write paths независимо отклоняют blocking relation diagnostics.
+Эти commands не мигрируют provenance, не stamp'ят actors/times, не добавляют
+verification и не bump'ят `okf_version`. Unknown content сохраняется losslessly
+в поддерживаемом parser-backed subset.
 
-Для успешно разобранного validation invocation report возвращает non-zero exit
-status тогда и только тогда, когда содержит diagnostics уровня `[ERROR]`.
-Warnings и info - видимые review-сигналы; они не делают bundle non-conformant.
-CLI usage/flag errors тоже возвращают `1`, но печатают `error:` без validation
-summary.
+## Graph
 
-### Base conformance
-
-Базовый слой по умолчанию представляет strict OKF v0.1 conformance:
-
-1. Каждый Markdown-файл должен быть valid UTF-8.
-2. Каждый non-reserved concept `.md` file должен начинаться с YAML frontmatter
-   block, отделенного строками `---`.
-3. Каждый concept frontmatter должен содержать непустой string `type`.
-4. `log.md` должен использовать level-2 headings `## YYYY-MM-DD`, newest first,
-   со списком entries под каждой датой.
-5. `index.md` не должен иметь frontmatter, кроме root `okf_version`; body должен
-   использовать headings и Markdown list entries со ссылками.
-6. Unknown frontmatter keys, unknown `type` values и будущие `okf_version`
-   принимаются для forward compatibility.
-
-Исключение: когда включен `--check-orphans`, пустой non-root local `index.md`
-допускается как поверхность orphan coverage и дает orphan warnings вместо base
-empty-index error.
-
-### Strict guidance
-
-`--strict` проверяет SHOULD и Recommended guidance из стандарта. Он генерирует
-warnings, а не conformance errors:
-
-1. `title`, `description`, `tags` и `timestamp` должны присутствовать.
-2. `tags`, если присутствует, должен быть YAML list of strings.
-3. `timestamp`, если присутствует, должен парситься как `time.RFC3339`.
-4. `resource` намеренно optional. Отсутствующий `resource` не дает warning;
-   присутствующий `resource` должен быть URI string.
-5. Citation markers вида `[1]` требуют нижнюю секцию `# Citations` с
-   непрерывной нумерацией entries. Citation targets должны быть valid URIs,
-   bundle-absolute paths или paths under `references/`.
-6. `# Examples` должен содержать concrete example content: code block, list,
-   table, link или substantive prose.
-7. Concepts с `type: BigQuery Table` должны иметь `# Schema`.
-8. Descriptions в entries `index.md` должны совпадать с `description`
-   целевого concept, если это поле есть.
-
-## Bundle Summary
-
-`okf info <bundle>` загружает bundle и печатает deterministic counts: bundle
-root, optional `okf_version`, concepts, local indexes, logs, type distribution,
-internal links, broken links и unparseable files.
-
-Используй это, когда агенту или reviewer нужен быстрый inventory перед чтением
-глубоких concept files.
-
-## Index Maintenance
-
-`okf index <bundle>` регенерирует `index.md` files из concept metadata. Используй
-после создания, перемещения или enrichment concept documents, чтобы
-directory-level progressive disclosure оставался актуальным.
-
-## Graph Export
-
-```text
+```sh
 okf graph <bundle>
-okf graph <bundle> -format dot
-okf graph <bundle> -format mermaid
-okf graph <bundle> -format json-ld
-okf graph <bundle> -format ntriples
-okf graph <bundle> --dot
+okf graph <bundle> --format dot
+okf graph <bundle> --format mermaid
+okf graph <bundle> --format json-ld
+okf graph <bundle> --format ntriples
+okf graph <bundle> --profile skosovsky/okf-v0.2 --extension-relations include
+okf graph <bundle> --profile legacy-v0.1
 ```
 
-`okf graph` поддерживает пять форматов вывода. Default `text` format - компактный
-adjacency list для просмотра в терминале. `-format dot` выводит Graphviz DOT
-для Graphviz-based tooling; `--dot` сохранен как legacy alias. `-format
-mermaid` выводит Mermaid flowchart syntax со строкой `graph LR`, пригодный для
-Markdown renderers с поддержкой Mermaid. Битые internal Markdown links
-отображаются пунктирными ребрами с меткой `404`.
+Current v0.2 projection и legacy graph profile — explicit compatibility
+choices. Graph profile version не связан с declared/effective OKF version.
 
-`-format json-ld` выводит JSON-LD документ с `@context` и `@graph` для graph
-tooling и agent harnesses: concepts становятся узлами `bundle:<id>` с
-`@type: "okf:Concept"`, а internal Markdown links становятся объектами
-`okf:Reference` с `target` и `exists`. JSON-LD graph сохраняет dangling
-internal links как `"exists": false`.
+YAML `relations` — `skosovsky/okf` extension/tooling policy, а не upstream v0.2
+family. Markdown links остаются стандартными OKF edges.
 
-`-format ntriples` выводит line-oriented RDF/N-Triples с full IRIs и одним
-фактом на строку для streaming workflows, bulk-load pipelines, RDF tooling и
-shell processing.
+Grammar relation reference в этом extension:
+`<escaped-concept-id>[#<fragment>]`. Только `#`, принадлежащий ConceptID,
+экранируется logical spelling `\#`; первый unescaped `#` является fragment
+delimiter. Поэтому `source#part` означает concept `source` с fragment `part`, а
+`source\#part` — root concept с ID `source#part`. Backslashes после delimiter
+остаются fragment bytes и не интерпретируются как escapes. Stray и
+non-canonical concept escapes, например `source\part`, `source\` и
+`source\\#part`, отклоняются. Existing refs без escaped concept hash сохраняют
+byte-identical strings.
 
-Graph output имеет два слоя:
+В YAML logical spelling можно записать как `'source\#part'`. JSON transport
+экранирует backslash и передаёт его как `"source\\#part"`. Это additive
+canonical string encoding: shapes graph/MCP schemas не меняются, а store
+receipt format v1 по-прежнему представляет relation refs как `[]string`.
+Поддержка escaped hash — canonicalization bugfix, а не format migration:
+persisted v1 arrays сохраняют lexical canonical wire ordering.
 
-- Markdown links - human navigation и экспортируются как `okf:references`.
-- YAML `relations` - semantic dependency edges для impact analysis.
+## Migration
 
-```yaml
-type: API Endpoint
-schema:
-  fields:
-    - id: payload-user_id
-      relations:
-        writes_to:
-          - target: tables/orders#col-customer_id
-relations:
-  depends_on:
-    - target: tables/orders#col-status
+```sh
+okf migrate <bundle> --to 0.2
+okf migrate <bundle> --from auto --to 0.2 --actor human:reviewer
 ```
 
-Targets в `relations` - это OKF concept refs, а не Markdown paths. Используй
-`tables/orders#col-status`; не используй `tables/orders.md#col-status`.
-Для nested sources нужен явный `id` или `anchor`; `name` - только display
-metadata. `okf validate --check-links` проверяет только Markdown links.
-Некорректные или неразрешенные semantic relations остаются structured
-diagnostics: они исключаются из resolved outgoing, incoming и reverse indexes,
-а также из всех semantic graph exporters. Dangling Markdown links — отдельный
-навигационный слой и могут по-прежнему отображаться как missing.
+Default — read-only preview. Safe conversion требует:
 
-Grammar relation ref: `<concept-id>[#<fragment>]`. Concept id должен точно
-совпадать с bundle concept id: без leading `/`, `./`, `../`, `.md` suffix,
-external URI scheme, empty path segment и пробелов по краям. Fragment - literal
-subresource id: непустой, без пробелов по краям, без `#` и без ASCII control
-characters. Invalid examples: `/tables/orders.md`, `tables/orders.md`,
-`#local-section`, `https://example.com/orders`, `urn:orders`, `tables/orders#`,
-`tables/orders#col#status`, `tables/orders# col-status`.
+- explicit producer actor для `timestamp` → `generated.at`;
+- explicit legacy retention/conflict policies.
 
-```mermaid
-graph LR
-  n0["api/checkout"] -->|"depends_on"| n1["tables/orders#col-status"]
-```
+Unresolved legacy Citations остаются blockers, пока explicit mapping legacy
+citation → stable source ID не передан. CLI принимает bounded JSON file
+`--citation-mappings <json-file>`; top-level value — exact closed array
+`[{path,entries:[{legacy_number?,legacy_entry?,source_id,title?,resource?}]}]`,
+MCP использует то же field value. Bundle-relative Markdown paths охватывают
+root `index.md`, logs и nested files. Каждая entry требует nonzero
+`legacy_number`, exact nonblank `legacy_entry` или оба selector; если оба
+заданы, они AND-match одну actual entry. Implementation canonical-sort по path,
+number и exact raw entry. Duplicate nonzero numbers всегда запрещены. Один raw
+selector допустим только в distinct full number+entry pairs; entry-only
+пересекается с любым reuse того же raw text. Implementation также отклоняет
+inconsistent metadata reused source IDs и unknown fields. `legacy_entry` —
+valid UTF-8, 1..4096 bytes, `TrimSpace`-nonblank и без NUL. TAB/LF/CR разрешены;
+остальные C0 controls и DEL запрещены. Exact bytes bind authorization/digest,
+поэтому LF и CRLF различаются и не нормализуются. Existing `sources` вместе с
+legacy Citations всегда блокирует migration с
+`reconcile_sources_and_citations`, merge не выполняется.
+Writable plan должен быть all-or-nothing, сначала валидировать target v0.2 и
+публиковать physical write/rename root `index.md` последним. CLI `--actor`
+задаёт document
+`generated.by`; transaction principal отделён и остаётся internal для adapter.
+Dry preview может не передавать `--actor` и получить manual action; перед apply
+generated change через `--write` actor обязателен. Version-only type-only
+migration не требует actor/time и не создаёт `generated`.
+Explicit citation/generated-at/computation path должен указывать на existing
+bundle document. Missing path блокируется с `migration_document_missing`,
+возвращает empty manual actions и не может быть создан mappings; новый action
+code не добавляется.
 
-```json
-{"@id":"bundle:api/checkout","depends_on":[{"@id":"bundle:tables/orders#col-status","exists":true}]}
-```
+В MCP source resolution вычисляется ровно один раз до Preview; Preview и Apply
+используют один и тот же полный frozen `expected_source`. Он содержит
+`requested_selector`, declaration state (`declaration_present`,
+`declaration_valid`, `declaration_raw`, `declared_version`),
+resolved/provenance и transition fields, а также ordered legacy candidates и
+blockers. Apply отклоняет изменённое resolution evidence. Preview
+`v0.1-to-v0.2` возвращает content-free proof `format_version: 2`, обязательный
+non-empty `resolution_digest` и non-empty plan digest. Apply требует этот proof,
+`expected_plan_digest` и тот же frozen `expected_source`; более ранний proof
+format не принимается. Live-ветка `target-noop` требует frozen `expected_source`,
+остаётся proofless, не передаёт plan digest и всё равно валидирует переданное
+migration target state. Blocked preview применить нельзя. Отдельного migration
+`expected_revision` нет; если proof присутствует, `proof.base_revision`
+authoritative. Proof фиксирует request и source resolution, revisions, paths,
+refs и changed-file/ref summaries с non-null arrays, но не file
+bytes/frontmatter/body.
+Каждая MCP non-publication ветка preview, noop, rejected, blocked, invalid или
+cancelled оставляет всё filesystem tree идентичным path-for-path и byte-for-byte
+и не создаёт `.okf` или staging artifacts. Filesystem changes может публиковать
+только authorized actual commit; identical successful replay возвращает
+записанный result без второй publication.
+Migration input validation выполняется до source resolution. Любое переданное
+structurally/domain-invalid individual actor, timestamp, citation, generated-at,
+computation или asset field отклоняется даже для `target-noop` или rootless
+bundle с той же zero-write гарантией.
+§13 fallback является presence-only и не зависит от version source: default,
+declared или explicit v0.1/v0.2 и future resolution используют один predicate.
+`GeneratedPresent`/`SourcesPresent` подавляют fallback даже при malformed value;
+`TimestampAllowed`/`CitationsAllowed` фиксируют отсутствие replacement, а
+`TimestampActive`/`CitationsActive` дополнительно требуют actual legacy form.
+`CitationsActive` требует parser-owned exact heading `# Citations`; одного
+numeric marker недостаточно. В частности, prose `[1]` без этой exact active
+section не является legacy evidence. Undeclared bundle только с таким prose
+разрешается как native v0.2 `target-noop`, а не inferred v0.1 migration.
+Один document-aware input preflight выполняется до transition planning, в том
+числе до `target-noop`. Успешный live `target-noop` proofless, не открывает
+store, ничего не записывает и не создаёт `.okf`.
 
-```text
-<local:bundle:api%2Fcheckout> <https://okf.io/ontology/v0.1#depends_on> <local:bundle:tables%2Forders#col-status> .
-```
+CLI использует тот же planner, но другой durable adapter contract. Dry-run
+строит proof без открытия store. С `--write` live `target-noop` выполняет empty
+CAS и создаёт либо replay'ит durable receipt в `.okf`, сохраняя все
+revision-visible bundle files path-and-byte identical.
 
-## Document IO
+В `v0.1-to-v0.2` number-only mapping выбирает numbered entry внутри active
+legacy section. В `target-noop` тот же explicit mapping является replay
+assertion: он должен уже совпадать с keyed footnote, а для concept — со
+structured source ID и переданной metadata. Bare prose `[1]` он не преобразует.
+Для каждого mapping с nonzero `legacy_number` выбранный parser-owned `[n]`
+должен исчезнуть, а reference на normalized keyed `[^SourceID]` — существовать.
+Entry-only mapping не требует claim reference. Leftover selected, missing или
+wrong reference блокируется с `migration_replay_mismatch` на exact
+parser-owned span без invented manual action. Inline/fenced code и raw HTML
+opaque: marker-like bytes внутри них не подтверждают и не нарушают claim
+replay. Normalized collision с
+existing footnote label блокируется с
+`normalized_footnote_label_collision` и
+`disambiguate_citation_entry`; active legacy section в v0.2 target также
+блокирует replay. Все эти preflight outcomes proofless и zero-write.
+Unrenderable individual migration field возвращает `invalid_request`.
+Normalized per-document SourceID collision вместо этого блокируется с
+`normalized_footnote_label_collision` и `disambiguate_citation_entry`, включая
+`target-noop`; existing-document collision возвращает тот же exact span. Ни
+одна ветка не публикуется, обе zero-write.
+Proof-bound apply `v0.1-to-v0.2` может вернуть transition-noop только после
+authentication и rebuild exact proof и plan digest; noop возвращается до
+открытия store и не создаёт `.okf`. Live MCP `target-noop` остаётся proofless;
+поведение CLI описано выше. Все варианты оставляют revision-visible bundle
+files path-and-byte identical.
+См.
+[Migration]({{ '/ru/migration/' | relative_url }}).
 
-`okf parse <file>` печатает parsed structure одного concept document. Используй
-это для debugging frontmatter/body parsing без загрузки полного bundle.
+## Go read model
 
-`okf fmt <file>` нормализует один document в stdout. `okf fmt <file> -w`
-перезаписывает его на месте.
+Package `bundle` даёт permissive typed views для v0.2 fields, сохраняя `Get`,
+YAML-node access и caller-owned structs authoritative для unknown data.
+Accessors возвращают defensive copies.
 
-## Transactional mutation API
+Non-Markdown computation/source assets сохраняются как inert revision-visible
+bundle files. Чтение asset не исполняет и не fetch'ит его.
 
-Go library package `store` определяет immutable `Snapshot`, versioned
-`ChangeSet`, `Preview` и `Commit`; `store/fs` реализует durable commits для
-одного local filesystem. Revision — algorithm-qualified digest от canonical
-sorted manifest. По умолчанию это `sha256:<lowercase-hex>`;
-`fs.Config.HashAlgorithm` может заменить алгоритм. Revision-visible set —
-каждый regular file под bundle root, включая non-Markdown files и reserved
-index/log files, кроме `.okf/**`. Symlinks никогда не читаются и не хешируются;
-internal journal, receipts и lease исключены. Journal v5 фиксирует алгоритм и
-canonical request/result/replay data в compact bounded manifest; durable staged
-payloads содержат post-state bytes. Перед apply или recovery каждый payload
-проверяется по safe no-follow path, declared size и SHA-256 digest. Затем
-recovery очищает transaction и stage и требует ту же configured algorithm.
-Persisted receipt envelope использует v2.
+## Mutation и durability
 
-```go
-package example
+Semantic operations — узкие desired-state operations. Они preview'ят staged
+output, валидируют итоговый bundle, сохраняют untouched presentation и commit'ят
+через CAS/journal durability.
 
-import (
-	"context"
-	"errors"
-	"fmt"
+Existing store ChangeSet/Receipt formats и transaction actors отделены от OKF
+document actors. `store.CommitReceipt` — transaction durability evidence,
+который создаётся после успешного store commit. `executor.receipt` — runtime
+artifact Attested Computation; он не хранится в canonical transaction receipt и
+не принимается вместо него.
 
-	"github.com/skosovsky/okf/bundle"
-	"github.com/skosovsky/okf/store"
-	"github.com/skosovsky/okf/store/fs"
-)
+Legacy wire/profile versions остаются stable, пока не меняется их собственный
+contract; OKF v0.2 сам по себе не причина их bump'ать.
 
-func update(ctx context.Context) (err error) {
-	s, err := fs.Open("./knowledge", fs.DefaultConfig())
-	if err != nil { return err }
-	defer func() { if closeErr := s.Close(); closeErr != nil && err == nil { err = closeErr } }()
-	base, err := s.Snapshot(ctx)
-	if err != nil { return err }
-	source, err := bundle.ParseRelationRef("api/orders")
-	if err != nil { return err }
-	target, err := bundle.ParseRelationRef("tables/orders")
-	if err != nil { return err }
-	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: "add-order-dependency", Actor: "agent", BaseRevision: base.Revision(), Operations: []store.Operation{store.EnsureRelation{Source: source, Type: "depends_on", Target: target}}}
-	preview, err := s.Preview(ctx, change)
-	if err != nil { return err }
-	_ = preview
-	_, err = s.Commit(ctx, change, store.CommitOptions{IdempotencyKey: "request-42"})
-	var conflict *store.Conflict
-	if errors.As(err, &conflict) { return fmt.Errorf("refresh and retry from %s", conflict.Actual) }
-	return err
-}
-```
+## MCP
 
-`EnsureRelation` имеет desired-state semantics: оставляет semantic edge ровно
-один раз. `MoveConcept` переносит concept и переписывает statically resolvable
-canonical references. `RenameFragment` переименовывает один явный unique
-fragment и его incoming canonical references. Ref с fragment существует, только
-если существуют concept и один unique matching fragment.
+Compatibility tools сохраняют text fallbacks:
 
-Fragments определяют только nested mapping; top-level frontmatter `id` и
-`anchor` — metadata concept. `id` — canonical identity fragment для nested mapping. Если валидный `anchor`
-отличается, это noncanonical alias для информации и навигации; semantic
-mutations и relation refs адресуют canonical `id`.
+- `list_concepts`
+- `read_concept`
+- `validate_bundle`
+- `get_semantic_graph`
+- `write_concept`
 
-`Preview` строит и валидирует staged state без записи. `Commit` повторно сверяет
-base revision под advisory lease cooperating writers; changed base возвращает
-`*store.Conflict`, распознаваемый через `errors.As`. Idempotency receipts
-привязаны к canonical versioned request digest: `Commit` возвращает
-`store.CommitReceipt`, а `ReplaceConcept` возвращает его в result; оба replay
-идентичный receipt для того же key и request, другой request —
-`*store.IdempotencyConflict`. По умолчанию receipts
-хранятся 24 часа и никогда не меньше 1000 самых новых.
+Server предоставляет девять tools. Четыре safe v0.2 tools работают парами
+preview/apply:
 
-Гарантии ограничены одним filesystem. Locks advisory, поэтому raw editors не
-координируются; raw readers могут увидеть multi-file rename во время публикации.
-Journal гарантирует recovery, а не distributed isolation. Для distributed
-deployments нужен другой `store.Store` backend.
+- `preview_concept_patch` / `apply_concept_patch`
+- `preview_v02_migration` / `apply_v02_migration`
 
-### Поддерживаемые платформы
+Structured outputs schema-validated. Patch apply требует `expected_revision` и
+preview plan digest. Migration apply discriminated по transition:
+`v0.1-to-v0.2` требует preview proof `format_version: 2` с non-empty
+`resolution_digest`, non-empty `expected_plan_digest` и тот же полный
+`expected_source`; более ранний proof format не принимается. Live `target-noop` требует только
+`expected_source`, остаётся proofless и валидирует target document. Если proof
+присутствует, `proof.base_revision` authoritative. Raw frontmatter/body
+остаются доступны, чтобы unknown YAML не проходил через lossy closed model.
+Identical migration apply replay-safe.
+Во всём MCP structured JSON present `usage_count` — canonical decimal string по
+`^(0|[1-9][0-9]*)$` или `null` для nullable outputs. Patch input отклоняет
+semantic uint64 overflow. Это исключает `float64` precision loss в decoded MCP
+Arguments, включая `MaxUint64`; legacy text fallbacks не меняются.
+Selector `set_usage_window` — closed union: shared (нет `source_id` и `source`),
+identified (`source_id` non-empty) или exact anonymous (`source` присутствует,
+а его `id` отсутствует). Empty `source_id`, mixed/unknown selector forms и
+ambiguous exact anonymous matches отклоняются.
+Selector `remove_source` — closed union из identified (`source_id` non-empty)
+или exact anonymous (`source` присутствует, а его `id` отсутствует); shared
+form отсутствует. Empty `source_id`, mixed/unknown selector forms и ambiguous
+exact anonymous matches отклоняются.
 
-`store/fs` предоставляет durable backend на Darwin и Linux. Он использует
-descriptor-relative no-follow traversal, advisory lease, atomic rename, file и
-directory sync и journal recovery с обязательными runtime capability checks
-filesystem.
+## Security boundary
 
-На Windows и других targets package остаётся compile-safe, но `Open` и
-`OpenContext` возвращают `*fs.UnsupportedPlatformError`. Для классификации
-используй `errors.Is(err, fs.ErrUnsupportedPlatform)`, для чтения выбранных
-`GOOS` и `GOARCH` — `errors.As`. Backend-neutral packages остаются buildable.
-Полная исполняемая matrix описана в
-[Release engineering](../release-engineering.md).
-
-`write_concept` в `okf-mcp` делает staged strict/link/orphan validation и
-использует этот durable cooperating-writer commit path. Distributed locking и
-isolation от raw filesystem edits он не обещает. Server-side idempotency
-identity выводится из canonical write request, поэтому идентичный MCP retry не
-публикует повторно. Fixed success response остаётся `status`, `path` и
-`diagnostics`; MCP не раскрывает receipt DTO или commit evidence.
-
-### Lossless parser-backed edits
-
-Planning идет по one-load staged-validation path: validation завершается до
-filesystem write, а invalid, unsupported или ambiguous mutation не создает
-partial staged result. CLI и MCP wire schemas не меняются.
-
-Markdown destinations доказываются Goldmark semantic parser'ом и отдельным
-exact byte-span collector. Parser видит только body, а collector отображает
-spans в полный source file. Eligible — inline links, images и destination
-reference definition; definition patch'ится один раз независимо от use sites.
-Duplicate normalized definitions дают Ambiguous. Escapes и entities декодируются
-для semantic matching; replacement сохраняет angle style или использует
-безопасный escaped angle form. Autolinks и raw HTML намеренно исключены. AST re-render отсутствует: bytes вне
-доказанных spans остаются byte-identical.
-
-Для frontmatter `yaml.v3` — semantic authority. Resolver допускает только
-documented block-style subset и доказывает raw bytes каждого touched plain,
-single-quoted или double-quoted scalar key и value. Invalid UTF-8, unsupported syntax и
-несколько candidate spans fail-closed как inspectable
-`mutation.PresentationError` с `ErrUnsupportedPresentation` или
-`ErrAmbiguousPresentation`; goccy и tree-sitter не являются dependencies.
-
-Flat `mutation.Overlay` shallow-share'ит immutable staged payloads, хранит
-manifest delta над immutable base, отдает defensive reads и заполняет общий
-cache `Paths` только после successful enumeration. Parent chain и HAMT
-намеренно отсутствуют. `bundle.SourceFromFS(fsys fs.FS)` — non-owning adapter
-к core `bundle.Source`; caller обязан передать stable filesystem snapshot на
-весь срок использования.
-
-Точная граница: parsing идёт только по body, offsets отображаются в полный
-файл. Переписываются лишь Goldmark AST inline links/images и reference
-definitions; semantic link/image внутри inline-HTML container остаётся eligible,
-когда Goldmark создаёт `Link`/`Image`. Autolinks, raw-HTML `href`/URLs, code
-spans, fenced/indented code и unresolved/malformed references исключены.
-Touched YAML fail-closed для flow mapping/sequence, literal/folded block scalar,
-explicit/custom tag, direct anchor или complex key (Unsupported); alias/merge
-provenance и duplicate semantic relations/type/target/id/anchor (Ambiguous);
-остальные duplicate touched mapping keys (Unsupported); `%YAML`/`%TAG`, inner
-document/end markers или multidoc frontmatter и unprovable comment/range;
-unrelated nonintersecting extension bytes могут остаться. Invalid UTF-8 и все
-unsupported/ambiguous случаи возвращают typed error и не создают stage. YAML
-задают только recognized outer frontmatter delimiters; body thematic `---` и
-setext underline — Markdown, не YAML multi-doc.
-
-## Вне scope
-
-Go quality gate не делает semantic/editorial judgments. Поиск claims,
-репрезентативность `type`, стиль текста, генерация контента и исправление
-ссылок делегируются агентам, skills или кастомным policy.
-
-Filesystem store contract: `MaxStagedFiles` по умолчанию и максимум 100 000 (`payload-00000`…`payload-99999`); case-folding и Unicode-normalization capabilities проверяются независимо. `.okf` directories no-follow 0700, private files и lease 0600 либо fail-closed.
+- Bundle paths используют containment/no-follow rules.
+- Resource fields не авторизуют filesystem, network, shell или secret use.
+- Actor metadata не является authentication.
+- MCP actor-bearing fields имеют independent 256-byte transport/resource cap.
+  257+ bytes возвращает `resource_limit`, а не invalid actor; внутри cap
+  semantics определяет shared `ValidActor`. Bundle/store actor grammar этим не
+  ограничивается.
+- Executor/attester/computation content inert без отдельной trusted runtime и
+  authorization.
+- По pinned spec agent MAY передавать только значения declared parameters и
+  MUST NOT создавать или редактировать sanctioned computation.
+- Toolkit не определяет и не выдумывает parameter binding, receipt/verdict
+  protocol, attester ABI, sandbox или cache.

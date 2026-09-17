@@ -48,7 +48,7 @@ func BenchmarkParserBackedOverlayComparison(b *testing.B) {
 		b.ReportMetric(payloadBytes, "payload-bytes/file")
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			clone := o.clone()
+			clone := cloneOverlayForTest(b, o)
 			if len(clone.changed) != files {
 				b.Fatalf("clone files = %d, want %d", len(clone.changed), files)
 			}
@@ -90,7 +90,7 @@ func BenchmarkParserBackedOverlayComparison(b *testing.B) {
 		b.ReportMetric(payloadBytes, "payload-bytes/file")
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			candidate := o.clone()
+			candidate := cloneOverlayForTest(b, o)
 			if err := candidate.Rename(context.Background(), "file-00000.md", "renamed.md"); err != nil {
 				b.Fatal(err)
 			}

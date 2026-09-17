@@ -1,0 +1,9 @@
+description: "A truly type-only v0.2 concept is base-conformant"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

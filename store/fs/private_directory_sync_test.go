@@ -1,262 +1,235 @@
 package fs
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/skosovsky/okf/store"
 )
 
-// TestPrivateDirectoryParentSyncFaultMatrix makes the metadata-only repair
-// boundary explicit.  Open must not proceed to its capability probes or
-// recovery after a parent sync cannot be established, and a subsequent neutral
-// Open must converge every private directory and the lease back to owner-only.
-func TestPrivateDirectoryParentSyncFaultMatrix(t *testing.T) {
-	const privateMode = os.FileMode(0o700)
-	const privateFileMode = os.FileMode(0o600)
-
-	type faultKind string
-	const (
-		pre      faultKind = "pre"
-		post     faultKind = "post"
-		callback faultKind = "directory-sync-callback"
-	)
-
-	privateDirs := []string{
-		internalDirectory,
-		filepath.Join(internalDirectory, "transactions"),
-		filepath.Join(internalDirectory, "staging"),
-		filepath.Join(internalDirectory, "receipts"),
-		filepath.Join(internalDirectory, "capabilities"),
-	}
-	cases := make([]struct {
-		name   string
-		target string
-		parent string
-		kind   faultKind
-	}, 0, len(privateDirs)*3)
-	for _, target := range privateDirs {
-		parent := filepath.Dir(target)
-		for _, kind := range []faultKind{pre, post, callback} {
-			cases = append(cases, struct {
-				name   string
-				target string
-				parent string
-				kind   faultKind
-			}{name: string(kind) + "/" + target, target: target, parent: parent, kind: kind})
-		}
+func TestOpenCloseLeavesAbsentPrivateNamespaceUntouched(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	var hooks int
+	cfg := Config{
+		Fault:         func(Step) error { hooks++; return nil },
+		PostFault:     func(Step) error { hooks++; return nil },
+		DirectorySync: func(string) error { hooks++; return nil },
 	}
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			// Arrange: first create a clean, complete private namespace.  Corrupt
-			// exactly one component so this case has one deterministic repair and
-			// exactly one parent-sync hook invocation.
-			root := t.TempDir()
-			writeTestFile(t, root, "visible.md", adversarialDocument("before"))
-			initial, err := Open(root, Config{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := initial.Close(); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chmod(filepath.Join(root, tt.target), 0o777); err != nil {
-				t.Fatal(err)
-			}
-			before, err := os.ReadFile(filepath.Join(root, "visible.md"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			journalBefore := privateEntries(t, root, filepath.Join(internalDirectory, "transactions"))
-			wantErr := errors.New("private parent sync fault")
-			var faults, posts, callbacks int
-			config := Config{
-				Fault: func(step Step) error {
-					if step != StepPrivateDirectoryParentSync {
-						return nil
-					}
-					faults++
-					if tt.kind == pre {
-						return wantErr
-					}
-					return nil
-				},
-				PostFault: func(step Step) error {
-					if step != StepPrivateDirectoryParentSync {
-						return nil
-					}
-					posts++
-					if tt.kind == post {
-						return wantErr
-					}
-					return nil
-				},
-				DirectorySync: func(dir string) error {
-					if dir != tt.parent {
-						return nil
-					}
-					callbacks++
-					if tt.kind == callback {
-						return wantErr
-					}
-					return nil
-				},
-			}
+	// Act.
+	s, openErr := OpenContext(context.Background(), root, cfg)
+	closeErr := error(nil)
+	if s != nil {
+		closeErr = s.Close()
+	}
+	entries, readErr := os.ReadDir(root)
 
-			// Act.
-			s, openErr := Open(root, config)
-			if s != nil {
-				_ = s.Close()
-				t.Fatal("Open returned a store after private parent-sync failure")
-			}
-
-			// Assert: the failure happens before probes/recovery can affect private
-			// evidence, and never reaches a revision-visible file.
-			if !errors.Is(openErr, wantErr) {
-				t.Fatalf("Open error=%v, want %v", openErr, wantErr)
-			}
-			if got, readErr := os.ReadFile(filepath.Join(root, "visible.md")); readErr != nil || string(got) != string(before) {
-				t.Fatalf("Open changed visible project: read=%v bytes=%q", readErr, got)
-			}
-			if got := privateEntries(t, root, filepath.Join(internalDirectory, "transactions")); !sameStrings(got, journalBefore) {
-				t.Fatalf("Open changed journal evidence: got=%v want=%v", got, journalBefore)
-			}
-			for _, dir := range []string{"staging", "capabilities"} {
-				if got := privateEntries(t, root, filepath.Join(internalDirectory, dir)); len(got) != 0 {
-					t.Fatalf("Open leaked probe or temporary metadata in %s: %v", dir, got)
-				}
-			}
-			wantFaults, wantPosts, wantCallbacks := 1, 0, 0
-			if tt.kind != pre {
-				wantCallbacks = 1
-			}
-			if tt.kind == post {
-				wantPosts = 1
-			}
-			if faults != wantFaults || posts != wantPosts || callbacks != wantCallbacks {
-				t.Fatalf("hook calls fault/post/callback=%d/%d/%d, want %d/%d/%d", faults, posts, callbacks, wantFaults, wantPosts, wantCallbacks)
-			}
-
-			// A neutral reopen repairs every namespace component, not only the
-			// component used to exercise this fault.  lease is private metadata,
-			// so verify the matching owner-only file invariant as well.
-			for _, dir := range privateDirs {
-				if err := os.Chmod(filepath.Join(root, dir), 0o777); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := os.Chmod(filepath.Join(root, internalDirectory, "lease"), 0o666); err != nil {
-				t.Fatal(err)
-			}
-			repaired, err := Open(root, Config{})
-			if err != nil {
-				t.Fatalf("neutral Open error=%v", err)
-			}
-			defer repaired.Close()
-			for _, dir := range privateDirs {
-				info, statErr := os.Stat(filepath.Join(root, dir))
-				if statErr != nil {
-					t.Fatalf("stat private directory %s: %v", dir, statErr)
-				}
-				if info.Mode().Perm() != privateMode {
-					t.Fatalf("private directory %s mode=%v, want 0700", dir, info.Mode())
-				}
-			}
-			lease, statErr := os.Stat(filepath.Join(root, internalDirectory, "lease"))
-			if statErr != nil {
-				t.Fatalf("stat lease: %v", statErr)
-			}
-			if lease.Mode().Perm() != privateFileMode {
-				t.Fatalf("lease mode=%v, want 0600", lease.Mode())
-			}
-		})
+	// Assert.
+	if openErr != nil || closeErr != nil || readErr != nil || len(entries) != 0 || hooks != 0 {
+		t.Fatalf("Open+Close side effects: open=%v close=%v read=%v entries=%v hooks=%d", openErr, closeErr, readErr, entries, hooks)
 	}
 }
 
-// Fresh .okf creation does not pass through chmod repair, so it needs its own
-// parent durability boundary. These cases begin with no private namespace at
-// all and exercise that first (root) parent sync.
-func TestPrivateDirectoryParentSyncFreshFaultMatrix(t *testing.T) {
-	for _, kind := range []string{"pre", "post", "callback"} {
-		t.Run(kind, func(t *testing.T) {
-			root := t.TempDir()
-			writeTestFile(t, root, "visible.md", adversarialDocument("fresh"))
-			want := errors.New("fresh parent sync")
-			var calls int
-			cfg := Config{
-				Fault: func(step Step) error {
-					if step == StepPrivateDirectoryParentSync && kind == "pre" {
-						calls++
-						return want
-					}
-					return nil
-				},
-				PostFault: func(step Step) error {
-					if step == StepPrivateDirectoryParentSync && kind == "post" {
-						calls++
-						return want
-					}
-					return nil
-				},
-				DirectorySync: func(dir string) error {
-					if dir == "." && kind == "callback" {
-						calls++
-						return want
-					}
-					return nil
-				},
+func TestOpenIsSideEffectFreeAndPrivateInitializationIsLazy(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	writeTestFile(t, root, "visible.md", adversarialDocument("lazy"))
+	var hooks int
+	var capabilityMkdirs int
+	cfg := Config{
+		Fault: func(step Step) error {
+			hooks++
+			if step == StepCapabilityMkdir {
+				capabilityMkdirs++
 			}
-			s, err := Open(root, cfg)
-			if s != nil {
-				_ = s.Close()
-				t.Fatal("Open succeeded after fresh private sync failure")
-			}
-			if !errors.Is(err, want) || calls != 1 {
-				t.Fatalf("Open error=%v calls=%d", err, calls)
-			}
-			if _, err := os.Stat(filepath.Join(root, internalDirectory, "capabilities", "case-probe-a")); !errors.Is(err, os.ErrNotExist) {
-				t.Fatalf("failed Open leaked probe: %v", err)
-			}
-			repaired, err := Open(root, Config{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer repaired.Close()
-			for _, dir := range []string{internalDirectory, filepath.Join(internalDirectory, "transactions"), filepath.Join(internalDirectory, "staging"), filepath.Join(internalDirectory, "receipts"), filepath.Join(internalDirectory, "capabilities")} {
-				info, err := os.Stat(filepath.Join(root, dir))
-				if err != nil {
-					t.Fatalf("stat private directory %s: %v", dir, err)
-				}
-				if info.Mode().Perm() != 0o700 {
-					t.Fatalf("private directory %s: mode=%v", dir, info.Mode())
-				}
-			}
-		})
+			return nil
+		},
+		PostFault:     func(Step) error { hooks++; return nil },
+		DirectorySync: func(string) error { hooks++; return nil },
 	}
-}
 
-func privateEntries(t *testing.T, root, relative string) []string {
-	t.Helper()
-	entries, err := os.ReadDir(filepath.Join(root, relative))
+	// Act.
+	s, err := OpenContext(context.Background(), root, cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := make([]string, len(entries))
-	for i, entry := range entries {
-		got[i] = entry.Name()
+	defer s.Close()
+	hooksAtOpen := hooks
+	entriesAtOpen, entriesErr := os.ReadDir(root)
+	_, privateAtOpen := os.Stat(filepath.Join(root, internalDirectory))
+	_, snapshotErr := s.Snapshot(context.Background())
+	capabilityMkdirsAfterFirst := capabilityMkdirs
+	_, secondSnapshotErr := s.Snapshot(context.Background())
+	_, privateAfterSnapshot := os.Stat(filepath.Join(root, internalDirectory))
+	_, leaseErr := os.Stat(filepath.Join(root, internalDirectory, "lease"))
+
+	// Assert.
+	if entriesErr != nil || len(entriesAtOpen) != 1 || entriesAtOpen[0].Name() != "visible.md" || !errors.Is(privateAtOpen, os.ErrNotExist) || hooksAtOpen != 0 || hooks == 0 || snapshotErr != nil || secondSnapshotErr != nil || privateAfterSnapshot != nil || capabilityMkdirsAfterFirst == 0 || capabilityMkdirs != capabilityMkdirsAfterFirst {
+		t.Fatalf("lazy open: entries=%v/%v private-at-open=%v hooks=%d/%d capability-init=%d/%d snapshots=%v/%v private-after=%v", entriesAtOpen, entriesErr, privateAtOpen, hooksAtOpen, hooks, capabilityMkdirsAfterFirst, capabilityMkdirs, snapshotErr, secondSnapshotErr, privateAfterSnapshot)
 	}
-	return got
+	if !errors.Is(leaseErr, os.ErrNotExist) {
+		t.Fatalf("lazy initialization created lease artifact: %v", leaseErr)
+	}
 }
 
-func sameStrings(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
+func TestRootLockCancellationAndIndependentStores(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	first, err := Open(root, Config{LeaseTimeout: time.Second})
+	if err != nil {
+		t.Fatal(err)
 	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
+	defer first.Close()
+	second, err := Open(root, Config{LeaseTimeout: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	lock, err := openRootLockDescriptor(first.dirFD)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := lockExclusive(lock); err != nil {
+		_ = lock.Close()
+		t.Fatal(err)
+	}
+	pinnedBefore, err := first.dirFD.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	lockedBefore, err := lock.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = unlockFile(lock); _ = lock.Close() }()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// Act.
+	_, snapshotErr := second.Snapshot(ctx)
+	opened, openErr := OpenContext(ctx, root, Config{})
+	lockedAfter, identityErr := lock.Stat()
+
+	// Assert. Open cancellation is checked before pinning; only observations
+	// contend for the root-inode lock.
+	if opened != nil || !errors.Is(openErr, context.Canceled) || !errors.Is(snapshotErr, context.Canceled) || identityErr != nil || !os.SameFile(pinnedBefore, lockedBefore) || !os.SameFile(pinnedBefore, lockedAfter) {
+		t.Fatalf("root lock cancellation: store=%v open=%v snapshot=%v identity=%v", opened, openErr, snapshotErr, identityErr)
+	}
+}
+
+func TestRootLockTimeoutDoesNotRetainLock(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	first, err := Open(root, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.Close()
+	second, err := Open(root, Config{LeaseTimeout: 20 * time.Millisecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	lock, err := openRootLockDescriptor(first.dirFD)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := lockExclusive(lock); err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	_, timeoutErr := second.Snapshot(context.Background())
+	if err := unlockFile(lock); err != nil {
+		t.Fatal(err)
+	}
+	if err := lock.Close(); err != nil {
+		t.Fatal(err)
+	}
+	_, retryErr := second.Snapshot(context.Background())
+
+	// Assert.
+	if !errors.Is(timeoutErr, context.DeadlineExceeded) || retryErr != nil {
+		t.Fatalf("root lock timeout=%v retry=%v", timeoutErr, retryErr)
+	}
+}
+
+func TestRootLockPostAcquireIdentityFailurePrecedesPrivateMutation(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	s, err := Open(root, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	want := errors.New("post-lock identity mismatch")
+	checks := 0
+	s.rootLockIdentity = func(root, lock *os.File) error {
+		checks++
+		if root == nil || lock == nil {
+			t.Fatal("post-lock verifier received nil descriptor")
+		}
+		return errors.Join(store.ErrStorageCorrupt, want)
+	}
+
+	// Act.
+	_, snapshotErr := s.Snapshot(context.Background())
+	_, privateErr := os.Stat(filepath.Join(root, internalDirectory))
+	s.rootLockIdentity = verifyRootLockIdentity
+	_, retryErr := s.Snapshot(context.Background())
+
+	// Assert. The failed verifier owns the already-acquired descriptor; retry
+	// succeeding proves the failure path unlocked and closed it.
+	if checks != 1 || !errors.Is(snapshotErr, want) || !errors.Is(snapshotErr, store.ErrStorageCorrupt) || !errors.Is(privateErr, os.ErrNotExist) || retryErr != nil {
+		t.Fatalf("post-lock identity: checks=%d snapshot=%v private=%v retry=%v", checks, snapshotErr, privateErr, retryErr)
+	}
+}
+
+func TestLazyPrivateRepairIgnoresLegacyLeaseArtifact(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	for _, dir := range knownPrivateDirectories() {
+		if err := os.MkdirAll(filepath.Join(root, dir), 0o777); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filepath.Join(root, dir), 0o777); err != nil {
+			t.Fatal(err)
 		}
 	}
-	return true
+	lease := filepath.Join(root, internalDirectory, "lease")
+	if err := os.WriteFile(lease, nil, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(lease, 0o666); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(root, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	before, err := os.Stat(filepath.Join(root, internalDirectory))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	_, snapshotErr := s.Snapshot(context.Background())
+	legacy, legacyErr := os.Stat(lease)
+
+	// Assert.
+	if before.Mode().Perm() != 0o777 || snapshotErr != nil || legacyErr != nil || legacy.Mode().Perm() != 0o666 {
+		t.Fatalf("lazy repair: before=%v snapshot=%v lease=%v/%v", before.Mode().Perm(), snapshotErr, legacy.Mode().Perm(), legacyErr)
+	}
+	for _, dir := range knownPrivateDirectories() {
+		info, statErr := os.Stat(filepath.Join(root, dir))
+		if statErr != nil || info.Mode().Perm() != 0o700 {
+			t.Fatalf("private directory %s = %v/%v, want 0700", dir, info, statErr)
+		}
+	}
 }

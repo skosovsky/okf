@@ -44,7 +44,7 @@ func TestLinearMutationHelpersHonorCancellation(t *testing.T) {
 			fmt.Fprintf(&yaml, "key%d: value%d\n", index, index)
 		}
 		yaml.WriteString("---\nbody\n")
-		presentation, err := parsePresentation([]byte(yaml.String()))
+		presentation, err := parsePresentationContext(context.Background(), []byte(yaml.String()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -81,7 +81,7 @@ func TestLinearMutationHelpersHonorCancellation(t *testing.T) {
 
 	t.Run("YAML scalar token scan", func(t *testing.T) {
 		source := append([]byte{'"'}, bytesOf('x', 256<<10)...)
-		resolver, err := newYAMLResolver(source)
+		resolver, err := newYAMLResolverContext(context.Background(), source)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,7 +98,7 @@ func TestLinearMutationHelpersHonorCancellation(t *testing.T) {
 		for index := 0; index < 128; index++ {
 			root.Content = append(root.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: fmt.Sprintf("key%d", index)})
 		}
-		resolver, err := newYAMLResolver([]byte("key: value\n"))
+		resolver, err := newYAMLResolverContext(context.Background(), []byte("key: value\n"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -243,8 +243,8 @@ func TestPlanCancelsDuringManifestFastPathTraversal(t *testing.T) {
 
 func TestPlanValidatesFinalLoadedBundleWithoutExtraSourceRead(t *testing.T) {
 	// Arrange. The manifest makes revision calculation read-free. Plan still
-	// needs one initial and one per-operation bundle load, each containing the
-	// two concept files.
+	// captures each immutable base file once. Presentation preflight and bundle
+	// loading share that snapshot; operation loads consume the overlay.
 	source := newPlannerCountingSource(t, memorySource{
 		"a.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: b\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\n---\nB\n"),
@@ -264,14 +264,13 @@ func TestPlanValidatesFinalLoadedBundleWithoutExtraSourceRead(t *testing.T) {
 	// Act.
 	result, err := Plan(context.Background(), source, changeSet)
 
-	// Assert. A final ValidateSource would load the unchanged staged bundle a
-	// third time and produce six source reads. Four proves validation consumed
-	// state.bundle already loaded after the one semantic operation.
+	// Assert. Each immutable base file is read once; preflight must not add a
+	// second source pass.
 	if err != nil || result.Staged == nil {
 		t.Fatalf("Plan() result/error = %#v / %v", result, err)
 	}
-	if got, want := source.readCalls, 4; got != want {
-		t.Fatalf("source ReadFile calls = %d, want %d (initial + operation loads only)", got, want)
+	if got, want := source.readCalls, 2; got != want {
+		t.Fatalf("source ReadFile calls = %d, want %d (one captured base snapshot)", got, want)
 	}
 }
 
@@ -335,7 +334,7 @@ func TestPlanPresentationErrorsCarryFullFileContext(t *testing.T) {
 			if presentation.Code != test.wantCode || presentation.Format != "yaml" || presentation.Path != test.wantPath || presentation.Operation != test.wantOp {
 				t.Fatalf("PresentationError = %#v", presentation)
 			}
-			data, _ := test.source.ReadFile(context.Background(), test.wantPath)
+			data := readSourceFileForTest(t, test.source, test.wantPath)
 			if presentation.Location.Start < 0 || presentation.Location.End < presentation.Location.Start || presentation.Location.End > len(data) {
 				t.Fatalf("Location out of bounds: %#v len=%d", presentation.Location, len(data))
 			}
@@ -389,7 +388,7 @@ func TestPlanCancellationStopsBeforeLaterFiles(t *testing.T) {
 	}
 	base := newPlannerCountingSource(t, files)
 	ctx, cancel := context.WithCancel(context.Background())
-	source := &cancelAfterReadSource{plannerCountingSource: base, cancel: cancel, after: 4}
+	source := &cancelAfterReadSource{plannerCountingSource: base, cancel: cancel, after: 2}
 
 	// Act.
 	result, err := Plan(ctx, source, change(t, base, store.MoveConcept{From: ref(t, "b").ID, To: ref(t, "nested/b").ID}))
@@ -401,7 +400,7 @@ func TestPlanCancellationStopsBeforeLaterFiles(t *testing.T) {
 	if result.Staged != nil {
 		t.Fatalf("Plan() staged = %#v, want nil", result.Staged)
 	}
-	if got, want := base.readCalls, 4; got != want {
+	if got, want := base.readCalls, 2; got != want {
 		t.Fatalf("ReadFile calls = %d, want %d; later files were touched", got, want)
 	}
 }

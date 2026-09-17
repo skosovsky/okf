@@ -1,0 +1,83 @@
+{
+  "exit_code": 0,
+  "scanned_files": 4,
+  "diagnostics": [
+    {
+      "code": "actor_invalid",
+      "spec_ref": "okf-v0.2#7",
+      "file": "actor.md",
+      "field_path": "generated.by",
+      "severity": "WARN",
+      "message": "'generated.by' should follow the OKF actor convention"
+    },
+    {
+      "code": "generated_at_invalid",
+      "spec_ref": "okf-v0.2#5.2",
+      "file": "actor.md",
+      "field_path": "generated.at",
+      "severity": "WARN",
+      "message": "'generated.at' should be RFC3339"
+    },
+    {
+      "code": "computation_inline_multiple",
+      "spec_ref": "okf-v0.2#10.3",
+      "file": "computation.md",
+      "field_path": "body.# Computation",
+      "severity": "WARN",
+      "message": "inline computation mode permits exactly one directly-owned closed fence under '# Computation'"
+    },
+    {
+      "code": "receipt_invalid",
+      "spec_ref": "okf-v0.2#10.2",
+      "file": "computation.md",
+      "field_path": "executor.receipt",
+      "severity": "WARN",
+      "message": "'executor.receipt' should contain at least one field name"
+    },
+    {
+      "code": "source_usage_count_invalid",
+      "spec_ref": "toolkit#sources-usage-profile",
+      "file": "sources.md",
+      "field_path": "sources[0].usage_count",
+      "severity": "WARN",
+      "message": "'sources[0].usage_count' should be a non-negative integer"
+    },
+    {
+      "code": "source_usage_window_missing",
+      "spec_ref": "toolkit#sources-usage-profile",
+      "file": "sources.md",
+      "field_path": "sources[1].usage_count",
+      "severity": "WARN",
+      "message": "'sources[1].usage_count' requires a valid effective usage_window"
+    },
+    {
+      "code": "usage_window_order",
+      "spec_ref": "toolkit#sources-usage-profile",
+      "file": "sources.md",
+      "field_path": "sources[1].usage_window",
+      "severity": "WARN",
+      "message": "'sources[1].usage_window.from' should be on or before 'sources[1].usage_window.to'"
+    },
+    {
+      "code": "tags_invalid",
+      "spec_ref": "okf-v0.2#4.1",
+      "file": "tags-and-time.md",
+      "field_path": "tags[1]",
+      "severity": "WARN",
+      "message": "'tags[1]' should be a non-empty string"
+    },
+    {
+      "code": "timestamp_invalid",
+      "spec_ref": "okf-v0.2#13.1",
+      "file": "tags-and-time.md",
+      "field_path": "timestamp",
+      "severity": "WARN",
+      "message": "'timestamp' should be RFC3339"
+    }
+  ],
+  "counts": {
+    "errors": 0,
+    "warnings": 9,
+    "info": 0
+  }
+}

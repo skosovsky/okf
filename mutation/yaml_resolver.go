@@ -3,6 +3,7 @@ package mutation
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,10 +24,6 @@ type yamlResolver struct {
 type yamlScalarSpan struct {
 	Span  SourceSpan
 	Style yaml.Style
-}
-
-func newYAMLResolver(source []byte) (*yamlResolver, error) {
-	return newYAMLResolverContext(context.Background(), source)
 }
 
 func newYAMLResolverContext(ctx context.Context, source []byte) (*yamlResolver, error) {
@@ -114,10 +111,27 @@ func (r *yamlResolver) coordinate(line, column int) (int, error) {
 }
 
 func (r *yamlResolver) scalar(n *yaml.Node) (yamlScalarSpan, error) {
+	if n == nil || n.Kind != yaml.ScalarNode || n.Tag != "!!str" {
+		span := SourceSpan{}
+		if n != nil {
+			if at, err := r.coordinate(n.Line, n.Column); err == nil {
+				span = SourceSpan{Start: at, End: at}
+			}
+		}
+		return yamlScalarSpan{}, r.presentationError("unsupported_scalar", ErrUnsupportedPresentation, span)
+	}
+	return r.typedScalar(n)
+}
+
+// typedScalar resolves the exact raw token owned by one supported typed
+// scalar. It deliberately accepts only the core scalar tags emitted by the
+// structural renderer; arbitrary application tags remain fail-closed.
+func (r *yamlResolver) typedScalar(n *yaml.Node) (yamlScalarSpan, error) {
 	if err := r.ctx.Err(); err != nil {
 		return yamlScalarSpan{}, err
 	}
-	if n == nil || n.Kind != yaml.ScalarNode || n.Tag != "!!str" || n.Anchor != "" || n.Style&(yaml.LiteralStyle|yaml.FoldedStyle) != 0 {
+	if n == nil || n.Kind != yaml.ScalarNode || !yamlSupportedScalarTag(n.Tag) || n.Anchor != "" || n.Alias != nil ||
+		n.Style&(yaml.LiteralStyle|yaml.FoldedStyle|yaml.TaggedStyle) != 0 {
 		span := SourceSpan{}
 		if n != nil {
 			if at, err := r.coordinate(n.Line, n.Column); err == nil {
@@ -143,7 +157,13 @@ func (r *yamlResolver) scalar(n *yaml.Node) (yamlScalarSpan, error) {
 		return yamlScalarSpan{}, err
 	}
 	span := SourceSpan{Start: at, End: end}
-	matches := span.valid(len(r.source)) && r.matchesNode(span, n, style)
+	matches := false
+	if span.valid(len(r.source)) {
+		matches, err = r.matchesNode(span, n, style)
+		if err != nil {
+			return yamlScalarSpan{}, err
+		}
+	}
 	if err := r.ctx.Err(); err != nil {
 		return yamlScalarSpan{}, err
 	}
@@ -153,19 +173,28 @@ func (r *yamlResolver) scalar(n *yaml.Node) (yamlScalarSpan, error) {
 	return yamlScalarSpan{Span: span, Style: style}, nil
 }
 
-// nodeSyntaxProvenance identifies YAML presentation syntax that makes a
-// source-preserving edit non-local. It returns frontmatter-local byte offsets.
-// Node fields are authoritative except for syntax yaml.v3 normalizes away.
-func (r *yamlResolver) nodeSyntaxProvenance(n *yaml.Node, at int) (SourceSpan, bool) {
-	span, ok, _ := r.nodeSyntaxProvenanceContext(n, at)
-	return span, ok
+func yamlSupportedScalarTag(tag string) bool {
+	switch tag {
+	case "!!str", "!!bool", "!!int", "!!timestamp":
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *yamlResolver) nodeSyntaxProvenanceContext(n *yaml.Node, at int) (SourceSpan, bool, error) {
 	if err := r.ctx.Err(); err != nil {
 		return SourceSpan{}, false, err
 	}
-	if n == nil || n.Anchor != "" || n.Alias != nil || n.Style&yaml.TaggedStyle != 0 {
+	if n == nil {
+		return SourceSpan{Start: at, End: at}, true, nil
+	}
+	if provenance, ok, err := r.loneNonSpecificTagContext(at); err != nil {
+		return SourceSpan{}, false, err
+	} else if ok {
+		return provenance, true, nil
+	}
+	if n.Anchor != "" || n.Alias != nil || n.Style&yaml.TaggedStyle != 0 {
 		return SourceSpan{Start: at, End: at}, true, nil
 	}
 	switch n.Kind {
@@ -178,10 +207,15 @@ func (r *yamlResolver) nodeSyntaxProvenanceContext(n *yaml.Node, at int) (Source
 			return SourceSpan{Start: at, End: at}, true, nil
 		}
 	case yaml.ScalarNode:
-		if n.Tag != "!!str" {
+		if !yamlSupportedScalarTag(n.Tag) {
 			return SourceSpan{Start: at, End: at}, true, nil
 		}
 	}
+	// yaml.v3 normalizes the non-specific lone `!` tag and may position the
+	// node either at the tag or at the following scalar/collection token. Read
+	// only that immediate token prefix so `!` inside earlier flow values,
+	// quoted strings, or ordinary plain content cannot become provenance for
+	// this node.
 	if n.Kind == yaml.ScalarNode {
 		lineStart := bytes.LastIndexByte(r.source[:at], '\n') + 1
 		probeEnd := at
@@ -239,14 +273,188 @@ func (r *yamlResolver) nodeSyntaxProvenanceContext(n *yaml.Node, at int) (Source
 	return SourceSpan{}, false, r.ctx.Err()
 }
 
-// yamlSyntaxInPrefix recognizes only YAML tokens at lexical token boundaries.
-// It is not a YAML parser; yaml.v3 has already parsed the document. Its role is
-// to preserve provenance that yaml.v3 normalizes (notably default core tags).
-func yamlSyntaxInPrefix(prefix []byte) bool {
-	found, _ := yamlSyntaxInPrefixContext(context.Background(), prefix)
-	return found
+// flowCollection owns exactly one parser-confirmed flow mapping or sequence.
+// Internal flow edits are intentionally unsupported; callers may only replace
+// the returned span atomically.
+func (r *yamlResolver) flowCollection(n *yaml.Node) (SourceSpan, error) {
+	if err := r.ctx.Err(); err != nil {
+		return SourceSpan{}, err
+	}
+	if n == nil || (n.Kind != yaml.MappingNode && n.Kind != yaml.SequenceNode) || n.Style&yaml.FlowStyle == 0 ||
+		n.Anchor != "" || n.Alias != nil || n.Style&yaml.TaggedStyle != 0 {
+		return SourceSpan{}, r.presentationError("unsupported_collection", ErrUnsupportedPresentation, SourceSpan{})
+	}
+	at, err := r.coordinate(n.Line, n.Column)
+	if err != nil {
+		return SourceSpan{}, err
+	}
+	if provenance, ok, err := r.nodeSyntaxProvenanceContext(n, at); err != nil {
+		return SourceSpan{}, err
+	} else if ok {
+		return SourceSpan{}, r.presentationError("explicit_tag", ErrUnsupportedPresentation, provenance)
+	}
+	if at >= len(r.source) {
+		return SourceSpan{}, r.presentationError("collection_outside_source", ErrUnsupportedPresentation, SourceSpan{Start: at, End: at})
+	}
+	open, close := byte('{'), byte('}')
+	if n.Kind == yaml.SequenceNode {
+		open, close = '[', ']'
+	}
+	if r.source[at] != open {
+		return SourceSpan{}, r.presentationError("raw_semantic_mismatch", ErrUnsupportedPresentation, SourceSpan{Start: at, End: at})
+	}
+	depth := 0
+	inSingle, inDouble, escaped, inComment := false, false, false, false
+	for i := at; i < len(r.source); i++ {
+		if i&4095 == 0 {
+			if err := r.ctx.Err(); err != nil {
+				return SourceSpan{}, err
+			}
+		}
+		c := r.source[i]
+		if inComment {
+			if c == '\n' {
+				inComment = false
+			}
+			continue
+		}
+		if inSingle {
+			if c == '\'' {
+				if i+1 < len(r.source) && r.source[i+1] == '\'' {
+					i++
+				} else {
+					inSingle = false
+				}
+			}
+			continue
+		}
+		if inDouble {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if c == '\\' {
+				escaped = true
+			} else if c == '"' {
+				inDouble = false
+			}
+			continue
+		}
+		switch c {
+		case '\'':
+			inSingle = true
+		case '"':
+			inDouble = true
+		case '#':
+			// In a plain scalar '#' is data unless separated by whitespace.
+			// Actual comments are skipped for balancing and rejected later by
+			// parser-backed comment ownership on the collection subtree.
+			if i == at || yamlSeparationByte(r.source[i-1]) {
+				inComment = true
+			}
+		case open:
+			depth++
+		case close:
+			depth--
+			if depth == 0 {
+				span := SourceSpan{Start: at, End: i + 1}
+				matches, err := r.matchesCollection(span, n)
+				if err != nil {
+					return SourceSpan{}, err
+				}
+				if matches {
+					return span, nil
+				}
+				return SourceSpan{}, r.presentationError("raw_semantic_mismatch", ErrUnsupportedPresentation, span)
+			}
+		case '{', '[':
+			depth++
+		case '}', ']':
+			depth--
+		}
+	}
+	return SourceSpan{}, r.presentationError("unterminated_collection", ErrUnsupportedPresentation, SourceSpan{Start: at, End: len(r.source)})
 }
 
+func (r *yamlResolver) matchesCollection(span SourceSpan, n *yaml.Node) (bool, error) {
+	if !span.valid(len(r.source)) || r.ctx.Err() != nil {
+		return false, r.ctx.Err()
+	}
+	doc, err := decodeGuardedYAMLNodeContext(r.ctx, append([]byte(nil), r.source[span.Start:span.End]...))
+	if err != nil {
+		if errors.Is(err, bundle.ErrYAMLResourceLimit) || errors.Is(err, bundle.ErrInvalidYAMLGraph) {
+			return false, mutationYAMLGraphErrorForSource(err, r.source, span)
+		}
+		return false, r.ctx.Err()
+	}
+	if len(doc.Content) != 1 {
+		return false, nil
+	}
+	// n belongs to the complete presentation graph guarded in
+	// parsePresentationContext. It must not be revalidated as a standalone
+	// subtree because a valid alias may own its anchor outside this span.
+	return equalValidatedYAMLNodeSemanticsContext(r.ctx, doc.Content[0], n)
+}
+
+// equalValidatedYAMLNodeSemanticsContext compares only graphs already accepted
+// at their authoritative document boundaries. Alias targets may therefore live
+// outside a projected span: alias presence is semantic here, while Content is
+// compared pairwise without standalone subtree validation.
+func equalValidatedYAMLNodeSemanticsContext(ctx context.Context, left, right *yaml.Node) (bool, error) {
+	type nodePair struct {
+		left, right *yaml.Node
+	}
+	stack := []nodePair{{left: left, right: right}}
+	for len(stack) != 0 {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		pair := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if pair.left == nil || pair.right == nil {
+			if pair.left != pair.right {
+				return false, nil
+			}
+			continue
+		}
+		if pair.left.Kind != pair.right.Kind ||
+			(pair.left.Alias != nil) != (pair.right.Alias != nil) ||
+			len(pair.left.Content) != len(pair.right.Content) {
+			return false, nil
+		}
+		for _, values := range [][2]string{
+			{pair.left.Tag, pair.right.Tag},
+			{pair.left.Value, pair.right.Value},
+			{pair.left.Anchor, pair.right.Anchor},
+		} {
+			equal, err := stringsEqualContext(ctx, values[0], values[1])
+			if err != nil {
+				return false, err
+			}
+			if !equal {
+				return false, nil
+			}
+		}
+		for index := len(pair.left.Content) - 1; index >= 0; index-- {
+			if (len(pair.left.Content)-1-index)&4095 == 0 {
+				if err := ctx.Err(); err != nil {
+					return false, err
+				}
+			}
+			stack = append(stack, nodePair{
+				left: pair.left.Content[index], right: pair.right.Content[index],
+			})
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// yamlSyntaxInPrefixContext recognizes only YAML tokens at lexical token boundaries.
+// It is not a YAML parser; yaml.v3 has already parsed the document. Its role is
+// to preserve provenance that yaml.v3 normalizes (notably default core tags).
 func yamlSyntaxInPrefixContext(ctx context.Context, prefix []byte) (bool, error) {
 	inSingle, inDouble := false, false
 	for i := 0; i < len(prefix); i++ {
@@ -287,9 +495,6 @@ func yamlSyntaxInPrefixContext(ctx context.Context, prefix []byte) (bool, error)
 		if !yamlTokenBoundary(prefix, i) {
 			continue
 		}
-		if c == '!' {
-			return true, nil
-		}
 		if c == '&' || c == '*' {
 			if i+1 < len(prefix) && !yamlTokenDelimiter(prefix[i+1]) {
 				return true, nil
@@ -300,6 +505,36 @@ func yamlSyntaxInPrefixContext(ctx context.Context, prefix []byte) (bool, error)
 		}
 	}
 	return false, ctx.Err()
+}
+
+func (r *yamlResolver) loneNonSpecificTagContext(at int) (SourceSpan, bool, error) {
+	if err := r.ctx.Err(); err != nil {
+		return SourceSpan{}, false, err
+	}
+	if at < 0 || at > len(r.source) {
+		return SourceSpan{}, false, nil
+	}
+	isLoneTag := func(index int) bool {
+		return index >= 0 && index < len(r.source) && r.source[index] == '!' &&
+			yamlTokenBoundary(r.source, index) &&
+			(index+1 == len(r.source) || yamlTokenDelimiter(r.source[index+1]))
+	}
+	if isLoneTag(at) {
+		return SourceSpan{Start: at, End: at + 1}, true, nil
+	}
+	end := at
+	for end > 0 && yamlSeparationByte(r.source[end-1]) {
+		if end&4095 == 0 {
+			if err := r.ctx.Err(); err != nil {
+				return SourceSpan{}, false, err
+			}
+		}
+		end--
+	}
+	if isLoneTag(end - 1) {
+		return SourceSpan{Start: end - 1, End: end}, true, nil
+	}
+	return SourceSpan{}, false, r.ctx.Err()
 }
 
 func yamlTokenBoundary(raw []byte, at int) bool {
@@ -362,10 +597,14 @@ func (r *yamlResolver) scalarEnd(n *yaml.Node, at int) (int, yaml.Style, error) 
 // the complete semantic value; comments and mapping separators remain hard
 // lexical boundaries.
 func (r *yamlResolver) blockPlainScalarEnd(n *yaml.Node, at int) (int, yaml.Style, error) {
-	semanticEnd := func(rawEnd int) (int, bool) {
+	semanticEnd := func(rawEnd int) (int, bool, error) {
 		end := len(bytes.TrimRight(r.source[at:rawEnd], " \t")) + at
 		span := SourceSpan{Start: at, End: end}
-		return end, end > at && r.matchesNode(span, n, 0)
+		if end <= at {
+			return end, false, nil
+		}
+		matches, err := r.matchesNode(span, n, 0)
+		return end, matches, err
 	}
 	for i := at; i < len(r.source); i++ {
 		if i&4095 == 0 {
@@ -375,20 +614,26 @@ func (r *yamlResolver) blockPlainScalarEnd(n *yaml.Node, at int) (int, yaml.Styl
 		}
 		c := r.source[i]
 		if c == '#' && (i == at || r.source[i-1] == ' ' || r.source[i-1] == '\t') {
-			if end, ok := semanticEnd(i); ok {
+			if end, ok, err := semanticEnd(i); err != nil {
+				return 0, 0, err
+			} else if ok {
 				return end, 0, nil
 			}
 			return 0, 0, r.presentationError("raw_semantic_mismatch", ErrUnsupportedPresentation, SourceSpan{Start: at, End: i})
 		}
 		if c == ':' && (i+1 == len(r.source) || yamlSeparationByte(r.source[i+1])) {
-			if end, ok := semanticEnd(i); ok {
+			if end, ok, err := semanticEnd(i); err != nil {
+				return 0, 0, err
+			} else if ok {
 				return end, 0, nil
 			}
 			return 0, 0, r.presentationError("raw_semantic_mismatch", ErrUnsupportedPresentation, SourceSpan{Start: at, End: i})
 		}
 		if c == '\r' || c == '\n' {
 			lineEnd := i
-			if end, ok := semanticEnd(lineEnd); ok {
+			if end, ok, err := semanticEnd(lineEnd); err != nil {
+				return 0, 0, err
+			} else if ok {
 				return end, 0, nil
 			}
 			if c == '\r' && i+1 < len(r.source) && r.source[i+1] == '\n' {
@@ -396,65 +641,107 @@ func (r *yamlResolver) blockPlainScalarEnd(n *yaml.Node, at int) (int, yaml.Styl
 			}
 		}
 	}
-	if end, ok := semanticEnd(len(r.source)); ok {
+	if end, ok, err := semanticEnd(len(r.source)); err != nil {
+		return 0, 0, err
+	} else if ok {
 		return end, 0, nil
 	}
 	return 0, 0, r.presentationError("raw_semantic_mismatch", ErrUnsupportedPresentation, SourceSpan{Start: at, End: len(r.source)})
 }
 
 func (r *yamlResolver) presentationError(code string, cause error, span SourceSpan) error {
-	if len(r.source) > 0 && span.Start == span.End {
-		if span.End < len(r.source) {
-			span.End++
-		} else if span.Start > 0 {
-			span.Start--
-		}
-	}
-	return yamlLocalPresentationError(code, cause, span)
+	return yamlLocalPresentationErrorForSource(code, cause, r.source, span)
 }
 
 func yamlSeparationByte(value byte) bool {
 	return value == ' ' || value == '\t' || value == '\r' || value == '\n'
 }
 
-func (r *yamlResolver) matchesNode(span SourceSpan, n *yaml.Node, style yaml.Style) bool {
+func (r *yamlResolver) matchesNode(span SourceSpan, n *yaml.Node, style yaml.Style) (bool, error) {
 	if r.ctx.Err() != nil {
-		return false
+		return false, r.ctx.Err()
 	}
-	var doc yaml.Node
 	// Never append to a subslice of source: a scalar followed by ':' (mapping
 	// key) would otherwise corrupt the original presentation while proving it.
 	token := append([]byte(nil), r.source[span.Start:span.End]...)
 	probe := append([]byte("v: "), token...)
 	probe = append(probe, '\n')
-	if yaml.Unmarshal(probe, &doc) != nil || len(doc.Content) != 1 {
-		return false
+	doc, err := decodeGuardedYAMLNodeContext(r.ctx, probe)
+	if err != nil {
+		if errors.Is(err, bundle.ErrYAMLResourceLimit) || errors.Is(err, bundle.ErrInvalidYAMLGraph) {
+			return false, mutationYAMLGraphErrorForSource(err, r.source, span)
+		}
+		return false, r.ctx.Err()
+	}
+	if len(doc.Content) != 1 {
+		return false, nil
 	}
 	root := doc.Content[0]
-	return r.ctx.Err() == nil && root.Kind == yaml.MappingNode && len(root.Content) == 2 && root.Content[1].Kind == yaml.ScalarNode && root.Content[1].Tag == n.Tag && root.Content[1].Value == n.Value && root.Content[1].Style == style
+	return r.ctx.Err() == nil && root.Kind == yaml.MappingNode && len(root.Content) == 2 && root.Content[1].Kind == yaml.ScalarNode && root.Content[1].Tag == n.Tag && root.Content[1].Value == n.Value && root.Content[1].Style == style, r.ctx.Err()
 }
 
-func yamlScalarToken(value string, preferred yaml.Style) string {
+func yamlScalarTokenContext(ctx context.Context, value string, preferred yaml.Style) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	if preferred&yaml.SingleQuotedStyle != 0 {
-		return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+		return "'" + strings.ReplaceAll(value, "'", "''") + "'", nil
 	}
 	if preferred&yaml.DoubleQuotedStyle != 0 {
-		return strconv.Quote(value)
+		return strconv.Quote(value), nil
 	}
-	if yamlPlainSafe(value) {
-		return value
+	safe, err := yamlPlainSafeContext(ctx, value)
+	if err != nil {
+		return "", err
 	}
-	return strconv.Quote(value)
+	if safe {
+		return value, nil
+	}
+	return strconv.Quote(value), nil
 }
 
-func yamlPlainSafe(value string) bool {
-	if value == "" || strings.TrimSpace(value) != value || strings.ContainsAny(value, "\r\n\t") {
-		return false
+func yamlPlainSafeContext(ctx context.Context, value string) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
 	}
-	var doc yaml.Node
-	if yaml.Unmarshal([]byte("v: "+value+"\n"), &doc) != nil || len(doc.Content) != 1 {
-		return false
+	if value == "" || strings.TrimSpace(value) != value || strings.ContainsAny(value, "\r\n\t") {
+		return false, nil
+	}
+	probe, ok := boundedSyntheticYAMLScalarProbe("v: ", value, "\n")
+	if !ok {
+		return false, nil
+	}
+	doc, err := decodeGuardedYAMLNodeContext(ctx, probe)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return false, err
+		}
+		// The probe chooses a presentation for caller-owned string content. YAML
+		// syntax, alias, or collection-looking bytes mean only that plain style is
+		// unsafe; quoting remains an exact, lossless fallback.
+		return false, nil
+	}
+	if len(doc.Content) != 1 {
+		return false, nil
 	}
 	r := doc.Content[0]
-	return r.Kind == yaml.MappingNode && len(r.Content) == 2 && r.Content[1].Kind == yaml.ScalarNode && r.Content[1].Tag == "!!str" && r.Content[1].Value == value
+	return r.Kind == yaml.MappingNode && len(r.Content) == 2 && r.Content[1].Kind == yaml.ScalarNode && r.Content[1].Tag == "!!str" && r.Content[1].Value == value, ctx.Err()
+}
+
+const maxSyntheticYAMLScalarProbeBytes = 4096
+
+// boundedSyntheticYAMLScalarProbe bounds parser work used only to choose a
+// presentation. Overflow is not a content error: callers simply select the
+// always-safe quoted representation without reparsing the large scalar.
+func boundedSyntheticYAMLScalarProbe(prefix, value, suffix string) ([]byte, bool) {
+	if len(prefix) > maxSyntheticYAMLScalarProbeBytes ||
+		len(suffix) > maxSyntheticYAMLScalarProbeBytes-len(prefix) ||
+		len(value) > maxSyntheticYAMLScalarProbeBytes-len(prefix)-len(suffix) {
+		return nil, false
+	}
+	probe := make([]byte, 0, len(prefix)+len(value)+len(suffix))
+	probe = append(probe, prefix...)
+	probe = append(probe, value...)
+	probe = append(probe, suffix...)
+	return probe, true
 }

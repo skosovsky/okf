@@ -1,0 +1,9 @@
+description: "Pinned SPEC Appendix A v0.2 families are strict-clean"
+run:
+  path: "."
+  strict: true
+  check_links: true
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

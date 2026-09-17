@@ -221,6 +221,9 @@ func cloneDigestsContext(ctx context.Context, in map[string]string) (map[string]
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	if in == nil {
+		return nil, nil
+	}
 	out := make(map[string]string, len(in))
 	for p, d := range in {
 		if err := ctx.Err(); err != nil {
@@ -288,10 +291,15 @@ func (m Manifest) WithDigestsContext(ctx context.Context, digests map[string]str
 	}
 	digestSize := m.digestSize
 	out := Manifest{algorithm: m.algorithm, digestSize: digestSize, digests: make(map[string]string, len(digests))}
-	for path, digest := range digests {
+	paths, err := sortedManifestMapPathsContext(ctx, digests)
+	if err != nil {
+		return Manifest{}, err
+	}
+	for _, path := range paths {
 		if err := ctx.Err(); err != nil {
 			return Manifest{}, err
 		}
+		digest := digests[path]
 		if err := validateManifestPath(path); err != nil {
 			return Manifest{}, err
 		}
@@ -324,13 +332,33 @@ func (m Manifest) PathsContext(ctx context.Context) ([]string, error) {
 	if err != nil || m.digests == nil || m.digestSize <= 0 {
 		return nil, fmt.Errorf("%w: invalid manifest digest specification", ErrInvalidManifest)
 	}
-	paths := make([]string, 0, len(m.digests))
-	for path, digest := range m.digests {
+	paths, err := sortedManifestMapPathsContext(ctx, m.digests)
+	if err != nil {
+		return nil, err
+	}
+	for _, path := range paths {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
+		digest := m.digests[path]
 		if validateManifestPath(path) != nil || !qualifiedDigestValid(digest, name, m.digestSize) {
 			return nil, fmt.Errorf("%w: invalid digest for %q", ErrInvalidManifest, path)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return paths, nil
+}
+
+func sortedManifestMapPathsContext(ctx context.Context, values map[string]string) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	paths := make([]string, 0, len(values))
+	for path := range values {
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		paths = append(paths, path)
 	}
@@ -340,6 +368,7 @@ func (m Manifest) PathsContext(ctx context.Context) ([]string, error) {
 	}
 	return paths, nil
 }
+
 func (m Manifest) Put(path string, content []byte) (Manifest, error) {
 	return m.PutContext(context.Background(), path, content)
 }

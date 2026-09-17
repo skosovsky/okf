@@ -1,0 +1,9 @@
+description: "Unknown frontmatter extension remains inert and lossless without changing base conformance"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+expected:
+  exit_code: 0
+  diagnostics: []

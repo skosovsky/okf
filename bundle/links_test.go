@@ -1,6 +1,9 @@
 package bundle
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestClassifyLink(t *testing.T) {
 	t.Parallel()
@@ -315,5 +318,46 @@ func TestExtractCitationsRawEntryWithoutLink(t *testing.T) {
 	}
 	if citations[0].Text != "" || citations[0].Target != "" {
 		t.Fatalf("citation link fields = %q, %q; want empty", citations[0].Text, citations[0].Target)
+	}
+}
+
+func TestMarkdownOwnershipHandlesVariableCodeDelimitersAndEscapes(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	body := "one `x [one](one.md)` [live](live.md)\r\n" +
+		"two ``x ` [two](two.md)`` [live2](live2.md)\r\n" +
+		"escaped \\` [escaped](escaped.md)\r\n" +
+		"    [indented](indented.md)\r\n" +
+		"````lang\r\n[three](three.md)\r\n```\r\n[four](four.md)\r\n````\r\n" +
+		"\\[escaped-link](not-a-link.md)\r\n"
+
+	// Act.
+	links := ExtractLinks(body)
+
+	// Assert.
+	var targets []string
+	for _, link := range links {
+		targets = append(targets, link.Target)
+	}
+	want := []string{"live.md", "live2.md", "escaped.md", "indented.md"}
+	if !reflect.DeepEqual(targets, want) {
+		t.Fatalf("ExtractLinks() targets = %#v, want %#v", targets, want)
+	}
+}
+
+func TestExtractCitationsUsesNeutralMarkdownOwnership(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	body := "````md\r\n# Citations\r\n- https://inside.example\r\n````\r\n" +
+		"# Citations\r\n`- https://inline.example`\r\n- https://outside.example\r\n"
+
+	// Act.
+	citations := ExtractCitations(body)
+
+	// Assert.
+	if len(citations) != 1 || citations[0].Target != "https://outside.example" {
+		t.Fatalf("ExtractCitations() = %#v", citations)
 	}
 }

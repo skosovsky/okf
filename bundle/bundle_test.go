@@ -143,7 +143,7 @@ func TestReservedFilesAreRecognizedNotConcepts(t *testing.T) {
 	}
 }
 
-func TestOKFVersionReadFromRootIndex(t *testing.T) {
+func TestVersionDeclarationStateReadFromRootIndex(t *testing.T) {
 	t.Parallel()
 
 	// Arrange.
@@ -156,14 +156,11 @@ func TestOKFVersionReadFromRootIndex(t *testing.T) {
 	}
 
 	// Act.
-	version, ok := bundle.OKFVersion()
+	version := bundle.VersionDeclarationState()
 
 	// Assert.
-	if !ok {
-		t.Fatal("OKFVersion() ok = false, want true")
-	}
-	if version != "0.1" {
-		t.Fatalf("OKFVersion() = %q, want 0.1", version)
+	if !version.Present || !version.Valid || version.Value != "0.1" {
+		t.Fatalf("VersionDeclarationState() = %#v, want valid 0.1", version)
 	}
 }
 

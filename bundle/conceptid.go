@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -14,19 +15,41 @@ type ConceptID struct {
 
 // NewConceptID creates a concept identifier from bundle-relative path segments.
 func NewConceptID(segments []string) (ConceptID, error) {
+	return NewConceptIDContext(context.Background(), segments)
+}
+
+// NewConceptIDContext creates a concept identifier while honoring cancellation
+// during validation and defensive ownership of attacker-sized segments.
+func NewConceptIDContext(ctx context.Context, segments []string) (ConceptID, error) {
+	if err := ctx.Err(); err != nil {
+		return ConceptID{}, err
+	}
 	if len(segments) == 0 {
 		return ConceptID{}, fmt.Errorf("%w: concept id must have at least one segment", ErrInvalidConceptID)
 	}
 
-	copied := make([]string, len(segments))
-	for i, segment := range segments {
-		if err := ValidateConceptSegment(segment); err != nil {
+	var copied []string
+	for _, segment := range segments {
+		if err := ctx.Err(); err != nil {
 			return ConceptID{}, err
 		}
-		copied[i] = segment
+		if err := validateConceptSegmentContext(ctx, segment); err != nil {
+			return ConceptID{}, err
+		}
+		owned, err := stringFromStringContext(ctx, segment)
+		if err != nil {
+			return ConceptID{}, err
+		}
+		copied = append(copied, owned)
 	}
-
+	if err := newConceptIDFinalContext(ctx); err != nil {
+		return ConceptID{}, err
+	}
 	return ConceptID{segments: copied}, nil
+}
+
+func newConceptIDFinalContext(ctx context.Context) error {
+	return ctx.Err()
 }
 
 // ParseConceptID parses a slash-separated concept identifier.
@@ -49,7 +72,31 @@ func ParseConceptID(raw string) (ConceptID, error) {
 
 // Segments returns a copy of the concept id segments.
 func (id ConceptID) Segments() []string {
-	return append([]string(nil), id.segments...)
+	segments, _ := id.SegmentsContext(context.Background())
+	return segments
+}
+
+// SegmentsContext returns an owned segment copy while honoring cancellation.
+func (id ConceptID) SegmentsContext(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	var segments []string
+	for _, segment := range id.segments {
+		owned, err := stringFromStringContext(ctx, segment)
+		if err != nil {
+			return nil, err
+		}
+		segments = append(segments, owned)
+	}
+	if err := conceptIDSegmentsFinalContext(ctx); err != nil {
+		return nil, err
+	}
+	return segments, nil
+}
+
+func conceptIDSegmentsFinalContext(ctx context.Context) error {
+	return ctx.Err()
 }
 
 // Name returns the final concept id segment.
@@ -71,7 +118,14 @@ func (id ConceptID) Parent() (ConceptID, bool) {
 
 // String returns the slash-separated concept id.
 func (id ConceptID) String() string {
-	return strings.Join(id.segments, "/")
+	value, _ := id.StringContext(context.Background())
+	return value
+}
+
+// StringContext returns the slash-separated identity with cancellation across
+// attacker-sized segments.
+func (id ConceptID) StringContext(ctx context.Context) (string, error) {
+	return conceptIDStringContext(ctx, id)
 }
 
 // ValidateConceptID validates a constructed concept identifier for use in a

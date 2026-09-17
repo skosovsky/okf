@@ -1,4 +1,4 @@
-// Package bundle implements the Open Knowledge Format (OKF) v0.1 data model,
+// Package bundle implements the Open Knowledge Format (OKF) v0.2 data model,
 // document parsing, bundle traversal, semantic relation extraction, indexes,
 // and log tooling.
 //
@@ -8,4 +8,9 @@
 package bundle
 
 // OKFVersion is the OKF specification version implemented by this package.
-const OKFVersion = "0.1"
+const (
+	// OKFVersion is the current and default OKF specification version.
+	OKFVersion = "0.2"
+	// LegacyOKFVersion is the legacy version accepted by the v0.2 read layer.
+	LegacyOKFVersion = "0.1"
+)

@@ -1,0 +1,129 @@
+clauses:
+  "1":
+    tests:
+      - package: .
+        name: TestV02DurabilityAttesterUsesOnlyDeclaredReceiptEvidence
+    corpus_keys: [appendix_a_v02, durability_v02]
+  "2":
+    tests:
+      - package: bundle
+        name: TestParseDocumentRoundtripPreservesFrontmatterAndBody
+    corpus_keys: [minimal_v02]
+  "3":
+    tests:
+      - package: .
+        name: TestV02LoadAbortsOnEveryPerFileIOFailure
+      - package: bundle
+        name: TestBundleCapturesAssetsAndResolvesPathValues
+    corpus_keys: [appendix_a_v02, durability_v02]
+  "4":
+    tests:
+      - package: .
+        name: TestV02MinimalAndUnknownExtensionEvidenceAreDisjoint
+      - package: bundle
+        name: TestDocumentValidateConformanceRequiresOnlyType
+      - package: bundle
+        name: TestCoreScalarAndTagStatesDoNotDisplayCoerceYAMLTags
+      - package: bundle
+        name: TestParseFrontmatterPreservesUnrelatedDuplicateExtensionKeysLosslessly
+      - package: bundle
+        name: TestSemanticValueStateFailsClosedOnDuplicateStandardKeys
+      - package: mutation
+        name: TestRenameFragment_PreservesDuplicateUnrelatedKeys
+      - package: mutation
+        name: TestV02Operations_DuplicateTouchedKeysFailClosedWithoutStage
+    corpus_keys: [minimal_v02, adversarial_optional_shapes, forward_compatible_unknown_extension]
+  "5":
+    tests:
+      - package: .
+        name: TestV02AdversarialTrustSignalsAndMarkdownOwnership
+      - package: .
+        name: TestV02LifecycleIgnoresBodySelfPromotionAndSelfDemotion
+      - package: .
+        name: TestV02StalenessRequiresExplicitReferenceDateAcrossContractSurfaces
+      - package: bundle
+        name: TestFrontmatterV02BareVerificationAndTrustTiers
+      - package: validator
+        name: TestStrictV02DuplicateNestedStandardKeysHaveExactPaths
+      - package: validator
+        name: TestStrictV02DuplicateStandardFamiliesFailClosedWithoutLegacyFallback
+    corpus_keys: [verified_bare, verified_list, adversarial_untrusted_signals, strict_footnote_ownership, lifecycle_structured_state_overrides_body_promotion, lifecycle_body_claims_are_inert]
+  "6":
+    tests:
+      - package: bundle
+        name: TestBundleCapturesAssetsAndResolvesPathValues
+      - package: bundle
+        name: TestDocumentAttributionsKeyedAndCodeAware
+    corpus_keys: [file_backed_computation, narrative_computation_links]
+  "7":
+    tests:
+      - package: validator
+        name: TestStrictV02ActorValidationUsesSharedDomainPredicate
+    corpus_keys: [human_authored_unverified, appendix_a_v02]
+  "8":
+    tests:
+      - package: validator
+        name: TestValidateReservedFileStructureDetails
+    corpus_keys: [minimal_v02]
+  "9":
+    tests:
+      - package: validator
+        name: TestValidateReservedFileStructureDetails
+    corpus_keys: [minimal_v02]
+  "10":
+    tests:
+      - package: bundle
+        name: TestAttestedComputationStateIsExactTypeAndPayloadOwned
+      - package: internal/markdownowner
+        name: TestComputationSectionsRetainUnclosedAndMultipleFenceSpans
+    corpus_keys: [inline_attested_computation, file_backed_computation, appendix_a_v02]
+  "11":
+    tests:
+      - package: validator
+        name: TestBaseDiagnosticsExposeCodesPathsAndSpecRefs
+      - package: validator
+        name: TestStrictSpecRefExactMatrix
+      - package: validator
+        name: TestDuplicateTypeAndReservedVersionRemainBaseDiagnostics
+    corpus_keys: [strict_malformed_families]
+  "12":
+    tests:
+      - package: bundle
+        name: TestVersionResolutionUnsupportedCanonicalMatrix
+      - package: validator
+        name: TestVersionSelectorDeclarationMatrix
+      - package: validator
+        name: TestReportPreservesVersionDeclarationObservationSeparatelyFromTraversalResolution
+      - package: validator
+        name: TestDuplicateTypeAndReservedVersionRemainBaseDiagnostics
+    corpus_keys: [v01_declared, unknown_future, malformed_root_version_syntax, malformed_root_version_type]
+  "13":
+    tests:
+      - package: .
+        name: TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes
+      - package: validator
+        name: TestStrictLegacyCitationsFallbackIsVersionAndPresenceAware
+      - package: bundle
+        name: TestDocumentDuplicateSourcesSuppressLegacyCitationsFallback
+    corpus_keys: [v01_declared, v01_undeclared, mixed_legacy_v02, unknown_future]
+  "Appendix A":
+    tests:
+      - package: .
+        name: TestV02AppendixDerivationIsPinned
+      - package: graph
+        name: TestCanonicalAppendixAFrozenSemanticGolden
+    corpus_keys: [appendix_a_v02]
+  "toolkit extension":
+    tests:
+      - package: bundle
+        name: TestDeclaredSemanticLinksRetainValidUnresolvedTargets
+      - package: graph
+        name: TestToolkitExtensionRelationPolicy
+    corpus_keys: [canonical_synthetic_v02]
+  "toolkit graph":
+    tests:
+      - package: graph
+        name: TestToolkitV02ExecutableContract
+      - package: graph
+        name: TestToolkitJSONLDAndNTriplesHaveSemanticParity
+    corpus_keys: [appendix_a_v02]

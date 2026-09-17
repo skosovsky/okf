@@ -3,6 +3,7 @@ package fs
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func TestFilesystemCaseCapabilityGuardsPublicMutations(t *testing.T) {
 		t.Helper()
 		root := t.TempDir()
 		writeTestFile(t, root, "a.md", adversarialDocument("original"))
-		s, err := Open(root, Config{})
+		s, err := openObserved(root, Config{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -135,25 +136,34 @@ func TestForcedFilesystemAliasesRejectStageAndRecovery(t *testing.T) {
 		t.Fatalf("rejected stage left payload directory: %v", statErr)
 	}
 
-	// Forge a complete v5 transaction after capturing the current bytes. The
-	// recovery reader must reject aliases before opening either payload, leaving
-	// both the journal and the visible source untouched.
-	raw, err := encodeJournalFixture(t, root, next, receipt)
+	// Publish a non-aliasing transaction through the live proof protocol, then
+	// mutate the installed journal inode into an aliasing manifest. Recovery
+	// must reject aliases before opening either payload.
+	liveNext, err := newSnapshot(context.Background(), map[string][]byte{"c.md": []byte(adversarialDocument("upper")), "b.md": []byte(adversarialDocument("B"))})
 	if err != nil {
 		t.Fatal(err)
 	}
-	jp, err := journalPath(receipt.RequestDigest)
+	liveReceipt := testJournalReceipt(base.Revision(), liveNext.Revision(), "forced-alias-recovery", "")
+	jp, raw := adversarialLiveDurableJournal(t, root, s, liveNext, liveReceipt)
+	var durable journal
+	if err := json.Unmarshal(raw, &durable); err != nil {
+		t.Fatal(err)
+	}
+	for i := range durable.Files {
+		if durable.Files[i].Path == "c.md" {
+			durable.Files[i].Path = "A.md"
+		}
+	}
+	mutated, err := json.Marshal(durable)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.writePrivateDurableAt(jp, raw); err != nil {
-		t.Fatal(err)
-	}
+	adversarialRewriteSameInode(t, filepath.Join(root, filepath.FromSlash(jp)), mutated)
 	before, err := os.ReadFile(filepath.Join(root, "a.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = s.recoverContext(context.Background())
+	err = s.recoverForTest(context.Background())
 	if !errors.Is(err, store.ErrStorageCorrupt) {
 		t.Fatalf("aliased recovery error = %v, want storage corruption", err)
 	}
@@ -169,8 +179,11 @@ func TestForcedFilesystemAliasesRejectStageAndRecovery(t *testing.T) {
 func TestCaseProbeIsPrivateAndCleanAcrossReopen(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "a.md", adversarialDocument("visible"))
-	s, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Snapshot(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	visible, readErr := readVisibleRoot(context.Background(), s.rootFD)
@@ -183,11 +196,14 @@ func TestCaseProbeIsPrivateAndCleanAcrossReopen(t *testing.T) {
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := Open(root, Config{})
+	reopened, err := openObserved(root, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = reopened.Close() })
+	if _, err := reopened.Snapshot(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	for _, name := range []string{"case-probe-a", "CASE-PROBE-A"} {
 		if _, statErr := os.Stat(filepath.Join(root, internalDirectory, "capabilities", name)); !errors.Is(statErr, os.ErrNotExist) {
 			t.Fatalf("case probe leaked after reopen: %s: %v", name, statErr)
@@ -204,9 +220,12 @@ func TestCaseProbeSymlinkCannotTraverseOutsideRoot(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(root, internalDirectory, "capabilities")); err != nil {
 		t.Fatal(err)
 	}
-	_, err := Open(root, Config{})
+	s, err := openObserved(root, Config{})
+	if s != nil {
+		_ = s.Close()
+	}
 	if err == nil {
-		t.Fatal("Open accepted symlinked capability directory")
+		t.Fatal("Snapshot accepted symlinked capability directory")
 	}
 	if _, statErr := os.Stat(filepath.Join(outside, "case-probe-a")); !errors.Is(statErr, os.ErrNotExist) {
 		t.Fatalf("case probe traversed symlink outside root: %v", statErr)
@@ -237,14 +256,14 @@ func TestCapabilityProbeFaultHooksRecoverAndClean(t *testing.T) {
 					cfg.Fault = inject
 				}
 
-				failed, err := Open(root, cfg)
+				failed, err := openObserved(root, cfg)
 				if failed != nil {
 					_ = failed.Close()
 				}
 				if err == nil {
-					t.Fatal("Open did not surface injected capability fault")
+					t.Fatal("Snapshot did not surface injected capability fault")
 				}
-				reopened, reopenErr := Open(root, Config{})
+				reopened, reopenErr := openObserved(root, Config{})
 				if reopenErr != nil {
 					t.Fatalf("reopen after capability fault: %v", reopenErr)
 				}
@@ -262,29 +281,63 @@ func TestCapabilityProbeFaultHooksRecoverAndClean(t *testing.T) {
 func TestRecoveryRejectsAliasedBaseToResultBeforePayloadRead(t *testing.T) {
 	root, s := adversarialStore(t, Config{})
 	t.Cleanup(func() { _ = s.Close() })
-	s.caseAliases = true // private seam: the actual volume capability is irrelevant.
 	base := adversarialSnapshot(t, s)
-	next, err := newSnapshot(context.Background(), map[string][]byte{"A.md": []byte(adversarialDocument("moved")), "b.md": []byte(adversarialDocument("B"))})
+	next, err := newSnapshot(context.Background(), map[string][]byte{"c.md": []byte(adversarialDocument("moved")), "b.md": []byte(adversarialDocument("B"))})
 	if err != nil {
 		t.Fatal(err)
 	}
 	receipt := testJournalReceipt(base.Revision(), next.Revision(), "recovery-case-transition", "")
-	raw, err := encodeJournalFixture(t, root, next, receipt)
-	if err != nil {
-		t.Fatal(err)
-	}
 	jp, err := journalPath(receipt.RequestDigest)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.writePrivateDurableAt(jp, raw); err != nil {
+	crash := errors.New("retain live alias journal")
+	s.config.PostFault = func(step Step) error {
+		if step == StepJournalDirectorySync {
+			return crash
+		}
+		return nil
+	}
+	if publishErr := s.publish(context.Background(), next, receipt); !errors.Is(publishErr, crash) {
+		t.Fatalf("live durable evidence=%v", publishErr)
+	}
+	s.config.PostFault = nil
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(jp)))
+	if err != nil {
 		t.Fatal(err)
 	}
+	j, err := decodeJournal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range j.Files {
+		if j.Files[i].Path == "c.md" {
+			j.Files[i].Path = "A.md"
+		}
+	}
+	mutated, err := json.Marshal(j)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(filepath.Join(root, filepath.FromSlash(jp)), os.O_WRONLY|os.O_TRUNC, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Write(mutated); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	s.caseAliases = true // private seam: model the recovery volume after durable capture.
 	before, err := os.ReadFile(filepath.Join(root, "a.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.recoverContext(context.Background()); !errors.Is(err, store.ErrStorageCorrupt) {
+	if _, err := s.Snapshot(context.Background()); !errors.Is(err, store.ErrStorageCorrupt) {
 		t.Fatalf("recover error=%v want corruption", err)
 	}
 	after, err := os.ReadFile(filepath.Join(root, "a.md"))

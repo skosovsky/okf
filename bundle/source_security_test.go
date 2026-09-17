@@ -29,6 +29,20 @@ type pathOnlySource struct{ paths []string }
 func (s pathOnlySource) Paths(context.Context) ([]string, error) {
 	return append([]string(nil), s.paths...), nil
 }
+
+type reservedPathReadSpy struct {
+	paths     []string
+	readCalls int
+}
+
+func (s *reservedPathReadSpy) Paths(context.Context) ([]string, error) {
+	return append([]string(nil), s.paths...), nil
+}
+
+func (s *reservedPathReadSpy) ReadFile(context.Context, string) ([]byte, error) {
+	s.readCalls++
+	return []byte("must not be read"), nil
+}
 func (pathOnlySource) ReadFile(context.Context, string) ([]byte, error) {
 	return []byte("asset"), nil
 }
@@ -62,7 +76,71 @@ func TestLoadRejectsInvalidGenericSourcePaths(t *testing.T) {
 	}
 }
 
-func TestValidateRevisionPath_ReservesOnlyRootMetadataDirectory(t *testing.T) {
+func TestLoadRejectsReservedIndexTransactionPathsBeforeAnyRead(t *testing.T) {
+	t.Parallel()
+
+	for _, reserved := range []string{
+		".okf-index-txn-stage-v1-0000-deadbeef",
+		"nested/.OKF-INDEX-TXN-restore-v1-0000-deadbeef",
+		"nested/.okf-index-txn-private/file.bin",
+	} {
+		reserved := reserved
+		t.Run(reserved, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			source := &reservedPathReadSpy{
+				paths: []string{"a.md", reserved},
+			}
+
+			// Act.
+			loaded, err := Load(context.Background(), source)
+
+			// Assert.
+			if loaded != nil || err == nil {
+				t.Fatalf("Load() = %#v, %v; want deterministic reserved-path rejection", loaded, err)
+			}
+			if source.readCalls != 0 {
+				t.Fatalf("ReadFile calls = %d, want zero", source.readCalls)
+			}
+		})
+	}
+}
+
+func TestFilesystemSourcesRejectReservedIndexTransactionEntries(t *testing.T) {
+	t.Parallel()
+
+	for _, reserved := range []string{
+		".okf-index-txn-stage-v1-0000-deadbeef",
+		"nested/.OKF-INDEX-TXN-private",
+	} {
+		reserved := reserved
+		t.Run(reserved, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			root := t.TempDir()
+			writeSourceFile(t, root, "a.md", "ordinary")
+			writeSourceFile(t, root, reserved, "reserved")
+			source := &FileSystemSource{Root: root}
+			t.Cleanup(func() { _ = source.Close() })
+
+			// Act.
+			paths, err := source.Paths(context.Background())
+			loaded, loadErr := LoadBundle(root)
+
+			// Assert.
+			if paths != nil || err == nil {
+				t.Fatalf("Paths() = %#v, %v; want reserved-path rejection", paths, err)
+			}
+			if loaded != nil || loadErr == nil {
+				t.Fatalf("LoadBundle() = %#v, %v; want zero-capture rejection", loaded, loadErr)
+			}
+		})
+	}
+}
+
+func TestValidateRevisionPathReservesInternalNamespacesExactly(t *testing.T) {
 	// Arrange.
 	tests := []struct {
 		path  string
@@ -72,6 +150,11 @@ func TestValidateRevisionPath_ReservesOnlyRootMetadataDirectory(t *testing.T) {
 		{path: ".okf/x"},
 		{path: ".okf-name", valid: true},
 		{path: "nested/.okf/file", valid: true},
+		{path: ".okf-index-txn-stage-v1-0000-deadbeef"},
+		{path: "nested/.OKF-INDEX-TXN-foreign"},
+		{path: "nested/.okf-index-tx", valid: true},
+		{path: "nested/.okf-index-txn", valid: true},
+		{path: "nested/.okf-index-txnordinary", valid: true},
 	}
 
 	for _, tt := range tests {

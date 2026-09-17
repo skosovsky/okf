@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/apply_concept_patch.input.schema.json",
+  "$defs": {
+    "usage_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": {"type": "string", "format": "date"},
+        "to": {"type": "string", "format": "date"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource"],
+      "properties": {
+        "id": {"type": "string", "maxLength": 4096},
+        "resource": {"type": "string", "maxLength": 4096},
+        "title": {"type": "string", "maxLength": 4096},
+        "author": {"type": "string", "maxLength": 4096},
+        "usage_count": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
+        "last_modified": {"type": "string", "format": "date"},
+        "usage_window": {"$ref": "#/$defs/usage_window"}
+      }
+    },
+    "computation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "runtime", "parameters", "executor", "attester"],
+      "properties": {
+        "mode": {"enum": ["inline", "file"]},
+        "runtime": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "parameters": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "type", "required"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "maxLength": 4096},
+              "type": {"type": "string", "minLength": 1, "maxLength": 4096},
+              "required": {"type": "boolean"}
+            }
+          }
+        },
+        "computation_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "inline_computation": {"type": "string", "maxLength": 1048576},
+        "inline_language": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "executor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resource", "receipt"],
+          "properties": {
+            "resource": {"type": "string", "minLength": 1, "maxLength": 4096},
+            "receipt": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 4096}}
+          }
+        },
+        "attester": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["resource"],
+          "properties": {"resource": {"type": "string", "minLength": 1, "maxLength": 4096}}
+        }
+      },
+      "oneOf": [
+        {"properties": {"mode": {"const": "file"}}, "required": ["computation_path"], "not": {"anyOf": [{"required": ["inline_computation"]}, {"required": ["inline_language"]}]}},
+        {"properties": {"mode": {"const": "inline"}}, "required": ["inline_computation"], "not": {"required": ["computation_path"]}}
+      ]
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_path", "actor", "operations", "expected_revision", "expected_plan_digest"],
+  "properties": {
+    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "actor": {"type": "string", "minLength": 1, "maxLength": 256},
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {"enum": ["set_generated", "ensure_verification", "remove_verification", "put_source", "remove_source", "set_usage_window", "set_lifecycle", "put_attested_computation", "set_bundle_version"]},
+          "concept_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "generated": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["by"],
+            "properties": {
+              "by": {"type": "string", "maxLength": 256},
+              "at": {"type": "string", "format": "date-time"}
+            }
+          },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["by", "at"],
+            "properties": {
+              "by": {"type": "string", "maxLength": 256},
+              "at": {"type": "string", "format": "date-time"}
+            }
+          },
+          "source": {"$ref": "#/$defs/source"},
+          "source_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "usage_window": {
+            "anyOf": [{"$ref": "#/$defs/usage_window"}, {"type": "null"}]
+          },
+          "lifecycle": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "stale_after"],
+            "properties": {
+              "status": {"enum": ["draft", "stable", "deprecated", null]},
+              "stale_after": {"type": ["string", "null"], "format": "date"}
+            }
+          },
+          "attested_computation": {"$ref": "#/$defs/computation"},
+          "version": {"enum": ["0.1", "0.2"]}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"kind": {"const": "set_bundle_version"}}},
+            "then": {
+              "required": ["version"],
+              "not": {"anyOf": [
+                {"required": ["concept_id"]}, {"required": ["generated"]}, {"required": ["verification"]},
+                {"required": ["source"]}, {"required": ["source_id"]}, {"required": ["usage_window"]},
+                {"required": ["lifecycle"]}, {"required": ["attested_computation"]}
+              ]}
+            },
+            "else": {"required": ["concept_id"]}
+          },
+          {
+            "if": {"properties": {"kind": {"const": "set_generated"}}},
+            "then": {
+              "required": ["generated"],
+              "not": {"anyOf": [
+                {"required": ["verification"]}, {"required": ["source"]}, {"required": ["source_id"]},
+                {"required": ["usage_window"]}, {"required": ["lifecycle"]},
+                {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]}
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"enum": ["ensure_verification", "remove_verification"]}}},
+            "then": {
+              "required": ["verification"],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["source"]}, {"required": ["source_id"]},
+                {"required": ["usage_window"]}, {"required": ["lifecycle"]},
+                {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]}
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"const": "put_source"}}},
+            "then": {
+              "required": ["source"],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["verification"]}, {"required": ["source_id"]},
+                {"required": ["usage_window"]}, {"required": ["lifecycle"]},
+                {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]}
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"const": "remove_source"}}},
+            "then": {
+              "oneOf": [
+                {
+                  "required": ["source_id"],
+                  "not": {"required": ["source"]}
+                },
+                {
+                  "required": ["source"],
+                  "not": {"required": ["source_id"]},
+                  "properties": {
+                    "source": {
+                      "allOf": [
+                        {"$ref": "#/$defs/source"},
+                        {"not": {"required": ["id"]}}
+                      ]
+                    }
+                  }
+                }
+              ],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["verification"]}, {"required": ["usage_window"]},
+                {"required": ["lifecycle"]}, {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]}
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"const": "set_usage_window"}}},
+            "then": {
+              "required": ["usage_window"],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["verification"]},
+                {"required": ["lifecycle"]}, {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]},
+              "oneOf": [
+                {
+                  "not": {"anyOf": [
+                    {"required": ["source_id"]}, {"required": ["source"]}
+                  ]}
+                },
+                {
+                  "required": ["source_id"],
+                  "not": {"required": ["source"]}
+                },
+                {
+                  "required": ["source"],
+                  "not": {"required": ["source_id"]},
+                  "properties": {
+                    "source": {
+                      "allOf": [
+                        {"$ref": "#/$defs/source"},
+                        {"not": {"required": ["id"]}}
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"const": "set_lifecycle"}}},
+            "then": {
+              "required": ["lifecycle"],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["verification"]}, {"required": ["source"]},
+                {"required": ["source_id"]}, {"required": ["usage_window"]},
+                {"required": ["attested_computation"]}, {"required": ["version"]}
+              ]}
+            }
+          },
+          {
+            "if": {"properties": {"kind": {"const": "put_attested_computation"}}},
+            "then": {
+              "required": ["attested_computation"],
+              "not": {"anyOf": [
+                {"required": ["generated"]}, {"required": ["verification"]}, {"required": ["source"]},
+                {"required": ["source_id"]}, {"required": ["usage_window"]},
+                {"required": ["lifecycle"]}, {"required": ["version"]}
+              ]}
+            }
+          }
+        ]
+      }
+    },
+    "expected_revision": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "expected_plan_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

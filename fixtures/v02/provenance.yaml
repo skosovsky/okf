@@ -1,0 +1,199 @@
+policy: >
+  Repository-authored fixture actors, source metadata, finance claims, executor
+  instructions, and attester examples are synthetic inert test data. They are
+  not evidence, recommendations, production identities, or executable ABI.
+classification_vocabulary:
+  upstream-derived: content reproducible from a pinned upstream source and declared exact transforms
+  synthetic: repository-authored fixture content
+  synthetic-metadata: repository-authored fixture manifest, expectation, or derivation metadata
+  mixed: directory boundary containing files with more than one exact classification
+paths:
+  corpus.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored root corpus manifest and case registry metadata
+  conformance-evidence.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored executable conformance evidence manifest
+  legacy-inventory.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored legacy occurrence inventory manifest
+  provenance.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored provenance inventory manifest
+  spec-lock.json:
+    classification: synthetic-metadata
+    reason: repository-authored pinned specification identity manifest
+  positive/appendix-a:
+    classification: mixed
+    reason: directory contains pinned Appendix-derived concepts, repository-authored fixture metadata, and synthetic inert materializations classified below
+  positive/appendix-a/metrics/income-statement.md:
+    classification: upstream-derived
+    reason: deterministically reproduced from the pinned Appendix source slice and exact transforms in derivation.json
+  positive/appendix-a/computations/revenue.md:
+    classification: upstream-derived
+    reason: deterministically reproduced from the pinned Appendix source slice and exact transforms in derivation.json
+  positive/appendix-a/computations/profit.md:
+    classification: upstream-derived
+    reason: deterministically reproduced from the pinned Appendix source slice and exact transforms in derivation.json
+  positive/appendix-a/index.md:
+    classification: synthetic
+    reason: repository-authored root index that materializes the Appendix tree
+  positive/appendix-a/references:
+    classification: synthetic
+    reason: repository-authored inert executor documentation and attester stubs
+  positive/appendix-a/derivation.json:
+    classification: synthetic-metadata
+    reason: repository-authored machine-executable derivation manifest
+  positive/appendix-a/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  positive/appendix-a/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  positive/minimal:
+    classification: synthetic
+    reason: repository-authored type-only contract fixture
+  positive/minimal/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  positive/minimal/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  positive/canonical:
+    classification: synthetic
+    reason: fabricated actors, provenance, lifecycle, and inert computation examples
+  positive/canonical/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  positive/canonical/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  positive/durability:
+    classification: synthetic
+    reason: fabricated finance concepts, actors, sources, executor instructions, and inert attester used only for byte-durability tests
+  compat/declared-v01:
+    classification: synthetic
+    reason: repository-authored declared v0.1 compatibility evidence
+  compat/declared-v01/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  compat/declared-v01/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  compat/undeclared-v01:
+    classification: synthetic
+    reason: repository-authored undeclared legacy fallback evidence
+  compat/undeclared-v01/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  compat/undeclared-v01/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  compat/mixed-provenance:
+    classification: synthetic
+    reason: repository-authored precedence and migration evidence
+  compat/mixed-provenance/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  compat/mixed-provenance/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  compat/future-version:
+    classification: synthetic
+    reason: repository-authored future-version preservation evidence
+  compat/future-version/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  compat/future-version/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  adversarial/optional-shapes:
+    classification: synthetic
+    reason: repository-authored malformed-family policy evidence
+  adversarial/optional-shapes/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  adversarial/optional-shapes/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  adversarial/trust-signals:
+    classification: synthetic
+    reason: fabricated author and usage signals proving that credibility is not verification
+  adversarial/inert-executor:
+    classification: synthetic
+    reason: repository-authored inert policy-bypass executor text and computation concepts used only as adversarial preservation evidence
+  adversarial/inert-executor/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  adversarial/inert-executor/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  adversarial/unknown-extension:
+    classification: synthetic
+    reason: repository-authored forward-compatible unknown-extension evidence
+  adversarial/unknown-extension/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  adversarial/unknown-extension/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  adversarial/lifecycle-self-promotion:
+    classification: synthetic
+    reason: repository-authored adversarial lifecycle evidence with conflicting inert body claims
+  adversarial/lifecycle-self-promotion/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  adversarial/lifecycle-self-promotion/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict:
+    classification: synthetic
+    reason: repository-authored exact strict diagnostic golden
+  strict/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict-footnote-integrity:
+    classification: synthetic
+    reason: repository-authored Markdown ownership and attribution-integrity golden
+  strict-footnote-integrity/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict-footnote-integrity/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict-boundaries:
+    classification: synthetic
+    reason: repository-authored exact scalar, actor, computation, selector, and fallback boundary goldens
+  strict-boundaries/families/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict-boundaries/families/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict-boundaries/selector-invalid/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict-boundaries/selector-invalid/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict-boundaries/declaration-malformed-string:
+    classification: synthetic
+    reason: repository-authored malformed string root-version boundary evidence
+  strict-boundaries/declaration-malformed-string/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict-boundaries/declaration-malformed-string/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data
+  strict-boundaries/declaration-malformed-type:
+    classification: synthetic
+    reason: repository-authored non-string root-version boundary evidence
+  strict-boundaries/declaration-malformed-type/manifest.yaml:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation manifest
+  strict-boundaries/declaration-malformed-type/expected.json:
+    classification: synthetic-metadata
+    reason: repository-authored fixture expectation data

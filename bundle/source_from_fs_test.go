@@ -70,6 +70,34 @@ func TestSourceFromFSRejectsUnsafeAndNonRegularReads(t *testing.T) {
 	}
 }
 
+func TestSourceFromFSRejectsReservedIndexTransactionNamespace(t *testing.T) {
+	t.Parallel()
+
+	for _, reserved := range []string{
+		".okf-index-txn-stage-v1-0000-deadbeef",
+		"nested/.OKF-INDEX-TXN-private/file.bin",
+	} {
+		reserved := reserved
+		t.Run(reserved, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			source := SourceFromFS(fstest.MapFS{
+				"a.md":   &fstest.MapFile{Data: []byte("ordinary")},
+				reserved: &fstest.MapFile{Data: []byte("reserved")},
+			})
+
+			// Act.
+			paths, err := source.Paths(context.Background())
+
+			// Assert.
+			if paths != nil || err == nil {
+				t.Fatalf("Paths() = %#v, %v; want reserved-path rejection", paths, err)
+			}
+		})
+	}
+}
+
 func TestSourceFromFSPropagatesCancellationAndFilesystemErrors(t *testing.T) {
 	// Arrange.
 	ctx, cancel := context.WithCancel(context.Background())

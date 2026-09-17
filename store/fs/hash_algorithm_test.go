@@ -25,10 +25,14 @@ func TestConfiguredHashAlgorithmPersistsAcrossCommitReplayAndRecovery(t *testing
 	// Arrange.
 	var faultOnce sync.Once
 	armed := false
+	journalRenamed := false
 	root, s := adversarialStore(t, Config{
 		HashAlgorithm: testHashAlgorithm{},
 		PostFault: func(step Step) error {
-			if armed && step == StepJournalDirectorySync {
+			if step == StepJournalRename {
+				journalRenamed = true
+			}
+			if armed && journalRenamed && step == StepJournalDirectorySync {
 				var err error
 				faultOnce.Do(func() { err = errors.New("interrupted after journal") })
 				return err
@@ -46,11 +50,12 @@ func TestConfiguredHashAlgorithmPersistsAcrossCommitReplayAndRecovery(t *testing
 	if err := s.Close(); err != nil {
 		t.Fatal(err)
 	}
-	_, mismatchErr := Open(root, Config{})
-	reopened, openErr := Open(root, Config{HashAlgorithm: testHashAlgorithm{}})
+	_, mismatchErr := openObserved(root, Config{})
+	reopened, openErr := openObserved(root, Config{HashAlgorithm: testHashAlgorithm{}})
 	if openErr != nil {
 		t.Fatal(openErr)
 	}
+	registerStoreCleanup(t, reopened)
 	replay, replayErr := reopened.Commit(context.Background(), change, options)
 
 	// Assert.
@@ -112,7 +117,7 @@ func TestUnusableHashAlgorithmIsRejectedAtOpen(t *testing.T) {
 	root := t.TempDir()
 
 	// Act.
-	_, err := Open(root, Config{HashAlgorithm: nilHashAlgorithm{}})
+	_, err := openObserved(root, Config{HashAlgorithm: nilHashAlgorithm{}})
 
 	// Assert.
 	if !errors.Is(err, store.ErrInvalidHashAlgorithm) {
@@ -146,7 +151,7 @@ func TestOpenCachesHashAlgorithmNameForJournalAndRecovery(t *testing.T) {
 	// Act.
 	receipt, commitErr := s.Commit(context.Background(), change, store.CommitOptions{IdempotencyKey: "cached-name"})
 	closeErr := s.Close()
-	reopened, openErr := Open(root, Config{HashAlgorithm: algorithm})
+	reopened, openErr := openObserved(root, Config{HashAlgorithm: algorithm})
 
 	// Assert.
 	if commitErr != nil || closeErr != nil {

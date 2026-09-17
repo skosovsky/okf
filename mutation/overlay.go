@@ -4,7 +4,6 @@ package mutation
 import (
 	"context"
 	"fmt"
-	"sort"
 	"sync"
 
 	"github.com/skosovsky/okf/bundle"
@@ -92,11 +91,6 @@ func NewOverlayContext(ctx context.Context, base bundle.Source) (*Overlay, error
 		return nil, err
 	}
 	return o, nil
-}
-
-func (o *Overlay) clone() *Overlay {
-	cloned, _ := o.cloneContext(context.Background())
-	return cloned
 }
 
 func (o *Overlay) cloneContext(ctx context.Context) (*Overlay, error) {
@@ -316,8 +310,15 @@ func (o *Overlay) visiblePath(ctx context.Context, name string) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
-	at := sort.SearchStrings(paths, name)
-	return at < len(paths) && paths[at] == name, nil
+	at, err := searchStringsContext(ctx, paths, name)
+	if err != nil {
+		return false, err
+	}
+	if at == len(paths) {
+		return false, nil
+	}
+	order, err := compareStringsContext(ctx, paths[at], name)
+	return order == 0, err
 }
 
 // Manifest materializes a defensive digest cache only at this public boundary.
@@ -408,8 +409,7 @@ func (o *Overlay) Paths(ctx context.Context) ([]string, error) {
 		}
 		out = append(out, p)
 	}
-	sort.Strings(out)
-	if err := ctx.Err(); err != nil {
+	if err := sortStringsContext(ctx, out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -458,8 +458,7 @@ func (o *Overlay) cachedBasePaths(ctx context.Context) ([]string, error) {
 					}
 				}
 				if err == nil {
-					sort.Strings(paths)
-					err = ctx.Err()
+					err = sortStringsContext(ctx, paths)
 				}
 			}
 		}
@@ -658,8 +657,7 @@ func validateAndSortSourcePathsContext(ctx context.Context, paths []string) erro
 			return err
 		}
 	}
-	sort.Strings(paths)
-	return ctx.Err()
+	return sortStringsContext(ctx, paths)
 }
 
 func equalStringSlicesContext(ctx context.Context, left, right []string) (bool, error) {
@@ -670,7 +668,11 @@ func equalStringSlicesContext(ctx context.Context, left, right []string) (bool, 
 		if err := ctx.Err(); err != nil {
 			return false, err
 		}
-		if left[i] != right[i] {
+		order, err := compareStringsContext(ctx, left[i], right[i])
+		if err != nil {
+			return false, err
+		}
+		if order != 0 {
 			return false, nil
 		}
 	}

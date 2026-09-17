@@ -1,10 +1,12 @@
 package bundle
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"errors"
 	"fmt"
 	"path/filepath"
-	"sort"
 	"unicode/utf8"
 )
 
@@ -34,6 +36,10 @@ func (e ParseError) Error() string {
 	return fmt.Sprintf("%s: %v", e.Path, e.Err)
 }
 
+// Unwrap preserves typed YAML and document parse failures for errors.Is and
+// errors.As without dropping the path carried by ParseError.
+func (e ParseError) Unwrap() error { return e.Err }
+
 // ResolvedLink is an internal link resolved to a target concept id.
 type ResolvedLink struct {
 	Target ConceptID
@@ -52,6 +58,8 @@ type BrokenLink struct {
 type Bundle struct {
 	root         string
 	files        []string
+	allFiles     []string
+	assetFiles   []string
 	concepts     []Concept
 	byID         map[string]int
 	indexFiles   []string
@@ -60,10 +68,17 @@ type Bundle struct {
 	outbound     map[string][]ResolvedLink
 	backlinks    map[string][]ConceptID
 	semantic     map[string][]Relation
-	incoming     map[string][]Relation
+	observations map[string][]RelationObservation
+	incoming     map[relationRefKey][]Relation
 	subresources map[string]map[string]fragmentState
 	diagnostics  []RelationDiagnostic
 	contents     map[string][]byte
+	captured     map[string]capturedFile
+}
+
+type capturedFile struct {
+	size   uint64
+	sha256 [sha256.Size]byte
 }
 
 // LoadBundle loads an OKF bundle from a directory tree.
@@ -78,6 +93,12 @@ func LoadBundle(root string) (*Bundle, error) {
 		b.root = root
 		for i, p := range b.files {
 			b.files[i] = filepath.Join(root, filepath.FromSlash(p))
+		}
+		for i, p := range b.allFiles {
+			b.allFiles[i] = filepath.Join(root, filepath.FromSlash(p))
+		}
+		for i, p := range b.assetFiles {
+			b.assetFiles[i] = filepath.Join(root, filepath.FromSlash(p))
 		}
 		for i := range b.indexFiles {
 			b.indexFiles[i] = filepath.Join(root, filepath.FromSlash(b.indexFiles[i]))
@@ -103,43 +124,54 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 	if source == nil {
 		return nil, fmt.Errorf("nil bundle source")
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	files, err := source.Paths(ctx)
 	if err != nil {
 		return nil, err
 	}
+	files, err = preflightSourcePathsContext(ctx, files)
+	if err != nil {
+		return nil, err
+	}
 	clean := make([]string, 0, len(files))
-	seen := make(map[string]struct{}, len(files))
+	markdown := make([]string, 0, len(files))
+	assets := make([]string, 0, len(files))
 	for _, name := range files {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		name, err = normalizeSourcePath(name)
-		if err != nil {
-			return nil, err
-		}
-		if filepath.Ext(name) != ".md" {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			return nil, fmt.Errorf("duplicate bundle source path %q", name)
-		}
-		seen[name] = struct{}{}
 		clean = append(clean, name)
+		if filepath.Ext(name) == ".md" {
+			markdown = append(markdown, name)
+		} else {
+			assets = append(assets, name)
+		}
 	}
-	sort.Strings(clean)
-	if err := ctx.Err(); err != nil {
+	if err := sortCompareContext(ctx, clean, compareStringsContext); err != nil {
+		return nil, err
+	}
+	if err := sortCompareContext(ctx, markdown, compareStringsContext); err != nil {
+		return nil, err
+	}
+	if err := sortCompareContext(ctx, assets, compareStringsContext); err != nil {
 		return nil, err
 	}
 
 	bundle := &Bundle{
-		files:        clean,
+		files:        markdown,
+		allFiles:     clean,
+		assetFiles:   assets,
 		byID:         make(map[string]int),
 		outbound:     make(map[string][]ResolvedLink),
 		backlinks:    make(map[string][]ConceptID),
 		semantic:     make(map[string][]Relation),
-		incoming:     make(map[string][]Relation),
+		observations: make(map[string][]RelationObservation),
+		incoming:     make(map[relationRefKey][]Relation),
 		subresources: make(map[string]map[string]fragmentState),
 		contents:     make(map[string][]byte),
+		captured:     make(map[string]capturedFile),
 	}
 
 	for _, path := range clean {
@@ -148,21 +180,30 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 		}
 		data, readErr := source.ReadFile(ctx, path)
 		if readErr != nil {
-			bundle.parseErrors = append(bundle.parseErrors, ParseError{Path: path, Err: readErr})
-			continue
+			return nil, fmt.Errorf("read bundle file %q: %w", path, readErr)
 		}
 		owned, err := copySourceBytesContext(ctx, data)
 		if err != nil {
 			return nil, err
 		}
 		bundle.contents[path] = owned
+		metadata, err := capturedFileMetadataContext(ctx, owned)
+		if err != nil {
+			return nil, err
+		}
+		bundle.captured[path] = metadata
+		if filepath.Ext(path) != ".md" {
+			continue
+		}
 		switch filepath.Base(path) {
 		case "index.md":
 			bundle.indexFiles = append(bundle.indexFiles, path)
 		case "log.md":
 			bundle.logFiles = append(bundle.logFiles, path)
 		default:
-			bundle.loadConceptBytes(path, data)
+			if err := bundle.loadConceptBytesContext(ctx, path, owned); err != nil {
+				return nil, err
+			}
 		}
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -173,18 +214,59 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		bundle.byID[concept.ID.String()] = i
+		id, err := conceptIDStringContext(ctx, concept.ID)
+		if err != nil {
+			return nil, err
+		}
+		bundle.byID[id] = i
 	}
-	bundle.buildGraph()
+	if err := bundle.buildGraphContext(ctx); err != nil {
+		return nil, err
+	}
+	if err := bundle.finalizeRelationDiagnosticsContext(ctx); err != nil {
+		return nil, err
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	bundle.finalizeRelationDiagnostics()
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
 	return bundle, nil
+}
+
+// preflightSourcePathsContext canonicalizes the validation order before Load
+// performs any reads. Source is a BYOT boundary, so provider order must not
+// decide which malformed or duplicate path is reported.
+func preflightSourcePathsContext(ctx context.Context, paths []string) ([]string, error) {
+	clean := make([]string, 0, len(paths))
+	for _, raw := range paths {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		owned, err := stringFromStringContext(ctx, raw)
+		if err != nil {
+			return nil, err
+		}
+		clean = append(clean, owned)
+	}
+	if err := sortCompareContext(ctx, clean, compareStringsContext); err != nil {
+		return nil, err
+	}
+	for index, raw := range clean {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		normalized, err := normalizeSourcePathContext(ctx, raw)
+		if err != nil {
+			return nil, err
+		}
+		clean[index] = normalized
+		if index > 0 && clean[index-1] == normalized {
+			return nil, fmt.Errorf("duplicate bundle source path %q", raw)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return clean, nil
 }
 
 func copySourceBytesContext(ctx context.Context, source []byte) ([]byte, error) {
@@ -198,7 +280,33 @@ func copySourceBytesContext(ctx context.Context, source []byte) ([]byte, error) 
 		out = append(out, source[:n]...)
 		source = source[n:]
 	}
-	return out, ctx.Err()
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func capturedFileMetadataContext(ctx context.Context, data []byte) (capturedFile, error) {
+	if err := ctx.Err(); err != nil {
+		return capturedFile{}, err
+	}
+	digest := sha256.New()
+	const chunkSize = 64 << 10
+	for offset := 0; offset < len(data); offset += chunkSize {
+		if err := ctx.Err(); err != nil {
+			return capturedFile{}, err
+		}
+		end := min(offset+chunkSize, len(data))
+		if _, err := digest.Write(data[offset:end]); err != nil {
+			return capturedFile{}, fmt.Errorf("hash captured bundle file: %w", err)
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return capturedFile{}, err
+	}
+	var sum [sha256.Size]byte
+	digest.Sum(sum[:0])
+	return capturedFile{size: uint64(len(data)), sha256: sum}, nil
 }
 
 // Root returns the bundle root path.
@@ -214,7 +322,37 @@ func (b *Bundle) Concepts() []Concept {
 	if b == nil {
 		return nil
 	}
-	return append([]Concept(nil), b.concepts...)
+	out := make([]Concept, len(b.concepts))
+	for index := range b.concepts {
+		out[index] = cloneConcept(b.concepts[index])
+	}
+	return out
+}
+
+// ConceptIDsContext returns defensive concept identifiers in path order with
+// cancellation checks during projection.
+func (b *Bundle) ConceptIDsContext(ctx context.Context) ([]ConceptID, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	var out []ConceptID
+	for _, concept := range b.concepts {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		owned, err := cloneConceptIDContext(ctx, concept.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, owned)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // Len returns the number of successfully parsed concepts.
@@ -232,14 +370,117 @@ func (b *Bundle) IsEmpty() bool {
 
 // Get returns a concept by id.
 func (b *Bundle) Get(id ConceptID) (Concept, bool) {
+	concept, ok, _ := b.GetContext(context.Background(), id)
+	return concept, ok
+}
+
+// GetContext returns a cancellation-aware defensive concept copy. Unknown ids
+// and nil bundles return the zero concept with ok=false.
+func (b *Bundle) GetContext(ctx context.Context, id ConceptID) (Concept, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return Concept{}, false, err
+	}
 	if b == nil {
-		return Concept{}, false
+		return Concept{}, false, nil
 	}
-	index, ok := b.byID[id.String()]
+	idString, err := conceptIDStringContext(ctx, id)
+	if err != nil {
+		return Concept{}, false, err
+	}
+	index, ok, err := lookupStringMapContext(ctx, b.byID, idString)
+	if err != nil {
+		return Concept{}, false, err
+	}
 	if !ok {
-		return Concept{}, false
+		return Concept{}, false, nil
 	}
-	return b.concepts[index], true
+	concept, err := cloneConceptContext(ctx, b.concepts[index])
+	if err != nil {
+		return Concept{}, false, err
+	}
+	return concept, true, ctx.Err()
+}
+
+// ConceptPathContext returns the retained path for id without cloning its
+// document. Unknown ids and nil bundles return ("", false, nil).
+func (b *Bundle) ConceptPathContext(ctx context.Context, id ConceptID) (path string, ok bool, err error) {
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	if b == nil {
+		return "", false, nil
+	}
+	idString, err := conceptIDStringContext(ctx, id)
+	if err != nil {
+		return "", false, err
+	}
+	index, ok, err := lookupStringMapContext(ctx, b.byID, idString)
+	if err != nil {
+		return "", false, err
+	}
+	if !ok {
+		return "", false, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return "", false, err
+	}
+	return b.concepts[index].Path, true, nil
+}
+
+func cloneConceptID(id ConceptID) ConceptID {
+	owned, _ := cloneConceptIDContext(context.Background(), id)
+	return owned
+}
+
+func cloneConceptIDContext(ctx context.Context, id ConceptID) (ConceptID, error) {
+	if err := ctx.Err(); err != nil {
+		return ConceptID{}, err
+	}
+	var segments []string
+	for _, segment := range id.segments {
+		if err := ctx.Err(); err != nil {
+			return ConceptID{}, err
+		}
+		owned, err := stringFromStringContext(ctx, segment)
+		if err != nil {
+			return ConceptID{}, err
+		}
+		segments = append(segments, owned)
+	}
+	if err := ctx.Err(); err != nil {
+		return ConceptID{}, err
+	}
+	return ConceptID{segments: segments}, nil
+}
+
+func cloneConcept(concept Concept) Concept {
+	owned, _ := cloneConceptContext(context.Background(), concept)
+	return owned
+}
+
+func cloneConceptContext(ctx context.Context, concept Concept) (Concept, error) {
+	var out Concept
+	var err error
+	if out.ID, err = cloneConceptIDContext(ctx, concept.ID); err != nil {
+		return Concept{}, err
+	}
+	if out.Path, err = stringFromStringContext(ctx, concept.Path); err != nil {
+		return Concept{}, err
+	}
+	out.Document.HasFrontmatter = concept.Document.HasFrontmatter
+	if out.Document.Body, err = stringFromStringContext(ctx, concept.Document.Body); err != nil {
+		return Concept{}, err
+	}
+	if out.Document.Frontmatter.node, err = cloneYAMLNodeContext(ctx, &concept.Document.Frontmatter.node); err != nil {
+		return Concept{}, err
+	}
+	if out.Document.Frontmatter.raw, err = copySourceBytesContext(ctx, concept.Document.Frontmatter.raw); err != nil {
+		return Concept{}, err
+	}
+	if out.Document.frontmatterYAML, err = copySourceBytesContext(ctx, concept.Document.frontmatterYAML); err != nil {
+		return Concept{}, err
+	}
+	return out, ctx.Err()
 }
 
 // Contains reports whether the bundle contains a concept id.
@@ -269,15 +510,162 @@ func (b *Bundle) LogFiles() []string {
 
 // MarkdownFiles returns all Markdown files discovered while loading the bundle.
 func (b *Bundle) MarkdownFiles() []string {
+	out, _ := b.MarkdownFilesContext(context.Background())
+	return out
+}
+
+// MarkdownFilesContext returns a cancellation-aware owned copy of Markdown
+// paths in loader order.
+func (b *Bundle) MarkdownFilesContext(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	var out []string
+	for _, path := range b.files {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		out = append(out, path)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Files returns every revision-visible regular file captured while loading.
+func (b *Bundle) Files() []string {
+	out, _ := b.FilesContext(context.Background())
+	return out
+}
+
+// FilesContext returns a cancellation-aware owned copy of every
+// revision-visible regular file captured while loading.
+func (b *Bundle) FilesContext(ctx context.Context) ([]string, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	var out []string
+	for _, path := range b.allFiles {
+		owned, err := stringFromStringContext(ctx, path)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, owned)
+	}
+	if err := bundleFilesFinalContext(ctx); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func bundleFilesFinalContext(ctx context.Context) error {
+	return ctx.Err()
+}
+
+// AssetFiles returns captured non-Markdown revision-visible regular files.
+func (b *Bundle) AssetFiles() []string {
 	if b == nil {
 		return nil
 	}
-	return append([]string(nil), b.files...)
+	return append([]string(nil), b.assetFiles...)
 }
 
 // ReadFile returns an owned copy of a file captured while loading the bundle.
 // It never rereads the source.
-func (b *Bundle) ReadFile(path string) ([]byte, bool) { return b.contentForPath(path) }
+func (b *Bundle) ReadFile(path string) ([]byte, bool) {
+	out, ok, _ := b.ReadFileContext(context.Background(), path)
+	return out, ok
+}
+
+// ReadFileContext returns a cancellation-aware owned copy of a captured file.
+// Unknown paths and nil bundles return (nil, false, nil).
+func (b *Bundle) ReadFileContext(ctx context.Context, path string) ([]byte, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, false, err
+	}
+	if b == nil {
+		return nil, false, nil
+	}
+	data, ok := b.contents[b.capturedPathKey(path)]
+	if !ok {
+		return nil, false, nil
+	}
+	owned, err := copySourceBytesContext(ctx, data)
+	if err != nil {
+		return nil, false, err
+	}
+	return owned, true, nil
+}
+
+// CapturedFileMetadata returns the immutable size and SHA-256 digest captured
+// while loading path. It never rereads the source or exposes retained bytes.
+func (b *Bundle) CapturedFileMetadata(path string) (uint64, [sha256.Size]byte, bool) {
+	if b == nil {
+		return 0, [sha256.Size]byte{}, false
+	}
+	metadata, ok := b.captured[b.capturedPathKey(path)]
+	if !ok {
+		return 0, [sha256.Size]byte{}, false
+	}
+	return metadata.size, metadata.sha256, true
+}
+
+// CapturedFilesEqualContext compares two files retained by immutable bundles.
+// Metadata is used as a fast rejection, but matching metadata is always
+// followed by a cancellable, chunked exact comparison of the retained bytes.
+func CapturedFilesEqualContext(
+	ctx context.Context,
+	left *Bundle,
+	leftPath string,
+	right *Bundle,
+	rightPath string,
+) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if left == nil || right == nil {
+		return false, nil
+	}
+	leftKey := left.capturedPathKey(leftPath)
+	rightKey := right.capturedPathKey(rightPath)
+	leftMetadata, leftOK := left.captured[leftKey]
+	rightMetadata, rightOK := right.captured[rightKey]
+	if !leftOK || !rightOK {
+		return false, nil
+	}
+	if leftMetadata != rightMetadata {
+		return false, nil
+	}
+	leftData, leftOK := left.contents[leftKey]
+	rightData, rightOK := right.contents[rightKey]
+	if !leftOK || !rightOK {
+		return false, nil
+	}
+	if len(leftData) != len(rightData) {
+		return false, nil
+	}
+	const chunkSize = 64 << 10
+	for offset := 0; offset < len(leftData); offset += chunkSize {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+		end := min(offset+chunkSize, len(leftData))
+		if !bytes.Equal(leftData[offset:end], rightData[offset:end]) {
+			return false, nil
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 // ParseErrors returns concept parse failures collected during loading.
 func (b *Bundle) ParseErrors() []ParseError {
@@ -289,18 +677,121 @@ func (b *Bundle) ParseErrors() []ParseError {
 
 // LinksFrom returns resolved outbound internal links for a concept id.
 func (b *Bundle) LinksFrom(id ConceptID) []ResolvedLink {
-	if b == nil {
-		return nil
+	out, _ := b.LinksFromContext(context.Background(), id)
+	return out
+}
+
+// LinksFromContext returns a cancellation-aware defensive copy of resolved
+// Markdown links for id.
+func (b *Bundle) LinksFromContext(ctx context.Context, id ConceptID) ([]ResolvedLink, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
-	return append([]ResolvedLink(nil), b.outbound[id.String()]...)
+	if b == nil {
+		return nil, nil
+	}
+	idString, err := conceptIDStringContext(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []ResolvedLink
+	links, _, err := lookupStringMapContext(ctx, b.outbound, idString)
+	if err != nil {
+		return nil, err
+	}
+	for _, link := range links {
+		var owned ResolvedLink
+		if owned.Target, err = cloneConceptIDContext(ctx, link.Target); err != nil {
+			return nil, err
+		}
+		if owned.Text, err = stringFromStringContext(ctx, link.Text); err != nil {
+			return nil, err
+		}
+		if owned.Raw, err = stringFromStringContext(ctx, link.Raw); err != nil {
+			return nil, err
+		}
+		owned.Exists = link.Exists
+		out = append(out, owned)
+	}
+	return out, ctx.Err()
 }
 
 // SemanticLinksFrom returns outbound YAML semantic relations for a concept id.
 func (b *Bundle) SemanticLinksFrom(id ConceptID) []Relation {
-	if b == nil {
-		return nil
+	out, _ := b.SemanticLinksFromContext(context.Background(), id)
+	return out
+}
+
+// SemanticLinksFromContext returns a cancellation-aware defensive copy of
+// outbound YAML semantic relations for a concept id.
+func (b *Bundle) SemanticLinksFromContext(ctx context.Context, id ConceptID) ([]Relation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
-	return append([]Relation(nil), b.semantic[id.String()]...)
+	if b == nil {
+		return nil, nil
+	}
+	idString, err := conceptIDStringContext(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	relations, _, err := lookupStringMapContext(ctx, b.semantic, idString)
+	if err != nil {
+		return nil, err
+	}
+	if len(relations) == 0 {
+		return nil, nil
+	}
+	var out []Relation
+	for _, relation := range relations {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		owned, err := cloneRelationContext(ctx, relation)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, owned)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DeclaredSemanticLinksFrom returns syntactically valid declared relations,
+// including unresolved concept and fragment targets.
+func (b *Bundle) DeclaredSemanticLinksFrom(id ConceptID) []RelationObservation {
+	out, _ := b.DeclaredSemanticLinksFromContext(context.Background(), id)
+	return out
+}
+
+// DeclaredSemanticLinksFromContext returns a cancellation-aware defensive copy
+// of syntactically valid declared relation observations.
+func (b *Bundle) DeclaredSemanticLinksFromContext(ctx context.Context, id ConceptID) ([]RelationObservation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if b == nil {
+		return nil, nil
+	}
+	idString, err := conceptIDStringContext(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var out []RelationObservation
+	observations, _, err := lookupStringMapContext(ctx, b.observations, idString)
+	if err != nil {
+		return nil, err
+	}
+	for _, observation := range observations {
+		owned, err := cloneRelationContext(ctx, Relation(observation))
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, RelationObservation(owned))
+	}
+	return out, ctx.Err()
 }
 
 // Backlinks returns concept ids that link to the given concept.
@@ -331,43 +822,97 @@ func (b *Bundle) BrokenLinks() []BrokenLink {
 	return broken
 }
 
-// OKFVersion returns the okf_version declared in the root index.md frontmatter.
-func (b *Bundle) OKFVersion() (string, bool) {
-	if b == nil {
-		return "", false
+// VersionDeclarationState returns raw/present/valid root declaration state.
+func (b *Bundle) VersionDeclarationState() VersionDeclarationState {
+	state, _ := b.VersionDeclarationStateContext(context.Background())
+	return state
+}
+
+// VersionDeclarationStateContext returns the root version declaration with
+// cancellation checks around retained-byte projection and document parsing.
+func (b *Bundle) VersionDeclarationStateContext(ctx context.Context) (VersionDeclarationState, error) {
+	if err := ctx.Err(); err != nil {
+		return VersionDeclarationState{}, err
 	}
-	text, ok := b.contentForPath(filepath.Join(b.root, "index.md"))
-	if !ok {
-		return "", false
+	document, present, err := b.rootIndexDocumentContext(ctx)
+	if !present {
+		return VersionDeclarationState{Valid: true}, err
 	}
-	document, err := ParseDocument(string(text))
 	if err != nil {
-		return "", false
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return VersionDeclarationState{}, ctxErr
+		}
+		if errors.Is(err, ErrYAMLResourceLimit) || errors.Is(err, ErrInvalidYAMLGraph) {
+			return VersionDeclarationState{}, err
+		}
+		return VersionDeclarationState{Present: true}, nil
 	}
-	return document.Frontmatter.OKFVersion()
+	return document.Frontmatter.VersionDeclarationStateContext(ctx)
+}
+
+func (b *Bundle) rootIndexDocument() (Document, bool, error) {
+	return b.rootIndexDocumentContext(context.Background())
+}
+
+func (b *Bundle) rootIndexDocumentContext(ctx context.Context) (Document, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return Document{}, false, err
+	}
+	if b == nil {
+		return Document{}, false, nil
+	}
+	text, ok, err := b.ReadFileContext(ctx, filepath.Join(b.root, "index.md"))
+	if err != nil {
+		return Document{}, false, err
+	}
+	if !ok {
+		return Document{}, false, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return Document{}, false, err
+	}
+	document, err := ParseDocumentContext(ctx, string(text))
+	if err != nil {
+		return Document{}, true, fmt.Errorf("parse root index document: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return Document{}, false, err
+	}
+	return document, true, nil
 }
 
 func (b *Bundle) loadConceptBytes(path string, text []byte) {
+	_ = b.loadConceptBytesContext(context.Background(), path, text)
+}
+
+func (b *Bundle) loadConceptBytesContext(ctx context.Context, path string, text []byte) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if !utf8.Valid(text) {
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)})
-		return
+		return nil
 	}
-	document, err := ParseDocument(string(text))
+	document, err := ParseDocumentContext(ctx, string(text))
 	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: err})
-		return
+		return nil
 	}
 	id, err := ConceptIDFromPath("", path)
 	if err != nil {
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: err})
-		return
+		return nil
 	}
 	b.concepts = append(b.concepts, NewConcept(id, path, document))
+	return ctx.Err()
 }
 
-func (b *Bundle) contentForPath(filename string) ([]byte, bool) {
-	if b == nil {
-		return nil, false
+func (b *Bundle) capturedPathKey(filename string) string {
+	if _, ok := b.contents[filename]; ok {
+		return filename
 	}
 	key := filename
 	if b.root != "" {
@@ -375,27 +920,51 @@ func (b *Bundle) contentForPath(filename string) ([]byte, bool) {
 			key = filepath.ToSlash(rel)
 		}
 	}
-	v, ok := b.contents[key]
-	return append([]byte(nil), v...), ok
+	return key
 }
 
-func (b *Bundle) buildGraph() {
+func (b *Bundle) buildGraphContext(ctx context.Context) error {
 	for _, concept := range b.concepts {
-		b.indexSubresources(concept)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := b.indexSubresourcesContext(ctx, concept); err != nil {
+			return err
+		}
 	}
 	for _, concept := range b.concepts {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		var resolved []ResolvedLink
-		for _, link := range concept.Document.Links() {
-			target, ok := link.Resolve(concept.ID)
+		links, err := concept.Document.LinksContext(ctx)
+		if err != nil {
+			return err
+		}
+		for _, link := range links {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			target, ok, err := link.ResolveContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
 			if !ok {
 				continue
 			}
 
-			exists := b.Contains(target)
+			targetKey, err := conceptIDStringContext(ctx, target)
+			if err != nil {
+				return err
+			}
+			_, exists := b.byID[targetKey]
 			if exists {
-				key := target.String()
-				if !containsConceptID(b.backlinks[key], concept.ID) {
-					b.backlinks[key] = append(b.backlinks[key], concept.ID)
+				contains, err := containsConceptIDContext(ctx, b.backlinks[targetKey], concept.ID)
+				if err != nil {
+					return err
+				}
+				if !contains {
+					b.backlinks[targetKey] = append(b.backlinks[targetKey], concept.ID)
 				}
 			}
 
@@ -406,26 +975,69 @@ func (b *Bundle) buildGraph() {
 				Raw:    link.Target,
 			})
 		}
-		b.outbound[concept.ID.String()] = resolved
-		b.semantic[concept.ID.String()] = extractSemanticRelations(concept, b)
-		sortRelations(b.semantic[concept.ID.String()])
-		for _, relation := range b.semantic[concept.ID.String()] {
+		conceptKey, err := conceptIDStringContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
+		b.outbound[conceptKey] = resolved
+		semanticResolved, observed, err := extractSemanticRelationsContext(ctx, concept, b)
+		if err != nil {
+			return err
+		}
+		b.semantic[conceptKey] = semanticResolved
+		b.observations[conceptKey] = observed
+		if err := sortRelationsContext(ctx, b.semantic[conceptKey]); err != nil {
+			return err
+		}
+		if err := sortRelationObservationsContext(ctx, b.observations[conceptKey]); err != nil {
+			return err
+		}
+		for _, relation := range b.semantic[conceptKey] {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			if relation.TargetExists {
-				key := relation.Target.String()
+				key, err := relationRefIdentityContext(ctx, relation.Target)
+				if err != nil {
+					return err
+				}
 				b.incoming[key] = append(b.incoming[key], relation)
 			}
 		}
 	}
 	for target := range b.incoming {
-		sortRelations(b.incoming[target])
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := sortRelationsContext(ctx, b.incoming[target]); err != nil {
+			return err
+		}
 	}
+	return ctx.Err()
 }
 
 func containsConceptID(ids []ConceptID, target ConceptID) bool {
+	contains, _ := containsConceptIDContext(context.Background(), ids, target)
+	return contains
+}
+
+func containsConceptIDContext(ctx context.Context, ids []ConceptID, target ConceptID) (bool, error) {
+	targetString, err := conceptIDStringContext(ctx, target)
+	if err != nil {
+		return false, err
+	}
 	for _, id := range ids {
-		if id.String() == target.String() {
-			return true
+		idString, err := conceptIDStringContext(ctx, id)
+		if err != nil {
+			return false, err
+		}
+		equal, err := equalStringContext(ctx, idString, targetString)
+		if err != nil {
+			return false, err
+		}
+		if equal {
+			return true, ctx.Err()
 		}
 	}
-	return false
+	return false, ctx.Err()
 }

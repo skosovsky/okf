@@ -1,6 +1,9 @@
 package bundle
 
 import (
+	"bytes"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -101,6 +104,31 @@ func TestRegenerateIndexesSkipsEmptyDirectories(t *testing.T) {
 	}
 }
 
+func TestRegenerateIndexesExistingEmptyBundleIsSuccessfulNoOp(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	root := t.TempDir()
+
+	// Act.
+	written, err := RegenerateIndexes(root)
+
+	// Assert.
+	if err != nil {
+		t.Fatalf("RegenerateIndexes() error = %v", err)
+	}
+	if written != nil {
+		t.Fatalf("written = %#v, want nil", written)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatalf("ReadDir() error = %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("bundle entries = %#v, want none", entries)
+	}
+}
+
 func TestRegenerateIndexesSingleChildReusesDescription(t *testing.T) {
 	t.Parallel()
 
@@ -148,11 +176,233 @@ func TestRegenerateIndexesPreservesRootOKFVersion(t *testing.T) {
 	}
 
 	// Assert.
-	if got, ok := document.Frontmatter.OKFVersion(); !ok || got != "0.1" {
-		t.Fatalf("OKFVersion() = %q, %v; want 0.1, true", got, ok)
+	if got := document.Frontmatter.VersionDeclarationState(); !got.Present || !got.Valid || got.Value != "0.1" {
+		t.Fatalf("VersionDeclarationState() = %#v, want valid 0.1", got)
 	}
 	if !strings.Contains(document.Body, "[notes](notes/index.md) - Alpha.") {
 		t.Fatalf("index.md body = %q, want regenerated notes entry", document.Body)
+	}
+}
+
+func TestRegenerateIndexesRejectsMalformedPresentVersionBeforeAnyWrite(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		frontmatter string
+	}{
+		{name: "scalar type", frontmatter: "okf_version: 2\n"},
+		{name: "sequence type", frontmatter: "okf_version: [0.2]\n"},
+		{name: "mapping type", frontmatter: "okf_version: {major: 0, minor: 2}\n"},
+		{name: "blank string", frontmatter: "okf_version: \"\"\n"},
+		{name: "noncanonical syntax", frontmatter: "okf_version: \"v0.2\"\n"},
+		{
+			name: "malformed terminal alias",
+			frontmatter: "declared: &declared [0.2]\n" +
+				"okf_version: *declared\n",
+		},
+		{
+			name: "malformed merged declaration",
+			frontmatter: "defaults: &defaults\n" +
+				"  okf_version: {major: 0, minor: 2}\n" +
+				"<<: *defaults\n",
+		},
+		{
+			name: "malformed explicit overrides valid merge",
+			frontmatter: "defaults: &defaults\n" +
+				"  okf_version: \"0.1\"\n" +
+				"<<: *defaults\n" +
+				"okf_version: \"02.0\"\n",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			root := t.TempDir()
+			rootBefore := "---\n" + test.frontmatter + "---\n\n# Root before\n"
+			nestedBefore := "# Nested before\n"
+			writeFile(t, root, "index.md", rootBefore)
+			writeFile(t, root, "notes/index.md", nestedBefore)
+			writeIndexDoc(t, root, "notes/a.md", "Note", "A", "Alpha.")
+
+			// Act.
+			written, err := RegenerateIndexes(root)
+
+			// Assert.
+			if !errors.Is(err, ErrInvalidVersionDeclaration) {
+				t.Fatalf("RegenerateIndexes() error = %v, want ErrInvalidVersionDeclaration", err)
+			}
+			if len(written) != 0 {
+				t.Fatalf("written = %#v, want none", written)
+			}
+			if after := readFile(t, root, "index.md"); after != rootBefore {
+				t.Fatalf("root index changed:\n%s", after)
+			}
+			if after := readFile(t, root, "notes/index.md"); after != nestedBefore {
+				t.Fatalf("nested index changed:\n%s", after)
+			}
+		})
+	}
+}
+
+func TestRegenerateIndexesRejectsInvalidRootDocumentBeforeAnyWrite(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		root []byte
+		want error
+	}{
+		{
+			name: "malformed yaml",
+			root: []byte("---\nokf_version: [\n---\n\n# Root before\n"),
+			want: ErrInvalidFrontmatter,
+		},
+		{
+			name: "unterminated frontmatter",
+			root: []byte("---\nokf_version: \"0.2\"\n# Root before\n"),
+			want: ErrUnterminatedFrontmatter,
+		},
+		{
+			name: "invalid utf8",
+			root: append([]byte("---\nokf_version: \"0.2\"\n---\n\n# Root "), 0xff, '\n'),
+			want: ErrInvalidEncoding,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			root := t.TempDir()
+			rootPath := filepath.Join(root, "index.md")
+			if err := os.WriteFile(rootPath, test.root, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			nestedBefore := []byte("# Nested before\n")
+			conceptBefore := []byte("---\ntype: Note\ntitle: A\n---\n\n# A\n")
+			writeFile(t, root, "notes/index.md", string(nestedBefore))
+			writeFile(t, root, "notes/a.md", string(conceptBefore))
+			before := map[string][]byte{
+				"index.md":       append([]byte(nil), test.root...),
+				"notes/index.md": append([]byte(nil), nestedBefore...),
+				"notes/a.md":     append([]byte(nil), conceptBefore...),
+			}
+			synthesizeCalls := 0
+
+			// Act.
+			written, err := RegenerateIndexesWith(root, func(string, []IndexChild) string {
+				synthesizeCalls++
+				return "must not run"
+			})
+
+			// Assert.
+			if !errors.Is(err, test.want) {
+				t.Fatalf("RegenerateIndexesWith() error = %v, want %v", err, test.want)
+			}
+			if len(written) != 0 || synthesizeCalls != 0 {
+				t.Fatalf("written = %#v, synthesize calls = %d; want no side effects", written, synthesizeCalls)
+			}
+			for relative, want := range before {
+				after, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(relative)))
+				if readErr != nil {
+					t.Fatalf("read %s: %v", relative, readErr)
+				}
+				if !bytes.Equal(after, want) {
+					t.Fatalf("%s changed:\ngot  %q\nwant %q", relative, after, want)
+				}
+			}
+		})
+	}
+}
+
+func TestRegenerateIndexesAcceptsRootWithoutFrontmatter(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	root := t.TempDir()
+	writeFile(t, root, "index.md", "# Root before\n")
+	writeIndexDoc(t, root, "a.md", "Note", "A", "Alpha.")
+
+	// Act.
+	written, err := RegenerateIndexes(root)
+
+	// Assert.
+	if err != nil {
+		t.Fatalf("RegenerateIndexes() error = %v", err)
+	}
+	if len(written) == 0 {
+		t.Fatal("RegenerateIndexes() wrote no indexes")
+	}
+	document, err := ParseDocument(readFile(t, root, "index.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if document.HasFrontmatter || !strings.Contains(document.Body, "[A](a.md) - Alpha.") {
+		t.Fatalf("root document = %#v", document)
+	}
+}
+
+func TestRegenerateIndexesPreservesSemanticVersionDeclaration(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		frontmatter string
+		want        string
+	}{
+		{
+			name: "terminal alias",
+			frontmatter: "declared: &declared \"0.1\"\n" +
+				"okf_version: *declared\n",
+			want: "0.1",
+		},
+		{
+			name: "merged declaration",
+			frontmatter: "defaults: &defaults\n" +
+				"  okf_version: \"0.1\"\n" +
+				"<<: *defaults\n",
+			want: "0.1",
+		},
+		{
+			name: "valid explicit overrides malformed merge",
+			frontmatter: "defaults: &defaults\n" +
+				"  okf_version: nope\n" +
+				"<<: *defaults\n" +
+				"okf_version: \"0.2\"\n",
+			want: "0.2",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Arrange.
+			root := t.TempDir()
+			writeFile(t, root, "index.md", "---\n"+test.frontmatter+"---\n\n# Root before\n")
+			writeIndexDoc(t, root, "notes/a.md", "Note", "A", "Alpha.")
+
+			// Act.
+			_, err := RegenerateIndexes(root)
+			if err != nil {
+				t.Fatalf("RegenerateIndexes() error = %v", err)
+			}
+			document, err := ParseDocument(readFile(t, root, "index.md"))
+			if err != nil {
+				t.Fatalf("ParseDocument(index.md) error = %v", err)
+			}
+
+			// Assert.
+			state := document.Frontmatter.VersionDeclarationState()
+			if !state.Present || !state.Valid || state.Value != test.want {
+				t.Fatalf("VersionDeclarationState() = %#v, want %q", state, test.want)
+			}
+			if !strings.Contains(document.Body, "[notes](notes/index.md) - Alpha.") {
+				t.Fatalf("index body = %q, want regenerated notes entry", document.Body)
+			}
+		})
 	}
 }
 
@@ -180,11 +430,41 @@ func TestRegenerateIndexesSkipsReservedFiles(t *testing.T) {
 	}
 }
 
-func TestRegenerateIndexesMissingRootReturnsNoFiles(t *testing.T) {
+func TestRegenerateIndexesMissingRootReturnsNotExistWithoutSideEffects(t *testing.T) {
 	t.Parallel()
 
 	// Arrange.
-	root := filepath.Join(t.TempDir(), "missing")
+	parent := t.TempDir()
+	root := filepath.Join(parent, "missing")
+
+	// Act.
+	written, err := RegenerateIndexes(root)
+
+	// Assert.
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("RegenerateIndexes() error = %v, want fs.ErrNotExist", err)
+	}
+	if written != nil {
+		t.Fatalf("written = %#v, want nil", written)
+	}
+	if _, statErr := os.Lstat(root); !errors.Is(statErr, fs.ErrNotExist) {
+		t.Fatalf("Lstat(%q) error = %v, want fs.ErrNotExist", root, statErr)
+	}
+	entries, readErr := os.ReadDir(parent)
+	if readErr != nil {
+		t.Fatalf("ReadDir(%q) error = %v", parent, readErr)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("parent entries = %#v, want no paths or transaction artifacts", entries)
+	}
+}
+
+func TestRegenerateIndexesMissingOnlyRootIndexGeneratesIt(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	root := t.TempDir()
+	writeIndexDoc(t, root, "a.md", "Note", "A", "Alpha.")
 
 	// Act.
 	written, err := RegenerateIndexes(root)
@@ -193,8 +473,20 @@ func TestRegenerateIndexesMissingRootReturnsNoFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegenerateIndexes() error = %v", err)
 	}
-	if len(written) != 0 {
-		t.Fatalf("len(written) = %d, want 0", len(written))
+	wantWritten := []string{filepath.Join(root, indexFilename)}
+	if len(written) != len(wantWritten) || written[0] != wantWritten[0] {
+		t.Fatalf("written = %#v, want %#v", written, wantWritten)
+	}
+	wantIndex := "# Note\n\n* [A](a.md) - Alpha.\n"
+	if got := readFile(t, root, indexFilename); got != wantIndex {
+		t.Fatalf("%s = %q, want %q", indexFilename, got, wantIndex)
+	}
+	entries, readErr := os.ReadDir(root)
+	if readErr != nil {
+		t.Fatalf("ReadDir(%q) error = %v", root, readErr)
+	}
+	if len(entries) != 2 || entries[0].Name() != "a.md" || entries[1].Name() != indexFilename {
+		t.Fatalf("bundle entries = %#v, want only a.md and %s", entries, indexFilename)
 	}
 }
 

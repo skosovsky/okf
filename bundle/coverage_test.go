@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -135,8 +136,8 @@ func TestNilBundleMethods(t *testing.T) {
 	if bundle.BrokenLinks() != nil {
 		t.Fatalf("BrokenLinks() = %#v, want nil", bundle.BrokenLinks())
 	}
-	if version, ok := bundle.OKFVersion(); ok || version != "" {
-		t.Fatalf("OKFVersion() = %q, %v; want empty, false", version, ok)
+	if version := bundle.VersionDeclarationState(); !version.Valid || version.Present {
+		t.Fatalf("VersionDeclarationState() = %#v; want valid absent", version)
 	}
 }
 
@@ -209,11 +210,12 @@ func TestBundleOKFVersionMissingMalformedAndNoKey(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		index string
+		name      string
+		index     string
+		malformed bool
 	}{
 		{name: "missing"},
-		{name: "malformed", index: "---\nokf_version: 0.1\n"},
+		{name: "malformed", index: "---\nokf_version: 0.1\n", malformed: true},
 		{name: "no key", index: "---\ntitle: Root\n---\n# Root\n"},
 	}
 
@@ -234,11 +236,15 @@ func TestBundleOKFVersionMissingMalformedAndNoKey(t *testing.T) {
 			}
 
 			// Act.
-			version, ok := bundle.OKFVersion()
+			version := bundle.VersionDeclarationState()
 
 			// Assert.
-			if ok || version != "" {
-				t.Fatalf("OKFVersion() = %q, %v; want empty, false", version, ok)
+			if tt.malformed {
+				if !version.Present || version.Valid {
+					t.Fatalf("VersionDeclarationState() = %#v; want malformed present", version)
+				}
+			} else if !version.Valid || version.Present {
+				t.Fatalf("VersionDeclarationState() = %#v; want valid absent", version)
 			}
 		})
 	}
@@ -448,7 +454,6 @@ func TestIndexEdgePaths(t *testing.T) {
 	// Arrange.
 	root := t.TempDir()
 	writeIndexDoc(t, root, "docs/no-title.md", "Guide", "", "No title.")
-	writeFile(t, root, "docs/bad.md", "---\ntype: Bad\n")
 	writeFile(t, root, "docs/skip.txt", "ignore")
 	writeFile(t, root, "plain.md", "# No frontmatter\n")
 
@@ -457,12 +462,13 @@ func TestIndexEdgePaths(t *testing.T) {
 	defaultEmpty := DefaultSynthesizeDescription("", nil)
 	defaultText := DefaultSynthesizeDescription("", []IndexChild{{Title: "A"}, {Title: "B"}})
 	written, err := RegenerateIndexesWith(root, nil)
+	writeFile(t, root, "docs/bad.md", "---\ntype: Bad\n")
 	source := &FileSystemSource{Root: root}
 	t.Cleanup(func() { _ = source.Close() })
-	paths, pathsErr := source.Paths(context.Background())
-	missingEntries, missingEntriesErr := indexEntriesForDirectory(source, "missing", paths, nil)
-	missingDoc, missingDocOK := loadIndexDocument(source, "missing.md")
-	badDoc, badDocOK := loadIndexDocument(source, "docs/bad.md")
+	_, pathsErr := source.Paths(context.Background())
+	missingEntries, missingEntriesErr := indexEntriesForDirectory(source, "missing", nil, nil)
+	missingDoc, missingDocErr := loadIndexDocument(source, "missing.md")
+	badDoc, badDocErr := loadIndexDocument(source, "docs/bad.md")
 	missingDirs, missingDirsErr := directoriesToIndex(filepath.Join(root, "missing"), nil)
 
 	// Assert.
@@ -491,11 +497,11 @@ func TestIndexEdgePaths(t *testing.T) {
 	if missingEntriesErr != nil || len(missingEntries) != 0 {
 		t.Fatalf("indexEntriesForDirectory(missing) = %#v, %v; want empty", missingEntries, missingEntriesErr)
 	}
-	if missingDocOK || missingDoc.Body != "" {
-		t.Fatalf("loadIndexDocument(missing) = %#v, %v; want false", missingDoc, missingDocOK)
+	if !errors.Is(missingDocErr, fs.ErrNotExist) || missingDoc.Body != "" {
+		t.Fatalf("loadIndexDocument(missing) = %#v, %v; want fs.ErrNotExist", missingDoc, missingDocErr)
 	}
-	if badDocOK || badDoc.Body != "" {
-		t.Fatalf("loadIndexDocument(bad) = %#v, %v; want false", badDoc, badDocOK)
+	if !errors.Is(badDocErr, ErrUnterminatedFrontmatter) || badDoc.Body != "" {
+		t.Fatalf("loadIndexDocument(bad) = %#v, %v; want ErrUnterminatedFrontmatter", badDoc, badDocErr)
 	}
 	if missingDirsErr != nil || len(missingDirs) != 0 {
 		t.Fatalf("directoriesToIndex(missing) = %#v, %v; want empty", missingDirs, missingDirsErr)
@@ -517,11 +523,12 @@ func TestRegenerateIndexesStatErrorAndEmptyDirectoryEntries(t *testing.T) {
 	if badPathErr == nil || badPathWritten != nil {
 		t.Fatalf("RegenerateIndexesWith(NUL) = %#v, %v; want nil error", badPathWritten, badPathErr)
 	}
-	if err != nil {
-		t.Fatalf("RegenerateIndexes(bad doc root) error = %v", err)
+	const wantError = `parse index document "bad.md": unterminated frontmatter`
+	if err == nil || err.Error() != wantError || !errors.Is(err, ErrUnterminatedFrontmatter) {
+		t.Fatalf("RegenerateIndexes(bad doc root) error = %v, want %q", err, wantError)
 	}
-	if len(written) != 0 {
-		t.Fatalf("RegenerateIndexes(bad doc root) wrote %d files, want 0", len(written))
+	if written != nil {
+		t.Fatalf("RegenerateIndexes(bad doc root) wrote %#v, want nil", written)
 	}
 }
 
@@ -544,11 +551,21 @@ func TestRegenerateIndexesDirectoryRemovedDuringProcessing(t *testing.T) {
 	}
 
 	// Act.
-	_, err := RegenerateIndexesWith(root, synth)
+	written, err := RegenerateIndexesWith(root, synth)
 
 	// Assert.
-	if err != nil {
-		t.Fatalf("RegenerateIndexesWith(removed directory) error = %v", err)
+	const wantError = `invalid index destination "b/index.md": ancestor "b" does not exist`
+	if err == nil || err.Error() != wantError {
+		t.Fatalf("RegenerateIndexesWith(removed directory) error = %v, want %q", err, wantError)
+	}
+	if written != nil {
+		t.Fatalf("written = %#v, want nil", written)
+	}
+	if _, statErr := os.Lstat(filepath.Join(root, "a", indexFilename)); !errors.Is(statErr, fs.ErrNotExist) {
+		t.Fatalf("a/index.md stat error = %v, want not exist", statErr)
+	}
+	if _, statErr := os.Lstat(filepath.Join(root, indexFilename)); !errors.Is(statErr, fs.ErrNotExist) {
+		t.Fatalf("index.md stat error = %v, want not exist", statErr)
 	}
 }
 

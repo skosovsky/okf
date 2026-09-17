@@ -1,0 +1,19 @@
+{
+  "exit_code": 1,
+  "scanned_files": 2,
+  "diagnostics": [
+    {
+      "code": "index_structure_invalid",
+      "spec_ref": "okf-v0.2#12",
+      "file": "index.md",
+      "field_path": "okf_version",
+      "severity": "ERROR",
+      "message": "root index.md okf_version should be a non-empty string"
+    }
+  ],
+  "counts": {
+    "errors": 1,
+    "warnings": 0,
+    "info": 0
+  }
+}

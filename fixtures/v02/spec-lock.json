@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/GoogleCloudPlatform/knowledge-catalog",
+  "path": "okf/SPEC.md",
+  "revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96",
+  "raw_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/knowledge-catalog/3fcbb9f828c2f23d109c855ee403c3a4c81f3a96/okf/SPEC.md",
+  "sha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+  "normative_sections": "1-13",
+  "canonical_example": "Appendix A"
+}

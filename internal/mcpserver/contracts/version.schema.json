@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/version.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["declared", "effective", "resolution", "compatibility"],
+  "properties": {
+    "declared": {"type": ["string", "null"]},
+    "effective": {"type": ["string", "null"]},
+    "resolution": {"enum": ["declared", "default", "explicit", "future-best-effort", null]},
+    "compatibility": {"enum": ["native", "legacy", "best-effort", null]}
+  }
+}
