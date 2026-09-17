@@ -31,8 +31,8 @@ formats that are:
 - **Portable** across tools, organizations, and time.
 
 Increasingly, a knowledge corpus is not authored once and then read: it
-is **continuously written and maintained by agents**. When most concepts
-are machine-generated, a consumer needs answers that a plain
+is **continuously written and maintained by agents**. When most concepts 
+are machine-generated, a consumer needs answers that a plain 
 markdown-plus-frontmatter convention does not make first-class:
 
 1. What was this created from, and how was it verified? (**provenance**)
@@ -42,8 +42,8 @@ markdown-plus-frontmatter convention does not make first-class:
 5. Was this number produced the way we said it must be? (**attestation**)
 
 OKF v0.2 makes provenance, trust, lifecycle, and attestation first-class
-while keeping the format minimally opinionated. The format is minimally
-opinionated. It standardizes only the small set of structural conventions
+while keeping the format minimally opinionated. The format is minimally 
+opinionated. It standardizes only the small set of structural conventions 
 needed to make a knowledge corpus self-describing — anything beyond that
 is left to the producer.
 

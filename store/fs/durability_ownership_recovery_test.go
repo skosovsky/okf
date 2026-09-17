@@ -239,6 +239,11 @@ func TestOwnedRemoveRevalidatesAfterDescriptorBarrier(t *testing.T) {
 				if operation != map[bool]string{false: "remove", true: "remove_dir"}[test.dir] || foreign != nil {
 					return nil
 				}
+				pinned, err := os.Open(absolute)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer pinned.Close()
 				if err := os.Remove(absolute); err != nil {
 					t.Fatal(err)
 				}

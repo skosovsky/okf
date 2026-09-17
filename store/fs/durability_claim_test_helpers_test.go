@@ -107,9 +107,21 @@ func replaceRegularWithSameBytes(t *testing.T, root, name string) (string, []byt
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(absolute); err != nil {
+	placeholder, err := os.CreateTemp(filepath.Dir(absolute), ".okf-replaced-*")
+	if err != nil {
 		t.Fatal(err)
 	}
+	quarantine := placeholder.Name()
+	if err := placeholder.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(quarantine); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(absolute, quarantine); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(quarantine) })
 	if err := os.WriteFile(absolute, raw, before.Mode().Perm()); err != nil {
 		t.Fatal(err)
 	}
@@ -119,6 +131,9 @@ func replaceRegularWithSameBytes(t *testing.T, root, name string) (string, []byt
 	}
 	if os.SameFile(before, after) {
 		t.Fatal("replacement unexpectedly retained inode")
+	}
+	if err := os.Remove(quarantine); err != nil {
+		t.Fatal(err)
 	}
 	return name, raw, after
 }

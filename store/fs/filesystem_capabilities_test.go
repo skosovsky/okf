@@ -111,8 +111,8 @@ func TestFilesystemCaseCapabilityGuardsPublicMutations(t *testing.T) {
 func TestForcedFilesystemAliasesRejectStageAndRecovery(t *testing.T) {
 	root, s := adversarialStore(t, Config{})
 	t.Cleanup(func() { _ = s.Close() })
-	s.caseAliases, s.normalizationAliases = true, true // private test seam: model a normalizing, case-folding volume.
 	base := adversarialSnapshot(t, s)
+	s.caseAliases, s.normalizationAliases = true, true // private test seam: model a normalizing, case-folding volume.
 	next, err := newSnapshot(context.Background(), map[string][]byte{"A.md": []byte(adversarialDocument("upper")), "a.md": []byte(adversarialDocument("lower")), "b.md": []byte(adversarialDocument("B"))})
 	if err != nil {
 		t.Fatal(err)

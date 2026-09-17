@@ -161,7 +161,11 @@ func put(t *testing.T, root, name, content string) {
 
 func shortDir(t *testing.T) string {
 	t.Helper()
-	dir, err := os.MkdirTemp("/private/tmp", "okf-lock-")
+	base := os.TempDir()
+	if _, err := os.Stat("/private/tmp"); err == nil {
+		base = "/private/tmp"
+	}
+	dir, err := os.MkdirTemp(base, "okf-lock-")
 	must(t, err)
 	t.Cleanup(func() { os.RemoveAll(dir) })
 	return dir
