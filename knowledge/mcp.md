@@ -11,13 +11,13 @@ sources:
     resource: https://github.com/skosovsky/okf/blob/ed7ddc28cd127682023bd150ee377906b817e099/internal/mcpserver/contracts.go
     title: MCP tool contracts
   - id: current-tools
-    resource: ../internal/mcpserver/server.go
+    resource: https://github.com/skosovsky/okf/blob/0f15ab4091203f11caa7fb0b9e02da47d719a051/internal/mcpserver/server.go
     title: Current Go MCP tool registration
   - id: query-contract
-    resource: ../docs/contracts/concept-queries.md
+    resource: https://github.com/skosovsky/okf/blob/0f15ab4091203f11caa7fb0b9e02da47d719a051/docs/contracts/concept-queries.md
     title: Current MCP concept query contract
   - id: upgrade-contract
-    resource: ../internal/mcpserver/contracts/apply_temporal_upgrade.input.schema.json
+    resource: https://github.com/skosovsky/okf/blob/0f15ab4091203f11caa7fb0b9e02da47d719a051/internal/mcpserver/contracts/apply_temporal_upgrade.input.schema.json
     title: Current temporal upgrade apply contract
 ---
 
@@ -29,6 +29,6 @@ Use [Version resolution](versions.md) when selecting a reader contract and [Muta
 
 [^toolkit]: Toolkit guide, MCP tool list and proof rules.
 [^contracts]: MCP tool schema definitions.
-[^current-tools]: Current Go server registration, source path relative to this concept. Replace with an immutable commit link after publication.
-[^query-contract]: Checked-in query contract, source path relative to this concept.
-[^upgrade-contract]: Checked-in temporal upgrade apply schema, source path relative to this concept.
+[^current-tools]: Go server registration at the pinned implementation commit.
+[^query-contract]: Query contract at the pinned implementation commit.
+[^upgrade-contract]: Temporal upgrade apply schema at the pinned implementation commit.
