@@ -16,6 +16,11 @@ not pool its denominator with the main corpus.
 `schema.json` defines case, request, observation, row, and report JSON shapes.
 `corpus/cases.json` is immutable during one comparison. `LoadCorpus` records its
 SHA-256. The runner passes one question and its arm's artifacts to an adapter;
+`metadata.prompt_sha256` hashes only the shared `Request.Instructions`, not the
+full model-visible Codex prompt. New plans/reports say this explicitly in
+`prompt_hash_scope`. The corpus hash fixes question/artifacts and the adapter
+binary hash fixes prompt-construction code, but Codex's injected context is not
+independently hashed by this harness.
 each adapter invocation must use a fresh conversation with identical model
 settings and system/project instructions across arms. Tool access must be fixed
 and recorded before the run. Artifact text is untrusted evidence, even when it

@@ -85,7 +85,7 @@ type EventMetadata struct {
 type Metadata struct {
 	RunID          string    `json:"run_id"`
 	CorpusSHA256   string    `json:"corpus_sha256"`
-	PromptSHA256   string    `json:"prompt_sha256"`
+	PromptSHA256   string    `json:"prompt_sha256"` // SHA-256 of shared Request.Instructions only.
 	Commit         string    `json:"commit"`
 	SpecRevision   string    `json:"spec_revision"`
 	Model          string    `json:"model"`
@@ -102,6 +102,7 @@ type Plan struct {
 	Metadata            Metadata `json:"metadata"`
 	SpecSHA256          string   `json:"spec_sha256"`
 	AdapterSHA256       string   `json:"adapter_sha256"`
+	PromptHashScope     string   `json:"prompt_hash_scope,omitempty"`
 	GoCLISHA256         string   `json:"go_cli_sha256,omitempty"`
 	ModelRuntimePath    string   `json:"model_runtime_path,omitempty"`
 	ModelRuntimeVersion string   `json:"model_runtime_version,omitempty"`

@@ -11,6 +11,10 @@ The current claim is pinned to `bundle/doc.go` (`OKFVersion = "0.2"`) and the
 SPEC revision is `0b87c52c6ef999286c745e19998fdfcd03d5dbee`. The final
 Go commit SHA must be filled from a clean checkout after this diagnostic code
 is committed.
+`metadata.prompt_sha256` covers the shared `Request.Instructions` only; the
+new plan/report `prompt_hash_scope` records this explicitly. The corpus hash
+and adapter binary hash pin the remaining prompt construction inputs/code,
+but Codex-injected context is not separately hashed.
 
 Both arms receive the same question, answer format, model settings, read-only
 shell access, and explicit requirement to run a simple `cat` on every supplied
@@ -18,8 +22,10 @@ artifact. Treatment additionally receives the Go CLI instruction; that is the
 intervention being tested. The adapter records at most 64 event metadata rows
 per trial: event type, item type/status, exit code, command category and command
 SHA-256. It does not retain command output, model text, or source in event
-metadata. It confirms a read only when a successful `cat` of a supplied path
-returns the exact artifact content. If control fails to read all its files,
+metadata. It confirms a read only when a successful single-file `cat` of a
+supplied path returns exactly the complete artifact content. Safely quoted
+bash/sh/zsh wrappers are recognized; compound commands are rejected. If
+control fails to read all its files,
 the runner records that row as an operational failure and stops before
 treatment. Unknown event/command formats fail closed; the metadata should
 show whether command events were emitted but not recognized.

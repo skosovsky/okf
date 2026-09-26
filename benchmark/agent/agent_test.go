@@ -124,7 +124,7 @@ func TestSchemaCoversPlanRequestRowAndReport(t *testing.T) {
 	// Arrange
 	cases, hash := fixture(t)
 	m := Metadata{RunID: "pilot", CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{"reasoning_effort":"low"}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
-	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, ToolkitMode: "treatment", ModelToolAccess: "read-only temp", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
+	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, PromptHashScope: "shared_request_instructions_only", ToolkitMode: "treatment", ModelToolAccess: "read-only temp", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
 	obs := Observation{Answer: cases[0].Expected.Answer, Evidence: []string{"current"}}
 	row := Row{Metadata: m, CaseID: cases[0].ID, Arm: Control, Repeat: 1, Observation: obs, Verdict: Correct}
 	report, err := AnalyzePlanned(cases, hash, []Row{row}, plan)
@@ -387,17 +387,25 @@ func TestAnalyzeChecksPrerecordedPlan(t *testing.T) {
 	// Arrange
 	cases, hash := fixture(t)
 	m := Metadata{RunID: "pilot", CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{"reasoning_effort":"low"}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
-	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, ToolkitMode: "treatment", ModelToolAccess: "read-only temp", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
+	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, PromptHashScope: "shared_request_instructions_only", ToolkitMode: "treatment", ModelToolAccess: "read-only temp", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
 	row := Row{Metadata: m, CaseID: cases[0].ID, Arm: Control, Repeat: 1, Observation: Observation{Answer: cases[0].Expected.Answer, Evidence: []string{"current"}}, Verdict: Correct}
 	// Act
-	_, err := AnalyzePlanned(cases, hash, []Row{row}, plan)
+	report, err := AnalyzePlanned(cases, hash, []Row{row}, plan)
 	// Assert
 	if err != nil {
 		t.Fatal(err)
 	}
+	if report.PromptHashScope != "shared_request_instructions_only" {
+		t.Fatal("prompt hash scope missing from report")
+	}
 	row.Metadata.Model = "other"
 	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
 		t.Fatal("accepted model drift")
+	}
+	row.Metadata.Model = "model"
+	plan.PromptHashScope = "full_model_prompt"
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
+		t.Fatal("accepted false full-prompt provenance")
 	}
 }
 

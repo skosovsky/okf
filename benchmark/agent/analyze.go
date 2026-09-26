@@ -40,6 +40,7 @@ type Report struct {
 	ModelRuntimePath    string               `json:"model_runtime_path,omitempty"`
 	ModelRuntimeVersion string               `json:"model_runtime_version,omitempty"`
 	ModelRuntimeSHA256  string               `json:"model_runtime_sha256,omitempty"`
+	PromptHashScope     string               `json:"prompt_hash_scope,omitempty"`
 	RepeatCount         int                  `json:"repeat_count"`
 	InvalidRawRows      int                  `json:"invalid_raw_rows"`
 	Valid               bool                 `json:"valid"`
@@ -205,6 +206,9 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 			return Report{}, errors.New("incomplete model runtime provenance")
 		}
 	}
+	if plan.PromptHashScope != "" && plan.PromptHashScope != "shared_request_instructions_only" {
+		return Report{}, errors.New("unknown prompt hash scope")
+	}
 	if plan.DiagnosticRead && (corpusHash != DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || plan.ToolkitMode != "direct" || plan.Repeats != 1 || plan.MaxTrials != 2 || plan.MaxSeconds != 120 || plan.MaxTokens != 60000 || !plan.Unpriced || plan.MaxCostUSD != 0 || plan.Exploratory || plan.ModelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
 		return Report{}, errors.New("invalid diagnostic read plan")
 	}
@@ -242,6 +246,7 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	report.ModelRuntimePath = plan.ModelRuntimePath
 	report.ModelRuntimeVersion = plan.ModelRuntimeVersion
 	report.ModelRuntimeSHA256 = plan.ModelRuntimeSHA256
+	report.PromptHashScope = plan.PromptHashScope
 	if plan.ToolkitMode == "direct" && plan.ModelRuntimePath == "" {
 		report.Valid = false
 		report.Reasons = append(report.Reasons, "direct run lacks pinned model runtime")

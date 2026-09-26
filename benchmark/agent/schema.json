@@ -530,6 +530,7 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         },
+        "prompt_hash_scope": {"type": "string", "enum": ["shared_request_instructions_only"]},
         "repeat_count": {
           "type": "integer",
           "minimum": 1
@@ -612,6 +613,7 @@
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         },
+        "prompt_hash_scope": {"type": "string", "enum": ["shared_request_instructions_only"]},
         "toolkit_mode": {
           "enum": [
             "none",

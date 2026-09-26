@@ -91,7 +91,7 @@ func confirmedReadArtifacts(raw json.RawMessage, artifacts []agent.Artifact) []s
 	paths := catArtifactPaths(item.Command, artifacts)
 	var ids []string
 	for _, a := range artifacts {
-		if paths[a.Path] && strings.Contains(item.AggregatedOutput, a.Content) {
+		if paths[a.Path] && item.AggregatedOutput == a.Content {
 			ids = append(ids, a.ID)
 		}
 	}
@@ -110,7 +110,7 @@ func catArtifactPaths(command string, artifacts []agent.Artifact) map[string]boo
 	if len(argv) > 0 && argv[0] == "--" {
 		argv = argv[1:]
 	}
-	if len(argv) == 0 {
+	if len(argv) != 1 {
 		return nil
 	}
 	allowed := make(map[string]bool, len(artifacts))
@@ -128,7 +128,7 @@ func catArtifactPaths(command string, artifacts []agent.Artifact) map[string]boo
 }
 
 func simpleCommandArgv(command string) []string {
-	for _, shell := range []string{"bash", "/bin/bash", "sh", "/bin/sh"} {
+	for _, shell := range []string{"bash", "/bin/bash", "sh", "/bin/sh", "zsh", "/bin/zsh"} {
 		prefix := shell + " -lc "
 		if strings.HasPrefix(command, prefix) {
 			inner := strings.TrimPrefix(command, prefix)

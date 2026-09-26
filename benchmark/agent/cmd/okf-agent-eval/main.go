@@ -134,7 +134,7 @@ func run(args []string) error {
 			id = time.Now().UTC().Format("20060102T150405.000000000Z")
 		}
 		meta := agent.Metadata{RunID: id, CorpusSHA256: hash, PromptSHA256: hex.EncodeToString(ph[:]), Commit: *commit, SpecRevision: *spec, Model: *model, ModelVersion: *modelVersion, Settings: *settings, Adapter: *adapter, Clock: time.Now().UTC(), GraderRevision: "exact-v1"}
-		plan := agent.Plan{Metadata: meta, SpecSHA256: specHash, AdapterSHA256: adapterHash, GoCLISHA256: goCLIHash, ModelRuntimePath: *modelRuntime, ModelRuntimeVersion: *modelRuntimeVersion, ModelRuntimeSHA256: runtimeHash, ToolkitMode: *toolkitMode, ModelToolAccess: *modelToolAccess, Exploratory: *exploratory, Repeats: *repeats, CaseCount: len(cases), MaxTrials: *maxTrials, MaxSeconds: *maxSeconds, MaxTokens: *maxTokens, MaxCostUSD: *maxCost, Unpriced: *unpriced, DiagnosticRead: *diagnosticRead}
+		plan := agent.Plan{Metadata: meta, SpecSHA256: specHash, AdapterSHA256: adapterHash, PromptHashScope: "shared_request_instructions_only", GoCLISHA256: goCLIHash, ModelRuntimePath: *modelRuntime, ModelRuntimeVersion: *modelRuntimeVersion, ModelRuntimeSHA256: runtimeHash, ToolkitMode: *toolkitMode, ModelToolAccess: *modelToolAccess, Exploratory: *exploratory, Repeats: *repeats, CaseCount: len(cases), MaxTrials: *maxTrials, MaxSeconds: *maxSeconds, MaxTokens: *maxTokens, MaxCostUSD: *maxCost, Unpriced: *unpriced, DiagnosticRead: *diagnosticRead}
 		pf, err := os.OpenFile(*planPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 		if err != nil {
 			return err
