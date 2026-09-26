@@ -103,6 +103,7 @@ type Plan struct {
 	SpecSHA256          string   `json:"spec_sha256"`
 	AdapterSHA256       string   `json:"adapter_sha256"`
 	PromptHashScope     string   `json:"prompt_hash_scope,omitempty"`
+	ToolCallAccounting  string   `json:"tool_call_accounting,omitempty"` // separate-v1 keeps runner and model calls distinct.
 	GoCLISHA256         string   `json:"go_cli_sha256,omitempty"`
 	ModelRuntimePath    string   `json:"model_runtime_path,omitempty"`
 	ModelRuntimeVersion string   `json:"model_runtime_version,omitempty"`
@@ -121,16 +122,17 @@ type Plan struct {
 }
 
 type Row struct {
-	Metadata        Metadata    `json:"metadata"`
-	CaseID          string      `json:"case_id"`
-	Arm             string      `json:"arm"`
-	Repeat          int         `json:"repeat"`
-	Observation     Observation `json:"observation"`
-	ToolkitEvidence []Artifact  `json:"toolkit_evidence,omitempty"`
-	TrialElapsedMS  int64       `json:"trial_elapsed_ms"`
-	Failure         string      `json:"failure,omitempty"`
-	Retries         int         `json:"retries"`
-	Verdict         string      `json:"verdict"`
+	Metadata           Metadata    `json:"metadata"`
+	CaseID             string      `json:"case_id"`
+	Arm                string      `json:"arm"`
+	Repeat             int         `json:"repeat"`
+	Observation        Observation `json:"observation"`
+	ToolkitEvidence    []Artifact  `json:"toolkit_evidence,omitempty"`
+	RunnerToolkitCalls int         `json:"runner_toolkit_calls,omitempty"`
+	TrialElapsedMS     int64       `json:"trial_elapsed_ms"`
+	Failure            string      `json:"failure,omitempty"`
+	Retries            int         `json:"retries"`
+	Verdict            string      `json:"verdict"`
 }
 
 const (

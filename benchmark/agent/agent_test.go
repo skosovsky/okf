@@ -39,6 +39,25 @@ func TestBackfillWriterPublishesConsumerCorpus(t *testing.T) {
 			}
 		}
 	}
+	for _, c := range cases {
+		if c.ID != "backfill-current-code" {
+			continue
+		}
+		var controlDiff, treatmentDiff string
+		for _, artifact := range c.Control {
+			if artifact.ID == "current-code" {
+				controlDiff = artifact.Content
+			}
+		}
+		for _, artifact := range c.Treatment {
+			if artifact.ID == "current-code" {
+				treatmentDiff = artifact.Content
+			}
+		}
+		if controlDiff == "" || treatmentDiff != controlDiff || !bytes.Contains([]byte(controlDiff), []byte("+const Mode = \"B\"")) {
+			t.Fatal("current-code evidence must be identical and present in both arms")
+		}
+	}
 	committed, err := os.ReadFile("corpus/backfill_cases.json")
 	if err != nil {
 		t.Fatal(err)

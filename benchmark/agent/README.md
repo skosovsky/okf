@@ -31,7 +31,9 @@ unknown usage remains zero and must be identified in the published run notes.
 
 `go test ./benchmark/agent/...` runs offline. [PILOT.md](PILOT.md) records the
 historical primary commands; [PILOT-DIAGNOSTIC.md](PILOT-DIAGNOSTIC.md) defines
-the one-case read-proof diagnostic. To analyze saved rows:
+the one-case read-proof diagnostic. [PILOT-PRECOMPUTED.md](PILOT-PRECOMPUTED.md)
+preregisters a new paired run using runner-produced Go CLI projections. To
+analyze saved rows:
 
 ```sh
 go run ./benchmark/agent/cmd/okf-agent-eval analyze \
@@ -55,8 +57,11 @@ go run ./benchmark/agent/cmd/okf-agent-eval run \
 
 The command writes an exclusive, synced plan file before the first model call.
 Analysis checks every row against that file. The exact-v1 grader accepts only
-the preregistered answer or aliases and a
-cited evidence artifact ID. It separates stale, wrong, refusal, ungradable, and
+the preregistered answer or aliases and a cited original evidence artifact ID.
+A `cli-current` projection derives from `current`, so the shared instruction
+tells both arms to cite `current`. A correct answer citing only `cli-current`
+remains ungradable under `exact-v1`; the grader does not silently translate
+IDs. It separates stale, wrong, refusal, ungradable, and
 operational failure. The analyzer rejects duplicate, unknown, mismatched, or
 tampered rows; missing rows and operational failures remain visible against the
 full `cases × arms × repeats` denominator. Malformed JSONL lines are counted
@@ -65,6 +70,11 @@ Factual error and stale rates use
 `correct + stale + wrong` as denominator; completion uses all expected trials.
 `valid` describes run completeness,
 not whether the agent answered correctly. A small pilot is descriptive only.
+New plans set `tool_call_accounting=separate-v1`: `tool_calls` counts model
+tool events, `model_toolkit_calls` counts model-initiated Go CLI events, and
+`runner_toolkit_calls` counts Go CLI calls made by the runner before the model.
+Legacy plans without this field retain their historical mixed `tool_calls`
+accounting and are not relabeled after the fact.
 Adapters should return an `adapter_error` observation even after a failed paid
 call, preserving any token usage extracted before failure. The Codex adapter
 does this for nonzero `codex exec` exits. Caps on tokens and priced calls are
@@ -96,8 +106,9 @@ The included
 `codex-adapter` can run a bounded mechanism smoke test in an ephemeral,
 read-only directory. Its model version field is an explicit pinned model ID;
 the backend snapshot is not independently verifiable. In `treatment` and
-`both` modes, the runner invokes our Go CLI `validate` and `parse` for each
-enabled bundle, adds their outputs to the model evidence, and saves those
+`both` modes, the runner invokes the Go CLI implementation in process
+(`internal/okfcli.Run`) for `validate` and `parse` on each enabled bundle,
+adds their outputs to the model evidence, and saves those
 outputs in each row. For direct tool use, run with
 `-toolkit-mode direct -go-cli /absolute/path/to/okf`; the model must invoke the
 CLI itself. The adapter
@@ -111,5 +122,10 @@ is preserved separately from the later authorized failed run.
 `cmd/prepare-backfill` applies the frozen 010 reversal fixture through the Go
 store and writes `corpus/backfill_cases.json` plus a separate coverage report.
 The three consumer questions cover A→B, truncated evidence and current code.
-They are ready for an independent model run after approval; the offline test
-only verifies writer publication and Go CLI readability.
+The current-code question gives both arms the same frozen `git/current.diff`
+artifact so a wrong answer is not caused by missing source evidence. Run the
+three backfill questions with `-toolkit-mode none`: the current-code treatment
+also includes this raw diff, while Go CLI treatment projection accepts only
+OKF files. They are ready for an independent model run after approval; the
+offline test verifies writer publication, identical code evidence and Go CLI
+readability of the two bundle-only cases, not consumer answer quality.

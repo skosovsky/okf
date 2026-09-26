@@ -75,10 +75,16 @@ func BuildReversalFixtureCorpus(ctx context.Context, manifestJSON, analysisJSON 
 	treatment := []Artifact{{ID: "bundle-index", Path: "index.md", Content: files["index.md"]}, {ID: "decision", Path: "decision.md", Content: files["decision.md"]}, {ID: "handler", Path: "handler-status.md", Content: files["handler-status.md"]}}
 	decisionControl := []Artifact{{ID: "historical", Path: "git/old.diff", Content: oldDiff}, {ID: "decision", Path: "git/current.diff", Content: currentDiff}}
 	handlerControl := []Artifact{{ID: "handler", Path: "git/handler-diff.txt", Content: "Captured diff is partial; rollout status cannot be established.\n" + handlerDiff}}
+	// The current-code question must expose the same captured Go diff to both
+	// consumers. Otherwise it measures missing evidence rather than whether the
+	// reconstructed bundle helps a consumer use current source evidence.
+	currentCode := Artifact{ID: "current-code", Path: "git/current.diff", Content: currentDiff}
+	currentCodeTreatment := append(append([]Artifact(nil), treatment...), currentCode)
+	currentCodeControl := []Artifact{{ID: "historical", Path: "git/old.diff", Content: oldDiff}, currentCode}
 	cases := []Case{
 		{ID: "backfill-reversal", Category: "reversal", Tier: "mechanism_only", Question: "Which mode is the current decision?", Control: decisionControl, Treatment: treatment, Expected: Expected{Answer: "B", Evidence: []string{"decision"}, Support: []SupportQuote{{ArtifactID: "decision", ControlQuote: "+const Mode = \"B\"", TreatmentQuote: "mode B"}}, StaleAnswers: []string{"A"}}},
 		{ID: "backfill-truncated", Category: "truncated_diff", Tier: "mechanism_only", Question: "Does the captured evidence prove that the handler rollout completed?", Control: handlerControl, Treatment: treatment, Expected: Expected{Answer: "Insufficient evidence", Evidence: []string{"handler"}, Support: []SupportQuote{{ArtifactID: "handler", ControlQuote: "Captured diff is partial", TreatmentQuote: "Evidence is incomplete"}}, StaleAnswers: []string{"Yes"}}},
-		{ID: "backfill-current-code", Category: "stale_vs_code", Tier: "mechanism_only", Question: "What value does Mode have in the captured current Go diff?", Control: decisionControl, Treatment: treatment, Expected: Expected{Answer: "B", Evidence: []string{"decision"}, Support: []SupportQuote{{ArtifactID: "decision", ControlQuote: "+const Mode = \"B\"", TreatmentQuote: "mode B"}}, StaleAnswers: []string{"A"}}},
+		{ID: "backfill-current-code", Category: "stale_vs_code", Tier: "mechanism_only", Question: "What value does Mode have in the captured current Go diff?", Control: currentCodeControl, Treatment: currentCodeTreatment, Expected: Expected{Answer: "B", Evidence: []string{"current-code"}, Support: []SupportQuote{{ArtifactID: "current-code", Quote: "+const Mode = \"B\""}}, StaleAnswers: []string{"A"}}},
 	}
 	if err := ValidateCases(cases); err != nil {
 		return nil, plan.Coverage, err

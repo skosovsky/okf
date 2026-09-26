@@ -21,7 +21,9 @@ type ArmReport struct {
 	Refusal            int     `json:"refusal"`
 	Ungradable         int     `json:"ungradable"`
 	OperationalFailure int     `json:"operational_failure"`
-	ToolCalls          int     `json:"tool_calls"`
+	ToolCalls          int     `json:"tool_calls"` // Model-initiated calls in separate-v1 plans.
+	ModelToolkitCalls  int     `json:"model_toolkit_calls,omitempty"`
+	RunnerToolkitCalls int     `json:"runner_toolkit_calls,omitempty"`
 	InputTokens        int     `json:"input_tokens"`
 	OutputTokens       int     `json:"output_tokens"`
 	CacheTokens        int     `json:"cache_tokens"`
@@ -41,6 +43,7 @@ type Report struct {
 	ModelRuntimeVersion string               `json:"model_runtime_version,omitempty"`
 	ModelRuntimeSHA256  string               `json:"model_runtime_sha256,omitempty"`
 	PromptHashScope     string               `json:"prompt_hash_scope,omitempty"`
+	ToolCallAccounting  string               `json:"tool_call_accounting,omitempty"`
 	RepeatCount         int                  `json:"repeat_count"`
 	InvalidRawRows      int                  `json:"invalid_raw_rows"`
 	Valid               bool                 `json:"valid"`
@@ -119,7 +122,7 @@ func Analyze(cases []Case, corpusHash string, rows []Row, repeats int) (Report, 
 			return Report{}, fmt.Errorf("duplicate trial %s", key)
 		}
 		seen[key] = true
-		if row.Observation.ToolCalls < 0 || row.Observation.InputTokens < 0 || row.Observation.OutputTokens < 0 || row.Observation.CacheTokens < 0 || row.Observation.ElapsedMS < 0 || row.TrialElapsedMS < 0 || row.Retries < 0 || (row.Observation.CostUSD != nil && *row.Observation.CostUSD < 0) {
+		if row.Observation.ToolCalls < 0 || row.Observation.ToolkitCalls < 0 || row.RunnerToolkitCalls < 0 || row.Observation.InputTokens < 0 || row.Observation.OutputTokens < 0 || row.Observation.CacheTokens < 0 || row.Observation.ElapsedMS < 0 || row.TrialElapsedMS < 0 || row.Retries < 0 || (row.Observation.CostUSD != nil && *row.Observation.CostUSD < 0) {
 			return Report{}, fmt.Errorf("%s: negative usage", key)
 		}
 		if row.Metadata.CorpusSHA256 != corpusHash || row.Metadata.GraderRevision != "exact-v1" {
@@ -156,6 +159,8 @@ func Analyze(cases []Case, corpusHash string, rows []Row, repeats int) (Report, 
 			a.OperationalFailure++
 		}
 		a.ToolCalls += row.Observation.ToolCalls
+		a.ModelToolkitCalls += row.Observation.ToolkitCalls
+		a.RunnerToolkitCalls += row.RunnerToolkitCalls
 		a.InputTokens += row.Observation.InputTokens
 		a.OutputTokens += row.Observation.OutputTokens
 		a.CacheTokens += row.Observation.CacheTokens
@@ -209,6 +214,9 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	if plan.PromptHashScope != "" && plan.PromptHashScope != "shared_request_instructions_only" {
 		return Report{}, errors.New("unknown prompt hash scope")
 	}
+	if plan.ToolCallAccounting != "" && plan.ToolCallAccounting != "separate-v1" {
+		return Report{}, errors.New("unknown tool call accounting")
+	}
 	diagnosticBudget := (plan.Metadata.RunID == DiagnosticV1RunID && plan.MaxTokens == DiagnosticV1MaxTokens) || (plan.Metadata.RunID == DiagnosticV2RunID && plan.MaxTokens == DiagnosticV2MaxTokens)
 	if plan.DiagnosticRead && (!diagnosticBudget || corpusHash != DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || plan.ToolkitMode != "direct" || plan.Repeats != 1 || plan.MaxTrials != 2 || plan.MaxSeconds != 120 || !plan.Unpriced || plan.MaxCostUSD != 0 || plan.Exploratory || plan.ModelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
 		return Report{}, errors.New("invalid diagnostic read plan")
@@ -224,8 +232,15 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 		if wantToolkit && row.Failure == "" && len(row.ToolkitEvidence) == 0 {
 			return Report{}, fmt.Errorf("%s/%s: missing toolkit evidence", row.CaseID, row.Arm)
 		}
-		if len(row.ToolkitEvidence) > row.Observation.ToolCalls {
-			return Report{}, fmt.Errorf("%s/%s: toolkit calls undercounted", row.CaseID, row.Arm)
+		if plan.ToolCallAccounting == "separate-v1" {
+			if (!wantToolkit && row.RunnerToolkitCalls != 0) || (wantToolkit && row.Failure == "" && row.RunnerToolkitCalls != len(row.ToolkitEvidence)) {
+				return Report{}, fmt.Errorf("%s/%s: runner toolkit calls do not match evidence", row.CaseID, row.Arm)
+			}
+			if row.Observation.ToolkitCalls > row.Observation.ToolCalls || (plan.ToolkitMode != "direct" && row.Observation.ToolkitCalls != 0) {
+				return Report{}, fmt.Errorf("%s/%s: invalid model toolkit calls", row.CaseID, row.Arm)
+			}
+		} else if len(row.ToolkitEvidence) > row.Observation.ToolCalls {
+			return Report{}, fmt.Errorf("%s/%s: legacy toolkit calls undercounted", row.CaseID, row.Arm)
 		}
 		if plan.ToolkitMode == "direct" && row.Arm == Treatment && row.Failure == "" && row.Observation.ToolkitCalls < 1 {
 			return Report{}, fmt.Errorf("%s: model made no Go CLI call", row.CaseID)
@@ -248,6 +263,7 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	report.ModelRuntimeVersion = plan.ModelRuntimeVersion
 	report.ModelRuntimeSHA256 = plan.ModelRuntimeSHA256
 	report.PromptHashScope = plan.PromptHashScope
+	report.ToolCallAccounting = plan.ToolCallAccounting
 	if plan.ToolkitMode == "direct" && plan.ModelRuntimePath == "" {
 		report.Valid = false
 		report.Reasons = append(report.Reasons, "direct run lacks pinned model runtime")

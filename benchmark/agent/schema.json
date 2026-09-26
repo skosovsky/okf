@@ -357,6 +357,10 @@
           "items": {
             "$ref": "#/$defs/artifact"
           }
+        },
+        "runner_toolkit_calls": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
@@ -460,6 +464,14 @@
           "type": "integer",
           "minimum": 0
         },
+        "model_toolkit_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "runner_toolkit_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
         "input_tokens": {
           "type": "integer",
           "minimum": 0
@@ -531,6 +543,7 @@
           "pattern": "^[a-f0-9]{64}$"
         },
         "prompt_hash_scope": {"type": "string", "enum": ["shared_request_instructions_only"]},
+        "tool_call_accounting": {"type": "string", "enum": ["separate-v1"]},
         "repeat_count": {
           "type": "integer",
           "minimum": 1
@@ -614,6 +627,7 @@
           "pattern": "^[a-f0-9]{64}$"
         },
         "prompt_hash_scope": {"type": "string", "enum": ["shared_request_instructions_only"]},
+        "tool_call_accounting": {"type": "string", "enum": ["separate-v1"]},
         "toolkit_mode": {
           "enum": [
             "none",
