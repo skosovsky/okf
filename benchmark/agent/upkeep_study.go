@@ -239,7 +239,7 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 	sessions := map[string]bool{}
 	for _, w := range rows.Writers {
 		k := key(w.CaseID, w.Arm, w.Repeat)
-		if _, ok := cases[w.CaseID]; !ok || (w.Arm != UpkeepCheckerOff && w.Arm != UpkeepCheckerOn) || w.Repeat < 1 || w.Repeat > plan.Repeats || writers[k].CaseID != "" || w.SessionID == "" || sessions[w.SessionID] || w.InputTokens < 0 || w.OutputTokens < 0 {
+		if _, ok := cases[w.CaseID]; !ok || (w.Arm != UpkeepCheckerOff && w.Arm != UpkeepCheckerOn) || w.Repeat < 1 || w.Repeat > plan.Repeats || writers[k].CaseID != "" || (w.SessionID == "" && w.Failure == "") || (w.SessionID != "" && sessions[w.SessionID]) || w.InputTokens < 0 || w.OutputTokens < 0 {
 			return UpkeepStudyReport{}, fmt.Errorf("invalid or duplicate writer row %s", k)
 		}
 		if w.StartingSHA256 != starts[w.CaseID] {
@@ -292,12 +292,14 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 			}
 		}
 		writers[k] = w
-		sessions[w.SessionID] = true
+		if w.SessionID != "" {
+			sessions[w.SessionID] = true
+		}
 	}
 	for _, c := range rows.Consumers {
 		k := key(c.CaseID, c.Arm, c.Repeat)
 		w, exists := writers[k]
-		if !exists || w.Failure != "" || consumers[k].CaseID != "" || c.ConsumerSessionID == "" || sessions[c.ConsumerSessionID] || c.Observation.InputTokens < 0 || c.Observation.OutputTokens < 0 {
+		if !exists || w.Failure != "" || consumers[k].CaseID != "" || (c.ConsumerSessionID == "" && c.Failure == "") || (c.ConsumerSessionID != "" && sessions[c.ConsumerSessionID]) || c.Observation.InputTokens < 0 || c.Observation.OutputTokens < 0 {
 			return UpkeepStudyReport{}, fmt.Errorf("invalid, duplicate or non-independent consumer row %s", k)
 		}
 		bundle, err := UpkeepArtifactsSHA256(w.FinalBundle)
@@ -317,7 +319,9 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 			}
 		}
 		consumers[k] = c
-		sessions[c.ConsumerSessionID] = true
+		if c.ConsumerSessionID != "" {
+			sessions[c.ConsumerSessionID] = true
+		}
 	}
 	report := UpkeepStudyReport{ID: plan.ID, Valid: true, Arms: map[string]UpkeepArmReport{}}
 	for _, arm := range []string{UpkeepCheckerOff, UpkeepCheckerOn} {

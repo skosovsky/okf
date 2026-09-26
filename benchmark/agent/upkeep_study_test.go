@@ -107,6 +107,56 @@ func TestAnalyzeUpkeepStudyFailedWriterStaysInDenominator(t *testing.T) {
 	}
 }
 
+func TestAnalyzeUpkeepStudyFailedWriterWithoutSessionStaysInDenominator(t *testing.T) {
+	// Arrange: the adapter failed before it returned a real session ID.
+	plan, rows := upkeepTestStudy(t)
+	rows.Writers[1].SessionID = ""
+	rows.Writers[1].Failure = "adapter timeout"
+	rows.Writers[1].FinalCode = nil
+	rows.Writers[1].FinalBundle = nil
+	rows.Writers[1].CheckerInitial = ""
+	rows.Writers[1].CheckerResult = ""
+	rows.Consumers = rows.Consumers[:1]
+	// Act.
+	report, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert.
+	if err != nil || report.Valid || report.Arms[UpkeepCheckerOn].WriterObserved != 1 || report.Arms[UpkeepCheckerOn].Failures != 1 {
+		t.Fatalf("report=%+v err=%v", report, err)
+	}
+}
+
+func TestAnalyzeUpkeepStudyFailedConsumerWithoutSessionStaysInDenominator(t *testing.T) {
+	// Arrange: preserve the exact visible bundle hash but no invented session.
+	plan, rows := upkeepTestStudy(t)
+	rows.Consumers[1].ConsumerSessionID = ""
+	rows.Consumers[1].Failure = "adapter timeout"
+	rows.Consumers[1].Observation = Observation{}
+	// Act.
+	report, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert.
+	if err != nil || report.Valid || report.Arms[UpkeepCheckerOn].ConsumerObserved != 1 || report.Arms[UpkeepCheckerOn].Failures != 1 {
+		t.Fatalf("report=%+v err=%v", report, err)
+	}
+}
+
+func TestAnalyzeUpkeepStudyRejectsMissingSessionOnSuccessfulRow(t *testing.T) {
+	// Arrange.
+	plan, rows := upkeepTestStudy(t)
+	rows.Writers[1].SessionID = ""
+	// Act.
+	_, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert.
+	if err == nil {
+		t.Fatal("successful writer without a session was accepted")
+	}
+	plan, rows = upkeepTestStudy(t)
+	rows.Consumers[1].ConsumerSessionID = ""
+	_, err = AnalyzeUpkeepStudy(plan, rows)
+	if err == nil {
+		t.Fatal("successful consumer without a session was accepted")
+	}
+}
+
 func TestAnalyzeUpkeepStudyRejectsUnrelatedCheckerResult(t *testing.T) {
 	// Arrange
 	plan, rows := upkeepTestStudy(t)

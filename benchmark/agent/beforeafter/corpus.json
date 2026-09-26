@@ -1,0 +1,62 @@
+[
+  {
+    "id": "wrapped-log",
+    "stratum": "005",
+    "bundle": "fixtures/interoperability/foreign-68ce7a0",
+    "parse_file": "components/validator.md",
+    "evidence_file": "log.md",
+    "question": "In release 0.9.6, which sources field was changed to use a full ISO 8601 timestamp?",
+    "answer": "sources[].last_modified",
+    "support": "sources[].last_modified",
+    "old_expected": "diagnostics",
+    "spec_revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96"
+  },
+  {
+    "id": "root-intro",
+    "stratum": "005",
+    "bundle": "fixtures/interoperability/foreign-68ce7a0",
+    "parse_file": "components/validator.md",
+    "evidence_file": "index.md",
+    "question": "What repository does the root index say this OKF bundle describes?",
+    "answer": "okf-skills",
+    "support": "This is the [okf-skills]",
+    "old_expected": "diagnostics",
+    "spec_revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96"
+  },
+  {
+    "id": "root-upkeep",
+    "stratum": "005",
+    "bundle": "fixtures/interoperability/foreign-68ce7a0",
+    "parse_file": "components/validator.md",
+    "evidence_file": "index.md",
+    "question": "What is the root upkeep mode declared by this bundle?",
+    "answer": "enforced",
+    "support": "upkeep: enforced",
+    "old_expected": "diagnostics",
+    "spec_revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96"
+  },
+  {
+    "id": "inline-footnote",
+    "stratum": "005",
+    "bundle": "fixtures/interoperability/foreign-68ce7a0",
+    "parse_file": "components/validator.md",
+    "evidence_file": "components/validator.md",
+    "question": "In the validator component, what does every inline [^label] footnote name?",
+    "answer": "sources[].id",
+    "support": "every `[^label]`\nfootnote names a `sources[].id`",
+    "old_expected": "diagnostics",
+    "spec_revision": "3fcbb9f828c2f23d109c855ee403c3a4c81f3a96"
+  },
+  {
+    "id": "instant-source",
+    "stratum": "004",
+    "bundle": "fixtures/v02/temporal-profiles/instant",
+    "parse_file": "example.md",
+    "evidence_file": "example.md",
+    "question": "What is the ID of the source listed in the instant-profile example?",
+    "answer": "policy",
+    "support": "- id: policy",
+    "old_expected": "revision_unsupported",
+    "spec_revision": "0b87c52c6ef999286c745e19998fdfcd03d5dbee"
+  }
+]
