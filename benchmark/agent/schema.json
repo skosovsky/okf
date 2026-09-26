@@ -216,6 +216,28 @@
           "items": {
             "type": "string"
           }
+        },
+        "event_trace": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["event"],
+            "properties": {
+              "event": {"type": "string"},
+              "item_type": {"type": "string"},
+              "status": {"type": "string"},
+              "command_kind": {"type": "string"},
+              "command_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "exit_code": {"type": "integer"}
+            }
+          }
+        },
+        "event_trace_truncated": {"type": "boolean"},
+        "read_artifacts": {
+          "type": "array",
+          "items": {"type": "string"}
         }
       }
     },
@@ -618,6 +640,9 @@
         "model_runtime_sha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "diagnostic_read": {
+          "type": "boolean"
         }
       }
     }

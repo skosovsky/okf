@@ -205,6 +205,9 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 			return Report{}, errors.New("incomplete model runtime provenance")
 		}
 	}
+	if plan.DiagnosticRead && (corpusHash != DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || plan.ToolkitMode != "direct" || plan.Repeats != 1 || plan.MaxTrials != 2 || plan.MaxSeconds != 120 || plan.MaxTokens != 60000 || !plan.Unpriced || plan.MaxCostUSD != 0 || plan.Exploratory || plan.ModelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
+		return Report{}, errors.New("invalid diagnostic read plan")
+	}
 	for _, row := range rows {
 		if row.Metadata != plan.Metadata {
 			return Report{}, fmt.Errorf("%s/%s/%d: row differs from preregistered plan", row.CaseID, row.Arm, row.Repeat)
@@ -221,6 +224,15 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 		}
 		if plan.ToolkitMode == "direct" && row.Arm == Treatment && row.Failure == "" && row.Observation.ToolkitCalls < 1 {
 			return Report{}, fmt.Errorf("%s: model made no Go CLI call", row.CaseID)
+		}
+		if plan.DiagnosticRead && row.Failure == "" {
+			artifacts := cases[0].Control
+			if row.Arm == Treatment {
+				artifacts = cases[0].Treatment
+			}
+			if !allReadIDs(artifacts, row.Observation.ReadArtifacts) {
+				return Report{}, fmt.Errorf("%s/%s: missing confirmed artifact reads", row.CaseID, row.Arm)
+			}
 		}
 	}
 	report, err := Analyze(cases, corpusHash, rows, plan.Repeats)
@@ -261,6 +273,19 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	}
 	sort.Strings(report.Reasons)
 	return report, nil
+}
+
+func allReadIDs(artifacts []Artifact, readIDs []string) bool {
+	read := make(map[string]bool, len(readIDs))
+	for _, id := range readIDs {
+		read[id] = true
+	}
+	for _, a := range artifacts {
+		if !read[a.ID] {
+			return false
+		}
+	}
+	return true
 }
 
 func AnalyzePlannedWithInvalid(cases []Case, corpusHash string, rows []Row, malformed int, plan Plan) (Report, error) {

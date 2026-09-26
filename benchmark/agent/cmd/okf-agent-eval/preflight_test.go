@@ -80,10 +80,23 @@ func TestNonDirectCallPassesRuntimePin(t *testing.T) {
 	}
 
 	// Act.
-	obs, err := call(context.Background(), adapter, "model", "model", `{}`, "none", "", "/absolute/codex", "codex-cli test", "abc", agent.Request{CaseID: "case", Arm: agent.Control, Question: "q"})
+	obs, err := call(context.Background(), adapter, "model", "model", `{}`, "none", "", "/absolute/codex", "codex-cli test", "abc", false, agent.Request{CaseID: "case", Arm: agent.Control, Question: "q"})
 
 	// Assert.
 	if err != nil || obs.InputTokens != 1 || obs.OutputTokens != 1 {
 		t.Fatalf("non-direct adapter call: observation %+v, error %v", obs, err)
+	}
+}
+
+func TestDiagnosticRequiresAllArtifactReads(t *testing.T) {
+	// Arrange.
+	arts := []agent.Artifact{{ID: "historical"}, {ID: "current"}}
+
+	// Act and assert.
+	if allArtifactsRead(arts, []string{"current"}) {
+		t.Fatal("accepted partial control read")
+	}
+	if !allArtifactsRead(arts, []string{"historical", "current"}) {
+		t.Fatal("rejected complete control read")
 	}
 }

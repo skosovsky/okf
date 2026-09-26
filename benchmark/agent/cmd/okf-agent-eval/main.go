@@ -54,6 +54,7 @@ func run(args []string) error {
 	runID := fs.String("run-id", "", "fixed unique run ID; defaults to UTC timestamp")
 	modelToolAccess := fs.String("model-tool-access", "", "fixed model tool permissions description")
 	exploratory := fs.Bool("exploratory", false, "allow dirty working tree; report cannot satisfy acceptance")
+	diagnosticRead := fs.Bool("diagnostic-read", false, "paired file-read diagnostic; stop after unread control")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -108,6 +109,9 @@ func run(args []string) error {
 		if *repeats < 1 || *maxTrials < 1 || count > *maxTrials || *maxSeconds < 1 || *maxTokens < 1 || (*maxCost <= 0 && !*unpriced) || (*maxCost > 0 && *unpriced) || (*toolkitMode != "none" && *toolkitMode != "treatment" && *toolkitMode != "both" && *toolkitMode != "direct") {
 			return fmt.Errorf("trial count %d exceeds cap %d or invalid budget", count, *maxTrials)
 		}
+		if *diagnosticRead && (hash != agent.DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || *repeats != 1 || *maxTrials != 2 || *maxSeconds != 120 || *maxTokens != 60000 || !*unpriced || *maxCost != 0 || *toolkitMode != "direct" || *exploratory || *modelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
+			return fmt.Errorf("diagnostic-read requires one realistic case, direct mode, one repeat, 2 trials/120 seconds/60000 observed tokens, unpriced")
+		}
 		goCLIHash := ""
 		runtimeHash, err := runtimePinForMode(*toolkitMode, *modelRuntime, *modelRuntimeVersion, *modelRuntimeSHA256)
 		if err != nil {
@@ -130,7 +134,7 @@ func run(args []string) error {
 			id = time.Now().UTC().Format("20060102T150405.000000000Z")
 		}
 		meta := agent.Metadata{RunID: id, CorpusSHA256: hash, PromptSHA256: hex.EncodeToString(ph[:]), Commit: *commit, SpecRevision: *spec, Model: *model, ModelVersion: *modelVersion, Settings: *settings, Adapter: *adapter, Clock: time.Now().UTC(), GraderRevision: "exact-v1"}
-		plan := agent.Plan{Metadata: meta, SpecSHA256: specHash, AdapterSHA256: adapterHash, GoCLISHA256: goCLIHash, ModelRuntimePath: *modelRuntime, ModelRuntimeVersion: *modelRuntimeVersion, ModelRuntimeSHA256: runtimeHash, ToolkitMode: *toolkitMode, ModelToolAccess: *modelToolAccess, Exploratory: *exploratory, Repeats: *repeats, CaseCount: len(cases), MaxTrials: *maxTrials, MaxSeconds: *maxSeconds, MaxTokens: *maxTokens, MaxCostUSD: *maxCost, Unpriced: *unpriced}
+		plan := agent.Plan{Metadata: meta, SpecSHA256: specHash, AdapterSHA256: adapterHash, GoCLISHA256: goCLIHash, ModelRuntimePath: *modelRuntime, ModelRuntimeVersion: *modelRuntimeVersion, ModelRuntimeSHA256: runtimeHash, ToolkitMode: *toolkitMode, ModelToolAccess: *modelToolAccess, Exploratory: *exploratory, Repeats: *repeats, CaseCount: len(cases), MaxTrials: *maxTrials, MaxSeconds: *maxSeconds, MaxTokens: *maxTokens, MaxCostUSD: *maxCost, Unpriced: *unpriced, DiagnosticRead: *diagnosticRead}
 		pf, err := os.OpenFile(*planPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 		if err != nil {
 			return err
@@ -170,7 +174,7 @@ func run(args []string) error {
 					var obs agent.Observation
 					runErr := prepErr
 					if runErr == nil {
-						obs, runErr = call(ctx, *adapter, *model, *modelVersion, *settings, *toolkitMode, *goCLI, *modelRuntime, *modelRuntimeVersion, runtimeHash, agent.Request{CaseID: c.ID, Arm: arm, Question: c.Question, Artifacts: arts, Instructions: instructions})
+						obs, runErr = call(ctx, *adapter, *model, *modelVersion, *settings, *toolkitMode, *goCLI, *modelRuntime, *modelRuntimeVersion, runtimeHash, *diagnosticRead, agent.Request{CaseID: c.ID, Arm: arm, Question: c.Question, Artifacts: arts, Instructions: instructions})
 					}
 					obs.ToolCalls += toolkitCalls
 					var toolkitEvidence []agent.Artifact
@@ -187,6 +191,9 @@ func run(args []string) error {
 					if runErr != nil {
 						failure = runErr.Error()
 					}
+					if *diagnosticRead && failure == "" && !allArtifactsRead(arts, obs.ReadArtifacts) {
+						failure = "diagnostic: not all supplied artifacts were read by confirmed shell events"
+					}
 					row := agent.Row{Metadata: meta, CaseID: c.ID, Arm: arm, Repeat: rep, Observation: obs, ToolkitEvidence: toolkitEvidence, TrialElapsedMS: time.Since(trialStarted).Milliseconds(), Failure: failure}
 					row.Verdict = agent.Grade(c, obs, failure)
 					if err := enc.Encode(row); err != nil {
@@ -194,6 +201,9 @@ func run(args []string) error {
 					}
 					if err := out.Sync(); err != nil {
 						return err
+					}
+					if *diagnosticRead && failure != "" {
+						return fmt.Errorf("diagnostic stopped after %s: %s", arm, failure)
 					}
 					if *maxCost > 0 && obs.CostUSD == nil && runErr == nil {
 						return fmt.Errorf("adapter omitted cost; partial rows retained")
@@ -213,7 +223,7 @@ func run(args []string) error {
 	}
 }
 
-func call(ctx context.Context, adapter, model, modelVersion, settings, toolkitMode, goCLI, modelRuntime, runtimeVersion, runtimeSHA256 string, req agent.Request) (agent.Observation, error) {
+func call(ctx context.Context, adapter, model, modelVersion, settings, toolkitMode, goCLI, modelRuntime, runtimeVersion, runtimeSHA256 string, diagnosticRead bool, req agent.Request) (agent.Observation, error) {
 	var obs agent.Observation
 	input, err := json.Marshal(req)
 	if err != nil {
@@ -222,7 +232,7 @@ func call(ctx context.Context, adapter, model, modelVersion, settings, toolkitMo
 	trialCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(trialCtx, adapter)
-	cmd.Env = append(os.Environ(), "OKF_EVAL_MODEL="+model, "OKF_EVAL_MODEL_VERSION="+modelVersion, "OKF_EVAL_SETTINGS="+settings, "OKF_EVAL_TOOLKIT_MODE="+toolkitMode, "OKF_EVAL_CLI_BINARY="+goCLI, "OKF_EVAL_MODEL_RUNTIME="+modelRuntime, "OKF_EVAL_MODEL_RUNTIME_VERSION="+runtimeVersion, "OKF_EVAL_MODEL_RUNTIME_SHA256="+runtimeSHA256)
+	cmd.Env = append(os.Environ(), "OKF_EVAL_MODEL="+model, "OKF_EVAL_MODEL_VERSION="+modelVersion, "OKF_EVAL_SETTINGS="+settings, "OKF_EVAL_TOOLKIT_MODE="+toolkitMode, "OKF_EVAL_CLI_BINARY="+goCLI, "OKF_EVAL_MODEL_RUNTIME="+modelRuntime, "OKF_EVAL_MODEL_RUNTIME_VERSION="+runtimeVersion, "OKF_EVAL_MODEL_RUNTIME_SHA256="+runtimeSHA256, fmt.Sprintf("OKF_EVAL_DIAGNOSTIC_READ=%t", diagnosticRead))
 	cmd.Stdin = strings.NewReader(string(input))
 	var stdout, stderr limitedBuffer
 	cmd.Stdout = &stdout
@@ -261,6 +271,19 @@ func call(ctx context.Context, adapter, model, modelVersion, settings, toolkitMo
 		return obs, fmt.Errorf("adapter omitted token usage")
 	}
 	return obs, nil
+}
+
+func allArtifactsRead(artifacts []agent.Artifact, readIDs []string) bool {
+	seen := make(map[string]bool, len(readIDs))
+	for _, id := range readIDs {
+		seen[id] = true
+	}
+	for _, artifact := range artifacts {
+		if !seen[artifact.ID] {
+			return false
+		}
+	}
+	return true
 }
 
 type limitedBuffer struct {

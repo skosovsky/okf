@@ -426,6 +426,62 @@ func TestDirectModeRequiresObservedGoCLICall(t *testing.T) {
 	}
 }
 
+func TestDiagnosticCorpusPinsFirstRealisticCase(t *testing.T) {
+	// Arrange.
+	primaryData, err := os.ReadFile("corpus/primary_realistic.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnosticData, err := os.ReadFile("corpus/diagnostic_primary.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	primary, _, err := LoadCorpus(bytes.NewReader(primaryData))
+	if err != nil {
+		t.Fatal(err)
+	}
+	diagnostic, hash, err := LoadCorpus(bytes.NewReader(diagnosticData))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert.
+	if len(diagnostic) != 1 || diagnostic[0].ID != "repo-default-okf-version" || diagnostic[0].Tier != "realistic" || hash != "15a2a6b0646acdbd18114b54f49f971fee512ad8dfec04aad9d34641820b0d95" {
+		t.Fatal("diagnostic corpus identity drift")
+	}
+	want, _ := json.Marshal(primary[0])
+	got, _ := json.Marshal(diagnostic[0])
+	if !bytes.Equal(got, want) {
+		t.Fatal("diagnostic artifacts or expected answer drifted from source corpus")
+	}
+}
+
+func TestDiagnosticAnalysisRejectsUnconfirmedRead(t *testing.T) {
+	// Arrange.
+	data, err := os.ReadFile("corpus/diagnostic_primary.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, hash, err := LoadCorpus(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := Metadata{RunID: "diagnostic", CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
+	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, GoCLISHA256: hash, ModelRuntimePath: "/absolute/codex", ModelRuntimeVersion: "codex-cli pinned", ModelRuntimeSHA256: hash, ToolkitMode: "direct", ModelToolAccess: "Codex read-only ephemeral temp with shell; Go CLI binary supplied", Repeats: 1, CaseCount: 1, MaxTrials: 2, MaxSeconds: 120, MaxTokens: 60000, Unpriced: true, DiagnosticRead: true}
+	row := Row{Metadata: m, CaseID: cases[0].ID, Arm: Control, Repeat: 1, Observation: Observation{Answer: "0.2", Evidence: []string{"current"}, InputTokens: 10, OutputTokens: 5}, Verdict: Correct}
+
+	// Act and assert.
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
+		t.Fatal("accepted control answer without confirmed file reads")
+	}
+	row.Observation.ReadArtifacts = []string{"historical", "current"}
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMalformedRawRowRemainsVisible(t *testing.T) {
 	// Arrange
 	cases, hash := fixture(t)

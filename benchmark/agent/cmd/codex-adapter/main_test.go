@@ -46,6 +46,7 @@ func TestSuccessfulGoCLICommand(t *testing.T) {
 	}{
 		{"validate", `{"type":"command_execution","command":"/private/tmp/okf-eval-cli validate --path . --json --temporal-profile instant-0b87c52","exit_code":0}`, true},
 		{"parse", `{"type":"command_execution","command":"/private/tmp/okf-eval-cli parse current.md --json","exit_code":0}`, true},
+		{"quoted shell wrapper", `{"type":"command_execution","command":"bash -lc '/private/tmp/okf-eval-cli parse current.md --json'","exit_code":0}`, true},
 		{"validate help", `{"type":"command_execution","command":"/private/tmp/okf-eval-cli validate --help","exit_code":0}`, false},
 		{"parse help", `{"type":"command_execution","command":"/private/tmp/okf-eval-cli parse --help","exit_code":0}`, false},
 		{"validate wrong path", `{"type":"command_execution","command":"/private/tmp/okf-eval-cli validate --path /tmp/empty --json --temporal-profile instant-0b87c52","exit_code":0}`, false},

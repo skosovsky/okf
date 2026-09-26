@@ -83,7 +83,15 @@ func run() error {
 	}
 	lastPath := filepath.Join(working, "last-message.json")
 	mode := os.Getenv("OKF_EVAL_TOOLKIT_MODE")
+	diagnosticRead := os.Getenv("OKF_EVAL_DIAGNOSTIC_READ") == "true"
 	goCLI := os.Getenv("OKF_EVAL_CLI_BINARY")
+	if diagnosticRead {
+		controlInstruction := directToolInstruction(agent.Control, goCLI, true)
+		treatmentInstruction := directToolInstruction(agent.Treatment, goCLI, true)
+		if mode != "direct" || goCLI == "" || !strings.HasPrefix(treatmentInstruction, controlInstruction) {
+			return fmt.Errorf("diagnostic prompt/tool parity preflight failed")
+		}
+	}
 	conceptPaths := make(map[string]bool)
 	for _, artifact := range req.Artifacts {
 		if artifact.Path != "index.md" && strings.HasSuffix(artifact.Path, ".md") && strings.HasPrefix(artifact.Content, "---\n") {
@@ -110,10 +118,7 @@ func run() error {
 			}
 			paths = append(paths, artifact.ID+"="+clean)
 		}
-		toolInstruction := "Read the listed files with read-only shell commands before answering."
-		if req.Arm == agent.Treatment {
-			toolInstruction = "Use the Go OKF CLI at " + goCLI + " to run `validate --path . --json --temporal-profile instant-0b87c52` and `parse <concept-file> --json` on concept files, then read the concept bodies. Do not answer before invoking the CLI."
-		}
+		toolInstruction := directToolInstruction(req.Arm, goCLI, diagnosticRead)
 		prompt = []byte(req.Instructions + "\n" + toolInstruction + "\nQuestion: " + req.Question + "\nEvidence files (artifact ID=path):\n" + strings.Join(paths, "\n"))
 	} else {
 		prompt, err = json.Marshal(req)
@@ -144,6 +149,13 @@ func run() error {
 			} `json:"usage"`
 		}
 		if json.Unmarshal(s.Bytes(), &ev) != nil {
+			if diagnosticRead {
+				if len(obs.EventTrace) < 64 {
+					obs.EventTrace = append(obs.EventTrace, agent.EventMetadata{Event: "invalid_json"})
+				} else {
+					obs.EventTraceTruncated = true
+				}
+			}
 			continue
 		}
 		if ev.Type == "turn.completed" {
@@ -157,6 +169,32 @@ func run() error {
 			}
 			if json.Unmarshal(ev.Item, &item) == nil && (item.Type == "command_execution" || item.Type == "mcp_tool_call") {
 				obs.ToolCalls++
+				if !diagnosticRead {
+					trace := string(ev.Item)
+					if len(trace) > 1000 {
+						trace = trace[:1000]
+					}
+					obs.ToolTrace = append(obs.ToolTrace, trace)
+				}
+			}
+		}
+		if diagnosticRead {
+			if len(obs.EventTrace) < 64 {
+				obs.EventTrace = append(obs.EventTrace, eventMetadata(ev.Type, ev.Item, req.Artifacts, goCLI, conceptPaths))
+			} else {
+				obs.EventTraceTruncated = true
+			}
+			if ev.Type == "item.completed" {
+				for _, id := range confirmedReadArtifacts(ev.Item, req.Artifacts) {
+					if !containsString(obs.ReadArtifacts, id) {
+						obs.ReadArtifacts = append(obs.ReadArtifacts, id)
+					}
+				}
+			}
+		}
+		if ev.Type == "item.completed" && mode == "direct" && req.Arm == agent.Treatment && successfulGoCLICommand(ev.Item, goCLI, conceptPaths) {
+			obs.ToolkitCalls++
+			if !diagnosticRead {
 				trace := string(ev.Item)
 				if len(trace) > 1000 {
 					trace = trace[:1000]
@@ -164,20 +202,17 @@ func run() error {
 				obs.ToolTrace = append(obs.ToolTrace, trace)
 			}
 		}
-		if ev.Type == "item.completed" && mode == "direct" && req.Arm == agent.Treatment && successfulGoCLICommand(ev.Item, goCLI, conceptPaths) {
-			obs.ToolkitCalls++
-			trace := string(ev.Item)
-			if len(trace) > 1000 {
-				trace = trace[:1000]
-			}
-			obs.ToolTrace = append(obs.ToolTrace, trace)
-		}
 	}
 	if err := s.Err(); err != nil {
 		return err
 	}
 	if runErr != nil {
-		obs.AdapterError = fmt.Sprintf("codex exec: %v: %.600s", runErr, stderr.String())
+		if diagnosticRead {
+			hash := sha256.Sum256(stderr.data)
+			obs.AdapterError = fmt.Sprintf("codex exec: %v; stderr_sha256=%x; stderr_bytes=%d", runErr, hash, len(stderr.data))
+		} else {
+			obs.AdapterError = fmt.Sprintf("codex exec: %v: %.600s", runErr, stderr.String())
+		}
 		return json.NewEncoder(os.Stdout).Encode(obs)
 	}
 	if ctx.Err() != nil {
@@ -259,12 +294,9 @@ func successfulGoCLICommand(raw json.RawMessage, goCLI string, conceptPaths map[
 	if json.Unmarshal(raw, &item) != nil || item.Type != "command_execution" || item.ExitCode == nil || *item.ExitCode != 0 {
 		return false
 	}
-	// This deliberately recognizes only simple commands. If Codex changes its
-	// event format or uses shell compound commands, the trial fails closed.
-	if strings.ContainsAny(item.Command, "\n\r;&|><`$()\\\"'") {
-		return false
-	}
-	argv := strings.Fields(item.Command)
+	// Accept only a simple direct command or a safely quoted shell wrapper.
+	// Compound commands and unknown event formats fail closed.
+	argv := simpleCommandArgv(item.Command)
 	if len(argv) < 2 || argv[0] != goCLI {
 		return false
 	}

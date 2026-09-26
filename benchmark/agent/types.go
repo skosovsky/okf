@@ -55,18 +55,31 @@ type Runner interface {
 }
 
 type Observation struct {
-	Answer       string   `json:"answer,omitempty"`
-	AdapterError string   `json:"adapter_error,omitempty"`
-	Evidence     []string `json:"evidence,omitempty"`
-	Refused      bool     `json:"refused,omitempty"`
-	ToolCalls    int      `json:"tool_calls"`
-	ToolkitCalls int      `json:"toolkit_calls"`
-	ToolTrace    []string `json:"tool_trace,omitempty"`
-	InputTokens  int      `json:"input_tokens"`
-	OutputTokens int      `json:"output_tokens"`
-	CacheTokens  int      `json:"cache_tokens"`
-	ElapsedMS    int64    `json:"elapsed_ms"`
-	CostUSD      *float64 `json:"cost_usd,omitempty"`
+	Answer              string          `json:"answer,omitempty"`
+	AdapterError        string          `json:"adapter_error,omitempty"`
+	Evidence            []string        `json:"evidence,omitempty"`
+	Refused             bool            `json:"refused,omitempty"`
+	ToolCalls           int             `json:"tool_calls"`
+	ToolkitCalls        int             `json:"toolkit_calls"`
+	ToolTrace           []string        `json:"tool_trace,omitempty"`
+	EventTrace          []EventMetadata `json:"event_trace,omitempty"`
+	EventTraceTruncated bool            `json:"event_trace_truncated,omitempty"`
+	ReadArtifacts       []string        `json:"read_artifacts,omitempty"`
+	InputTokens         int             `json:"input_tokens"`
+	OutputTokens        int             `json:"output_tokens"`
+	CacheTokens         int             `json:"cache_tokens"`
+	ElapsedMS           int64           `json:"elapsed_ms"`
+	CostUSD             *float64        `json:"cost_usd,omitempty"`
+}
+
+// EventMetadata excludes model text, shell output, and source content.
+type EventMetadata struct {
+	Event         string `json:"event"`
+	ItemType      string `json:"item_type,omitempty"`
+	Status        string `json:"status,omitempty"`
+	CommandKind   string `json:"command_kind,omitempty"`
+	CommandSHA256 string `json:"command_sha256,omitempty"`
+	ExitCode      *int   `json:"exit_code,omitempty"`
 }
 
 type Metadata struct {
@@ -103,6 +116,7 @@ type Plan struct {
 	MaxTokens           int      `json:"max_tokens"`
 	MaxCostUSD          float64  `json:"max_cost_usd"`
 	Unpriced            bool     `json:"unpriced"`
+	DiagnosticRead      bool     `json:"diagnostic_read,omitempty"`
 }
 
 type Row struct {
@@ -119,12 +133,13 @@ type Row struct {
 }
 
 const (
-	Correct            = "correct"
-	Stale              = "stale"
-	Wrong              = "wrong"
-	Refusal            = "refusal"
-	Ungradable         = "ungradable"
-	OperationalFailure = "operational_failure"
-	Control            = "control"
-	Treatment          = "treatment"
+	DiagnosticCorpusSHA256 = "15a2a6b0646acdbd18114b54f49f971fee512ad8dfec04aad9d34641820b0d95"
+	Correct                = "correct"
+	Stale                  = "stale"
+	Wrong                  = "wrong"
+	Refusal                = "refusal"
+	Ungradable             = "ungradable"
+	OperationalFailure     = "operational_failure"
+	Control                = "control"
+	Treatment              = "treatment"
 )
