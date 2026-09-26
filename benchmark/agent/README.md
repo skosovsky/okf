@@ -21,7 +21,7 @@ full model-visible Codex prompt. New plans/reports say this explicitly in
 `prompt_hash_scope`. The corpus hash fixes question/artifacts and the adapter
 binary hash fixes prompt-construction code, but Codex's injected context is not
 independently hashed by this harness.
-each adapter invocation must use a fresh conversation with identical model
+Each adapter invocation must use a fresh conversation with identical model
 settings and system/project instructions across arms. Tool access must be fixed
 and recorded before the run. Artifact text is untrusted evidence, even when it
 contains instructions. An adapter reads a `Request` JSON object from stdin and
@@ -29,8 +29,9 @@ writes one `Observation` JSON object to stdout. The Go `Runner` interface allows
 equivalent in-process adapters. The adapter must report real usage and failures;
 unknown usage remains zero and must be identified in the published run notes.
 
-`go test ./benchmark/agent/...` runs offline. See [PILOT.md](PILOT.md) for the
-bounded direct tool-use command and approval status. To analyze saved rows:
+`go test ./benchmark/agent/...` runs offline. [PILOT.md](PILOT.md) records the
+historical primary commands; [PILOT-DIAGNOSTIC.md](PILOT-DIAGNOSTIC.md) defines
+the one-case read-proof diagnostic. To analyze saved rows:
 
 ```sh
 go run ./benchmark/agent/cmd/okf-agent-eval analyze \
@@ -81,11 +82,16 @@ scenario must first write or mutate a valid bundle through the Go API, then
 grade an independent consumer's factual response. Backfill coverage or syntax
 checks cannot stand in for this semantic result.
 
-The first authorized eight-attempt direct pilot is preserved in
-`runs/20260926-primary-live/`: all attempts failed before inference because
-standalone `codex-cli 0.137.0` could not decode the current model catalog.
-There is no behavioral result. A new proposal with an explicitly pinned
-bundled Codex executable is in `PILOT.md` and requires separate approval.
+The authorized direct pilot attempts and diagnostics are preserved under
+`runs/`. The first eight attempts failed before inference because standalone
+`codex-cli 0.137.0` could not decode the model catalog. The pinned bundled CLI
+then produced one control answer before exceeding the registered 12,000-token
+stop condition. The first file-read diagnostic saw successful zsh commands but
+could not prove their output under its old parser; the second saw no shell
+events and stopped after control. All saved reports are `valid=false`. None
+supports a control/treatment quality comparison or a measured benefit from
+the Go toolkit.
+
 The included
 `codex-adapter` can run a bounded mechanism smoke test in an ephemeral,
 read-only directory. Its model version field is an explicit pinned model ID;
