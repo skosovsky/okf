@@ -92,15 +92,23 @@ scenario must first write or mutate a valid bundle through the Go API, then
 grade an independent consumer's factual response. Backfill coverage or syntax
 checks cannot stand in for this semantic result.
 
-The authorized direct pilot attempts and diagnostics are preserved under
+The [precomputed primary pilot](runs/20260926-primary-precomputed-v1/README.md)
+completed 8/8 paired trials on corrected commit `ed0bd12`: `valid=true`,
+3/4 correct in each arm, one different wrong answer in each, nine
+runner-side Go CLI calls, zero model tool calls, and 127,346 observed
+input-plus-output tokens. The adapter did not provide a dollar cost. With
+four cases and one repeat, this shows feasibility of the Go CLI projection
+path and no measured answer-quality benefit; it does not test autonomous CLI
+use. Its plan, raw rows, and analyzer report are committed together.
+
+The earlier authorized direct pilot attempts and diagnostics are preserved under
 `runs/`. The first eight attempts failed before inference because standalone
 `codex-cli 0.137.0` could not decode the model catalog. The pinned bundled CLI
 then produced one control answer before exceeding the registered 12,000-token
 stop condition. The first file-read diagnostic saw successful zsh commands but
 could not prove their output under its old parser; the second saw no shell
-events and stopped after control. All saved reports are `valid=false`. None
-supports a control/treatment quality comparison or a measured benefit from
-the Go toolkit.
+events and stopped after control. Those direct-mode reports are all
+`valid=false` and support no control/treatment quality comparison.
 
 The included
 `codex-adapter` can run a bounded mechanism smoke test in an ephemeral,

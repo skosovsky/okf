@@ -34,7 +34,7 @@ References: [trust results](https://github.com/scaccogatto/okf-skills/blob/68ce7
 - [ ] Сравнение metadata/no-metadata не подменяется отсутствием правильного ответа у control.
 - [ ] Базовый writer → independent consumer проверяется на вручную подготовленном или изменённом через существующий Go mutation API bundle; реализация 010/013 для этого не требуется. Оценивается ответ consumer, а не только факт изменения документа.
 - [ ] Backfill coverage и syntactic validity не выдаются за semantic accuracy.
-- [ ] После 004/005 выполнен pilot через реальные Go CLI/MCP adapters, закреплён corrected commit; опубликованы rows, анализ, denominator/failure accounting и ограничения. Без фактического запуска задача не считается выполненной. Если external model недоступна, явно оставить live-run acceptance незавершённым.
+- [x] После 004/005 выполнен pilot через Go CLI adapter на corrected commit `ed0bd12`: [план, 8/8 rows, отчёт и ограничения](../../benchmark/agent/runs/20260926-primary-precomputed-v1/README.md). Runner заранее выполнил `validate`/`parse`; модель сама CLI не вызывала. Оба arm дали 3/4 верных ответов на четырёх случаях без повторов, измеренного выигрыша нет. Metadata-only, before/after и writer→consumer оцениваются отдельно.
 
 ## Прогоны на нашей реализации
 
