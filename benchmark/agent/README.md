@@ -50,7 +50,7 @@ go run ./benchmark/agent/cmd/okf-agent-eval run \
   -adapter /absolute/path/to/model-adapter -model MODEL -model-version VERSION \
   -settings '{"reasoning_effort":"low"}' -commit COMMIT -spec SPEC_REVISION \
   -repeats 1 -max-trials 40 -max-seconds 600 -max-tokens 50000 -unpriced \
-  -toolkit-mode treatment -model-tool-access 'Codex read-only ephemeral temp'
+  -toolkit-mode treatment -model-tool-access 'BYOT adapter with fixed tool policy'
 ```
 
 The command writes an exclusive, synced plan file before the first model call.
@@ -95,10 +95,12 @@ the Go toolkit.
 The included
 `codex-adapter` can run a bounded mechanism smoke test in an ephemeral,
 read-only directory. Its model version field is an explicit pinned model ID;
-the backend snapshot is not independently verifiable. The main runner invokes
-our Go CLI `validate` and `parse` for each treatment bundle, adds their outputs
-to the model evidence, and saves those outputs in each row. For direct tool
-use, run with `-toolkit-mode direct -go-cli /absolute/path/to/okf`. The adapter
+the backend snapshot is not independently verifiable. In `treatment` and
+`both` modes, the runner invokes our Go CLI `validate` and `parse` for each
+enabled bundle, adds their outputs to the model evidence, and saves those
+outputs in each row. For direct tool use, run with
+`-toolkit-mode direct -go-cli /absolute/path/to/okf`; the model must invoke the
+CLI itself. The adapter
 writes both arms' files into isolated temporary directories and gives the model
 read-only shell access; treatment must invoke the Go CLI. The analyzer rejects
 a successful treatment row with no observed Go CLI call. For direct runs the
