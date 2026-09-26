@@ -1,6 +1,6 @@
 # 009 — Автономный HTML viewer из Go CLI
 
-Статус: реализовано; визуальная проверка в браузере требует отдельной отметки. Приоритет: P2. Зависимости: 004/005; переиспользовать query/edge semantics 008, если они уже реализованы.
+Статус: реализовано; браузерная приёмка пройдена 2026-09-26. Приоритет: P2. Зависимости: 004/005; переиспользовать query/edge semantics 008, если они уже реализованы.
 
 ## Результат
 
@@ -29,11 +29,11 @@ Reference: [visualizer](https://github.com/scaccogatto/okf-skills/blob/68ce7a0c0
 - [x] Один Go binary генерирует файл, читаемый offline без сетевых запросов.
 - [x] AAA Go tests: escaping `</script>`, unsafe URLs/HTML, необычные IDs, empty bundle, broken links, output collision, cancelled export.
 - [x] Данные совпадают с API bundle/graph, trust/lifecycle не вычисляются второй противоречивой реализацией в JS.
-- [ ] Проверены маленький пример, около 1000 concepts и превышение лимита; фильтры/deep links работают.
-- [ ] Визуально проверены длинные заголовки, русский текст, code blocks, отсутствие metadata. Для этого не вводить Node-based test stack.
+- [x] Проверены маленький пример, около 1000 concepts и превышение лимита; фильтры/deep links работают.
+- [x] Визуально проверены длинные заголовки, русский текст, code blocks, отсутствие metadata. Для этого не вводить Node-based test stack.
 
 ## Не входит
 
 Web backend, аккаунты, редактирование знаний из browser, исполнение Attested Computation и отдельный parser формата.
 
-Доказательства: [Go exporter tests](../../viewer/viewer_test.go), [CLI tests](../../internal/okfcli/view_test.go), [offline viewer contract](../../viewer/README.md), [CI artifact](../../.github/workflows/ci.yml). Go tests подтверждают small/1001-concept export, лимит и наличие кода deep links; работа фильтра и deep links в браузере, как и визуальный browser-pass, пока не подтверждена отдельным evidence. Поэтому два последних пункта открыты.
+Доказательства: [Go exporter tests](../../viewer/viewer_test.go), [CLI tests](../../internal/okfcli/view_test.go), [offline viewer contract](../../viewer/README.md), [CI artifact](../../.github/workflows/ci.yml), [ручная браузерная проверка](../../docs/viewer-browser-review.md). Go tests подтверждают small/1001-concept export и лимит. Пользователь вручную проверил оба HTML-файла, фильтры, deep links, узкое окно, русский текст, Go-блок, отсутствие metadata и отклик списка из 1000 concepts; к сообщению с результатом приложены четыре скриншота. Два независимых субагента повторно подтвердили полноту и отсутствие блокирующих ошибок; оба запустили `go test ./viewer ./internal/okfcli -count=1` успешно.

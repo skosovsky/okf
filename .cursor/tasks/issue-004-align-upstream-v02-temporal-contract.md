@@ -1,6 +1,6 @@
 # Issue 004 — Согласовать временной контракт двух редакций OKF 0.2
 
-Статус: реализовано; полный повторный race-прогон остаётся открытым. Приоритет: P0 для решения контракта, до новых producer workflows.
+Статус: реализовано; полный test/vet/race-прогон пройден в CI 2026-09-26. Приоритет: P0 для решения контракта, до новых producer workflows.
 Язык реализации: Go. JSON Schema, Markdown, YAML/JSON fixtures — контракты и данные; Python/Node runtime не добавлять.
 
 ## Проблема и проверенные источники
@@ -84,7 +84,7 @@
 - [x] Arrange: legacy dates без mapping. Act: revision migration preview. Assert: unresolved, отсутствует выдуманный instant; apply не пишет неполный план.
 - [x] Arrange: явный mapping + CRLF/comments/unknown keys + concurrent edit. Act: preview/apply/replay. Assert: только intended edits, прежние conflict/fingerprint/idempotency/transactional guarantees.
 - [x] MCP schemas принимают именно то, что принимает runtime; output удовлетворяет соответствующим revision schemas. Существующие Graph JSON-LD/N-Triples используют корректный datatype; новый RDF-формат ради этой задачи не добавляется.
-- [ ] Запустить `go test ./...`, `go test -race ./...`, `go vet ./...`, contract/golden suites; обновить EN/RU docs и migration guidance.
+- [x] Запустить `go test ./...`, `go test -race ./...`, `go vet ./...`, contract/golden suites; обновить EN/RU docs и migration guidance.
 
 ## Зависимости и риски
 
@@ -98,4 +98,4 @@
 
 Берём из okf-skills обновлённый upstream pin и проверяем его последствия для нашей Go-модели. Их validator не становится источником нормативных решений: его успех на bundle не доказывает совместимость, а смена date на datetime затрагивает больше, чем регулярное выражение. Итоговый контракт и его проверка принадлежат этой задаче.
 
-Доказательства: [date SPEC lock](../../fixtures/v02/spec-lock.json), [instant lock](../../fixtures/v02/spec-lock-instant.json), [профильные тесты bundle](../../bundle/temporal_profile_test.go), [validator](../../validator/temporal_profile_test.go), [CLI](../../internal/okfcli/temporal_profile_test.go), [MCP](../../internal/mcpserver/temporal_profile_test.go), [graph](../../graph/temporal_profile_test.go) и [transactional upgrade](../../mutation/temporal_upgrade_external_test.go). Итоговый пункт о полном `go test -race ./...` остаётся открытым до повторного зафиксированного прогона.
+Доказательства: [date SPEC lock](../../fixtures/v02/spec-lock.json), [instant lock](../../fixtures/v02/spec-lock-instant.json), [профильные тесты bundle](../../bundle/temporal_profile_test.go), [validator](../../validator/temporal_profile_test.go), [CLI](../../internal/okfcli/temporal_profile_test.go), [MCP](../../internal/mcpserver/temporal_profile_test.go), [graph](../../graph/temporal_profile_test.go) и [transactional upgrade](../../mutation/temporal_upgrade_external_test.go). На коммите `ec1299ab22731e85efa194695ee11609c9cf335e` [Linux test/vet/module integrity](https://github.com/skosovsky/okf/actions/runs/36244091051/job/108409919281) прошёл `go vet ./...`, `go test ./...`, проверку модулей, bundle validation и сборку viewer; [Linux race detector](https://github.com/skosovsky/okf/actions/runs/36244091051/job/108409919390) прошёл `go test -race ./...`.

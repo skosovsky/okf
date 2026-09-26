@@ -36,7 +36,8 @@ okf validate --path <bundle> --check-links --check-orphans
 
 Base errors ограничены parsing/`type` concepts и reserved-file structure.
 Strict mode проверяет присутствующие v0.2 families как guidance. Для
-deterministic staleness используется explicit `--as-of`.
+deterministic staleness в профиле по умолчанию `--as-of` принимает дату, а с
+`--temporal-profile instant-0b87c52` — datetime с явным смещением.
 
 Missing optional fields, unknown types/keys/runtimes, broken links и missing
 indexes не становятся base errors.
@@ -55,7 +56,7 @@ Version-aware projections не смешивают:
 - generated time и legacy-derived marker;
 - normalized verification events и derived trust;
 - raw/effective lifecycle status;
-- staleness на выбранную дату;
+- staleness на выбранную дату или момент;
 - sources/attributions;
 - inert Attested Computation summary.
 
