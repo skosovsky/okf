@@ -2,9 +2,13 @@
 
 This is a proposed six-call semantic check for task 010, separate from the
 primary 012 comparison. **No model run or quality result is recorded here.**
-Freeze this protocol and `corpus/backfill_cases.json` in a clean corrected Go
-commit before requesting a new, specific authorization for external Codex
-calls. Source corpus SHA-256:
+Run v2 from the clean pinned Go commit
+`dd8989ba36b8e27ac5762e2e0984cac7f88e8738`, after specific authorization
+for its external Codex calls. The v1 protocol was superseded before any calls:
+its adapter exposed the full request JSON, including case ID and arm, to the
+model. The pinned adapter projects only `question`, `artifacts`, and
+`instructions`; case and arm labels remain in the harness for analysis.
+Source corpus SHA-256:
 `4c23a1ce55f666c737dde8eea0baf44ba82d5e0365585b98a699a72a2a03f85f`.
 
 ## Provenance and comparison
@@ -46,9 +50,9 @@ consumer outcomes.
 
 ## Preflight and bounded run
 
-Run from repository root after committing the protocol. Use fresh, exclusive
-output paths and retain every raw row. The exact full commit ID is supplied
-at runtime; the runner rejects a dirty checkout or a mismatched `-commit`.
+Run from the repository root of the clean pinned checkout. Use fresh,
+exclusive v2 output paths and retain every raw row. The runner rejects a dirty
+checkout or a mismatched `-commit`.
 Verify the bundled Codex runtime version/SHA before any call; the recorded
 model version is the pinned model ID, while the backend snapshot is not
 independently verifiable. This plan transfers the three cases' raw Git
@@ -59,6 +63,7 @@ authorization for this distinct six-call run first.
 set -e
 set -o pipefail
 test -z "$(git status --porcelain --untracked-files=all)"
+test "$(git rev-parse HEAD)" = dd8989ba36b8e27ac5762e2e0984cac7f88e8738
 test "$(shasum -a 256 benchmark/agent/corpus/backfill_cases.json | cut -d ' ' -f 1)" = \
   4c23a1ce55f666c737dde8eea0baf44ba82d5e0365585b98a699a72a2a03f85f
 test "$(/Applications/ChatGPT.app/Contents/Resources/codex --version 2>/dev/null)" = \
@@ -79,28 +84,35 @@ cmp benchmark/agent/corpus/backfill_cases.json \
   "$OKF_BACKFILL_CHECK_DIR/corpus.json"
 cmp benchmark/agent/corpus/backfill_coverage.json \
   "$OKF_BACKFILL_CHECK_DIR/coverage.json"
-GOCACHE=/private/tmp/okf-agent-gocache go build \
-  -o /private/tmp/okf-backfill-codex-adapter \
+GOCACHE=/private/tmp/okf-agent-gocache go test \
+  ./benchmark/agent/cmd/codex-adapter -run '^TestModelVisiblePromptOmitsHarnessLabels$'
+GOCACHE=/private/tmp/okf-agent-gocache go build -buildvcs=false \
+  -o /private/tmp/okf-eval-codex-adapter-dd8989b \
   ./benchmark/agent/cmd/codex-adapter
+test "$(shasum -a 256 /private/tmp/okf-eval-codex-adapter-dd8989b | cut -d ' ' -f 1)" = \
+  8f132bc3d12aeb1ea78d74642156427c1921a35b28d60f12b1296354a0b44ea9
+test ! -e /private/tmp/okf-backfill-consumer-v2-plan.json
+test ! -e /private/tmp/okf-backfill-consumer-v2-rows.jsonl
+test ! -e /private/tmp/okf-backfill-consumer-v2-report.json
 
 OKF_BACKFILL_COMMIT=$(git rev-parse HEAD)
 GOCACHE=/private/tmp/okf-agent-gocache go run \
   ./benchmark/agent/cmd/okf-agent-eval run \
   -corpus benchmark/agent/corpus/backfill_cases.json \
-  -plan /private/tmp/okf-backfill-consumer-v1-plan.json \
-  -rows /private/tmp/okf-backfill-consumer-v1-rows.jsonl \
-  -adapter /private/tmp/okf-backfill-codex-adapter \
+  -plan /private/tmp/okf-backfill-consumer-v2-plan.json \
+  -rows /private/tmp/okf-backfill-consumer-v2-rows.jsonl \
+  -adapter /private/tmp/okf-eval-codex-adapter-dd8989b \
   -model-runtime /Applications/ChatGPT.app/Contents/Resources/codex \
   -model-runtime-version 'codex-cli 0.155.0-alpha.16.3' \
   -model-runtime-sha256 c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a \
-  -run-id backfill-consumer-20260926-v1 \
+  -run-id backfill-consumer-20260926-v2 \
   -model gpt-6-luna -model-version gpt-6-luna \
   -settings '{"reasoning_effort":"low"}' \
   -commit "$OKF_BACKFILL_COMMIT" \
   -spec 0b87c52c6ef999286c745e19998fdfcd03d5dbee \
   -repeats 1 -max-trials 6 -max-seconds 360 -max-tokens 150000 -unpriced \
   -toolkit-mode none \
-  -model-tool-access 'Codex read-only ephemeral temp; full request JSON; no CLI projections'
+  -model-tool-access 'Codex read-only ephemeral temp; projected question/artifacts/instructions only; no CLI projections'
 ```
 
 The hard cap is six adapter invocations, 45 seconds per trial, and a
@@ -115,9 +127,9 @@ exclusive creation; never reuse these paths after an attempted run.
 GOCACHE=/private/tmp/okf-agent-gocache go run \
   ./benchmark/agent/cmd/okf-agent-eval analyze \
   -corpus benchmark/agent/corpus/backfill_cases.json \
-  -plan /private/tmp/okf-backfill-consumer-v1-plan.json \
-  -rows /private/tmp/okf-backfill-consumer-v1-rows.jsonl \
-  > /private/tmp/okf-backfill-consumer-v1-report.json
+  -plan /private/tmp/okf-backfill-consumer-v2-plan.json \
+  -rows /private/tmp/okf-backfill-consumer-v2-rows.jsonl \
+  > /private/tmp/okf-backfill-consumer-v2-report.json
 ```
 
 Publish the plan, raw rows, analyzer report, corpus/adapter/runtime hashes,

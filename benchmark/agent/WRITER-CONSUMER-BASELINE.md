@@ -1,6 +1,7 @@
 # Task 012: manually prepared writer → independent consumer baseline
 
-This is a frozen, two-call semantic pilot, **not a result**. The human writer
+This is a frozen, two-call semantic pilot, **not a result**. The earlier v1/v2
+protocol drafts were never run. The human writer
 prepared the final OKF bundle in `corpus/writer_consumer_baseline.json`; it does
 not use the task-010 backfill writer or task-013 upkeep checker. The consumer
 will receive that bundle in a fresh model invocation. The raw-record control
@@ -19,15 +20,17 @@ not AI writing quality or the effect of 010/013.
 
 ## Frozen protocol
 
-Use the committed, clean Go checkout and record its full commit SHA and pinned
-SPEC revision `0b87c52c6ef999286c745e19998fdfcd03d5dbee` in the plan.
+Use the clean Go checkout at
+`dd8989ba36b8e27ac5762e2e0984cac7f88e8738` and record that full commit
+and pinned SPEC revision `0b87c52c6ef999286c745e19998fdfcd03d5dbee`
+in the plan.
 Run the included offline Go test before any model call. Use the bundled
 `codex-cli 0.155.0-alpha.16.3` binary with SHA-256
 `c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a`,
 model ID `gpt-6-luna` and `low` reasoning. Its backend snapshot is not
 independently verifiable. The baseline adapter at
-`/private/tmp/okf-baseline-codex-adapter` has SHA-256
-`b472e9818c3c26d3b28d8b9c0441ee994c77a7ef0f1ba5ce5c19b7e9e1feb2ff`.
+`/private/tmp/okf-eval-codex-adapter-dd8989b` has SHA-256
+`8f132bc3d12aeb1ea78d74642156427c1921a35b28d60f12b1296354a0b44ea9`.
 It is built with `-buildvcs=false` from this code; the exact source commit is
 still recorded separately by the runner.
 If this binary is unavailable or differs, freeze and preregister a new adapter
@@ -38,7 +41,7 @@ the harness `case_id` or `arm`, gold `expected` object, writer history or other
 arm. The harness runs control
 then treatment. This one-repeat pilot cannot estimate order or variance.
 
-Run ID: `manual-writer-consumer-20260926-v2`. Expected rows and model calls:
+Run ID: `manual-writer-consumer-20260926-v3`. Expected rows and model calls:
 **one case × two arms × one repeat = two**. Hard bounds: two calls, 120 seconds
 of runner context, 40 seconds per adapter model call. Observed input+output
 token threshold: 50,000, checked after each call and therefore able to be
@@ -54,6 +57,7 @@ From the clean repository root, use exclusive `/private/tmp` output paths:
 set -e
 set -o pipefail
 test -z "$(git status --porcelain --untracked-files=all)"
+test "$(git rev-parse HEAD)" = dd8989ba36b8e27ac5762e2e0984cac7f88e8738
 test "$(shasum -a 256 benchmark/agent/corpus/writer_consumer_baseline.json | cut -d ' ' -f 1)" = \
   3fd56d975fa6570df6db81a939eea72d51178034a559882a52b1bb753baf522a
 test "$(/Applications/ChatGPT.app/Contents/Resources/codex --version 2>/dev/null)" = \
@@ -61,10 +65,10 @@ test "$(/Applications/ChatGPT.app/Contents/Resources/codex --version 2>/dev/null
 test "$(shasum -a 256 /Applications/ChatGPT.app/Contents/Resources/codex | cut -d ' ' -f 1)" = \
   c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a
 GOCACHE=/private/tmp/okf-agent-gocache GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
-  go build -buildvcs=false -o /private/tmp/okf-baseline-codex-adapter \
+  go build -buildvcs=false -o /private/tmp/okf-eval-codex-adapter-dd8989b \
   ./benchmark/agent/cmd/codex-adapter
-test "$(shasum -a 256 /private/tmp/okf-baseline-codex-adapter | cut -d ' ' -f 1)" = \
-  b472e9818c3c26d3b28d8b9c0441ee994c77a7ef0f1ba5ce5c19b7e9e1feb2ff
+test "$(shasum -a 256 /private/tmp/okf-eval-codex-adapter-dd8989b | cut -d ' ' -f 1)" = \
+  8f132bc3d12aeb1ea78d74642156427c1921a35b28d60f12b1296354a0b44ea9
 
 GOCACHE=/private/tmp/okf-agent-gocache GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
   go test ./benchmark/agent -run '^TestManualWriterConsumerBaseline$' -count=1
@@ -73,13 +77,13 @@ OKF_BASELINE_COMMIT=$(git rev-parse HEAD)
 GOCACHE=/private/tmp/okf-agent-gocache GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
   go run ./benchmark/agent/cmd/okf-agent-eval run \
   -corpus benchmark/agent/corpus/writer_consumer_baseline.json \
-  -plan /private/tmp/okf-manual-writer-consumer-v2-plan.json \
-  -rows /private/tmp/okf-manual-writer-consumer-v2-rows.jsonl \
-  -adapter /private/tmp/okf-baseline-codex-adapter \
+  -plan /private/tmp/okf-manual-writer-consumer-v3-plan.json \
+  -rows /private/tmp/okf-manual-writer-consumer-v3-rows.jsonl \
+  -adapter /private/tmp/okf-eval-codex-adapter-dd8989b \
   -model-runtime /Applications/ChatGPT.app/Contents/Resources/codex \
   -model-runtime-version 'codex-cli 0.155.0-alpha.16.3' \
   -model-runtime-sha256 c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a \
-  -run-id manual-writer-consumer-20260926-v2 \
+  -run-id manual-writer-consumer-20260926-v3 \
   -model gpt-6-luna -model-version gpt-6-luna \
   -settings '{"reasoning_effort":"low"}' \
   -commit "$OKF_BASELINE_COMMIT" \
@@ -91,9 +95,9 @@ GOCACHE=/private/tmp/okf-agent-gocache GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local
 GOCACHE=/private/tmp/okf-agent-gocache GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
   go run ./benchmark/agent/cmd/okf-agent-eval analyze \
   -corpus benchmark/agent/corpus/writer_consumer_baseline.json \
-  -plan /private/tmp/okf-manual-writer-consumer-v2-plan.json \
-  -rows /private/tmp/okf-manual-writer-consumer-v2-rows.jsonl \
-  > /private/tmp/okf-manual-writer-consumer-v2-report.json
+  -plan /private/tmp/okf-manual-writer-consumer-v3-plan.json \
+  -rows /private/tmp/okf-manual-writer-consumer-v3-rows.jsonl \
+  > /private/tmp/okf-manual-writer-consumer-v3-report.json
 ```
 
 Preserve the exact plan, raw rows and analyzer report under `runs/` after the
