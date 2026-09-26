@@ -1,6 +1,6 @@
 # 006 — Создание нового bundle через Go CLI
 
-Статус: backlog. Приоритет: P1. Источник: исследование `scaccogatto/okf-skills`, commit `68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5`.
+Статус: реализовано; документация и Go CLI покрыты тестами. Приоритет: P1. Источник: исследование `scaccogatto/okf-skills`, commit `68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5`.
 
 ## Проблема и результат
 
@@ -27,12 +27,14 @@ Reference: [upstream init](https://github.com/scaccogatto/okf-skills/blob/68ce7a
 
 ## Приёмка
 
-- [ ] Новый bundle читается и проходит base validation; strict diagnostics объяснимы, выдуманных полей нет.
-- [ ] AAA-тесты: пустой target, конфликт, повторный запуск, symlink, отмена/ошибка публикации; при отказе существующие данные не меняются.
-- [ ] Пример из README воспроизводится одним Go binary, без дополнительных интерпретаторов.
-- [ ] Контракты CLI и docs согласованы; relevant Go tests, `go vet ./...`, `git diff --check` проходят.
-- [ ] После изменения skill и references обновлён `skills-lock.json`; существующая проверка lock файла проходит на точном содержимом skill.
+- [x] Новый bundle читается и проходит base validation; strict diagnostics объяснимы, выдуманных полей нет.
+- [x] AAA-тесты: пустой target, конфликт, повторный запуск, symlink, отмена/ошибка публикации; при отказе существующие данные не меняются.
+- [x] Пример из README воспроизводится одним Go binary, без дополнительных интерпретаторов.
+- [x] Контракты CLI и docs согласованы; relevant Go tests, `go vet ./...`, `git diff --check` проходят.
+- [x] После изменения skill и references обновлён `skills-lock.json`; существующая проверка lock файла проходит на точном содержимом skill.
 
 ## Границы и зависимости
 
 004 задаёт spec revision; 005 — применимые reserved-file правила. Не импортировать историю, не менять migration и не создавать knowledge bundle всего репозитория: это 010 и 007.
+
+Доказательства: [CLI contract](../../docs/contracts/cli-init.md), [AAA tests](../../internal/okfcli/init_test.go), [README](../../README.md) и `skills-lock.json`. Go validation закреплена в CI; `node scripts/update-skills-lock.mjs --check` повторно подтвердил точный lock.

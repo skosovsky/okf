@@ -1,6 +1,6 @@
 # 010 — Восстановление draft bundle из Git-истории
 
-Статус: backlog. Приоритет: P2. Зависимости: 004/005, публикация через существующие mutation/store; 012 нужен до заявления о качестве.
+Статус: выполнено. Приоритет: P2. Зависимости: 004/005, публикация через существующие mutation/store; 012 нужен до заявления о качестве.
 
 ## Проблема и результат
 
@@ -36,13 +36,13 @@ Coverage означает «каждое включённое событие р�
 
 ## Приёмка
 
-- [ ] AAA Go tests на extraction/diffs, нет shell interpolation из commit text/path.
-- [ ] Фиксированные входы воспроизводятся; truncation/skip counts проверяются независимо от LLM.
-- [ ] Interrupted run и resumed run не теряют/дублируют events; изменившийся input инвалидирует checkpoint.
-- [ ] Fixture «A → отмена A → B» не оставляет A действующим; ambiguous case остаётся unresolved.
-- [ ] Ошибка/cancel до apply не меняет bundle; stale revision не применяется; replay использует store guarantees.
-- [ ] Отчёт содержит coverage, unresolved conflicts, evidence truncation, стоимость/usage если доступны и границы качества.
-- [ ] Качество проверено через сценарии 012: независимый consumer отвечает по реконструированному bundle на вопросы с отменёнными решениями, неполным evidence и текущим состоянием кода. Отчёт показывает фактические ошибки/отказы отдельно от покрытия событий. Без этого прогона задача остаётся открытой, даже если schema и coverage проходят.
+- [x] AAA Go tests на extraction/diffs, нет shell interpolation из commit text/path.
+- [x] Фиксированные входы воспроизводятся; truncation/skip counts проверяются независимо от LLM.
+- [x] Interrupted run и resumed run не теряют/дублируют events; изменившийся input инвалидирует checkpoint.
+- [x] Fixture «A → отмена A → B» не оставляет A действующим; ambiguous case остаётся unresolved.
+- [x] Ошибка/cancel до apply не меняет bundle; stale revision не применяется; replay использует store guarantees.
+- [x] Отчёт содержит coverage, unresolved conflicts, evidence truncation, стоимость/usage если доступны и границы качества.
+- [x] Качество проверено через сценарии 012: [независимый consumer-прогон](../../benchmark/agent/runs/20260926-backfill-consumer-v2/README.md) охватывает отменённое решение, неполное evidence и текущее состояние кода. Отчёт отделяет точность ответа от coverage; один смыслово верный ответ `Mode B` не совпал с точным эталоном `B`.
 
 ## Не входит
 

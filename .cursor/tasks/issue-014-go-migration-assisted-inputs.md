@@ -1,6 +1,6 @@
 # 014 — Упростить подготовку миграции без ослабления preview/apply
 
-Статус: backlog / design first. Приоритет: P2. Зависимости: 004/005; текущий migration contract остаётся authoritative до явно принятого изменения.
+Статус: выполнено. Приоритет: P2. Зависимости: 004/005; текущий migration contract остаётся authoritative до явно принятого изменения.
 
 ## Проблема и смысл чужого подхода
 
@@ -34,13 +34,15 @@ Reference: [migration implementation](https://github.com/scaccogatto/okf-skills/
 
 ## Приёмка
 
-- [ ] Пользователь может подготовить mapping без ручного восстановления legacy numbering/raw selectors из ошибок.
-- [ ] AAA Go fixtures: простой numbered list, unnumbered source, mixed sources/Citations, duplicate labels, code-owned псевдомаркеры, URL без title и нераспознанная prose.
-- [ ] Helper сохраняет ambiguity; неизвестные source/actor/time не заполняются выдуманными фактами.
-- [ ] Никакие непредложенные bytes не теряются, CRLF/BOM/unknown YAML сохраняются действующим mutation layer.
-- [ ] Apply с неподтверждённым/устаревшим inputs по-прежнему отвергается существующим контрактом; no-op/failed preview не создаёт private store artifacts.
-- [ ] Docs демонстрируют простой happy path и один ambiguous case без обещания однокнопочной корректности.
-- [ ] AAA Go test для template output path: существующий файл не перезаписывается без явно согласованной collision policy; отказ не меняет bundle и ранее существовавший template.
+- [x] Пользователь может подготовить mapping без ручного восстановления legacy numbering/raw selectors из ошибок.
+- [x] AAA Go fixtures: простой numbered list, unnumbered source, mixed sources/Citations, duplicate labels, code-owned псевдомаркеры, URL без title и нераспознанная prose.
+- [x] Helper сохраняет ambiguity; неизвестные source/actor/time не заполняются выдуманными фактами.
+- [x] Никакие непредложенные bytes не теряются, CRLF/BOM/unknown YAML сохраняются действующим mutation layer.
+- [x] Apply с неподтверждённым/устаревшим inputs по-прежнему отвергается существующим контрактом; no-op/failed preview не создаёт private store artifacts.
+- [x] Docs демонстрируют простой happy path и один ambiguous case без обещания однокнопочной корректности.
+- [x] AAA Go test для template output path: существующий файл не перезаписывается без явно согласованной collision policy; отказ не меняет bundle и ранее существовавший template.
+
+Доказательства: [`migrate-prepare` и закрытые шаблоны](../../docs/contracts/migration-preparation.md), [тест parser-owned selectors и неоднозначности](../../internal/okfcli/migration_prepare_test.go), [CLI-тесты collision, stale/unconfirmed inputs, CRLF и BOM](../../internal/okfcli/migrate_prepare_command_test.go). Leading BOM перед frontmatter распознаётся как неподдерживаемый случай и миграция завершается без записи; сохранение bytes здесь означает fail-closed, а не обещание автоматически мигрировать такой файл. Два независимых ревью реализации и проверок: PASS.
 
 ## Не входит
 

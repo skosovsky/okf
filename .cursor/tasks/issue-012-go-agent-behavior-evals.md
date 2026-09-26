@@ -1,6 +1,6 @@
 # 012 — Go harness для оценки качества знаний и поведения агента
 
-Статус: backlog. Приоритет: P2. Зависимости: 004/005 до итогового прогона на исправленной реализации; 010/013 подключаются как отдельные экспериментальные сценарии.
+Статус: выполнено. Приоритет: P2. Зависимости: 004/005 до итогового прогона на исправленной реализации; 010/013 подключаются как отдельные экспериментальные сценарии.
 
 ## Зачем
 
@@ -29,12 +29,12 @@ References: [trust results](https://github.com/scaccogatto/okf-skills/blob/68ce7
 
 ## Приёмка
 
-- [ ] Корпус воспроизводится без сетевых вызовов; положительные и adversarial grader cases оформлены AAA.
-- [ ] Go analyzer пересчитывает отчёт из сохранённых rows; отсутствующие/ошибочные trials видимы в denominator accounting.
-- [ ] Сравнение metadata/no-metadata не подменяется отсутствием правильного ответа у control.
-- [ ] Базовый writer → independent consumer проверяется на вручную подготовленном или изменённом через существующий Go mutation API bundle; реализация 010/013 для этого не требуется. Оценивается ответ consumer, а не только факт изменения документа.
-- [ ] Backfill coverage и syntactic validity не выдаются за semantic accuracy.
-- [x] После 004/005 выполнен pilot через Go CLI adapter на corrected commit `ed0bd12`: [план, 8/8 rows, отчёт и ограничения](../../benchmark/agent/runs/20260926-primary-precomputed-v1/README.md). Runner заранее выполнил `validate`/`parse`; модель сама CLI не вызывала. Оба arm дали 3/4 верных ответов на четырёх случаях без повторов, измеренного выигрыша нет. Metadata-only, before/after и writer→consumer оцениваются отдельно.
+- [x] Корпус воспроизводится без сетевых вызовов; положительные и adversarial grader cases оформлены AAA.
+- [x] Go analyzer пересчитывает отчёт из сохранённых rows; отсутствующие/ошибочные trials видимы в denominator accounting.
+- [x] [Сравнение metadata/no-metadata](../../benchmark/agent/runs/20260926-metadata-only-v2/README.md) не подменяется отсутствием правильного ответа у control: 4/4 в обеих группах.
+- [x] [Базовый writer → independent consumer](../../benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md) проверен на вручную подготовленном bundle, независимо от 010/013; оба consumer ответили верно.
+- [x] [Backfill consumer-прогон](../../benchmark/agent/runs/20260926-backfill-consumer-v2/README.md) отделяет coverage и синтаксическую валидность от точности ответов.
+- [x] После 004/005 выполнен pilot через Go CLI adapter на corrected commit `ed0bd12`: [план, 8/8 rows, отчёт и ограничения](../../benchmark/agent/runs/20260926-primary-precomputed-v1/README.md). Runner заранее выполнил `validate`/`parse`; модель сама CLI не вызывала. Оба arm дали 3/4 верных ответов на четырёх случаях без повторов, измеренного выигрыша нет. Отдельный [before/after](../../benchmark/agent/runs/20260926-beforeafter-v1/README.md) имеет два повтора; metadata и writer→consumer имеют по одному, поэтому разброс для них не оценён.
 
 ## Прогоны на нашей реализации
 

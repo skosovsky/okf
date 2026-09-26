@@ -1,6 +1,6 @@
 # Issue 004 — Согласовать временной контракт двух редакций OKF 0.2
 
-Статус: исследовано; реализация не начата. Приоритет: P0 для решения контракта, до новых producer workflows.
+Статус: реализовано; полный повторный race-прогон остаётся открытым. Приоритет: P0 для решения контракта, до новых producer workflows.
 Язык реализации: Go. JSON Schema, Markdown, YAML/JSON fixtures — контракты и данные; Python/Node runtime не добавлять.
 
 ## Проблема и проверенные источники
@@ -52,7 +52,7 @@
 | Migration | `mutation/migration.go:2797` и соседние блоки уже сравнивают generated/timestamp как instants. Не превращать существующую v0.1→v0.2 migration в незаметную нормализацию v0.2 dates. Нужен отдельный, явный plan для revision upgrade. |
 | Fixtures/docs | `fixtures/v02/spec-lock.json`, `validator/fixture_test.go:119`, `bundle/observation_v02_test.go:260`, `graph/profile_test.go:1941`, `store/change_v02_test.go`, `mutation/v02_operations_test.go`, CLI/MCP contract tests и README. Старые fixtures сохраняют смысл legacy regression corpus. |
 
-## Предлагаемый путь совместимости — проект контракта, не действующий API
+## Путь совместимости — решение принято в [ADR 0003](../../docs/adr/0003-okf-v02-temporal-revisions.md)
 
 1. Сначала ADR/contract matrix: различать format version `0.2` и spec revision/temporal profile в наших runtime/report contracts. Не придумывать `okf_version: 0.3` за upstream и не полагаться на один `0.2` для выбора семантики.
 2. Старые public accessors, date-only constructors и graph profile сохраняют документированную семантику до явной версии/депрекации. Для нового поведения — additive revision-aware API или новый согласованный профиль. Решить имена и поверхность до реализации.
@@ -63,27 +63,27 @@
 7. Для старого graph profile оставить xsd:date; для нового согласовать versioned projection с xsd:dateTime и разрешением precision. Не менять datatype «внутри той же схемы» без compatibility strategy.
 8. Pin нового SPEC и SHA обновлять вместе с runnable contracts и отдельным corpus, оставляя legacy revision доступной для regression. Новый pin не является поводом ослабить lossless/transactional guarantees.
 
-## Решения до реализации (Spec-First / Contract-First)
+## Принятые решения (Spec-First / Contract-First)
 
-- [ ] Согласовать способ выбора revision/profile, default и rollout, отражение в report/MCP/graph. Без этого нельзя менять текущие defaults.
-- [ ] Сравнить отдельные revision profiles с более простым additive precision-aware read API. Выбрать минимальный вариант, сохраняющий опубликованные гарантии; несколько постоянно поддерживаемых режимов не являются заранее заданным требованием.
-- [ ] Согласовать допустимый subset ISO 8601: RFC3339 с Z/±HH:MM, fractional precision, offset bounds, `-00:00`, leap seconds. Upstream говорит ISO 8601, а наши текущие APIs — RFC3339; не выдавать более узкую грамматику за полный upstream без описания.
-- [ ] Согласовать legacy date conversion по каждому полю и смысл usage_window endpoints. В частности, не расширять нормативный диапазон до inclusive interval только из нынешнего комментария store.
-- [ ] Согласовать additive Go API и версионирование JSON Schema/graph; решения зафиксировать до обновления fixtures.
-- [ ] Определить warnings/errors для legacy values в выбранной revision и точную семантику отсутствующего as_of. Не добавлять зависимость от текущего времени туда, где его раньше не было.
+- [x] Согласовать способ выбора revision/profile, default и rollout, отражение в report/MCP/graph. Без этого нельзя менять текущие defaults.
+- [x] Сравнить отдельные revision profiles с более простым additive precision-aware read API. Выбрать минимальный вариант, сохраняющий опубликованные гарантии; несколько постоянно поддерживаемых режимов не являются заранее заданным требованием.
+- [x] Согласовать допустимый subset ISO 8601: RFC3339 с Z/±HH:MM, fractional precision, offset bounds, `-00:00`, leap seconds. Upstream говорит ISO 8601, а наши текущие APIs — RFC3339; не выдавать более узкую грамматику за полный upstream без описания.
+- [x] Согласовать legacy date conversion по каждому полю и смысл usage_window endpoints. В частности, не расширять нормативный диапазон до inclusive interval только из нынешнего комментария store.
+- [x] Согласовать additive Go API и версионирование JSON Schema/graph; решения зафиксировать до обновления fixtures.
+- [x] Определить warnings/errors для legacy values в выбранной revision и точную семантику отсутствующего as_of. Не добавлять зависимость от текущего времени туда, где его раньше не было.
 
 ## Acceptance и тесты (AAA)
 
 Во всех новых Go tests явно отделять Arrange / Act / Assert; таблицы допустимы.
 
-- [ ] Arrange: pinned old/new SPEC + hashes. Act: проверка corpus contracts. Assert: каждый fixture привязан к revision; датированные примеры нового Appendix A проходят новый профиль, старые — старый.
-- [ ] Arrange: stale_after с +07:00, эквивалентный Z, nanoseconds, моменты непосредственно до/ровно/после границы. Act: bundle/validator/CLI/MCP/graph. Assert: единый результат и inclusive `>=`, без calendar truncation.
-- [ ] Arrange: usage_window с offset, где лексический и временной порядки различаются. Act: parse/validate/mutate. Assert: ordering по instant, raw сохранён; эквивалентные instants допустимы согласно согласованному контракту.
-- [ ] Arrange: unquoted/quoted/explicit !!timestamp/!!str, timezone-less datetime, неверная дата, duplicate keys, merges/aliases, null, cancellation. Act: observation и validation. Assert: consistent absent/malformed/valid/ambiguous outcomes, без потери raw и fail-open.
-- [ ] Arrange: существующий Go consumer, date CLI/MCP requests и старый graph datatype. Act: compatibility suite. Assert: старое поведение воспроизводится или break выделен отдельной согласованной версией, а не спрятан в patch.
-- [ ] Arrange: legacy dates без mapping. Act: revision migration preview. Assert: unresolved, отсутствует выдуманный instant; apply не пишет неполный план.
-- [ ] Arrange: явный mapping + CRLF/comments/unknown keys + concurrent edit. Act: preview/apply/replay. Assert: только intended edits, прежние conflict/fingerprint/idempotency/transactional guarantees.
-- [ ] MCP schemas принимают именно то, что принимает runtime; output удовлетворяет соответствующим revision schemas. Существующие Graph JSON-LD/N-Triples используют корректный datatype; новый RDF-формат ради этой задачи не добавляется.
+- [x] Arrange: pinned old/new SPEC + hashes. Act: проверка corpus contracts. Assert: каждый fixture привязан к revision; датированные примеры нового Appendix A проходят новый профиль, старые — старый.
+- [x] Arrange: stale_after с +07:00, эквивалентный Z, nanoseconds, моменты непосредственно до/ровно/после границы. Act: bundle/validator/CLI/MCP/graph. Assert: единый результат и inclusive `>=`, без calendar truncation.
+- [x] Arrange: usage_window с offset, где лексический и временной порядки различаются. Act: parse/validate/mutate. Assert: ordering по instant, raw сохранён; эквивалентные instants допустимы согласно согласованному контракту.
+- [x] Arrange: unquoted/quoted/explicit !!timestamp/!!str, timezone-less datetime, неверная дата, duplicate keys, merges/aliases, null, cancellation. Act: observation и validation. Assert: consistent absent/malformed/valid/ambiguous outcomes, без потери raw и fail-open.
+- [x] Arrange: существующий Go consumer, date CLI/MCP requests и старый graph datatype. Act: compatibility suite. Assert: старое поведение воспроизводится или break выделен отдельной согласованной версией, а не спрятан в patch.
+- [x] Arrange: legacy dates без mapping. Act: revision migration preview. Assert: unresolved, отсутствует выдуманный instant; apply не пишет неполный план.
+- [x] Arrange: явный mapping + CRLF/comments/unknown keys + concurrent edit. Act: preview/apply/replay. Assert: только intended edits, прежние conflict/fingerprint/idempotency/transactional guarantees.
+- [x] MCP schemas принимают именно то, что принимает runtime; output удовлетворяет соответствующим revision schemas. Существующие Graph JSON-LD/N-Triples используют корректный datatype; новый RDF-формат ради этой задачи не добавляется.
 - [ ] Запустить `go test ./...`, `go test -race ./...`, `go vet ./...`, contract/golden suites; обновить EN/RU docs и migration guidance.
 
 ## Зависимости и риски
@@ -97,3 +97,5 @@
 ## Решение о переносе
 
 Берём из okf-skills обновлённый upstream pin и проверяем его последствия для нашей Go-модели. Их validator не становится источником нормативных решений: его успех на bundle не доказывает совместимость, а смена date на datetime затрагивает больше, чем регулярное выражение. Итоговый контракт и его проверка принадлежат этой задаче.
+
+Доказательства: [date SPEC lock](../../fixtures/v02/spec-lock.json), [instant lock](../../fixtures/v02/spec-lock-instant.json), [профильные тесты bundle](../../bundle/temporal_profile_test.go), [validator](../../validator/temporal_profile_test.go), [CLI](../../internal/okfcli/temporal_profile_test.go), [MCP](../../internal/mcpserver/temporal_profile_test.go), [graph](../../graph/temporal_profile_test.go) и [transactional upgrade](../../mutation/temporal_upgrade_external_test.go). Итоговый пункт о полном `go test -race ./...` остаётся открытым до повторного зафиксированного прогона.

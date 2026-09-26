@@ -1,6 +1,6 @@
 # OKF interoperability corpus: Markdown structure, extensions и ложные diagnostics
 
-Статус: proposed. Приоритет: P0 для подтверждённых parser/validator bugs.
+Статус: реализовано; профильный frozen corpus и regression tests закреплены. Приоритет: P0 для подтверждённых parser/validator bugs.
 Реализация и тестовый harness — Go. Python validator другого проекта используется
 только как исследуемый объект, не как зависимость продукта или CI.
 
@@ -226,3 +226,7 @@ span, равного `[^label]`, ради shortcut-reference exception. Ownershi
 mutation consumers, затем `go test ./...`. Проверить fixtures/contract drift
 tests. В отчёте указать before/after по диагностическим классам и нормативное
 основание каждого изменённого результата.
+
+## Состояние приёмки
+
+Все семь групп Acceptance выше покрыты [offline frozen corpus](../../fixtures/interoperability/README.md), [точными expected diagnostics](../../validator/interoperability_corpus_test.go) и [reserved-file regression tests](../../validator/interoperability_reserved_test.go). Полный pinned foreign bundle после исправления: 30 файлов, 0 errors, 16 warnings; причины оставшихся предупреждений и исходные SHA записаны в README corpus. Два независимых acceptance review выполнены в ходе реализации.

@@ -1,6 +1,6 @@
 # 008 — Ограниченный поиск и соседние concepts через MCP
 
-Статус: backlog. Приоритет: P1. Зависимости: временная семантика 004 при выдаче lifecycle; interoperability 005 при чтении reserved files.
+Статус: реализовано; schema-first Go MCP tools покрыты тестами. Приоритет: P1. Зависимости: временная семантика 004 при выдаче lifecycle; interoperability 005 при чтении reserved files.
 
 ## Проблема
 
@@ -24,12 +24,12 @@ Reference: [read-only MCP](https://github.com/scaccogatto/okf-skills/blob/68ce7a
 
 ## Приёмка
 
-- [ ] AAA-тесты ранжирования, пустого query, Unicode, limits, ties, отсутствующего ID и deterministic ordering.
-- [ ] Neighbor fixtures: relative/root links, fragments, sources, extension relations, циклы, broken links, code-owned псевдоссылки.
-- [ ] Traversal и symlink escape отклоняются существующими root boundaries.
-- [ ] Cancellation/лимиты не возвращают success с молча неполным результатом.
-- [ ] Contract tests проверяют tool schemas и совместимость старых tools.
-- [ ] На generated Go fixture около 1000 concepts показано bounded output и измерено время запроса; не вводить search engine без необходимости.
+- [x] AAA-тесты ранжирования, пустого query, Unicode, limits, ties, отсутствующего ID и deterministic ordering.
+- [x] Neighbor fixtures: relative/root links, fragments, sources, extension relations, циклы, broken links, code-owned псевдоссылки.
+- [x] Traversal и symlink escape отклоняются существующими root boundaries.
+- [x] Cancellation/лимиты не возвращают success с молча неполным результатом.
+- [x] Contract tests проверяют tool schemas и совместимость старых tools.
+- [x] На generated Go fixture около 1000 concepts показано bounded output и измерено время запроса; не вводить search engine без необходимости.
 
 ## Не входит
 
@@ -38,3 +38,5 @@ Reference: [read-only MCP](https://github.com/scaccogatto/okf-skills/blob/68ce7a
 ## Решение о переносе
 
 Их read-only MCP полезен там, где хост не читает файлы напрямую. Берём сценарии поиска и просмотра соседей; реализуем их в нашем Go server, чтобы не появились два источника правды о parsing, root boundaries и schema. Совпадающий `read_concept` уже есть.
+
+Доказательства: [Go contract/behavior tests](../../internal/mcpserver/concept_query_test.go), [handlers](../../internal/mcpserver/concept_query_handlers.go) и [schema tests](../../internal/mcpserver/contracts_test.go). Generated fixture содержит 1000 concepts и логирует время поиска/neighbor query.

@@ -1,6 +1,6 @@
 # 011 — GitHub Action над нашим Go validator
 
-Статус: backlog. Приоритет: P1. Зависимости: решения 004/005; существующая release-engineering задача 003 не дублируется.
+Статус: выполнено (локально и в PR #7). Приоритет: P1. Зависимости: решения 004/005; существующая release-engineering задача 003 не дублируется.
 
 ## Результат
 
@@ -27,12 +27,14 @@ Reference: [action.yml](https://github.com/scaccogatto/okf-skills/blob/68ce7a0c0
 
 ## Приёмка
 
-- [ ] Локальный CLI и Action дают одинаковые diagnostics/outcome для одного snapshot/config.
-- [ ] AAA Go tests для границ warning budget (0/N/N+1), malformed input и policy/base distinction.
-- [ ] JSON доступен и при validation failure; operational failure явно отличим.
-- [ ] Adversarial paths с пробелами/quotes/metacharacters не исполняются как shell.
-- [ ] Сам Action реально запущен в GitHub Actions на integration fixtures: valid, malformed, strict warnings, warning budget exceeded, missing directory и selector conflict. Ссылки на run и сверка report/outcome с локальным Go CLI приложены; одних unit tests wrapper недостаточно.
-- [ ] Python, Node и uv не требуются нашим shipped validator runtime; сторонние стандартные setup actions не содержат нашу бизнес-логику.
+- [x] Локальный CLI и Action дают одинаковые diagnostics/outcome для одного snapshot/config.
+- [x] AAA Go tests для границ warning budget (0/N/N+1), malformed input и policy/base distinction.
+- [x] JSON доступен и при validation failure; operational failure явно отличим.
+- [x] Adversarial paths с пробелами/quotes/metacharacters не исполняются как shell.
+- [x] Сам Action реально запущен в GitHub Actions на integration fixtures: valid, malformed, strict warnings, warning budget exceeded, missing directory и selector conflict. Ссылки на run и сверка report/outcome с локальным Go CLI приложены; одних unit tests wrapper недостаточно.
+- [x] Python, Node и uv не требуются нашим shipped validator runtime; сторонние стандартные setup actions не содержат нашу бизнес-логику.
+
+Доказательства: [контракт и локальный эквивалент](../../docs/github-action.md), [Action](../../action.yml), [матрица с `cmp` JSON-отчёта против Go CLI](../../.github/workflows/action-integration.yml); [успешный GitHub Actions run на опубликованном коммите `21689f8`](https://github.com/skosovsky/okf/actions/runs/36237293789). Матрица покрывает шесть обязательных сценариев и instant profile. Два независимых ревью реализации и проверок: PASS.
 
 ## Не входит
 

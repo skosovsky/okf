@@ -1,4 +1,4 @@
-# Agent behavior benchmark (work in progress)
+# Agent behavior benchmark
 
 This Go package contains the offline corpus, wire contract, exact grader, and
 denominator analyzer for task 012. The 20 committed cases cover changed defaults
@@ -32,7 +32,7 @@ unknown usage remains zero and must be identified in the published run notes.
 `go test ./benchmark/agent/...` runs offline. [PILOT.md](PILOT.md) records the
 historical primary commands; [PILOT-DIAGNOSTIC.md](PILOT-DIAGNOSTIC.md) defines
 the one-case read-proof diagnostic. [PILOT-PRECOMPUTED.md](PILOT-PRECOMPUTED.md)
-preregisters a new paired run using runner-produced Go CLI projections. To
+records the paired protocol using runner-produced Go CLI projections. To
 analyze saved rows:
 
 ```sh
@@ -85,21 +85,44 @@ Before a live run, pin the corrected Go commit and SPEC revision, register the
 model/version/settings, adapter, tools, prompts, corpus hash, clock, repeat count,
 budget and invalidation rules. The primary comparison must use real repository
 docs/code as control and a valid bundle through the Go CLI/MCP as treatment;
-the correct answer must be available to both arms. A metadata-only contrast and
-a before/after 004/005 comparison require separate runs. The metadata contrast
-uses `-corpus benchmark/agent/corpus/metadata_cases.json`. The writer-to-consumer
-scenario must first write or mutate a valid bundle through the Go API, then
-grade an independent consumer's factual response. Backfill coverage or syntax
-checks cannot stand in for this semantic result.
+the correct answer must be available to both arms. The separate metadata-only,
+before/after 004/005, backfill-to-consumer, and upkeep writer-to-consumer
+protocols are linked with their results below. The metadata contrast uses
+`-corpus benchmark/agent/corpus/metadata_cases.json`. A writer-to-consumer
+scenario must grade an independent consumer's factual response after the writer
+has produced a valid bundle; backfill coverage or syntax checks alone cannot
+stand in for this result.
 
 The [precomputed primary pilot](runs/20260926-primary-precomputed-v1/README.md)
-completed 8/8 paired trials on corrected commit `ed0bd12`: `valid=true`,
+completed 8/8 planned trials (four pairs) on corrected commit `ed0bd12`:
+`valid=true`,
 3/4 correct in each arm, one different wrong answer in each, nine
 runner-side Go CLI calls, zero model tool calls, and 127,346 observed
 input-plus-output tokens. The adapter did not provide a dollar cost. With
 four cases and one repeat, this shows feasibility of the Go CLI projection
 path and no measured answer-quality benefit; it does not test autonomous CLI
 use. Its plan, raw rows, and analyzer report are committed together.
+
+The completed follow-up runs each retain a plan, raw observations, report, and
+their own protocol. Scores below use a **frozen strict grader**: an answer must
+match the registered answer or alias and cite a supported artifact ID. Read the
+case-level notes before treating an exact score as factual correctness.
+
+| Run | Valid result | Observed outcome |
+| --- | --- | --- |
+| [Metadata-only v2](runs/20260926-metadata-only-v2/README.md) | 8/8 calls, `valid=true` | Control 4/4, treatment 4/4 correct. Adding frontmatter to identical answer-bearing bodies made no measured difference here. |
+| [Manual bundle → consumer v3](runs/20260926-manual-writer-consumer-v3/README.md) | 2/2 calls, `valid=true` | Raw-record and human-prepared OKF consumers both 1/1 correct; this does not test an AI writer. |
+| [Go backfill → consumer v2](runs/20260926-backfill-consumer-v2/README.md) | 6/6 calls, `valid=true` | Control 3/3, treatment 2/3 by exact grading. The treatment's “Mode B” versus expected “B” is a format miss; its meaning and citation match the evidence. |
+| [Go CLI before/after 004/005 v1](runs/20260926-beforeafter-v1/README.md) | 20/20 rows, `valid=true`; 18 model calls | In eight paired 005 comparisons, old 4/8 and corrected 6/8 pass exact grading; one gain reflects answer normalization rather than a factual correction. In the separate 004 case, the old CLI cannot select the instant-spec revision; the corrected CLI validates it and both model answers pass. |
+| [Checker off/on writer → consumer v2](runs/20260926-upkeep-live-v2/README.md) | 10 calls, `valid=true` | Strict consumer scores are off 0/2 and on 1/2. In the reversal case, checker-on left a stale Mode A document and consumer answer; checker-off wrote Mode B, but “Mode B” missed the exact `B` answer. The checker intervention includes a reminder and another revision, so this is not an isolated checker effect. |
+
+The earlier [checker live v1](runs/20260926-upkeep-live-v1/README.md)
+completed model calls but failed its preregistered analyzer contract; its
+post-hoc report is diagnostic only, and v1 has no valid primary score. All
+these studies are small synthetic or targeted comparisons. None establishes a
+universal OKF quality benefit or a factual-error rate for real repositories.
+The adapters supplied no USD prices; a zero-valued report cost with zero
+cost-known trials means **unknown**, not free.
 
 The earlier authorized direct pilot attempts and diagnostics are preserved under
 `runs/`. The first eight attempts failed before inference because standalone
@@ -121,9 +144,10 @@ outputs in each row. For direct tool use, run with
 `-toolkit-mode direct -go-cli /absolute/path/to/okf`; the model must invoke the
 CLI itself. The adapter
 writes both arms' files into isolated temporary directories and gives the model
-read-only shell access; treatment must invoke the Go CLI. The analyzer rejects
-a successful treatment row with no observed Go CLI call. For direct runs the
-runner and adapter require an absolute model runtime path, exact version and
+read-only shell access. In direct mode, treatment must invoke the Go CLI and
+the analyzer rejects a successful treatment row with no observed Go CLI call.
+For direct runs, the runner and adapter require an absolute model runtime path,
+exact version and
 SHA-256, recorded in the plan and report. The previous auto-review rejection
 is preserved separately from the later authorized failed run.
 
@@ -131,9 +155,10 @@ is preserved separately from the later authorized failed run.
 store and writes `corpus/backfill_cases.json` plus a separate coverage report.
 The three consumer questions cover A→B, truncated evidence and current code.
 The current-code question gives both arms the same frozen `git/current.diff`
-artifact so a wrong answer is not caused by missing source evidence. Run the
-three backfill questions with `-toolkit-mode none`: the current-code treatment
+artifact so a wrong answer is not caused by missing source evidence. The live
+consumer run used `-toolkit-mode none`: the current-code treatment
 also includes this raw diff, while Go CLI treatment projection accepts only
-OKF files. They are ready for an independent model run after approval; the
-offline test verifies writer publication, identical code evidence and Go CLI
-readability of the two bundle-only cases, not consumer answer quality.
+OKF files. The [completed consumer run](runs/20260926-backfill-consumer-v2/README.md)
+reports the independent answers; the offline test separately verifies writer
+publication, identical code evidence and Go CLI readability of the two
+bundle-only cases.

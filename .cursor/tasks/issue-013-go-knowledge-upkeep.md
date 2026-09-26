@@ -1,6 +1,6 @@
 # 013 — Поддержание bundle: переносимый workflow и опциональная Go-проверка
 
-Статус: backlog. Приоритет: P2. Зависимости: 007 для пилота; 005 для root metadata boundary; 012 для оценки эффекта.
+Статус: выполнено. Приоритет: P2. Зависимости: 007 для пилота; 005 для root metadata boundary; 012 для оценки эффекта.
 
 ## Проблема и переоценка
 
@@ -27,11 +27,11 @@ References: [hook](https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66c
 
 ## Приёмка
 
-- [ ] Snippet работает без установки Python/Node/Claude plugin.
-- [ ] AAA Go tests: clean tree, unrelated change, changed asset, new/deleted asset, pre-existing dirty state, старый log edit, paths с newline, explicit unaffected и устаревший fingerprint.
-- [ ] Не меняет bundle, trust, status или verification самостоятельно.
-- [ ] Opt-out/loop guard и bounded runtime проверены.
-- [ ] После реализации checker выполнен отдельный writer→consumer rerun по harness 012: опубликованы частота обновления docs и качество ответа consumer с checker и без него на одинаковых случаях. Базовый pilot 012 не подменяет этот прогон; факт hook success не называется freshness proof.
+- [x] Snippet работает без установки Python/Node/Claude plugin.
+- [x] AAA Go tests: clean tree, unrelated change, changed asset, new/deleted asset, pre-existing dirty state, старый log edit, paths с newline, explicit unaffected и устаревший fingerprint.
+- [x] Не меняет bundle, trust, status или verification самостоятельно.
+- [x] Opt-out/loop guard и bounded runtime проверены.
+- [x] После реализации checker выполнен отдельный [валидный writer→consumer rerun](../../benchmark/agent/runs/20260926-upkeep-live-v2/README.md): частота обновления docs и качество ответа consumer с checker и без него опубликованы на двух одинаковых случаях. Первый [невалидный прогон](../../benchmark/agent/runs/20260926-upkeep-live-v1/README.md) сохранён отдельно. Успех hook не называется доказательством актуальности знаний.
 
 ## Не входит
 

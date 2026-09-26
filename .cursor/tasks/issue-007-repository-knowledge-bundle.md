@@ -1,6 +1,6 @@
 # 007 — Knowledge bundle собственной архитектуры
 
-Статус: backlog. Приоритет: P1. Зависимости: решения 004/005; 006 желательно, но не обязательно.
+Статус: реализовано. Приоритет: P1. Зависимости: решения 004/005; 006 желательно, но не обязательно.
 
 ## Проблема и результат
 
@@ -27,12 +27,14 @@ Reference: [чужой self-bundle](https://github.com/scaccogatto/okf-skills/tr
 
 ## Приёмка
 
-- [ ] Каждый concept отвечает на инженерный вопрос и ссылается на проверяемые источники.
-- [ ] Нет невидимых gitignore файлов знания и нет попадания store receipts/journal в Git.
-- [ ] Bundle проходит согласованный conformance contract; битые внутренние links/index coverage проверяются.
-- [ ] Минимум три сценария проверены вручную: найти mutation boundary, определить поддерживаемую platform, понять различие OKF version и package version.
-- [ ] CI использует Go implementation; не зависит от foreign checker или LLM.
+- [x] Каждый concept отвечает на инженерный вопрос и ссылается на проверяемые источники.
+- [x] Нет невидимых gitignore файлов знания и нет попадания store receipts/journal в Git.
+- [x] Bundle проходит согласованный conformance contract; битые внутренние links/index coverage проверяются.
+- [x] Минимум три сценария проверены вручную: найти mutation boundary, определить поддерживаемую platform, понять различие OKF version и package version.
+- [x] CI использует Go implementation; не зависит от foreign checker или LLM.
 
 ## Не входит
 
 Полная реконструкция истории, дублирование всех исходников, автоматическое назначение freshness/verification и переписывание существующих ADR.
+
+Доказательства: [knowledge/index.md](../../knowledge/index.md), [источники и правило поддержки](../../docs/knowledge.md), [Go validation в CI](../../.github/workflows/ci.yml), [ручные маршруты и ответы](../../docs/knowledge-manual-review.md).
