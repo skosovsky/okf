@@ -5,7 +5,7 @@ policy: >
 occurrence_lock:
   algorithm: sha256
   count: 375
-  sha256: 6199d71b549098b329dd8d025c9a4c0b753ce10497a63c0a18796f9d0c89f9e4
+  sha256: 65e5492cf612dd2ffd0dcff14bdb5a9a162fe24ac0c6464973bbcb0125295019
   reason: locks exact path, byte offset, and matched legacy spelling so listed files are not blanket allowlists
 canonical_compatibility_cases:
   - compat/declared-v01/index.md
