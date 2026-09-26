@@ -6,6 +6,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -31,8 +33,14 @@ func run() error {
 	model := os.Getenv("OKF_EVAL_MODEL")
 	modelVersion := os.Getenv("OKF_EVAL_MODEL_VERSION")
 	settingsRaw := os.Getenv("OKF_EVAL_SETTINGS")
+	modelRuntime := os.Getenv("OKF_EVAL_MODEL_RUNTIME")
+	runtimeVersion := os.Getenv("OKF_EVAL_MODEL_RUNTIME_VERSION")
+	runtimeSHA256 := os.Getenv("OKF_EVAL_MODEL_RUNTIME_SHA256")
 	if model == "" || modelVersion == "" || settingsRaw == "" {
 		return fmt.Errorf("model, model version and settings required")
+	}
+	if err := verifyRuntime(modelRuntime, runtimeVersion, runtimeSHA256); err != nil {
+		return err
 	}
 	var settings struct {
 		ReasoningEffort string `json:"reasoning_effort"`
@@ -115,7 +123,7 @@ func run() error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "codex", "exec", "--json", "--ephemeral", "--ignore-user-config", "--skip-git-repo-check", "-s", "read-only", "-C", working, "-m", model, "-c", "model_reasoning_effort=\""+settings.ReasoningEffort+"\"", "--output-schema", schemaPath, "-o", lastPath, "-")
+	cmd := exec.CommandContext(ctx, modelRuntime, "exec", "--json", "--ephemeral", "--ignore-user-config", "--skip-git-repo-check", "-s", "read-only", "-C", working, "-m", model, "-c", "model_reasoning_effort=\""+settings.ReasoningEffort+"\"", "--output-schema", schemaPath, "-o", lastPath, "-")
 	cmd.Stdin = bytes.NewReader(prompt)
 	var stdout, stderr cappedBuffer
 	cmd.Stdout = &stdout
@@ -203,6 +211,37 @@ func run() error {
 		obs.AdapterError = "Codex event stream omitted usage"
 	}
 	return json.NewEncoder(os.Stdout).Encode(obs)
+}
+
+func verifyRuntime(path, version, expectedSHA256 string) error {
+	if !filepath.IsAbs(path) || version == "" || len(expectedSHA256) != 64 {
+		return fmt.Errorf("absolute Codex runtime path, version and SHA-256 are required")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+		return fmt.Errorf("Codex runtime is not an executable regular file")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	hash := sha256.Sum256(data)
+	if hex.EncodeToString(hash[:]) != expectedSHA256 {
+		return fmt.Errorf("Codex runtime SHA-256 mismatch")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, path, "--version").Output()
+	if err != nil {
+		return fmt.Errorf("Codex runtime version probe: %w", err)
+	}
+	if strings.TrimSpace(string(out)) != version {
+		return fmt.Errorf("Codex runtime version mismatch")
+	}
+	return nil
 }
 
 // successfulGoCLICommand only accepts a completed, successful, direct invocation

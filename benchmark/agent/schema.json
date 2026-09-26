@@ -498,6 +498,16 @@
         "run_id": {
           "type": "string"
         },
+        "model_runtime_path": {
+          "type": "string"
+        },
+        "model_runtime_version": {
+          "type": "string"
+        },
+        "model_runtime_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "repeat_count": {
           "type": "integer",
           "minimum": 1
@@ -596,6 +606,16 @@
           "type": "boolean"
         },
         "go_cli_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "model_runtime_path": {
+          "type": "string"
+        },
+        "model_runtime_version": {
+          "type": "string"
+        },
+        "model_runtime_sha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
         }

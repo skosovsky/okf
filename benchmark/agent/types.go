@@ -86,20 +86,23 @@ type Metadata struct {
 // Plan is written before the first model call and is the independent pinned
 // contract used to verify raw rows during analysis.
 type Plan struct {
-	Metadata        Metadata `json:"metadata"`
-	SpecSHA256      string   `json:"spec_sha256"`
-	AdapterSHA256   string   `json:"adapter_sha256"`
-	GoCLISHA256     string   `json:"go_cli_sha256,omitempty"`
-	ToolkitMode     string   `json:"toolkit_mode"`
-	ModelToolAccess string   `json:"model_tool_access"`
-	Exploratory     bool     `json:"exploratory"`
-	Repeats         int      `json:"repeats"`
-	CaseCount       int      `json:"case_count"`
-	MaxTrials       int      `json:"max_trials"`
-	MaxSeconds      int      `json:"max_seconds"`
-	MaxTokens       int      `json:"max_tokens"`
-	MaxCostUSD      float64  `json:"max_cost_usd"`
-	Unpriced        bool     `json:"unpriced"`
+	Metadata            Metadata `json:"metadata"`
+	SpecSHA256          string   `json:"spec_sha256"`
+	AdapterSHA256       string   `json:"adapter_sha256"`
+	GoCLISHA256         string   `json:"go_cli_sha256,omitempty"`
+	ModelRuntimePath    string   `json:"model_runtime_path,omitempty"`
+	ModelRuntimeVersion string   `json:"model_runtime_version,omitempty"`
+	ModelRuntimeSHA256  string   `json:"model_runtime_sha256,omitempty"`
+	ToolkitMode         string   `json:"toolkit_mode"`
+	ModelToolAccess     string   `json:"model_tool_access"`
+	Exploratory         bool     `json:"exploratory"`
+	Repeats             int      `json:"repeats"`
+	CaseCount           int      `json:"case_count"`
+	MaxTrials           int      `json:"max_trials"`
+	MaxSeconds          int      `json:"max_seconds"`
+	MaxTokens           int      `json:"max_tokens"`
+	MaxCostUSD          float64  `json:"max_cost_usd"`
+	Unpriced            bool     `json:"unpriced"`
 }
 
 type Row struct {

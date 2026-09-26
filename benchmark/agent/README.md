@@ -76,10 +76,12 @@ scenario must first write or mutate a valid bundle through the Go API, then
 grade an independent consumer's factual response. Backfill coverage or syntax
 checks cannot stand in for this semantic result.
 
-No live result is included yet. The fixed 004/005 commit and a tested model
-adapter are prerequisites. A local `ollama list` returned exit status 1 on
-2026-09-26. `codex login status` reports a ChatGPT login, but that alone does
-not verify model access or a repeatable model snapshot. The included
+The first authorized eight-attempt direct pilot is preserved in
+`runs/20260926-primary-live/`: all attempts failed before inference because
+standalone `codex-cli 0.137.0` could not decode the current model catalog.
+There is no behavioral result. A new proposal with an explicitly pinned
+bundled Codex executable is in `PILOT.md` and requires separate approval.
+The included
 `codex-adapter` can run a bounded mechanism smoke test in an ephemeral,
 read-only directory. Its model version field is an explicit pinned model ID;
 the backend snapshot is not independently verifiable. The main runner invokes
@@ -88,8 +90,10 @@ to the model evidence, and saves those outputs in each row. For direct tool
 use, run with `-toolkit-mode direct -go-cli /absolute/path/to/okf`. The adapter
 writes both arms' files into isolated temporary directories and gives the model
 read-only shell access; treatment must invoke the Go CLI. The analyzer rejects
-a successful treatment row with no observed Go CLI call. Direct mode has not
-been executed: automatic approval review rejected the external model run.
+a successful treatment row with no observed Go CLI call. For direct runs the
+runner and adapter require an absolute model runtime path, exact version and
+SHA-256, recorded in the plan and report. The previous auto-review rejection
+is preserved separately from the later authorized failed run.
 
 `cmd/prepare-backfill` applies the frozen 010 reversal fixture through the Go
 store and writes `corpus/backfill_cases.json` plus a separate coverage report.

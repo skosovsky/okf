@@ -405,7 +405,7 @@ func TestDirectModeRequiresObservedGoCLICall(t *testing.T) {
 	// Arrange
 	cases, hash := fixture(t)
 	m := Metadata{RunID: "direct", CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{"reasoning_effort":"low"}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
-	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, GoCLISHA256: hash, ToolkitMode: "direct", ModelToolAccess: "read-only shell", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
+	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, GoCLISHA256: hash, ModelRuntimePath: "/absolute/codex", ModelRuntimeVersion: "codex-cli 0.155.0-alpha.16.3", ModelRuntimeSHA256: hash, ToolkitMode: "direct", ModelToolAccess: "read-only shell", Repeats: 1, CaseCount: len(cases), MaxTrials: len(cases) * 2, MaxSeconds: 60, MaxTokens: 1000, Unpriced: true}
 	row := Row{Metadata: m, CaseID: cases[0].ID, Arm: Treatment, Repeat: 1, Observation: Observation{Answer: cases[0].Expected.Answer, Evidence: []string{"current"}, InputTokens: 10, OutputTokens: 5}, Verdict: Correct}
 	// Act and assert
 	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
@@ -413,8 +413,16 @@ func TestDirectModeRequiresObservedGoCLICall(t *testing.T) {
 	}
 	row.Observation.ToolkitCalls = 1
 	row.Observation.ToolCalls = 1
-	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err != nil {
+	report, err := AnalyzePlanned(cases, hash, []Row{row}, plan)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if report.ModelRuntimePath != plan.ModelRuntimePath || report.ModelRuntimeVersion != plan.ModelRuntimeVersion || report.ModelRuntimeSHA256 != hash {
+		t.Fatal("model runtime provenance missing from report")
+	}
+	plan.ModelRuntimeSHA256 = "invalid"
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
+		t.Fatal("accepted malformed runtime hash")
 	}
 }
 

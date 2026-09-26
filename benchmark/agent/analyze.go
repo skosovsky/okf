@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
 	"sort"
 )
@@ -34,13 +35,16 @@ type ArmReport struct {
 }
 
 type Report struct {
-	CorpusSHA256   string               `json:"corpus_sha256"`
-	RunID          string               `json:"run_id"`
-	RepeatCount    int                  `json:"repeat_count"`
-	InvalidRawRows int                  `json:"invalid_raw_rows"`
-	Valid          bool                 `json:"valid"`
-	Reasons        []string             `json:"reasons,omitempty"`
-	Arms           map[string]ArmReport `json:"arms"`
+	CorpusSHA256        string               `json:"corpus_sha256"`
+	RunID               string               `json:"run_id"`
+	ModelRuntimePath    string               `json:"model_runtime_path,omitempty"`
+	ModelRuntimeVersion string               `json:"model_runtime_version,omitempty"`
+	ModelRuntimeSHA256  string               `json:"model_runtime_sha256,omitempty"`
+	RepeatCount         int                  `json:"repeat_count"`
+	InvalidRawRows      int                  `json:"invalid_raw_rows"`
+	Valid               bool                 `json:"valid"`
+	Reasons             []string             `json:"reasons,omitempty"`
+	Arms                map[string]ArmReport `json:"arms"`
 }
 
 var sha256Pattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -196,6 +200,11 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	if plan.Metadata.CorpusSHA256 != corpusHash || plan.CaseCount != len(cases) || plan.Repeats < 1 || plan.MaxTrials < len(cases)*2*plan.Repeats || plan.MaxSeconds < 1 || plan.MaxTokens < 1 || plan.MaxCostUSD < 0 || (plan.MaxCostUSD == 0 && !plan.Unpriced) || (plan.MaxCostUSD > 0 && plan.Unpriced) || !sha256Pattern.MatchString(plan.SpecSHA256) || !sha256Pattern.MatchString(plan.AdapterSHA256) || (plan.ToolkitMode != "none" && plan.ToolkitMode != "treatment" && plan.ToolkitMode != "both" && plan.ToolkitMode != "direct") || plan.ModelToolAccess == "" || (plan.ToolkitMode == "direct" && !sha256Pattern.MatchString(plan.GoCLISHA256)) {
 		return Report{}, errors.New("plan does not match corpus or valid budget")
 	}
+	if plan.ModelRuntimePath != "" || plan.ModelRuntimeVersion != "" || plan.ModelRuntimeSHA256 != "" {
+		if !filepath.IsAbs(plan.ModelRuntimePath) || plan.ModelRuntimeVersion == "" || !sha256Pattern.MatchString(plan.ModelRuntimeSHA256) {
+			return Report{}, errors.New("incomplete model runtime provenance")
+		}
+	}
 	for _, row := range rows {
 		if row.Metadata != plan.Metadata {
 			return Report{}, fmt.Errorf("%s/%s/%d: row differs from preregistered plan", row.CaseID, row.Arm, row.Repeat)
@@ -217,6 +226,13 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	report, err := Analyze(cases, corpusHash, rows, plan.Repeats)
 	if err != nil {
 		return Report{}, err
+	}
+	report.ModelRuntimePath = plan.ModelRuntimePath
+	report.ModelRuntimeVersion = plan.ModelRuntimeVersion
+	report.ModelRuntimeSHA256 = plan.ModelRuntimeSHA256
+	if plan.ToolkitMode == "direct" && plan.ModelRuntimePath == "" {
+		report.Valid = false
+		report.Reasons = append(report.Reasons, "direct run lacks pinned model runtime")
 	}
 	usedTokens, usedCost, knownCost, elapsed := 0, 0.0, 0, int64(0)
 	for _, row := range rows {

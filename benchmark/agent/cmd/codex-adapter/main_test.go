@@ -1,9 +1,38 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 )
+
+func TestVerifyRuntime(t *testing.T) {
+	// Arrange.
+	path := filepath.Join(t.TempDir(), "codex")
+	content := []byte("#!/bin/sh\nprintf 'codex-cli 0.155.0-alpha.16.3\\n'\n")
+	if err := os.WriteFile(path, content, 0700); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(content)
+	hash := hex.EncodeToString(sum[:])
+
+	// Act and assert.
+	if err := verifyRuntime(path, "codex-cli 0.155.0-alpha.16.3", hash); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyRuntime(path, "codex-cli 0.137.0", hash); err == nil {
+		t.Fatal("accepted wrong version")
+	}
+	if err := verifyRuntime(path, "codex-cli 0.155.0-alpha.16.3", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"); err == nil {
+		t.Fatal("accepted wrong SHA-256")
+	}
+	if err := verifyRuntime("codex", "codex-cli 0.155.0-alpha.16.3", hash); err == nil {
+		t.Fatal("accepted implicit PATH selection")
+	}
+}
 
 func TestSuccessfulGoCLICommand(t *testing.T) {
 	// Arrange: only a completed command event with a successful direct binary
