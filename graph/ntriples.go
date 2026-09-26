@@ -60,7 +60,7 @@ func renderNTriplesWithOptionsContext(ctx context.Context, w io.Writer, b *bundl
 	if err != nil {
 		return err
 	}
-	if options.Profile == ProjectionProfileToolkitV02 {
+	if options.Profile == ProjectionProfileToolkitV02 || options.Profile == ProjectionProfileToolkitV02Instant {
 		return renderToolkitNTriplesContext(ctx, w, b, options)
 	}
 	if err := assertVersionSelectorContext(ctx, b, options); err != nil {

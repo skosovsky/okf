@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/skosovsky/okf/backfill/schemas/event.schema.json",
+  "title": "OKF Git backfill event v1",
+  "type": "object",
+  "required": ["id", "commit", "parents", "subject", "body", "author", "author_time", "committer_time", "files", "diff", "diff_sha256", "diff_bytes", "diff_truncated"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^git:[0-9a-f]{40}([0-9a-f]{24})?$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"},
+    "parents": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"}},
+    "subject": {"type": "string"}, "body": {"type": "string"}, "author": {"type": "string"},
+    "author_time": {"type": "string", "format": "date-time"},
+    "committer_time": {"type": "string", "format": "date-time"},
+    "files": {"type": "array", "items": {"$ref": "#/$defs/file"}},
+    "diff": {"type": "string"},
+    "diff_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "diff_bytes": {"type": "integer", "minimum": 0},
+    "diff_truncated": {"type": "boolean"}
+  },
+  "additionalProperties": false,
+  "$defs": {"file": {
+    "type": "object",
+    "required": ["path", "status", "binary"],
+    "properties": {
+      "old_path": {"type": "string"}, "path": {"type": "string"}, "status": {"type": "string"},
+      "added": {"type": "integer", "minimum": 0}, "deleted": {"type": "integer", "minimum": 0},
+      "binary": {"type": "boolean"}, "skipped_reason": {"type": "string"}
+    }, "additionalProperties": false
+  }}
+}

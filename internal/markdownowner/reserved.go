@@ -29,6 +29,7 @@ type TopLevelLink struct {
 // TopLevelListItem is one direct item of a top-level Markdown list.
 type TopLevelListItem struct {
 	Text              string
+	Content           string
 	HasLink           bool
 	Links             []TopLevelLink
 	Description       string
@@ -155,6 +156,17 @@ func directListItemProjection(source []byte, item *ast.ListItem) TopLevelListIte
 			lines = node.Lines()
 		case *ast.TextBlock:
 			lines = node.Lines()
+		}
+		if lines != nil {
+			var paragraph []string
+			for index := 0; index < lines.Len(); index++ {
+				segment := lines.At(index)
+				paragraph = append(paragraph, strings.TrimSpace(string(segment.Value(source))))
+			}
+			if projection.Content != "" {
+				projection.Content += "\n\n"
+			}
+			projection.Content += strings.Join(paragraph, "\n")
 		}
 		if lines != nil && lines.Len() > 1 {
 			projection.Continuation = true

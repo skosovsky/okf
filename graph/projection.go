@@ -99,7 +99,7 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 		return toolkitProjection{}, err
 	}
 	projection := toolkitProjection{
-		Profile:           string(ProjectionProfileToolkitV02),
+		Profile:           string(options.Profile),
 		ProjectionVersion: toolkitProjectionVersion,
 		DeclaredVersion:   resolution.Declared,
 		EffectiveVersion:  resolution.Effective,
@@ -215,7 +215,7 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 			return toolkitProjection{}, err
 		}
 		projected = append(projected, verificationNodes...)
-		sourceNodes, sourceAssets, sourcesByNormalizedID, err := projectSourcesContext(ctx, b, concept)
+		sourceNodes, sourceAssets, sourcesByNormalizedID, err := projectSourcesContextProfile(ctx, b, concept, options)
 		if err != nil {
 			return toolkitProjection{}, err
 		}
@@ -272,17 +272,26 @@ func projectLifecycleContext(ctx context.Context, node *projectionNode, document
 		}
 		node.addLiteral("effectiveStatus", "unresolved")
 	}
-	staleObservation, err := document.Frontmatter.StaleAfterObservationContext(ctx)
+	profile := bundle.TemporalProfileDate
+	valueKind := projectionDate
+	if options.Profile == ProjectionProfileToolkitV02Instant {
+		profile = bundle.TemporalProfileInstant
+		valueKind = projectionDateTime
+	}
+	staleObservation, err := document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
 	if err != nil {
 		return err
 	}
 	if staleAfter := staleObservation.Value; staleAfter.State == bundle.TemporalValid {
-		node.add("staleAfter", projectionValue{Kind: projectionDate, Value: staleAfter.Raw})
+		node.add("staleAfter", projectionValue{Kind: valueKind, Value: staleAfter.Raw})
 		if options.AsOf != nil {
-			year, month, day := options.AsOf.Date()
-			asOf := time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-			node.add("stalenessAsOf", projectionValue{Kind: projectionDate, Value: asOf})
-			stale, err := document.IsStaleContext(ctx, *options.AsOf)
+			asOf := options.AsOf.Format(time.RFC3339Nano)
+			if profile == bundle.TemporalProfileDate {
+				year, month, day := options.AsOf.Date()
+				asOf = time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+			}
+			node.add("stalenessAsOf", projectionValue{Kind: valueKind, Value: asOf})
+			stale, _, err := document.Frontmatter.IsStaleForProfileContext(ctx, *options.AsOf, profile)
 			if err != nil {
 				return err
 			}
@@ -405,12 +414,27 @@ func projectSourcesContext(
 	b *bundle.Bundle,
 	concept bundle.Concept,
 ) ([]projectionNode, []projectionNode, normalizedSourceLookup, error) {
+	return projectSourcesContextProfile(ctx, b, concept, Options{Profile: ProjectionProfileToolkitV02})
+}
+
+func projectSourcesContextProfile(
+	ctx context.Context,
+	b *bundle.Bundle,
+	concept bundle.Concept,
+	options Options,
+) ([]projectionNode, []projectionNode, normalizedSourceLookup, error) {
 	if err := checkGraphContext(ctx); err != nil {
 		return nil, nil, nil, err
 	}
 	id := concept.ID
 	document := concept.Document
-	sourceStates, err := document.SourceStatesContext(ctx)
+	profile := bundle.TemporalProfileDate
+	valueKind := projectionDate
+	if options.Profile == ProjectionProfileToolkitV02Instant {
+		profile = bundle.TemporalProfileInstant
+		valueKind = projectionDateTime
+	}
+	sourceStates, err := document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -421,24 +445,30 @@ func projectSourcesContext(
 	if fallback.CitationsAllowed {
 		return projectLegacyCitationsContext(ctx, b, concept)
 	}
-	validSources := make([]bundle.ProvenanceSourceState, 0, len(sourceStates))
+	validSources := make([]bundle.TemporalSourceState, 0, len(sourceStates))
 	for index, state := range sourceStates {
 		if index%graphContextCheckInterval == 0 {
 			if err := checkGraphContext(ctx); err != nil {
 				return nil, nil, nil, err
 			}
 		}
-		if state.Valid && state.Resource.Valid {
+		if state.Valid && state.Source.Resource.Valid {
 			validSources = append(validSources, state)
 		}
 	}
-	if err := stableSortContext(ctx, validSources, provenanceSourceStateLessContext); err != nil {
+	if err := stableSortContext(ctx, validSources, func(ctx context.Context, left, right bundle.TemporalSourceState) (bool, error) {
+		leftState, rightState := left.Source, right.Source
+		leftState.Value, rightState.Value = left.Value, right.Value
+		leftState.LastModified.State, rightState.LastModified.State = left.LastModified.State, right.LastModified.State
+		leftState.UsageWindow.Present, rightState.UsageWindow.Present = left.UsageWindow.Present, right.UsageWindow.Present
+		return provenanceSourceStateLessContext(ctx, leftState, rightState)
+	}); err != nil {
 		return nil, nil, nil, err
 	}
 	nodes := make([]projectionNode, 0, len(validSources))
 	var assets []projectionNode
 	var byID normalizedSourceLookup
-	sharedWindow, err := document.Frontmatter.UsageWindowStateContext(ctx)
+	sharedWindow, err := document.Frontmatter.UsageWindowForProfileContext(ctx, profile)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -486,11 +516,11 @@ func projectSourcesContext(
 		if source.Author != "" {
 			node.addLiteral("author", source.Author)
 		}
-		if sourceState.UsageCount.Valid {
-			node.addUnsignedInteger("usageCount", sourceState.UsageCount.Value)
+		if sourceState.Source.UsageCount.Valid {
+			node.addUnsignedInteger("usageCount", sourceState.Source.UsageCount.Value)
 		}
 		if sourceState.LastModified.State == bundle.TemporalValid {
-			node.add("lastModified", projectionValue{Kind: projectionDate, Value: sourceState.LastModified.Raw})
+			node.add("lastModified", projectionValue{Kind: valueKind, Value: sourceState.LastModified.Raw})
 		}
 		window := sharedWindow
 		override := sourceState.UsageWindow.Present
@@ -499,10 +529,10 @@ func projectSourcesContext(
 		}
 		if window.Valid {
 			if window.From.State == bundle.TemporalValid {
-				node.add("usageFrom", projectionValue{Kind: projectionDate, Value: window.From.Raw})
+				node.add("usageFrom", projectionValue{Kind: valueKind, Value: window.From.Raw})
 			}
 			if window.To.State == bundle.TemporalValid {
-				node.add("usageTo", projectionValue{Kind: projectionDate, Value: window.To.Raw})
+				node.add("usageTo", projectionValue{Kind: valueKind, Value: window.To.Raw})
 			}
 			node.addBoolean("sourceUsageWindowOverride", override)
 		}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OKF upkeep review decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fingerprint", "kind"],
+  "properties": {
+    "fingerprint": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "kind": {"enum": ["updated", "unaffected"]},
+    "reason": {"type": "string"},
+    "updated_concepts": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"kind": {"const": "unaffected"}}}, "then": {"required": ["reason"], "properties": {"reason": {"pattern": "\\S"}}}},
+    {"if": {"properties": {"kind": {"const": "updated"}}}, "then": {"required": ["updated_concepts"], "properties": {"updated_concepts": {"minItems": 1}}}}
+  ]
+}

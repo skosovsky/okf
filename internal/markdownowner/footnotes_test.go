@@ -49,6 +49,27 @@ func TestCollectFootnotesUsesParserOwnedInlineBoundaries(t *testing.T) {
 	}
 }
 
+func TestCollectFootnotesKeepsCodeOpaqueBesideRealShortcutReference(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	source := []byte("Literal `[^code]` and multiline `first\n[^multiline]` with real [^actual].\n\n[^actual]: cited source\n")
+
+	// Act.
+	projection, err := CollectFootnotes(context.Background(), source)
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(projection.References) != 1 || projection.References[0].Label != "actual" {
+		t.Fatalf("references = %#v, want only actual", projection.References)
+	}
+	if len(projection.Definitions) != 1 || projection.Definitions[0].Label != "actual" {
+		t.Fatalf("definitions = %#v, want only actual", projection.Definitions)
+	}
+}
+
 func TestCollectFootnotesOwnsCompleteMultilineDefinitions(t *testing.T) {
 	t.Parallel()
 

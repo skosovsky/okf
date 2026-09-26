@@ -41,6 +41,28 @@ func TestCollectMarkdownMigrationOwnershipUsesFullFileSpans(t *testing.T) {
 	}
 }
 
+func TestMigrationOwnershipExcludesCodeFootnotesAndKeepsProseReference(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	source := []byte("---\ntype: Note\n---\nLiteral `[^code]` and multiline `first\n[^multiline]` beside [^actual].\n\n[^actual]: source\n")
+
+	// Act.
+	ownership, err := CollectMarkdownMigrationOwnership(context.Background(), source)
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ownership.FootnoteReferences) != 1 || ownership.FootnoteReferences[0].Label != "actual" {
+		t.Fatalf("footnote references = %#v", ownership.FootnoteReferences)
+	}
+	span := ownership.FootnoteReferences[0].Span
+	if got := string(source[span.Start:span.End]); got != "[^actual]" {
+		t.Fatalf("owned span = %q", got)
+	}
+}
+
 func TestCollectMarkdownMigrationOwnershipFenceExcludesFollowingBlankLine(t *testing.T) {
 	t.Parallel()
 

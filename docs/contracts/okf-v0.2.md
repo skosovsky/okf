@@ -88,7 +88,7 @@ These decisions are toolkit policy, not additions to upstream OKF:
 | `sources[].author` examples use undefined `team:*` | validate as a non-empty string; do not enforce the actor convention |
 | `sources[].id` grammar and uniqueness are unspecified | preserve any non-empty string; strict validation requires uniqueness for attribution joins |
 | `sources[].resource` may be a scope descriptor | keep it visible and do not force path/URI interpretation |
-| timezone for `today >= stale_after` is unspecified | domain APIs require an explicit reference date; CLI/MCP require explicit `--as-of`/`as_of`; omission leaves staleness unevaluated and no surface may consult the wall clock |
+| two pinned documents both declare `0.2` but differ on temporal fields | select `date-3fcbb9f` (default) or `instant-0b87c52` explicitly; the latter requires offset-bearing RFC3339 datetimes and exact instant comparison; omitted `--as-of`/`as_of` leaves staleness unevaluated and never consults the wall clock; see ADR 0003 |
 | `usage_count` meaning | non-negative integer signal, never a credibility score |
 | runtime and parameter type registry | open strings; no registry |
 | executor and attester presence | strict guidance, not base conformance |

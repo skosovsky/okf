@@ -97,7 +97,8 @@ type Verification struct {
 	At string
 }
 
-// UsageWindow is an inclusive source-usage observation interval.
+// UsageWindow records source usage observations between two ordered endpoints.
+// Equality is allowed; no end-of-day or inclusive usage semantics are inferred.
 type UsageWindow struct {
 	From string
 	To   string
@@ -120,8 +121,9 @@ type ProvenanceSource struct {
 // source by full equality of its known v0.2 fields. Constructors are required
 // so the selector cannot be both forms and cannot retain caller-owned pointers.
 type SourceSelector struct {
-	id    string
-	exact *ProvenanceSource
+	id      string
+	exact   *ProvenanceSource
+	profile bundle.TemporalProfile
 }
 
 // SourceByID constructs a unique-ID source selector.
@@ -145,6 +147,22 @@ func SourceByExact(source ProvenanceSource) (SourceSelector, error) {
 	}
 	return s, nil
 }
+
+// SourceByExactForProfile selects an anonymous source using a pinned temporal
+// revision. The canonical selector remains its exact field values.
+func SourceByExactForProfile(source ProvenanceSource, profile bundle.TemporalProfile) (SourceSelector, error) {
+	profile, err := bundle.NormalizeTemporalProfile(profile)
+	if err != nil {
+		return SourceSelector{}, err
+	}
+	s := SourceSelector{exact: ptrProvenanceSource(cloneProvenanceSource(source)), profile: profile}
+	if err := s.validate(); err != nil {
+		return SourceSelector{}, err
+	}
+	return s, nil
+}
+
+func ptrProvenanceSource(source ProvenanceSource) *ProvenanceSource { return &source }
 
 // ID returns the ID selector and whether this selector uses the ID form.
 func (s SourceSelector) ID() (string, bool) { return s.id, s.id != "" }
@@ -171,7 +189,7 @@ func (s SourceSelector) validate() error {
 	if s.exact == nil || s.exact.ID != "" {
 		return invalidOperation("exact source selector requires an anonymous source")
 	}
-	return validateProvenanceSource(*s.exact)
+	return validateProvenanceSourceForProfile(*s.exact, s.profile)
 }
 
 func (s SourceSelector) appendCanonical(e *canonicalEncoder) {
@@ -326,11 +344,24 @@ func (o RemoveVerification) appendCanonical(e *canonicalEncoder) {
 type PutSource struct {
 	Concept bundle.ConceptID
 	source  ProvenanceSource
+	profile bundle.TemporalProfile
 }
 
 // NewPutSource constructs an immutable source operation.
 func NewPutSource(concept bundle.ConceptID, source ProvenanceSource) (PutSource, error) {
 	o := PutSource{Concept: concept, source: cloneProvenanceSource(source)}
+	if err := o.validate(); err != nil {
+		return PutSource{}, err
+	}
+	return o, nil
+}
+
+func NewPutSourceForProfile(concept bundle.ConceptID, source ProvenanceSource, profile bundle.TemporalProfile) (PutSource, error) {
+	profile, err := bundle.NormalizeTemporalProfile(profile)
+	if err != nil {
+		return PutSource{}, err
+	}
+	o := PutSource{Concept: concept, source: cloneProvenanceSource(source), profile: profile}
 	if err := o.validate(); err != nil {
 		return PutSource{}, err
 	}
@@ -344,7 +375,7 @@ func (o PutSource) validate() error {
 	if err := validateSemanticConceptID(o.Concept); err != nil {
 		return err
 	}
-	return validateProvenanceSource(o.source)
+	return validateProvenanceSourceForProfile(o.source, o.profile)
 }
 func (o PutSource) appendCanonical(e *canonicalEncoder) {
 	e.string("put_source")
@@ -388,6 +419,7 @@ type SetUsageWindow struct {
 	Concept  bundle.ConceptID
 	selector *SourceSelector
 	window   *UsageWindow
+	profile  bundle.TemporalProfile
 }
 
 // NewSetUsageWindow constructs an immutable usage-window operation.
@@ -397,6 +429,26 @@ func NewSetUsageWindow(concept bundle.ConceptID, selector *SourceSelector, windo
 		cloned := cloneSourceSelector(*selector)
 		o.selector = &cloned
 	}
+	if window != nil {
+		cloned := *window
+		o.window = &cloned
+	}
+	if err := o.validate(); err != nil {
+		return SetUsageWindow{}, err
+	}
+	return o, nil
+}
+
+func NewSetUsageWindowForProfile(concept bundle.ConceptID, selector *SourceSelector, window *UsageWindow, profile bundle.TemporalProfile) (SetUsageWindow, error) {
+	profile, err := bundle.NormalizeTemporalProfile(profile)
+	if err != nil {
+		return SetUsageWindow{}, err
+	}
+	o, err := NewSetUsageWindow(concept, selector, nil)
+	if err != nil {
+		return SetUsageWindow{}, err
+	}
+	o.profile = profile
 	if window != nil {
 		cloned := *window
 		o.window = &cloned
@@ -434,7 +486,7 @@ func (o SetUsageWindow) validate() error {
 		}
 	}
 	if o.window != nil {
-		return validateUsageWindow(*o.window)
+		return validateUsageWindowForProfile(*o.window, o.profile)
 	}
 	return nil
 }
@@ -452,11 +504,24 @@ func (o SetUsageWindow) appendCanonical(e *canonicalEncoder) {
 type SetLifecycle struct {
 	Concept   bundle.ConceptID
 	lifecycle Lifecycle
+	profile   bundle.TemporalProfile
 }
 
 // NewSetLifecycle constructs an immutable lifecycle operation.
 func NewSetLifecycle(concept bundle.ConceptID, lifecycle Lifecycle) (SetLifecycle, error) {
 	o := SetLifecycle{Concept: concept, lifecycle: cloneLifecycle(lifecycle)}
+	if err := o.validate(); err != nil {
+		return SetLifecycle{}, err
+	}
+	return o, nil
+}
+
+func NewSetLifecycleForProfile(concept bundle.ConceptID, lifecycle Lifecycle, profile bundle.TemporalProfile) (SetLifecycle, error) {
+	profile, err := bundle.NormalizeTemporalProfile(profile)
+	if err != nil {
+		return SetLifecycle{}, err
+	}
+	o := SetLifecycle{Concept: concept, lifecycle: cloneLifecycle(lifecycle), profile: profile}
 	if err := o.validate(); err != nil {
 		return SetLifecycle{}, err
 	}
@@ -470,7 +535,7 @@ func (o SetLifecycle) validate() error {
 	if err := validateSemanticConceptID(o.Concept); err != nil {
 		return err
 	}
-	return validateLifecycle(o.lifecycle)
+	return validateLifecycleForProfile(o.lifecycle, o.profile)
 }
 func (o SetLifecycle) appendCanonical(e *canonicalEncoder) {
 	e.string("set_lifecycle")
@@ -838,6 +903,10 @@ func validateDocumentActor(actor string) error {
 }
 
 func validateProvenanceSource(source ProvenanceSource) error {
+	return validateProvenanceSourceForProfile(source, bundle.TemporalProfileDate)
+}
+
+func validateProvenanceSourceForProfile(source ProvenanceSource, profile bundle.TemporalProfile) error {
 	if source.ID != "" {
 		if err := validateSourceID(source.ID); err != nil {
 			return err
@@ -860,12 +929,12 @@ func validateProvenanceSource(source ProvenanceSource) error {
 		}
 	}
 	if source.LastModified != "" {
-		if err := validateDate("source last_modified", source.LastModified); err != nil {
+		if err := validateTemporalForProfile("source last_modified", source.LastModified, profile); err != nil {
 			return err
 		}
 	}
 	if source.UsageWindow != nil {
-		if err := validateUsageWindow(*source.UsageWindow); err != nil {
+		if err := validateUsageWindowForProfile(*source.UsageWindow, profile); err != nil {
 			return err
 		}
 	}
@@ -873,19 +942,33 @@ func validateProvenanceSource(source ProvenanceSource) error {
 }
 
 func validateUsageWindow(window UsageWindow) error {
-	if err := validateDate("usage_window.from", window.From); err != nil {
+	return validateUsageWindowForProfile(window, bundle.TemporalProfileDate)
+}
+
+func validateUsageWindowForProfile(window UsageWindow, profile bundle.TemporalProfile) error {
+	if err := validateTemporalForProfile("usage_window.from", window.From, profile); err != nil {
 		return err
 	}
-	if err := validateDate("usage_window.to", window.To); err != nil {
+	if err := validateTemporalForProfile("usage_window.to", window.To, profile); err != nil {
 		return err
 	}
-	if window.From > window.To {
+	if profile == bundle.TemporalProfileInstant {
+		from, _ := bundle.ParseOffsetDateTime(window.From)
+		to, _ := bundle.ParseOffsetDateTime(window.To)
+		if from.After(to) {
+			return invalidOperation("usage window starts after it ends")
+		}
+	} else if window.From > window.To {
 		return invalidOperation("usage window starts after it ends")
 	}
 	return nil
 }
 
 func validateLifecycle(lifecycle Lifecycle) error {
+	return validateLifecycleForProfile(lifecycle, bundle.TemporalProfileDate)
+}
+
+func validateLifecycleForProfile(lifecycle Lifecycle, profile bundle.TemporalProfile) error {
 	if lifecycle.Status != nil {
 		switch *lifecycle.Status {
 		case "draft", "stable", "deprecated":
@@ -894,7 +977,7 @@ func validateLifecycle(lifecycle Lifecycle) error {
 		}
 	}
 	if lifecycle.StaleAfter != nil {
-		if err := validateDate("stale_after", *lifecycle.StaleAfter); err != nil {
+		if err := validateTemporalForProfile("stale_after", *lifecycle.StaleAfter, profile); err != nil {
 			return err
 		}
 	}
@@ -1190,6 +1273,16 @@ func validateDate(kind, value string) error {
 	}
 	parsed, err := time.Parse("2006-01-02", value)
 	if err != nil || parsed.Format("2006-01-02") != value {
+		return invalidOperation("invalid " + kind)
+	}
+	return nil
+}
+
+func validateTemporalForProfile(kind, value string, profile bundle.TemporalProfile) error {
+	if profile != bundle.TemporalProfileInstant {
+		return validateDate(kind, value)
+	}
+	if _, err := bundle.ParseOffsetDateTime(value); err != nil {
 		return invalidOperation("invalid " + kind)
 	}
 	return nil

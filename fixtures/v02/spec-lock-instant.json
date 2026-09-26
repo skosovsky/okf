@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/GoogleCloudPlatform/open-knowledge-format",
+  "path": "SPEC.md",
+  "revision": "0b87c52c6ef999286c745e19998fdfcd03d5dbee",
+  "raw_url": "https://raw.githubusercontent.com/GoogleCloudPlatform/open-knowledge-format/0b87c52c6ef999286c745e19998fdfcd03d5dbee/SPEC.md",
+  "sha256": "26aa5da029278939f914e578107242d9607d4f2dc5fe153272b82f9ed1030101",
+  "normative_sections": "1-13",
+  "canonical_example": "Appendix A",
+  "temporal_profile": "instant-0b87c52"
+}

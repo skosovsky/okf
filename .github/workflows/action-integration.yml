@@ -1,0 +1,127 @@
+name: Action integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - case: valid
+            path: .github/fixtures/okf-action/valid
+            spec: auto
+            strict: 'false'
+            max-warnings: ''
+            expected: pass
+          - case: malformed
+            path: .github/fixtures/okf-action/malformed
+            spec: auto
+            strict: 'false'
+            max-warnings: ''
+            expected: validation_failure
+          - case: strict-warning
+            path: .github/fixtures/okf-action/strict-warning
+            spec: auto
+            strict: 'true'
+            max-warnings: ''
+            expected: pass
+          - case: warning-budget
+            path: .github/fixtures/okf-action/strict-warning
+            spec: auto
+            strict: 'true'
+            max-warnings: '0'
+            expected: validation_failure
+          - case: missing-directory
+            path: .github/fixtures/okf-action/absent
+            spec: auto
+            strict: 'false'
+            max-warnings: ''
+            expected: operational_failure
+          - case: selector-conflict
+            path: .github/fixtures/okf-action/legacy
+            spec: '0.2'
+            strict: 'false'
+            max-warnings: ''
+            expected: validation_failure
+          - case: instant-profile
+            path: .github/fixtures/okf-action/valid
+            spec: auto
+            temporal-profile: instant-0b87c52
+            as-of: '2026-09-26T10:00:00+07:00'
+            strict: 'false'
+            max-warnings: ''
+            expected: pass
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Run this Action
+        id: action
+        uses: ./
+        continue-on-error: true
+        with:
+          path: ${{ matrix.path }}
+          spec: ${{ matrix.spec }}
+          temporal-profile: ${{ matrix['temporal-profile'] || '' }}
+          as-of: ${{ matrix['as-of'] || '' }}
+          strict: ${{ matrix.strict }}
+          max-warnings: ${{ matrix.max-warnings }}
+      - name: Compare Action with local Go CLI
+        env:
+          CASE_NAME: ${{ matrix.case }}
+          BUNDLE_PATH: ${{ matrix.path }}
+          SPEC: ${{ matrix.spec }}
+          TEMPORAL_PROFILE: ${{ matrix['temporal-profile'] || '' }}
+          AS_OF: ${{ matrix['as-of'] || '' }}
+          STRICT: ${{ matrix.strict }}
+          MAX_WARNINGS: ${{ matrix.max-warnings }}
+          EXPECTED: ${{ matrix.expected }}
+          ACTION_OUTCOME: ${{ steps.action.outputs.outcome }}
+          ACTION_REPORT_PATH: ${{ steps.action.outputs['report-path'] }}
+          ACTION_REPORT: ${{ steps.action.outputs.report }}
+          ACTION_STEP_OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          set -euo pipefail
+          test "$ACTION_OUTCOME" = "$EXPECTED"
+          if test "$EXPECTED" = pass; then
+            test "$ACTION_STEP_OUTCOME" = success
+          else
+            test "$ACTION_STEP_OUTCOME" = failure
+          fi
+          args=(validate --path "$BUNDLE_PATH" --spec "$SPEC" --format json)
+          if test -n "$TEMPORAL_PROFILE"; then args+=(--temporal-profile "$TEMPORAL_PROFILE"); fi
+          if test -n "$AS_OF"; then args+=(--as-of "$AS_OF"); fi
+          if test "$STRICT" = true; then args+=(--strict); fi
+          if test -n "$MAX_WARNINGS"; then args+=(--max-warnings "$MAX_WARNINGS"); fi
+          set +e
+          go run ./cmd/okf "${args[@]}" > "$RUNNER_TEMP/local-report.json" 2> "$RUNNER_TEMP/local-stderr.txt"
+          local_exit=$?
+          set -e
+          if test "$EXPECTED" = operational_failure; then
+            test "$local_exit" -ne 0
+            test ! -s "$RUNNER_TEMP/local-report.json"
+            test -z "$ACTION_REPORT_PATH"
+            test -z "$ACTION_REPORT"
+          else
+            if test "$EXPECTED" = pass; then
+              test "$local_exit" -eq 0
+            else
+              test "$local_exit" -ne 0
+            fi
+            cmp "$ACTION_REPORT_PATH" "$RUNNER_TEMP/local-report.json"
+            if test -n "$ACTION_REPORT"; then
+              test "$ACTION_REPORT" = "$(cat "$ACTION_REPORT_PATH")"
+            fi
+          fi

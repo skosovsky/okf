@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/scaccogatto/okf-skills",
+  "commit": "68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5",
+  "license": "MIT; Copyright (c) 2026 Marco Boffo; full text in LICENSE",
+  "selection": "Four byte-identical upstream files plus log.md lines 1-15; missing linked targets are intentionally outside the selected corpus",
+  "files": {
+    "foreign-68ce7a0/index.md": {"source_path": ".okf/index.md", "source_url": "https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5/.okf/index.md", "source_sha256": "e5cebc5f79f5d69d7d570bf8de89e531612449afe535f10c80f4978f4f11950e", "fixture_sha256": "e5cebc5f79f5d69d7d570bf8de89e531612449afe535f10c80f4978f4f11950e", "transform": "identity"},
+    "foreign-68ce7a0/components/index.md": {"source_path": ".okf/components/index.md", "source_url": "https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5/.okf/components/index.md", "source_sha256": "33e8747dbf06d55e3ca4751ffd87abb03bc35d5d6b3416883cca00b933c704a2", "fixture_sha256": "33e8747dbf06d55e3ca4751ffd87abb03bc35d5d6b3416883cca00b933c704a2", "transform": "identity"},
+    "foreign-68ce7a0/components/validator.md": {"source_path": ".okf/components/validator.md", "source_url": "https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5/.okf/components/validator.md", "source_sha256": "4426e635e113a71a3f067c564763b7f4ccda0531200becc3b3be0a16eb576d45", "fixture_sha256": "4426e635e113a71a3f067c564763b7f4ccda0531200becc3b3be0a16eb576d45", "transform": "identity"},
+    "foreign-68ce7a0/components/backfill-events.md": {"source_path": ".okf/components/backfill-events.md", "source_url": "https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5/.okf/components/backfill-events.md", "source_sha256": "f661fb94b82de15a97a4a6628bcc1b7db5244d0da999c5182b75c37809ebafc9", "fixture_sha256": "f661fb94b82de15a97a4a6628bcc1b7db5244d0da999c5182b75c37809ebafc9", "transform": "identity"},
+    "foreign-68ce7a0/log.md": {"source_path": ".okf/log.md", "source_url": "https://github.com/scaccogatto/okf-skills/blob/68ce7a0c07f66ca9a6b0beb68937d75314d5e8a5/.okf/log.md", "source_sha256": "8192977b63fc72bd43f3c3920d6ebe6a4bda0e5eb79fe66687c00e5a8bab442c", "fixture_sha256": "ae789e8019f48ad55d0f2a4a09b4c554a869c5b24aa01285f2e41fe579f999fb", "transform": "first 15 physical lines, retaining trailing LF"}
+  },
+  "profiles": {
+    "base": {"strict": false, "check_orphans": false, "diagnostics": []},
+    "strict": {"strict": true, "check_orphans": false, "diagnostics": [{"code": "actor_invalid", "severity": "WARN", "file": "components/validator.md", "field_path": "generated.by"}]},
+    "strict_orphans": {"strict": true, "check_orphans": true, "diagnostics": [{"code": "orphan_unlisted", "severity": "WARN", "file": "components/backfill-events.md", "field_path": "index.md.body"}, {"code": "actor_invalid", "severity": "WARN", "file": "components/validator.md", "field_path": "generated.by"}]}
+  }
+}

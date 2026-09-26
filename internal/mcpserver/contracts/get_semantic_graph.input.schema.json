@@ -6,6 +6,8 @@
   "required": ["bundle_path"],
   "properties": {
     "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "as_of": {"type": "string", "format": "date"}
-  }
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
+    "as_of": {"type": "string"}
+  },
+  "allOf": [{"if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]}, "then": {"properties": {"as_of": {"format": "date-time", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$", "not": {"pattern": "-00:00$"}}}}, "else": {"properties": {"as_of": {"format": "date"}}}}]
 }

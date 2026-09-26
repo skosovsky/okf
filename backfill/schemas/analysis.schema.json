@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/skosovsky/okf/backfill/schemas/analysis.schema.json",
+  "title": "OKF backfill analyst proposal v1",
+  "type": "object",
+  "required": ["schema_version", "events_sha256", "prompt_version", "produced_at", "results", "candidates"],
+  "properties": {
+    "schema_version": {"const": "okf-backfill/v1"},
+    "events_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "prompt_version": {"type": "string", "minLength": 1},
+    "produced_at": {"type": "string", "format": "date-time"},
+    "usage": {"type": "object", "properties": {"input_tokens": {"type": "integer", "minimum": 0}, "output_tokens": {"type": "integer", "minimum": 0}, "cost_usd": {"type": "number", "minimum": 0}}, "additionalProperties": false},
+    "results": {"type": "array", "items": {"type": "object", "required": ["event_id", "decision"], "properties": {"event_id": {"type": "string"}, "decision": {"enum": ["considered", "rejected"]}, "reason": {"type": "string"}, "candidate_ids": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false}},
+    "candidates": {"type": "array", "items": {"$ref": "candidate.schema.json"}}
+  }, "additionalProperties": false
+}

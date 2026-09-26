@@ -1,0 +1,86 @@
+{
+  "schema_version": "okf-backfill/v1",
+  "extractor_version": "git-extractor/v1",
+  "config": {
+    "repository": "/synthetic/okf-backfill",
+    "base": "0000000000000000000000000000000000000000",
+    "head": "cccccccccccccccccccccccccccccccccccccccc",
+    "first_parent": true,
+    "max_diff_bytes": 128,
+    "skip_paths": []
+  },
+  "repository": "/synthetic/okf-backfill",
+  "base": "0000000000000000000000000000000000000000",
+  "head": "cccccccccccccccccccccccccccccccccccccccc",
+  "config_sha256": "755c2948102e1224155f7aef05ab7e0add0d82dd165d5e63a4b09aadb7d8a1bb",
+  "events_sha256": "488b438fbe2e7dffacd40acf5b52f2360501982394c8bea72cb4ecc5a8643072",
+  "events": [
+    {
+      "id": "git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [],
+      "subject": "Introduce mode A",
+      "body": "Initial design.",
+      "author": "Example \u003cexample@example.invalid\u003e",
+      "author_time": "2026-01-01T00:00:00Z",
+      "committer_time": "2026-01-01T00:00:00Z",
+      "files": [
+        {
+          "path": "decision.go",
+          "status": "A",
+          "binary": false
+        }
+      ],
+      "diff": "diff --git a/decision.go b/decision.go\n+const Mode = \"A\"\n",
+      "diff_sha256": "ad5542e382fa1179f10cd1712e23e327af0953620acf7b4cf0a76db9a6ae1acf",
+      "diff_bytes": 57,
+      "diff_truncated": false
+    },
+    {
+      "id": "git:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "parents": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "subject": "Replace A with B",
+      "body": "Decision reversed after test.",
+      "author": "Example \u003cexample@example.invalid\u003e",
+      "author_time": "2026-01-02T00:00:00Z",
+      "committer_time": "2026-01-02T00:00:00Z",
+      "files": [
+        {
+          "path": "decision.go",
+          "status": "M",
+          "binary": false
+        }
+      ],
+      "diff": "diff --git a/decision.go b/decision.go\n-const Mode = \"A\"\n+const Mode = \"B\"\n",
+      "diff_sha256": "f9a95aafc847cd93d8592e7db1f43491b86018840e2addef0f2a960af692b4f4",
+      "diff_bytes": 75,
+      "diff_truncated": false
+    },
+    {
+      "id": "git:cccccccccccccccccccccccccccccccccccccccc",
+      "commit": "cccccccccccccccccccccccccccccccccccccccc",
+      "parents": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "subject": "Refactor handler",
+      "body": "Intent says rollout complete, but captured diff is partial.",
+      "author": "Example \u003cexample@example.invalid\u003e",
+      "author_time": "2026-01-03T00:00:00Z",
+      "committer_time": "2026-01-03T00:00:00Z",
+      "files": [
+        {
+          "path": "handler.go",
+          "status": "M",
+          "binary": false
+        }
+      ],
+      "diff": "diff --git a/handler.go b/handler.go\n@@ -1,100 +1,100 @@\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++",
+      "diff_sha256": "c4661e9b9cc9286873527374a162351587ac857bdc27e820d070d2bf073712e0",
+      "diff_bytes": 728,
+      "diff_truncated": true
+    }
+  ]
+}

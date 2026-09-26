@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/skosovsky/okf/backfill/schemas/manifest.schema.json",
+  "title": "OKF Git backfill capped diff manifest v1",
+  "type": "object",
+  "required": ["schema_version", "extractor_version", "config", "repository", "base", "head", "config_sha256", "events_sha256", "events"],
+  "properties": {
+    "schema_version": {"const": "okf-backfill/v1"},
+    "extractor_version": {"const": "git-extractor/v1"},
+    "config": {"type": "object", "required": ["repository", "base", "head", "first_parent", "max_diff_bytes", "skip_paths"], "properties": {"repository": {"type": "string"}, "base": {"type": "string"}, "head": {"type": "string"}, "first_parent": {"type": "boolean"}, "max_diff_bytes": {"type": "integer", "minimum": 1}, "skip_paths": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false},
+    "repository": {"type": "string"},
+    "base": {"type": "string"}, "head": {"type": "string"},
+    "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "events_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "events": {"type": "array", "items": {"$ref": "event.schema.json"}}
+  }, "additionalProperties": false
+}

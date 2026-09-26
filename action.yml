@@ -1,0 +1,67 @@
+name: OKF validation
+description: Validate an Open Knowledge Format bundle with the pinned Go toolkit
+inputs:
+  path:
+    description: Bundle directory, relative to GITHUB_WORKSPACE or absolute
+    required: false
+    default: .
+  spec:
+    description: OKF version selector (auto, 0.1, or 0.2)
+    required: false
+    default: auto
+  temporal-profile:
+    description: Optional temporal revision (date-3fcbb9f or instant-0b87c52)
+    required: false
+    default: ''
+  strict:
+    description: Enable additional advisory checks (true or false)
+    required: false
+    default: 'false'
+  check-links:
+    description: Check Markdown links (true or false)
+    required: false
+    default: 'false'
+  check-orphans:
+    description: Check index coverage (true or false)
+    required: false
+    default: 'false'
+  as-of:
+    description: Reference date or offset datetime according to temporal-profile; empty uses the toolkit default
+    required: false
+    default: ''
+  max-warnings:
+    description: Optional nonnegative warning budget; empty disables this policy
+    required: false
+    default: ''
+outputs:
+  outcome:
+    description: pass, validation_failure, or operational_failure
+    value: ${{ steps.validate.outputs.outcome }}
+  report:
+    description: JSON report when at most 60000 bytes; empty for larger reports or operational failure
+    value: ${{ steps.validate.outputs.report }}
+  report-path:
+    description: Absolute path to full JSON report on this runner; upload it as an artifact if needed
+    value: ${{ steps.validate.outputs.report_path }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Go for this action revision
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+    - name: Validate bundle
+      id: validate
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        OKF_ACTION_INPUT_PATH: ${{ inputs.path }}
+        OKF_ACTION_INPUT_SPEC: ${{ inputs.spec }}
+        OKF_ACTION_INPUT_TEMPORAL_PROFILE: ${{ inputs['temporal-profile'] }}
+        OKF_ACTION_INPUT_STRICT: ${{ inputs.strict }}
+        OKF_ACTION_INPUT_CHECK_LINKS: ${{ inputs['check-links'] }}
+        OKF_ACTION_INPUT_CHECK_ORPHANS: ${{ inputs['check-orphans'] }}
+        OKF_ACTION_INPUT_AS_OF: ${{ inputs['as-of'] }}
+        OKF_ACTION_INPUT_MAX_WARNINGS: ${{ inputs['max-warnings'] }}
+      run: go run ./cmd/okf-action

@@ -704,7 +704,7 @@ func TestBaseAndReservedPathsAreVersionAwareAndExact(t *testing.T) {
 		// Arrange.
 		root := t.TempDir()
 		writeValidationFile(t, root, "concept.md", "---\ntype: Note\n---\nBody.\n")
-		writeValidationFile(t, root, "index.md", "---\nokf_version: \"0.2\"\ntitle: Invalid\n---\n# Concepts\n\n* [Concept](concept.md)\n")
+		writeValidationFile(t, root, "index.md", "---\nokf_version: \"0.2\"\ntitle: Extension\n---\n# Concepts\n\n* [Concept](concept.md)\n")
 		writeValidationFile(t, root, "nested/index.md", "---\ntype: Invalid\n---\n# Nested\n\n* [Concept](../concept.md)\n")
 		writeValidationFile(t, root, "log.md", "---\ntype: Invalid\n---\n# Log\n")
 
@@ -713,7 +713,6 @@ func TestBaseAndReservedPathsAreVersionAwareAndExact(t *testing.T) {
 
 		// Assert.
 		for _, want := range []Diagnostic{
-			{Code: "index_structure_invalid", SpecRef: "okf-v0.2#11.3", File: "index.md", FieldPath: "title", Severity: SeverityError},
 			{Code: "index_structure_invalid", SpecRef: "okf-v0.2#11.3", File: "nested/index.md", FieldPath: "frontmatter", Severity: SeverityError},
 			{Code: "log_structure_invalid", SpecRef: "okf-v0.2#11.3", File: "log.md", FieldPath: "frontmatter", Severity: SeverityError},
 		} {

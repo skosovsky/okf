@@ -15,10 +15,16 @@ OKF — переносимый формат knowledge bundles из Markdown-фа
 frontmatter. Текущий authoring contract — OKF `0.2`. Legacy `0.1` остаётся
 только форматом чтения и источником явной миграции.
 
-Нормативный источник: [references/spec-v02.md](references/spec-v02.md), точная
-копия upstream `okf/SPEC.md` из commit
-`3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`, SHA-256
-`5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`.
+Для default temporal profile `date-3fcbb9f` нормативный источник —
+[references/spec-v02.md](references/spec-v02.md), точная копия upstream
+`okf/SPEC.md` из commit `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`,
+SHA-256 `5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948`.
+Для explicit `instant-0b87c52` —
+[references/spec-v02-instant.md](references/spec-v02-instant.md), upstream
+commit `0b87c52c6ef999286c745e19998fdfcd03d5dbee`, SHA-256
+`26aa5da029278939f914e578107242d9607d4f2dc5fe153272b82f9ed1030101`.
+Обе редакции называют себя OKF `0.2`; профиль выбирай явно, а его contract и
+правила обновления описаны в [ADR 0003](../../docs/adr/0003-okf-v02-temporal-revisions.md).
 Правила этого skill не расширяют upstream conformance. Repo-specific решения
 явно помечены как **extension/tooling policy**.
 
@@ -65,6 +71,18 @@ okf_version: "0.2"
 Nested indexes не имеют frontmatter.
 
 ## Authoring workflow
+
+Если нужен новый bundle, создай его одним Go binary:
+
+```sh
+okf init ./my-knowledge
+okf validate --path ./my-knowledge --spec 0.2
+```
+
+Команда создаёт root `index.md` и один `status: draft` concept. Замени
+placeholder материалами проекта; не считай шаблон проверенным знанием. Путь
+задаётся явно, существующий каталог не перезаписывается. Подробный контракт
+CLI: [../../docs/contracts/cli-init.md](../../docs/contracts/cli-init.md).
 
 ### 1. Зафиксировать scope и target version
 
@@ -150,8 +168,10 @@ verified:
 ### 6. Записать lifecycle только при наличии решения
 
 `status` принимает `draft`, `stable`, `deprecated`; отсутствие означает
-`stable`. `stale_after` — абсолютная дата, и concept stale при
-`reference_date >= stale_after`.
+`stable`. В default `date-3fcbb9f` `stale_after` — абсолютная дата: concept
+stale при `reference_date >= stale_after`. В explicit `instant-0b87c52` это
+RFC3339 datetime с явным часовым поясом: сравнивай полные моменты времени,
+включая offset и дробные секунды. Не выводи время суток из старой даты.
 
 Не выводи status/stale date из git age, generated time или migration. Body не
 может отменить `deprecated` или staleness.

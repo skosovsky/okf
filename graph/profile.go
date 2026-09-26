@@ -19,6 +19,9 @@ const (
 	// ProjectionProfileToolkitV02 is the skosovsky/okf toolkit projection for
 	// OKF v0.2. It is not an upstream OKF ontology.
 	ProjectionProfileToolkitV02 ProjectionProfile = "skosovsky/okf-v0.2"
+	// ProjectionProfileToolkitV02Instant uses the later OKF 0.2 temporal
+	// revision and xsd:dateTime for its temporal concept/source fields.
+	ProjectionProfileToolkitV02Instant ProjectionProfile = "skosovsky/okf-v0.2-instant"
 )
 
 // ExtensionRelationPolicy controls projection of the toolkit-specific YAML
@@ -54,7 +57,7 @@ func normalizeOptions(options Options) (Options, error) {
 		options.Profile = ProjectionProfileLegacyV01
 	}
 	switch options.Profile {
-	case ProjectionProfileLegacyV01, ProjectionProfileToolkitV02:
+	case ProjectionProfileLegacyV01, ProjectionProfileToolkitV02, ProjectionProfileToolkitV02Instant:
 	default:
 		return Options{}, fmt.Errorf("graph: unknown projection profile %q", options.Profile)
 	}
@@ -113,12 +116,14 @@ func topologyAnnotationContext(ctx context.Context, document bundle.Document, op
 	}
 	parts := []string{statusPart, trustPart}
 	if options.AsOf != nil {
-		observation, err := document.Frontmatter.StaleAfterObservationContext(ctx)
+		temporalProfile := bundle.TemporalProfileDate
+		if options.Profile == ProjectionProfileToolkitV02Instant { temporalProfile = bundle.TemporalProfileInstant }
+		observation, err := document.Frontmatter.StaleAfterForProfileContext(ctx, temporalProfile)
 		if err != nil {
 			return "", err
 		}
 		if observation.Value.State == bundle.TemporalValid {
-			stale, err := document.IsStaleContext(ctx, *options.AsOf)
+			stale, _, err := document.Frontmatter.IsStaleForProfileContext(ctx, *options.AsOf, temporalProfile)
 			if err != nil {
 				return "", err
 			}

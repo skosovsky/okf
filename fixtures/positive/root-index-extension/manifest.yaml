@@ -1,0 +1,10 @@
+description: "Root index.md preserves an unknown extension beside okf_version"
+run:
+  path: "."
+  strict: false
+  check_links: false
+  check_orphans: false
+  spec: "0.2"
+expected:
+  exit_code: 0
+  diagnostics: []

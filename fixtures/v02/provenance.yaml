@@ -23,6 +23,18 @@ paths:
   spec-lock.json:
     classification: synthetic-metadata
     reason: repository-authored pinned specification identity manifest
+  spec-lock-instant.json:
+    classification: synthetic-metadata
+    reason: repository-authored identity manifest for the later pinned OKF 0.2 temporal revision
+  temporal-profiles/date:
+    classification: synthetic
+    reason: repository-authored legacy calendar-date temporal regression bundle
+  temporal-profiles/instant:
+    classification: synthetic
+    reason: repository-authored offset-datetime temporal regression bundle
+  temporal-profiles/corpus.json:
+    classification: synthetic-metadata
+    reason: repository-authored mapping from temporal corpus cases to pinned spec revisions
   positive/appendix-a:
     classification: mixed
     reason: directory contains pinned Appendix-derived concepts, repository-authored fixture metadata, and synthetic inert materializations classified below

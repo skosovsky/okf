@@ -50,6 +50,16 @@ jobs:
         run: go vet ./...
       - name: Test packages
         run: go test ./...
+      - name: Validate repository knowledge bundle
+        run: go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0 --json
+      - name: Build knowledge viewer
+        run: go run ./cmd/okf view knowledge --output "$RUNNER_TEMP/knowledge-view.html" --spec auto --as-of 2026-09-26
+      - name: Upload knowledge viewer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: knowledge-viewer
+          path: ${{ runner.temp }}/knowledge-view.html
+          if-no-files-found: error
       - name: Build Linux packages
         run: go build ./...
 

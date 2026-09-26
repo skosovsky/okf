@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -161,6 +162,32 @@ func TestVersionDeclarationStateReadFromRootIndex(t *testing.T) {
 	// Assert.
 	if !version.Present || !version.Valid || version.Value != "0.1" {
 		t.Fatalf("VersionDeclarationState() = %#v, want valid 0.1", version)
+	}
+}
+
+func TestRootIndexExtensionSurvivesDocumentRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	// Arrange.
+	input := "---\nokf_version: '0.2'\nupkeep: enforced\ncustom: {key: value}\n---\n# Concepts\n\n* [A](a.md)\n"
+
+	// Act.
+	document, err := ParseDocument(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serialized, err := document.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := ParseDocument(serialized)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert.
+	if !reloaded.Frontmatter.VersionDeclarationState().Valid || !strings.Contains(serialized, "upkeep: enforced") || !strings.Contains(serialized, "custom: {key: value}") {
+		t.Fatalf("round trip = %q", serialized)
 	}
 }
 

@@ -21,6 +21,7 @@
   },
   "properties": {
     "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
     "concept_id": {
       "allOf": [
         {"$ref": "#/$defs/concept_id"},

@@ -1,0 +1,83 @@
+{
+  "schema_version": "okf-backfill/v1",
+  "events_sha256": "488b438fbe2e7dffacd40acf5b52f2360501982394c8bea72cb4ecc5a8643072",
+  "prompt_version": "fixture/v1",
+  "produced_at": "2026-01-04T00:00:00Z",
+  "results": [
+    {
+      "event_id": "git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "decision": "considered",
+      "candidate_ids": [
+        "mode-A"
+      ]
+    },
+    {
+      "event_id": "git:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "decision": "considered",
+      "candidate_ids": [
+        "mode-B"
+      ]
+    },
+    {
+      "event_id": "git:cccccccccccccccccccccccccccccccccccccccc",
+      "decision": "considered",
+      "candidate_ids": [
+        "handler-uncertain"
+      ]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "mode-A",
+      "concept_id": "decision",
+      "title": "Mode decision",
+      "description": "Current mode decision.",
+      "body": "The implementation uses mode A.",
+      "evidence": [
+        {
+          "event_id": "git:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "path": "decision.go",
+          "diff_sha256": "ad5542e382fa1179f10cd1712e23e327af0953620acf7b4cf0a76db9a6ae1acf"
+        }
+      ]
+    },
+    {
+      "id": "mode-B",
+      "concept_id": "decision",
+      "title": "Mode decision",
+      "description": "Current mode decision.",
+      "body": "The current decision and captured implementation use mode B.",
+      "history": [
+        {
+          "event_id": "git:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "text": "Mode A was reversed and replaced by B"
+        }
+      ],
+      "evidence": [
+        {
+          "event_id": "git:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "path": "decision.go",
+          "diff_sha256": "f9a95aafc847cd93d8592e7db1f43491b86018840e2addef0f2a960af692b4f4"
+        }
+      ],
+      "supersedes": [
+        "mode-A"
+      ]
+    },
+    {
+      "id": "handler-uncertain",
+      "concept_id": "handler-status",
+      "title": "Handler rollout evidence",
+      "description": "Partial evidence for the handler rollout.",
+      "body": "The captured handler diff is incomplete; rollout status is unverified.",
+      "evidence": [
+        {
+          "event_id": "git:cccccccccccccccccccccccccccccccccccccccc",
+          "path": "handler.go",
+          "diff_sha256": "c4661e9b9cc9286873527374a162351587ac857bdc27e820d070d2bf073712e0"
+        }
+      ],
+      "evidence_incomplete": true
+    }
+  ]
+}

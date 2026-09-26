@@ -24,6 +24,8 @@ type migrateOptions struct {
 	write                bool
 	format               string
 	citationMappingsFile string
+	generatedAtFile      string
+	preparedSourceSHA256 string
 	source               mutation.MigrationSourceResolution
 }
 
@@ -33,6 +35,8 @@ func parseMigrateArgs(args []string) (migrateOptions, error) {
 		{Name: "--to", Kind: stringFlag},
 		{Name: "--actor", Kind: stringFlag},
 		{Name: "--citation-mappings", Kind: stringFlag},
+		{Name: "--generated-at", Kind: stringFlag},
+		{Name: "--prepared-source-sha256", Kind: stringFlag},
 		{Name: "--write", Kind: boolFlag},
 		{Name: "--format", Kind: stringFlag},
 	})
@@ -66,6 +70,8 @@ func parseMigrateArgs(args []string) (migrateOptions, error) {
 		write:                parsed.boolValue("--write"),
 		format:               format,
 		citationMappingsFile: parsed.value("--citation-mappings", ""),
+		generatedAtFile:      parsed.value("--generated-at", ""),
+		preparedSourceSHA256: parsed.value("--prepared-source-sha256", ""),
 	}, nil
 }
 
@@ -157,8 +163,13 @@ func cmdMigrateWithDependencies(
 	if err != nil {
 		return 0, err
 	}
+	generatedAt, err := loadGeneratedAtMappings(opts.generatedAtFile)
+	if err != nil {
+		return 0, err
+	}
 	migrationInput := store.V01ToV02Migration{
 		GeneratedBy:       opts.actor,
+		GeneratedAt:       generatedAt,
 		TimestampPolicy:   store.LegacyTimestampPreserve,
 		TimestampConflict: store.TimestampConflictReject,
 		Citations:         citationMappings,
@@ -251,6 +262,15 @@ func buildMigrationReport(
 			render = false
 		}
 	}()
+	if opts.preparedSourceSHA256 != "" {
+		actual, digestErr := migrationSourceSHA256(ctx, source)
+		if digestErr != nil {
+			return migrationReport{}, 0, false, digestErr
+		}
+		if actual != opts.preparedSourceSHA256 {
+			return migrationReport{}, 0, false, fmt.Errorf("prepared migration inputs are stale: source SHA-256 changed")
+		}
+	}
 
 	resolution, resolutionErr := dependencies.resolve(ctx, source, mutation.MigrationSourceOptions{
 		RequestedSelector: opts.from,

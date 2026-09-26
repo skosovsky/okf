@@ -133,6 +133,8 @@ func validateOperationValue(operation Operation) error {
 		SetBundleVersion,
 		MigrateV01ToV02:
 		return operation.validate()
+	case UpgradeTemporalConcept:
+		return operation.validate()
 	default:
 		return fmt.Errorf("%w: operation must be a supported non-pointer value, got %T", ErrInvalidChangeSet, operation)
 	}

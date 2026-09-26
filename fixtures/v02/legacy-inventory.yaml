@@ -4,8 +4,8 @@ policy: >
   presence does not authorize implicit rewrite.
 occurrence_lock:
   algorithm: sha256
-  count: 339
-  sha256: bb064b0a16aeb65b8d066583e807e2c32ac7e97e1fa436a4cee61d4225e5e867
+  count: 375
+  sha256: 6199d71b549098b329dd8d025c9a4c0b753ce10497a63c0a18796f9d0c89f9e4
   reason: locks exact path, byte offset, and matched legacy spelling so listed files are not blanket allowlists
 canonical_compatibility_cases:
   - compat/declared-v01/index.md
@@ -16,14 +16,17 @@ adversarial_legacy_cases:
   - adversarial/optional-shapes/malformed.md
 pinned_specification_history:
   - skills/open-knowledge-format/references/spec-v02.md
+  - skills/open-knowledge-format/references/spec-v02-instant.md
 migration_guidance_paths:
   - README.md
   - README.ru.md
   - docs/contracts/okf-v0.2.md
   - docs/contracts/okf-v0.2-conformance.md
   - docs/adr/0001-okf-v02-graph-projection.md
+  - docs/adr/0003-okf-v02-temporal-revisions.md
   - docs/index.md
   - docs/migration.md
+  - docs/contracts/migration-preparation.md
   - docs/skill.md
   - docs/toolkit.md
   - docs/ru/index.md
@@ -72,10 +75,14 @@ contract_metadata_paths:
   - fixtures/v02/provenance.yaml
   - fixtures/v02/strict-boundaries/families/expected.json
   - fixtures/v02/strict-boundaries/families/manifest.yaml
+interoperability_evidence:
+  - fixtures/interoperability/foreign-68ce7a0/components/backfill-events.md
+  - fixtures/interoperability/foreign-68ce7a0/components/validator.md
+  - fixtures/interoperability/foreign-68ce7a0/index.md
+  - fixtures/interoperability/foreign-68ce7a0/log.md
 pre_v02_regression_files:
   - fixtures/forward-compat/mystery.md
   - fixtures/negative/index-nested-okf-version/sub/index.md
-  - fixtures/negative/root-index-extra-frontmatter-key/index.md
   - fixtures/negative/root-index-non-string-version/index.md
   - fixtures/spec-abstract-concept/playbook.md
   - fixtures/spec-minimal/datasets/sales.md
@@ -106,6 +113,10 @@ pre_v02_regression_files:
   - fixtures/versioning/root-0.1/index.md
   - fixtures/versioning/root-0.2/a.md
 intentional_file_reasons:
+  fixtures/interoperability/foreign-68ce7a0/components/backfill-events.md: pinned foreign v0.2 concept with intentional historical v0.1 discussion
+  fixtures/interoperability/foreign-68ce7a0/components/validator.md: pinned foreign v0.2 concept with intentional legacy migration discussion
+  fixtures/interoperability/foreign-68ce7a0/index.md: pinned foreign v0.2 index links historical migration content
+  fixtures/interoperability/foreign-68ce7a0/log.md: pinned foreign v0.2 log records earlier migration history
   .codex-plugin/plugin.json: published package description documents explicit legacy v0.1 migration support
   fixtures/strict/citation-heading-level/expected.json: expected legacy Citations heading-level diagnostic
   fixtures/strict/citation-heading-level/manifest.yaml: manifest for legacy Citations heading-level rejection
@@ -132,7 +143,6 @@ intentional_file_reasons:
   adversarial/optional-shapes/malformed.md: malformed replacement suppresses legacy fallback
   fixtures/forward-compat/mystery.md: pre-v0.2 unknown-field regression keeps legacy timestamp
   fixtures/negative/index-nested-okf-version/sub/index.md: rejects legacy declaration outside the root index
-  fixtures/negative/root-index-extra-frontmatter-key/index.md: rejects extra root-index keys around a legacy declaration
   fixtures/negative/root-index-non-string-version/index.md: rejects an unquoted numeric legacy declaration
   fixtures/spec-abstract-concept/playbook.md: pinned pre-v0.2 abstract-concept example
   fixtures/spec-minimal/datasets/sales.md: pinned pre-v0.2 minimal example

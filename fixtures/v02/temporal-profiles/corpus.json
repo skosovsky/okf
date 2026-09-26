@@ -1,0 +1,6 @@
+{
+  "cases": [
+    {"path": "date", "temporal_profile": "date-3fcbb9f", "spec_lock": "../spec-lock.json"},
+    {"path": "instant", "temporal_profile": "instant-0b87c52", "spec_lock": "../spec-lock-instant.json"}
+  ]
+}

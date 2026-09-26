@@ -173,7 +173,7 @@ func TestMigrationHandlersValidateBeforeSourceAndStoreBoundaries(t *testing.T) {
 	owners := map[string]map[string]bool{
 		"storefs.OpenContext": {
 			"applyMigrationPlan": true, "handleApplyConceptPatch": true,
-			"openTransactionalStoreContext": true,
+			"openTransactionalStoreContext": true, "openTemporalUpgradeStoreContext": true,
 		},
 		"bundle.FileSystemSource": {"captureMigrationSource": true, "loadBundleContext": true},
 	}
@@ -193,7 +193,7 @@ func TestMigrationHandlersValidateBeforeSourceAndStoreBoundaries(t *testing.T) {
 		"dependencies.openStore",
 	)
 	assertSelectorOwners(t, cli, map[string]map[string]bool{
-		"storefs.OpenContext":     {"productionMigrateDependencies": true},
+		"storefs.OpenContext":     {"productionMigrateDependencies": true, "openCLITemporalUpgradeStore": true},
 		"dependencies.openSource": {"buildMigrationReport": true},
 		"dependencies.openStore":  {"buildMigrationReport": true},
 	})
@@ -583,6 +583,7 @@ func TestCorpusAndProvenanceInventoriesOwnEveryFixture(t *testing.T) {
 			return nil
 		}
 		metadata := filepath.Dir(relative) == "." || filepath.Base(relative) == "manifest.yaml" ||
+			filepath.Base(relative) == "corpus.json" ||
 			filepath.Base(relative) == "expected.json" || filepath.Base(relative) == "derivation.json"
 		if metadata && (owner != relative || classification.Classification != "synthetic-metadata") {
 			t.Errorf("metadata %s resolves through %s as %s", relative, owner, classification.Classification)
@@ -786,6 +787,7 @@ type legacyInventory struct {
 	MigrationGuidancePaths      []string          `yaml:"migration_guidance_paths"`
 	ContractMetadataPaths       []string          `yaml:"contract_metadata_paths"`
 	PreV02RegressionFiles       []string          `yaml:"pre_v02_regression_files"`
+	InteroperabilityEvidence    []string          `yaml:"interoperability_evidence"`
 	IntentionalFileReasons      map[string]string `yaml:"intentional_file_reasons"`
 	OccurrenceLock              struct {
 		Algorithm string `yaml:"algorithm"`
@@ -809,12 +811,14 @@ func TestLegacyRepresentationsMatchExactInventory(t *testing.T) {
 	add("", inventory.PinnedSpecificationHistory)
 	add("", inventory.MigrationGuidancePaths)
 	add("", inventory.PreV02RegressionFiles)
+	add("", inventory.InteroperabilityEvidence)
 	add("", inventory.ContractMetadataPaths)
 	add("fixtures/v02", inventory.CanonicalCompatibilityCases)
 	add("fixtures/v02", inventory.AdversarialLegacyCases)
 	reasoned := append(append([]string{}, inventory.PreV02RegressionFiles...), inventory.ContractMetadataPaths...)
 	reasoned = append(reasoned, inventory.CanonicalCompatibilityCases...)
 	reasoned = append(reasoned, inventory.AdversarialLegacyCases...)
+	reasoned = append(reasoned, inventory.InteroperabilityEvidence...)
 	for _, path := range reasoned {
 		path = filepath.ToSlash(filepath.Clean(path))
 		reasonKey := strings.TrimPrefix(path, "fixtures/v02/")

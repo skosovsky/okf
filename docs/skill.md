@@ -98,7 +98,10 @@ The five compatibility tools remain:
 - `get_semantic_graph`
 - `write_concept`
 
-The server exposes nine tools. For its four safe v0.2 edits, use preview before
+Two additional read-only tools, `search_concepts` and `get_neighbors`, return
+bounded results. Search ranks ID and metadata matches ahead of body matches;
+neighbors separate Markdown links, typed relations, and provenance sources.
+The server exposes thirteen tools. For its three safe v0.2 mutation workflows, use preview before
 apply:
 
 - `preview_concept_patch` → `apply_concept_patch`: bind with
@@ -110,6 +113,8 @@ apply:
   requires only `expected_source`, is proofless, and validates the target
   document. There is no migration `expected_revision`; when proof exists,
   `proof.base_revision` is authoritative.
+- `preview_temporal_upgrade` → `apply_temporal_upgrade`: publish a pinned
+  date-to-instant transition only from its preview digest and revision.
 
 Resolve migration source exactly once before Preview and use the same complete
 resolution in Preview and Apply. `expected_source` includes
