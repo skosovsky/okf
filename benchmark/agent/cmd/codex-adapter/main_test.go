@@ -6,8 +6,47 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/skosovsky/okf/benchmark/agent"
 )
+
+func TestModelVisiblePromptOmitsHarnessLabels(t *testing.T) {
+	// Arrange: case ID and arm are deliberately revealing, but remain wire-only.
+	req := agent.Request{
+		CaseID:       "reversal-treatment-case",
+		Arm:          agent.Treatment,
+		Question:     "What is the current mode?",
+		Artifacts:    []agent.Artifact{{ID: "decision", Path: "decision.md", Content: "Current mode: B."}},
+		Instructions: "Answer from evidence.",
+	}
+
+	// Act.
+	prompt, err := modelVisiblePrompt(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var visible map[string]json.RawMessage
+	if err := json.Unmarshal(prompt, &visible); err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert: the source evidence and answer instruction survive projection.
+	if len(visible) != 3 || visible["question"] == nil || visible["artifacts"] == nil || visible["instructions"] == nil {
+		t.Fatalf("unexpected model-visible fields: %s", prompt)
+	}
+	if strings.Contains(string(prompt), req.CaseID) || strings.Contains(string(prompt), `"arm"`) || strings.Contains(string(prompt), req.Arm) {
+		t.Fatalf("harness labels leaked to model: %s", prompt)
+	}
+	var artifacts []agent.Artifact
+	if err := json.Unmarshal(visible["artifacts"], &artifacts); err != nil {
+		t.Fatal(err)
+	}
+	if len(artifacts) != 1 || artifacts[0] != req.Artifacts[0] {
+		t.Fatalf("evidence changed: %+v", artifacts)
+	}
+}
 
 func TestVerifyRuntime(t *testing.T) {
 	// Arrange.

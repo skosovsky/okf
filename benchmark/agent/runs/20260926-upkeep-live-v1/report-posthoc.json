@@ -1,0 +1,47 @@
+{
+  "id": "upkeep-live-20260926-v1",
+  "valid": true,
+  "citation_issues": [
+    "upkeep-truncated/checker_on/1: citation \"handler: The captured diff is partial, so rollout status cannot be established.\" absent from writer bundle"
+  ],
+  "arms": {
+    "checker_off": {
+      "expected": 2,
+      "writer_observed": 2,
+      "consumer_observed": 2,
+      "doc_updated": 2,
+      "concept_updated": 2,
+      "doc_deleted": 0,
+      "concept_deleted": 0,
+      "correct": 1,
+      "stale": 0,
+      "wrong": 1,
+      "refusal": 0,
+      "ungradable": 0,
+      "unsupported_citations": 0,
+      "failures": 0,
+      "doc_update_rate": 1,
+      "concept_update_rate": 1,
+      "answer_quality_rate": 0.5
+    },
+    "checker_on": {
+      "expected": 2,
+      "writer_observed": 2,
+      "consumer_observed": 2,
+      "doc_updated": 1,
+      "concept_updated": 1,
+      "doc_deleted": 0,
+      "concept_deleted": 0,
+      "correct": 0,
+      "stale": 0,
+      "wrong": 1,
+      "refusal": 0,
+      "ungradable": 1,
+      "unsupported_citations": 1,
+      "failures": 0,
+      "doc_update_rate": 0.5,
+      "concept_update_rate": 0.5,
+      "answer_quality_rate": 0
+    }
+  }
+}

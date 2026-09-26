@@ -100,29 +100,31 @@ type UpkeepStudyRows struct {
 }
 
 type UpkeepArmReport struct {
-	Expected          int     `json:"expected"`
-	WriterObserved    int     `json:"writer_observed"`
-	ConsumerObserved  int     `json:"consumer_observed"`
-	DocUpdated        int     `json:"doc_updated"`
-	ConceptUpdated    int     `json:"concept_updated"`
-	DocDeleted        int     `json:"doc_deleted"`
-	ConceptDeleted    int     `json:"concept_deleted"`
-	Correct           int     `json:"correct"`
-	Stale             int     `json:"stale"`
-	Wrong             int     `json:"wrong"`
-	Refusal           int     `json:"refusal"`
-	Ungradable        int     `json:"ungradable"`
-	Failures          int     `json:"failures"`
-	DocUpdateRate     float64 `json:"doc_update_rate"`
-	ConceptUpdateRate float64 `json:"concept_update_rate"`
-	AnswerQualityRate float64 `json:"answer_quality_rate"`
+	Expected             int     `json:"expected"`
+	WriterObserved       int     `json:"writer_observed"`
+	ConsumerObserved     int     `json:"consumer_observed"`
+	DocUpdated           int     `json:"doc_updated"`
+	ConceptUpdated       int     `json:"concept_updated"`
+	DocDeleted           int     `json:"doc_deleted"`
+	ConceptDeleted       int     `json:"concept_deleted"`
+	Correct              int     `json:"correct"`
+	Stale                int     `json:"stale"`
+	Wrong                int     `json:"wrong"`
+	Refusal              int     `json:"refusal"`
+	Ungradable           int     `json:"ungradable"`
+	UnsupportedCitations int     `json:"unsupported_citations"`
+	Failures             int     `json:"failures"`
+	DocUpdateRate        float64 `json:"doc_update_rate"`
+	ConceptUpdateRate    float64 `json:"concept_update_rate"`
+	AnswerQualityRate    float64 `json:"answer_quality_rate"`
 }
 
 type UpkeepStudyReport struct {
-	ID      string                     `json:"id"`
-	Valid   bool                       `json:"valid"`
-	Reasons []string                   `json:"reasons,omitempty"`
-	Arms    map[string]UpkeepArmReport `json:"arms"`
+	ID             string                     `json:"id"`
+	Valid          bool                       `json:"valid"`
+	Reasons        []string                   `json:"reasons,omitempty"`
+	CitationIssues []string                   `json:"citation_issues,omitempty"`
+	Arms           map[string]UpkeepArmReport `json:"arms"`
 }
 
 const (
@@ -236,6 +238,7 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 	key := func(id, arm string, repeat int) string { return fmt.Sprintf("%s/%s/%d", id, arm, repeat) }
 	writers := map[string]UpkeepWriterRow{}
 	consumers := map[string]UpkeepConsumerRow{}
+	unsupportedCitations := map[string]string{}
 	sessions := map[string]bool{}
 	for _, w := range rows.Writers {
 		k := key(w.CaseID, w.Arm, w.Repeat)
@@ -315,7 +318,8 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 		}
 		for _, evidence := range c.Observation.Evidence {
 			if !ids[evidence] {
-				return UpkeepStudyReport{}, fmt.Errorf("%s: citation absent from writer bundle", k)
+				unsupportedCitations[k] = evidence
+				break
 			}
 		}
 		consumers[k] = c
@@ -374,6 +378,13 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 					failure = c.Observation.AdapterError
 				}
 				verdict := Grade(Case{Expected: spec.Expected}, c.Observation, failure)
+				if unsupported, found := unsupportedCitations[k]; found && verdict != OperationalFailure {
+					if verdict != Refusal {
+						verdict = Ungradable
+					}
+					a.UnsupportedCitations++
+					report.CitationIssues = append(report.CitationIssues, fmt.Sprintf("%s: citation %q absent from writer bundle", k, unsupported))
+				}
 				switch verdict {
 				case Correct:
 					a.Correct++
@@ -400,5 +411,6 @@ func AnalyzeUpkeepStudy(plan UpkeepStudy, rows UpkeepStudyRows) (UpkeepStudyRepo
 		report.Valid = false
 	}
 	sort.Strings(report.Reasons)
+	sort.Strings(report.CitationIssues)
 	return report, nil
 }

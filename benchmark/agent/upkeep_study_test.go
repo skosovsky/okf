@@ -66,6 +66,58 @@ func TestAnalyzeUpkeepStudyRejectsMismatchedConsumerBundle(t *testing.T) {
 	}
 }
 
+func TestAnalyzeUpkeepStudyUnsupportedCitationIsUngradable(t *testing.T) {
+	// Arrange: the answer matches gold, but the cited ID was never in the writer's bundle.
+	plan, rows := upkeepTestStudy(t)
+	rows.Consumers[1].Observation.Evidence = []string{"unrelated"}
+	// Act.
+	report, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert: one model-format error does not prevent analysis of the paired rows.
+	if err != nil || !report.Valid {
+		t.Fatalf("report=%+v err=%v", report, err)
+	}
+	on := report.Arms[UpkeepCheckerOn]
+	if on.Correct != 0 || on.Ungradable != 1 || on.UnsupportedCitations != 1 || on.AnswerQualityRate != 0 {
+		t.Fatalf("on=%+v", on)
+	}
+	if report.Arms[UpkeepCheckerOff].Stale != 1 || len(report.CitationIssues) != 1 || !strings.Contains(report.CitationIssues[0], `citation "unrelated" absent from writer bundle`) {
+		t.Fatalf("report=%+v", report)
+	}
+}
+
+func TestAnalyzeUpkeepStudyRefusalPrecedesUnsupportedCitation(t *testing.T) {
+	// Arrange: a refusal can include an extraneous evidence ID.
+	plan, rows := upkeepTestStudy(t)
+	rows.Consumers[1].Observation = Observation{Refused: true, Evidence: []string{"unrelated"}}
+	// Act.
+	report, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert: preserve Grade's refusal category while recording the citation issue.
+	if err != nil || !report.Valid {
+		t.Fatalf("report=%+v err=%v", report, err)
+	}
+	on := report.Arms[UpkeepCheckerOn]
+	if on.Refusal != 1 || on.Ungradable != 0 || on.UnsupportedCitations != 1 || len(report.CitationIssues) != 1 {
+		t.Fatalf("report=%+v", report)
+	}
+}
+
+func TestAnalyzeUpkeepStudyFailurePrecedesUnsupportedCitation(t *testing.T) {
+	// Arrange: a partial answer with a foreign citation accompanies adapter failure.
+	plan, rows := upkeepTestStudy(t)
+	rows.Consumers[1].Observation.Evidence = []string{"unrelated"}
+	rows.Consumers[1].Observation.AdapterError = "transport interrupted"
+	// Act.
+	report, err := AnalyzeUpkeepStudy(plan, rows)
+	// Assert: operational failure stays primary and is not counted as a graded citation.
+	if err != nil || report.Valid {
+		t.Fatalf("report=%+v err=%v", report, err)
+	}
+	on := report.Arms[UpkeepCheckerOn]
+	if on.Failures != 1 || on.Ungradable != 0 || on.UnsupportedCitations != 0 || len(report.CitationIssues) != 0 {
+		t.Fatalf("report=%+v", report)
+	}
+}
+
 func TestAnalyzeUpkeepStudyRejectsSharedSession(t *testing.T) {
 	// Arrange
 	plan, rows := upkeepTestStudy(t)

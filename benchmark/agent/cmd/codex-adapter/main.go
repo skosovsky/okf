@@ -121,7 +121,7 @@ func run() error {
 		toolInstruction := directToolInstruction(req.Arm, goCLI, diagnosticRead)
 		prompt = []byte(req.Instructions + "\n" + toolInstruction + "\nQuestion: " + req.Question + "\nEvidence files (artifact ID=path):\n" + strings.Join(paths, "\n"))
 	} else {
-		prompt, err = json.Marshal(req)
+		prompt, err = modelVisiblePrompt(req)
 		if err != nil {
 			return err
 		}
@@ -246,6 +246,16 @@ func run() error {
 		obs.AdapterError = "Codex event stream omitted usage"
 	}
 	return json.NewEncoder(os.Stdout).Encode(obs)
+}
+
+// modelVisiblePrompt keeps trial identifiers and arm labels in the harness.
+// They are not evidence and can reveal the intended contrast to the model.
+func modelVisiblePrompt(req agent.Request) ([]byte, error) {
+	return json.Marshal(struct {
+		Question     string           `json:"question"`
+		Artifacts    []agent.Artifact `json:"artifacts"`
+		Instructions string           `json:"instructions"`
+	}{Question: req.Question, Artifacts: req.Artifacts, Instructions: req.Instructions})
 }
 
 func verifyRuntime(path, version, expectedSHA256 string) error {

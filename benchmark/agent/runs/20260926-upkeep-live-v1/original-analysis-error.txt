@@ -1,0 +1,2 @@
+upkeep-truncated/checker_on/1: citation absent from writer bundle
+exit status 1

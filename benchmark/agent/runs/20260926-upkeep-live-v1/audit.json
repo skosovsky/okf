@@ -1,0 +1,168 @@
+{
+  "plan_sha256": "27cc232a283d0b9993108684a942421a1906fb30e3215c2e974f63388db41327",
+  "adapter_sha256": "3470b13c8e8d31fee44e2de6241a1af917a75bc02b5cb0f4c9f87c8cdbc8e9ea",
+  "runner_sha256": "a0565afc973e6c1ef3d0a14ca732069d9a09416b6503e0d7f595688143a44b45",
+  "go_version": "go1.26.5",
+  "started_at": "2026-09-26T12:28:20.552428Z",
+  "limits": {
+    "max_calls": 12,
+    "max_seconds": 600,
+    "max_tokens": 200000,
+    "call_seconds": 45
+  },
+  "calls": 10,
+  "tokens": 155378,
+  "unknown_usage_calls": 0,
+  "events": [
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "writer_initial",
+      "session_id": "01a0ddb0-1d51-7a50-9b87-421136c01cdb",
+      "input_tokens": 15284,
+      "output_tokens": 280
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "go_cli_validate",
+      "bundle_sha256": "111c1769750832b0aec94bb939a0d8f30144fdc5d93feb67a58763a8fd03b244"
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "consumer",
+      "session_id": "01a0ddb0-4301-7e12-8ec5-eb6f12784e6d",
+      "input_tokens": 15174,
+      "output_tokens": 27,
+      "bundle_sha256": "111c1769750832b0aec94bb939a0d8f30144fdc5d93feb67a58763a8fd03b244"
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "writer_initial",
+      "session_id": "01a0ddb0-62bd-7023-a3ae-8f62f9134ab2",
+      "input_tokens": 15313,
+      "output_tokens": 280
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "checker_initial",
+      "checker_status": "needs_review"
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "writer_revision",
+      "session_id": "01a0ddb0-8b13-77e3-9a80-44dfb4212559",
+      "input_tokens": 15683,
+      "output_tokens": 280
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "checker_final",
+      "checker_status": "needs_review"
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "go_cli_validate",
+      "bundle_sha256": "a219e8c41f7a982d3a10168ad90fd54cc30af1d83f6e039db7cb85ffdfffe2fa"
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "consumer",
+      "session_id": "01a0ddb0-b1f2-7492-b3c7-88a213840fa6",
+      "input_tokens": 15176,
+      "output_tokens": 27,
+      "bundle_sha256": "a219e8c41f7a982d3a10168ad90fd54cc30af1d83f6e039db7cb85ffdfffe2fa"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "writer_initial",
+      "session_id": "01a0ddb0-c811-7d53-9414-b4815b6d53df",
+      "input_tokens": 15362,
+      "output_tokens": 319
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "checker_initial",
+      "checker_status": "needs_review"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "writer_revision",
+      "session_id": "01a0ddb0-f2e2-7a81-a3af-944c337158bc",
+      "input_tokens": 15773,
+      "output_tokens": 319
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "checker_final",
+      "checker_status": "reviewed_updated"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "go_cli_validate",
+      "bundle_sha256": "c3de222591192406ece1697f8eee968d0b8085cb62bc24c986a2a7cd3b32d723"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "stage": "consumer",
+      "session_id": "01a0ddb1-2410-7f40-8e2a-4791d418ce4f",
+      "input_tokens": 15180,
+      "output_tokens": 41,
+      "bundle_sha256": "c3de222591192406ece1697f8eee968d0b8085cb62bc24c986a2a7cd3b32d723"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "writer_initial",
+      "session_id": "01a0ddb1-3ae4-7403-ba6b-a1c1640e722d",
+      "input_tokens": 15333,
+      "output_tokens": 318
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "go_cli_validate",
+      "bundle_sha256": "8ae7179fbcc005f57603eb4a90eb1d87309e55bf355a7d78541e9c389ff70fb7"
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_off",
+      "repeat": 1,
+      "stage": "consumer",
+      "session_id": "01a0ddb1-65cd-7461-bb6b-4f9fcbb214eb",
+      "input_tokens": 15181,
+      "output_tokens": 28,
+      "bundle_sha256": "8ae7179fbcc005f57603eb4a90eb1d87309e55bf355a7d78541e9c389ff70fb7"
+    }
+  ]
+}

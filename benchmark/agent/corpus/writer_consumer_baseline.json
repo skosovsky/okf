@@ -1,0 +1,49 @@
+[
+  {
+    "id": "manual-writer-queue-mode-reversal",
+    "category": "reversal",
+    "tier": "mechanism_only",
+    "question": "Which queue mode is the current decision?",
+    "control": [
+      {
+        "id": "history",
+        "path": "records/2026-01-01.txt",
+        "content": "2026-01-01: The queue mode was set to A. This record is historical."
+      },
+      {
+        "id": "decision",
+        "path": "records/2026-01-02.txt",
+        "content": "2026-01-02: The previous queue-mode decision A was superseded. The current decision is B."
+      }
+    ],
+    "treatment": [
+      {
+        "id": "bundle-index",
+        "path": "index.md",
+        "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n\n- [Historical queue mode](historical.md) - Superseded queue-mode decision.\n- [Current queue mode](decision.md) - Current queue-mode decision.\n"
+      },
+      {
+        "id": "history",
+        "path": "historical.md",
+        "content": "---\ntype: Note\ntitle: Historical queue mode\ndescription: Superseded queue-mode decision.\nstatus: deprecated\n---\n\nOn 2026-01-01, queue mode A was selected. This decision was superseded on 2026-01-02.\n"
+      },
+      {
+        "id": "decision",
+        "path": "decision.md",
+        "content": "---\ntype: Note\ntitle: Current queue mode\ndescription: Current queue-mode decision.\nstatus: stable\n---\n\nOn 2026-01-02, queue mode A was superseded. The current queue-mode decision is B.\n"
+      }
+    ],
+    "expected": {
+      "answer": "B",
+      "evidence": ["decision"],
+      "support": [
+        {
+          "artifact_id": "decision",
+          "control_quote": "The current decision is B.",
+          "treatment_quote": "The current queue-mode decision is B."
+        }
+      ],
+      "stale_answers": ["A"]
+    }
+  }
+]
