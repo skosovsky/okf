@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -98,5 +99,31 @@ func TestDiagnosticRequiresAllArtifactReads(t *testing.T) {
 	}
 	if !allArtifactsRead(arts, []string{"historical", "current"}) {
 		t.Fatal("rejected complete control read")
+	}
+}
+
+func TestValidDiagnosticV2BudgetAndID(t *testing.T) {
+	// Arrange.
+	data, err := os.ReadFile("../../corpus/diagnostic_primary.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases, hash, err := agent.LoadCorpus(bytes.NewReader(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func(id string, tokens int) bool {
+		return validDiagnosticV2(id, hash, cases, 1, 2, 120, tokens, true, 0, "direct", false, "Codex read-only ephemeral temp with shell; Go CLI binary supplied")
+	}
+
+	// Act and assert.
+	if !check(agent.DiagnosticV2RunID, agent.DiagnosticV2MaxTokens) {
+		t.Fatal("rejected exact v2 diagnostic bounds")
+	}
+	if check(agent.DiagnosticV2RunID, agent.DiagnosticV1MaxTokens) {
+		t.Fatal("accepted old 60k budget for new v2 run")
+	}
+	if check(agent.DiagnosticV1RunID, agent.DiagnosticV2MaxTokens) {
+		t.Fatal("accepted old run ID for new v2 run")
 	}
 }

@@ -1,4 +1,10 @@
-# Proposed file-read diagnostic (separate approval required)
+# Proposed file-read diagnostic v2 (separate approval required)
+
+The v1 run is preserved in `runs/20260926-diagnostic-read-v1/`. It stopped
+after one control call because the safe command parser missed Codex's
+`/bin/zsh -lc` wrapper. The parser now supports that exact safe wrapper and
+requires complete output equality; the v1 row remains unconfirmed because it
+did not store raw output. The v1 authorization is exhausted for this plan.
 
 This proposal tests the first realistic case only:
 `repo-default-okf-version`, with the same control and treatment artifacts as
@@ -30,11 +36,12 @@ the runner records that row as an operational failure and stops before
 treatment. Unknown event/command formats fail closed; the metadata should
 show whether command events were emitted but not recognized.
 
-The new run ID is `diagnostic-read-20260926-v1`. Hard limits are two calls,
-120 seconds total and 45 seconds per call. `60,000` is an observed post-call
-token stop condition: one call may exceed it. The prior first call alone used
-15,016 tokens; shell round trips can cost more. The run is unpriced, so no USD
-ceiling or worst-case monetary spend is asserted. Two complete trials would
+The new run ID is `diagnostic-read-20260926-v2`. Hard limits are two calls,
+120 seconds total and 45 seconds per call. `150,000` is an observed post-call
+token stop condition: one call may exceed it. The v1 control call used 45,464
+input+output tokens including two shell calls; treatment may use substantially
+more. The run is unpriced: **there is no USD cap**, and no worst-case monetary
+spend is asserted. Two complete trials would
 be a tool-access diagnostic, not a statistically meaningful behavior result.
 
 After explicit approval, rebuild both binaries from the clean commit and run:
@@ -44,19 +51,19 @@ GOCACHE=/private/tmp/okf-agent-gocache go build -o /private/tmp/okf-eval-cli ./c
 GOCACHE=/private/tmp/okf-agent-gocache go build -o /private/tmp/okf-eval-codex-adapter ./benchmark/agent/cmd/codex-adapter
 GOCACHE=/private/tmp/okf-agent-gocache go run ./benchmark/agent/cmd/okf-agent-eval run \
   -corpus benchmark/agent/corpus/diagnostic_primary.json \
-  -plan /private/tmp/okf-diagnostic-read-v1-plan.json \
-  -rows /private/tmp/okf-diagnostic-read-v1-rows.jsonl \
+  -plan /private/tmp/okf-diagnostic-read-v2-plan.json \
+  -rows /private/tmp/okf-diagnostic-read-v2-rows.jsonl \
   -adapter /private/tmp/okf-eval-codex-adapter \
   -go-cli /private/tmp/okf-eval-cli \
   -model-runtime /Applications/ChatGPT.app/Contents/Resources/codex \
   -model-runtime-version 'codex-cli 0.155.0-alpha.16.3' \
   -model-runtime-sha256 c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a \
-  -run-id diagnostic-read-20260926-v1 \
+  -run-id diagnostic-read-20260926-v2 \
   -model gpt-6-luna -model-version gpt-6-luna \
   -settings '{"reasoning_effort":"low"}' \
   -commit FULL_NEW_CLEAN_GIT_SHA \
   -spec 0b87c52c6ef999286c745e19998fdfcd03d5dbee \
-  -repeats 1 -max-trials 2 -max-seconds 120 -max-tokens 60000 -unpriced \
+  -repeats 1 -max-trials 2 -max-seconds 120 -max-tokens 150000 -unpriced \
   -toolkit-mode direct -diagnostic-read \
   -model-tool-access 'Codex read-only ephemeral temp with shell; Go CLI binary supplied'
 ```

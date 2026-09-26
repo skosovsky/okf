@@ -1,17 +1,20 @@
-# Next primary pilot proposal (requires separate approval)
+# Historical primary pilot protocol
 
 The prior eight-attempt run is preserved in `runs/20260926-primary-live/`.
 Every attempt failed before model inference because `PATH` selected standalone
 `codex-cli 0.137.0`, which cannot decode the current model catalog's `max`
-reasoning level. This proposal selects the bundled
+reasoning level. The subsequent run selected the bundled
 `/Applications/ChatGPT.app/Contents/Resources/codex` explicitly. Its observed
 version was `codex-cli 0.155.0-alpha.16.3` and its SHA-256 was
 `c67698d0990aae05211d9c43ab343ad9517e406824dea77eca103a2806232b3a`.
-The runner and adapter both reject a different version or binary. No model
-call has been made with that bundled runtime. The eight-attempt allowance for
-the prior run is exhausted, so this new run needs its own explicit approval.
+The runner and adapter reject a different version or binary. That run stopped
+after one control trial exceeded its observed-token budget; its plan, row and
+report are in `runs/20260926-primary-bundled-v2/`. The later one-case file-read
+diagnostic stopped after control on a shell-wrapper parser mismatch; see
+`runs/20260926-diagnostic-read-v1/`. The next diagnostic proposal is in
+`PILOT-DIAGNOSTIC.md`. None of these partial runs supports an arm comparison.
 
-Before execution, the corrected 004/005 code, SPEC, corpus and adapter must be
+For any new execution, the corrected 004/005 code, SPEC, corpus and adapter must be
 in one clean commit. `-commit` must equal `git rev-parse HEAD`. `-spec` must be
 the full upstream commit in `skills/open-knowledge-format/SKILL.md`; the
 preflight checks that declaration against the actual SPEC SHA-256. Build both
@@ -22,7 +25,7 @@ GOCACHE=/private/tmp/okf-agent-gocache go build -o /private/tmp/okf-eval-cli ./c
 GOCACHE=/private/tmp/okf-agent-gocache go build -o /private/tmp/okf-eval-codex-adapter ./benchmark/agent/cmd/codex-adapter
 ```
 
-The proposed fresh run ID is `primary-bundled-20260926-v2`. The command below
+The executed run ID was `primary-bundled-20260926-v2`. The protocol below
 fixes the model ID, low reasoning effort, eight calls,
 360 seconds total, 45 seconds per call, and 12,000 observed input/output
 tokens. The token threshold is checked after each call, so one call can exceed
@@ -45,25 +48,23 @@ GOCACHE=/private/tmp/okf-agent-gocache go run ./benchmark/agent/cmd/okf-agent-ev
   -run-id primary-bundled-20260926-v2 \
   -model gpt-6-luna -model-version gpt-6-luna \
   -settings '{"reasoning_effort":"low"}' \
-  -commit FULL_NEW_CLEAN_GIT_SHA \
+  -commit d6bd02824b089a4e9c2e1080a8ef608ba9e67276 \
   -spec 0b87c52c6ef999286c745e19998fdfcd03d5dbee \
   -repeats 1 -max-trials 8 -max-seconds 360 -max-tokens 12000 -unpriced \
   -toolkit-mode direct \
   -model-tool-access 'Codex read-only ephemeral temp with shell; Go CLI binary supplied'
 ```
 
-Replace the full new Git SHA argument after this harness patch and its tests
-are committed. Rebuild both Go binaries from that commit; the runner hashes
-the binaries during preflight. The SPEC revision is the repository's pinned
-instant profile. Keep
-the exact command in the report. Analyze the immutable
+The command above is a historical record, not permission to rerun an exhausted
+trial. The runner hashed both Go binaries during preflight. The SPEC revision
+is the repository's pinned instant profile. Analyze the immutable
 plan and raw rows:
 
 ```sh
 GOCACHE=/private/tmp/okf-agent-gocache go run ./benchmark/agent/cmd/okf-agent-eval analyze \
   -corpus benchmark/agent/corpus/primary_realistic.json \
-  -plan /private/tmp/okf-primary-bundled-v2-plan.json \
-  -rows /private/tmp/okf-primary-bundled-v2-rows.jsonl
+  -plan benchmark/agent/runs/20260926-primary-bundled-v2/plan.json \
+  -rows benchmark/agent/runs/20260926-primary-bundled-v2/rows.jsonl
 ```
 
 `valid` requires all eight trials, no operational failures, pinned metadata,

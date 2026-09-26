@@ -476,8 +476,8 @@ func TestDiagnosticAnalysisRejectsUnconfirmedRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := Metadata{RunID: "diagnostic", CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
-	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, GoCLISHA256: hash, ModelRuntimePath: "/absolute/codex", ModelRuntimeVersion: "codex-cli pinned", ModelRuntimeSHA256: hash, ToolkitMode: "direct", ModelToolAccess: "Codex read-only ephemeral temp with shell; Go CLI binary supplied", Repeats: 1, CaseCount: 1, MaxTrials: 2, MaxSeconds: 120, MaxTokens: 60000, Unpriced: true, DiagnosticRead: true}
+	m := Metadata{RunID: DiagnosticV2RunID, CorpusSHA256: hash, PromptSHA256: hash, Commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", SpecRevision: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Model: "model", ModelVersion: "model", Settings: `{}`, Adapter: "adapter", Clock: time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC), GraderRevision: "exact-v1"}
+	plan := Plan{Metadata: m, SpecSHA256: hash, AdapterSHA256: hash, GoCLISHA256: hash, ModelRuntimePath: "/absolute/codex", ModelRuntimeVersion: "codex-cli pinned", ModelRuntimeSHA256: hash, ToolkitMode: "direct", ModelToolAccess: "Codex read-only ephemeral temp with shell; Go CLI binary supplied", Repeats: 1, CaseCount: 1, MaxTrials: 2, MaxSeconds: 120, MaxTokens: DiagnosticV2MaxTokens, Unpriced: true, DiagnosticRead: true}
 	row := Row{Metadata: m, CaseID: cases[0].ID, Arm: Control, Repeat: 1, Observation: Observation{Answer: "0.2", Evidence: []string{"current"}, InputTokens: 10, OutputTokens: 5}, Verdict: Correct}
 
 	// Act and assert.
@@ -487,6 +487,15 @@ func TestDiagnosticAnalysisRejectsUnconfirmedRead(t *testing.T) {
 	row.Observation.ReadArtifacts = []string{"historical", "current"}
 	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err != nil {
 		t.Fatal(err)
+	}
+	plan.MaxTokens = DiagnosticV1MaxTokens
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err == nil {
+		t.Fatal("accepted v1 budget under v2 run ID")
+	}
+	plan.Metadata.RunID = DiagnosticV1RunID
+	row.Metadata.RunID = DiagnosticV1RunID
+	if _, err := AnalyzePlanned(cases, hash, []Row{row}, plan); err != nil {
+		t.Fatalf("old v1 diagnostic plan no longer analyzable: %v", err)
 	}
 }
 

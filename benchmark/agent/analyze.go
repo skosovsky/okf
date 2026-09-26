@@ -209,7 +209,8 @@ func AnalyzePlanned(cases []Case, corpusHash string, rows []Row, plan Plan) (Rep
 	if plan.PromptHashScope != "" && plan.PromptHashScope != "shared_request_instructions_only" {
 		return Report{}, errors.New("unknown prompt hash scope")
 	}
-	if plan.DiagnosticRead && (corpusHash != DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || plan.ToolkitMode != "direct" || plan.Repeats != 1 || plan.MaxTrials != 2 || plan.MaxSeconds != 120 || plan.MaxTokens != 60000 || !plan.Unpriced || plan.MaxCostUSD != 0 || plan.Exploratory || plan.ModelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
+	diagnosticBudget := (plan.Metadata.RunID == DiagnosticV1RunID && plan.MaxTokens == DiagnosticV1MaxTokens) || (plan.Metadata.RunID == DiagnosticV2RunID && plan.MaxTokens == DiagnosticV2MaxTokens)
+	if plan.DiagnosticRead && (!diagnosticBudget || corpusHash != DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || plan.ToolkitMode != "direct" || plan.Repeats != 1 || plan.MaxTrials != 2 || plan.MaxSeconds != 120 || !plan.Unpriced || plan.MaxCostUSD != 0 || plan.Exploratory || plan.ModelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
 		return Report{}, errors.New("invalid diagnostic read plan")
 	}
 	for _, row := range rows {

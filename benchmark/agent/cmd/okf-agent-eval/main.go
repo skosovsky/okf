@@ -109,8 +109,8 @@ func run(args []string) error {
 		if *repeats < 1 || *maxTrials < 1 || count > *maxTrials || *maxSeconds < 1 || *maxTokens < 1 || (*maxCost <= 0 && !*unpriced) || (*maxCost > 0 && *unpriced) || (*toolkitMode != "none" && *toolkitMode != "treatment" && *toolkitMode != "both" && *toolkitMode != "direct") {
 			return fmt.Errorf("trial count %d exceeds cap %d or invalid budget", count, *maxTrials)
 		}
-		if *diagnosticRead && (hash != agent.DiagnosticCorpusSHA256 || len(cases) != 1 || cases[0].ID != "repo-default-okf-version" || cases[0].Tier != "realistic" || *repeats != 1 || *maxTrials != 2 || *maxSeconds != 120 || *maxTokens != 60000 || !*unpriced || *maxCost != 0 || *toolkitMode != "direct" || *exploratory || *modelToolAccess != "Codex read-only ephemeral temp with shell; Go CLI binary supplied") {
-			return fmt.Errorf("diagnostic-read requires one realistic case, direct mode, one repeat, 2 trials/120 seconds/60000 observed tokens, unpriced")
+		if *diagnosticRead && !validDiagnosticV2(*runID, hash, cases, *repeats, *maxTrials, *maxSeconds, *maxTokens, *unpriced, *maxCost, *toolkitMode, *exploratory, *modelToolAccess) {
+			return fmt.Errorf("diagnostic-read v2 requires pinned realistic case, direct mode, one repeat, 2 trials/120 seconds/150000 observed tokens, unpriced and its unique run ID")
 		}
 		goCLIHash := ""
 		runtimeHash, err := runtimePinForMode(*toolkitMode, *modelRuntime, *modelRuntimeVersion, *modelRuntimeSHA256)
@@ -221,6 +221,10 @@ func run(args []string) error {
 	default:
 		return fmt.Errorf("unknown subcommand %q", args[0])
 	}
+}
+
+func validDiagnosticV2(runID, corpusHash string, cases []agent.Case, repeats, maxTrials, maxSeconds, maxTokens int, unpriced bool, maxCost float64, toolkitMode string, exploratory bool, modelToolAccess string) bool {
+	return runID == agent.DiagnosticV2RunID && corpusHash == agent.DiagnosticCorpusSHA256 && len(cases) == 1 && cases[0].ID == "repo-default-okf-version" && cases[0].Tier == "realistic" && repeats == 1 && maxTrials == 2 && maxSeconds == 120 && maxTokens == agent.DiagnosticV2MaxTokens && unpriced && maxCost == 0 && toolkitMode == "direct" && !exploratory && modelToolAccess == "Codex read-only ephemeral temp with shell; Go CLI binary supplied"
 }
 
 func call(ctx context.Context, adapter, model, modelVersion, settings, toolkitMode, goCLI, modelRuntime, runtimeVersion, runtimeSHA256 string, diagnosticRead bool, req agent.Request) (agent.Observation, error) {

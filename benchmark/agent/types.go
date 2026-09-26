@@ -135,6 +135,10 @@ type Row struct {
 
 const (
 	DiagnosticCorpusSHA256 = "15a2a6b0646acdbd18114b54f49f971fee512ad8dfec04aad9d34641820b0d95"
+	DiagnosticV1RunID      = "diagnostic-read-20260926-v1"
+	DiagnosticV2RunID      = "diagnostic-read-20260926-v2"
+	DiagnosticV1MaxTokens  = 60000
+	DiagnosticV2MaxTokens  = 150000
 	Correct                = "correct"
 	Stale                  = "stale"
 	Wrong                  = "wrong"
