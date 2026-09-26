@@ -1,0 +1,195 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/skosovsky/okf/benchmarks/toolkit
+cpu: Apple M1 Max
+BenchmarkToolkit/n=10/parse/document-10         	   10000	     12919 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=10/load-10                   	     537	    216834 ns/op	  237809 B/op	    2516 allocs/op
+BenchmarkToolkit/n=10/validate/base-10          	     560	    206750 ns/op	  238026 B/op	    2352 allocs/op
+BenchmarkToolkit/n=10/validate/strict-10        	     144	    809475 ns/op	  878506 B/op	    8669 allocs/op
+BenchmarkToolkit/n=10/validate/links-10         	     280	    450634 ns/op	  477428 B/op	    4831 allocs/op
+BenchmarkToolkit/n=10/validate/orphans-10       	     477	    244045 ns/op	  264331 B/op	    2663 allocs/op
+BenchmarkToolkit/n=10/validate/all-10           	     100	   1106253 ns/op	 1150908 B/op	   11461 allocs/op
+BenchmarkToolkit/n=10/graph/jsonld-10           	     129	    945425 ns/op	 1094282 B/op	   14446 allocs/op
+BenchmarkToolkit/n=10/cli/validate-10           	      10	  10383200 ns/op	   15800 B/op	      40 allocs/op
+BenchmarkToolkit/n=100/parse/document-10        	    8787	     12652 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=100/load-10                  	      52	   2327657 ns/op	 2359579 B/op	   24536 allocs/op
+BenchmarkToolkit/n=100/validate/base-10         	      56	   1946191 ns/op	 1976378 B/op	   19564 allocs/op
+BenchmarkToolkit/n=100/validate/strict-10       	      14	   9122155 ns/op	 8420224 B/op	   82722 allocs/op
+BenchmarkToolkit/n=100/validate/links-10        	      28	   4151906 ns/op	 4218013 B/op	   42670 allocs/op
+BenchmarkToolkit/n=100/validate/orphans-10      	      60	   2264251 ns/op	 2224432 B/op	   22231 allocs/op
+BenchmarkToolkit/n=100/validate/all-10          	      10	  11083650 ns/op	10913546 B/op	  108492 allocs/op
+BenchmarkToolkit/n=100/graph/jsonld-10          	      10	  11472658 ns/op	11105778 B/op	  139059 allocs/op
+BenchmarkToolkit/n=100/cli/validate-10          	       4	  29098021 ns/op	   15608 B/op	      40 allocs/op
+BenchmarkToolkit/n=1000/parse/document-10       	   10000	     12945 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=1000/load-10                 	       5	  22882783 ns/op	24324531 B/op	  244276 allocs/op
+BenchmarkToolkit/n=1000/validate/base-10        	       4	  26732469 ns/op	19509192 B/op	  192149 allocs/op
+BenchmarkToolkit/n=1000/validate/strict-10      	       1	 102573666 ns/op	82878128 B/op	  823289 allocs/op
+BenchmarkToolkit/n=1000/validate/links-10       	       2	  50020166 ns/op	41808456 B/op	  421953 allocs/op
+BenchmarkToolkit/n=1000/validate/orphans-10     	       4	  29390604 ns/op	21992616 B/op	  218810 allocs/op
+BenchmarkToolkit/n=1000/validate/all-10         	       1	 129977166 ns/op	107883144 B/op	 1079796 allocs/op
+BenchmarkToolkit/n=1000/graph/jsonld-10         	       1	 157343958 ns/op	117318656 B/op	 1384674 allocs/op
+BenchmarkToolkit/log/typed-10                   	  761078	       155.4 ns/op	      80 B/op	       2 allocs/op
+BenchmarkToolkit/footnotes/ownership-10         	   13729	      8674 ns/op	    7330 B/op	     101 allocs/op
+BenchmarkToolkit/interop/wrapped-log/typed-10   	   24621	      4979 ns/op	    5944 B/op	      66 allocs/op
+BenchmarkToolkit/interop/wrapped-log/validate-10         	     100	   1202722 ns/op	 1151725 B/op	   11509 allocs/op
+BenchmarkToolkit/temporal/legacy-date/parse-10           	    4896	     27386 ns/op	   24512 B/op	     264 allocs/op
+BenchmarkToolkit/temporal/legacy-date/cli-validate-10    	      12	   9719524 ns/op	   15720 B/op	      40 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/parse-10       	    4869	     27782 ns/op	   23736 B/op	     240 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/cli-validate-10         	      12	  10042736 ns/op	   15881 B/op	      40 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/skosovsky/okf/benchmarks/toolkit
+cpu: Apple M1 Max
+BenchmarkToolkit/n=10/parse/document-10         	    9655	     11988 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=10/load-10                   	     542	    207944 ns/op	  237808 B/op	    2516 allocs/op
+BenchmarkToolkit/n=10/validate/base-10          	     591	    205284 ns/op	  238026 B/op	    2352 allocs/op
+BenchmarkToolkit/n=10/validate/strict-10        	     147	    815694 ns/op	  876485 B/op	    8669 allocs/op
+BenchmarkToolkit/n=10/validate/links-10         	     286	    435183 ns/op	  477428 B/op	    4831 allocs/op
+BenchmarkToolkit/n=10/validate/orphans-10       	     525	    232205 ns/op	  264330 B/op	    2663 allocs/op
+BenchmarkToolkit/n=10/validate/all-10           	     100	   1044211 ns/op	 1146741 B/op	   11461 allocs/op
+BenchmarkToolkit/n=10/graph/jsonld-10           	     132	   1006971 ns/op	 1094805 B/op	   14446 allocs/op
+BenchmarkToolkit/n=10/cli/validate-10           	      12	   9463830 ns/op	   15890 B/op	      40 allocs/op
+BenchmarkToolkit/n=100/parse/document-10        	    9946	     12727 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=100/load-10                  	      50	   2262378 ns/op	 2359689 B/op	   24536 allocs/op
+BenchmarkToolkit/n=100/validate/base-10         	      66	   2051480 ns/op	 1976375 B/op	   19564 allocs/op
+BenchmarkToolkit/n=100/validate/strict-10       	      13	   8575827 ns/op	 8437131 B/op	   82724 allocs/op
+BenchmarkToolkit/n=100/validate/links-10        	      33	   4317376 ns/op	 4218176 B/op	   42671 allocs/op
+BenchmarkToolkit/n=100/validate/orphans-10      	      50	   2319447 ns/op	 2224432 B/op	   22231 allocs/op
+BenchmarkToolkit/n=100/validate/all-10          	      10	  10999646 ns/op	10939834 B/op	  108496 allocs/op
+BenchmarkToolkit/n=100/graph/jsonld-10          	       9	  11291944 ns/op	11111121 B/op	  139062 allocs/op
+BenchmarkToolkit/n=100/cli/validate-10          	       3	  37344639 ns/op	   15608 B/op	      40 allocs/op
+BenchmarkToolkit/n=1000/parse/document-10       	   10000	     14097 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=1000/load-10                 	       5	  23370008 ns/op	24324566 B/op	  244276 allocs/op
+BenchmarkToolkit/n=1000/validate/base-10        	       4	  60991906 ns/op	19509284 B/op	  192150 allocs/op
+BenchmarkToolkit/n=1000/validate/strict-10      	       2	 103395584 ns/op	82898028 B/op	  823294 allocs/op
+BenchmarkToolkit/n=1000/validate/links-10       	       1	 358041625 ns/op	41808344 B/op	  421952 allocs/op
+BenchmarkToolkit/n=1000/validate/orphans-10     	       4	  28711406 ns/op	21992608 B/op	  218810 allocs/op
+BenchmarkToolkit/n=1000/validate/all-10         	       1	 116639750 ns/op	107780632 B/op	 1079797 allocs/op
+BenchmarkToolkit/n=1000/graph/jsonld-10         	       1	 150407708 ns/op	117430448 B/op	 1384693 allocs/op
+BenchmarkToolkit/log/typed-10                   	  832441	       159.1 ns/op	      80 B/op	       2 allocs/op
+BenchmarkToolkit/footnotes/ownership-10         	   13356	      9107 ns/op	    7338 B/op	     101 allocs/op
+BenchmarkToolkit/interop/wrapped-log/typed-10   	   24351	      5034 ns/op	    5944 B/op	      66 allocs/op
+BenchmarkToolkit/interop/wrapped-log/validate-10         	     100	   1165645 ns/op	 1152396 B/op	   11509 allocs/op
+BenchmarkToolkit/temporal/legacy-date/parse-10           	    5156	     27345 ns/op	   24512 B/op	     264 allocs/op
+BenchmarkToolkit/temporal/legacy-date/cli-validate-10    	      12	   9464740 ns/op	   15680 B/op	      40 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/parse-10       	    5330	     27767 ns/op	   23736 B/op	     240 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/cli-validate-10         	      12	   9995250 ns/op	   16032 B/op	      40 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/skosovsky/okf/benchmarks/toolkit
+cpu: Apple M1 Max
+BenchmarkToolkit/n=10/parse/document-10         	   10000	     11882 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=10/load-10                   	     553	    208962 ns/op	  237819 B/op	    2516 allocs/op
+BenchmarkToolkit/n=10/validate/base-10          	     579	    210104 ns/op	  238025 B/op	    2352 allocs/op
+BenchmarkToolkit/n=10/validate/strict-10        	     147	    813194 ns/op	  878775 B/op	    8670 allocs/op
+BenchmarkToolkit/n=10/validate/links-10         	     280	    446674 ns/op	  477430 B/op	    4831 allocs/op
+BenchmarkToolkit/n=10/validate/orphans-10       	     500	    503409 ns/op	  264335 B/op	    2663 allocs/op
+BenchmarkToolkit/n=10/validate/all-10           	     100	   1110605 ns/op	 1149379 B/op	   11461 allocs/op
+BenchmarkToolkit/n=10/graph/jsonld-10           	     124	   1009926 ns/op	 1095450 B/op	   14446 allocs/op
+BenchmarkToolkit/n=10/cli/validate-10           	      12	   9362288 ns/op	   15728 B/op	      40 allocs/op
+BenchmarkToolkit/n=100/parse/document-10        	    9823	     11928 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=100/load-10                  	      57	   2321184 ns/op	 2359682 B/op	   24536 allocs/op
+BenchmarkToolkit/n=100/validate/base-10         	      55	   1976104 ns/op	 1976285 B/op	   19564 allocs/op
+BenchmarkToolkit/n=100/validate/strict-10       	      14	   8490318 ns/op	 8449182 B/op	   82727 allocs/op
+BenchmarkToolkit/n=100/validate/links-10        	      26	   4233338 ns/op	 4218059 B/op	   42670 allocs/op
+BenchmarkToolkit/n=100/validate/orphans-10      	      48	   2259615 ns/op	 2224435 B/op	   22231 allocs/op
+BenchmarkToolkit/n=100/validate/all-10          	      10	  17727696 ns/op	10944745 B/op	  108500 allocs/op
+BenchmarkToolkit/n=100/graph/jsonld-10          	      10	  11158883 ns/op	11128354 B/op	  139065 allocs/op
+BenchmarkToolkit/n=100/cli/validate-10          	       4	  27898375 ns/op	   15608 B/op	      40 allocs/op
+BenchmarkToolkit/n=1000/parse/document-10       	   10000	     13076 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=1000/load-10                 	       4	  25706688 ns/op	24324564 B/op	  244276 allocs/op
+BenchmarkToolkit/n=1000/validate/base-10        	       4	  25404698 ns/op	19509168 B/op	  192149 allocs/op
+BenchmarkToolkit/n=1000/validate/strict-10      	       2	  94203896 ns/op	83027704 B/op	  823324 allocs/op
+BenchmarkToolkit/n=1000/validate/links-10       	       3	  47454014 ns/op	41808904 B/op	  421958 allocs/op
+BenchmarkToolkit/n=1000/validate/orphans-10     	       4	  28184312 ns/op	21992624 B/op	  218810 allocs/op
+BenchmarkToolkit/n=1000/validate/all-10         	       1	 118398375 ns/op	107734232 B/op	 1079770 allocs/op
+BenchmarkToolkit/n=1000/graph/jsonld-10         	       1	 149486166 ns/op	117430704 B/op	 1384695 allocs/op
+BenchmarkToolkit/log/typed-10                   	  866138	       154.9 ns/op	      80 B/op	       2 allocs/op
+BenchmarkToolkit/footnotes/ownership-10         	   13687	      8842 ns/op	    7350 B/op	     101 allocs/op
+BenchmarkToolkit/interop/wrapped-log/typed-10   	   23564	      5030 ns/op	    5944 B/op	      66 allocs/op
+BenchmarkToolkit/interop/wrapped-log/validate-10         	     100	   1135113 ns/op	 1150189 B/op	   11509 allocs/op
+BenchmarkToolkit/temporal/legacy-date/parse-10           	    5200	     28000 ns/op	   24512 B/op	     264 allocs/op
+BenchmarkToolkit/temporal/legacy-date/cli-validate-10    	      10	  11059158 ns/op	   15931 B/op	      40 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/parse-10       	    4915	     26973 ns/op	   23736 B/op	     240 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/cli-validate-10         	      12	   9808594 ns/op	   15992 B/op	      40 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/skosovsky/okf/benchmarks/toolkit
+cpu: Apple M1 Max
+BenchmarkToolkit/n=10/parse/document-10         	   10000	     11749 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=10/load-10                   	     564	    209470 ns/op	  237809 B/op	    2516 allocs/op
+BenchmarkToolkit/n=10/validate/base-10          	     600	    207208 ns/op	  238026 B/op	    2352 allocs/op
+BenchmarkToolkit/n=10/validate/strict-10        	     147	    795994 ns/op	  879311 B/op	    8670 allocs/op
+BenchmarkToolkit/n=10/validate/links-10         	     283	    452093 ns/op	  477432 B/op	    4831 allocs/op
+BenchmarkToolkit/n=10/validate/orphans-10       	     505	    240808 ns/op	  264332 B/op	    2663 allocs/op
+BenchmarkToolkit/n=10/validate/all-10           	     100	   1156942 ns/op	 1147865 B/op	   11461 allocs/op
+BenchmarkToolkit/n=10/graph/jsonld-10           	     100	   1033465 ns/op	 1093589 B/op	   14446 allocs/op
+BenchmarkToolkit/n=10/cli/validate-10           	      13	   9462026 ns/op	   15866 B/op	      40 allocs/op
+BenchmarkToolkit/n=100/parse/document-10        	    9458	     12016 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=100/load-10                  	      54	   2216157 ns/op	 2359582 B/op	   24536 allocs/op
+BenchmarkToolkit/n=100/validate/base-10         	      55	   2032426 ns/op	 1976394 B/op	   19564 allocs/op
+BenchmarkToolkit/n=100/validate/strict-10       	      13	   8227561 ns/op	 8451076 B/op	   82727 allocs/op
+BenchmarkToolkit/n=100/validate/links-10        	      28	   4209234 ns/op	 4218130 B/op	   42670 allocs/op
+BenchmarkToolkit/n=100/validate/orphans-10      	      51	   2274811 ns/op	 2224437 B/op	   22231 allocs/op
+BenchmarkToolkit/n=100/validate/all-10          	      10	  11328883 ns/op	10943931 B/op	  108498 allocs/op
+BenchmarkToolkit/n=100/graph/jsonld-10          	      10	  10813642 ns/op	11136807 B/op	  139066 allocs/op
+BenchmarkToolkit/n=100/cli/validate-10          	       4	  28114740 ns/op	   15608 B/op	      40 allocs/op
+BenchmarkToolkit/n=1000/parse/document-10       	   10000	     12732 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=1000/load-10                 	       5	  22958142 ns/op	24324505 B/op	  244276 allocs/op
+BenchmarkToolkit/n=1000/validate/base-10        	       4	  25491552 ns/op	19509172 B/op	  192149 allocs/op
+BenchmarkToolkit/n=1000/validate/strict-10      	       2	  93323938 ns/op	83218040 B/op	  823378 allocs/op
+BenchmarkToolkit/n=1000/validate/links-10       	       3	  47091111 ns/op	41808760 B/op	  421957 allocs/op
+BenchmarkToolkit/n=1000/validate/orphans-10     	       4	  28830750 ns/op	21992620 B/op	  218810 allocs/op
+BenchmarkToolkit/n=1000/validate/all-10         	       1	 119373250 ns/op	107849504 B/op	 1079806 allocs/op
+BenchmarkToolkit/n=1000/graph/jsonld-10         	       1	 148383084 ns/op	117542752 B/op	 1384718 allocs/op
+BenchmarkToolkit/log/typed-10                   	  852398	       152.6 ns/op	      80 B/op	       2 allocs/op
+BenchmarkToolkit/footnotes/ownership-10         	   12987	      9045 ns/op	    7311 B/op	     101 allocs/op
+BenchmarkToolkit/interop/wrapped-log/typed-10   	   24273	      5042 ns/op	    5944 B/op	      66 allocs/op
+BenchmarkToolkit/interop/wrapped-log/validate-10         	     100	   1181926 ns/op	 1151293 B/op	   11509 allocs/op
+BenchmarkToolkit/temporal/legacy-date/parse-10           	    4731	     27890 ns/op	   24512 B/op	     264 allocs/op
+BenchmarkToolkit/temporal/legacy-date/cli-validate-10    	      10	  10025933 ns/op	   15787 B/op	      40 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/parse-10       	    5222	     27691 ns/op	   23736 B/op	     240 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/cli-validate-10         	      12	   9715368 ns/op	   15849 B/op	      40 allocs/op
+PASS
+goos: darwin
+goarch: arm64
+pkg: github.com/skosovsky/okf/benchmarks/toolkit
+cpu: Apple M1 Max
+BenchmarkToolkit/n=10/parse/document-10         	    9790	     13051 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=10/load-10                   	     562	    210715 ns/op	  237810 B/op	    2516 allocs/op
+BenchmarkToolkit/n=10/validate/base-10          	     606	    204744 ns/op	  238026 B/op	    2352 allocs/op
+BenchmarkToolkit/n=10/validate/strict-10        	     145	    795622 ns/op	  877717 B/op	    8669 allocs/op
+BenchmarkToolkit/n=10/validate/links-10         	     271	    435173 ns/op	  477427 B/op	    4831 allocs/op
+BenchmarkToolkit/n=10/validate/orphans-10       	     513	    234080 ns/op	  264329 B/op	    2663 allocs/op
+BenchmarkToolkit/n=10/validate/all-10           	     100	   1090457 ns/op	 1149020 B/op	   11461 allocs/op
+BenchmarkToolkit/n=10/graph/jsonld-10           	     127	    919965 ns/op	 1094469 B/op	   14446 allocs/op
+BenchmarkToolkit/n=10/cli/validate-10           	      12	   9130993 ns/op	   15848 B/op	      40 allocs/op
+BenchmarkToolkit/n=100/parse/document-10        	    8472	     11958 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=100/load-10                  	      55	   2225857 ns/op	 2359590 B/op	   24536 allocs/op
+BenchmarkToolkit/n=100/validate/base-10         	      61	   1932173 ns/op	 1976297 B/op	   19564 allocs/op
+BenchmarkToolkit/n=100/validate/strict-10       	      13	   8308051 ns/op	 8434662 B/op	   82725 allocs/op
+BenchmarkToolkit/n=100/validate/links-10        	      32	   4305888 ns/op	 4218149 B/op	   42670 allocs/op
+BenchmarkToolkit/n=100/validate/orphans-10      	      55	   2247437 ns/op	 2224433 B/op	   22231 allocs/op
+BenchmarkToolkit/n=100/validate/all-10          	       9	  12163838 ns/op	10930296 B/op	  108495 allocs/op
+BenchmarkToolkit/n=100/graph/jsonld-10          	       8	  12802292 ns/op	11102173 B/op	  139058 allocs/op
+BenchmarkToolkit/n=100/cli/validate-10          	       4	  28845438 ns/op	   15728 B/op	      40 allocs/op
+BenchmarkToolkit/n=1000/parse/document-10       	   10000	     13207 ns/op	   14184 B/op	     143 allocs/op
+BenchmarkToolkit/n=1000/load-10                 	       4	  25472865 ns/op	24324540 B/op	  244276 allocs/op
+BenchmarkToolkit/n=1000/validate/base-10        	       5	  26245858 ns/op	19510278 B/op	  192150 allocs/op
+BenchmarkToolkit/n=1000/validate/strict-10      	       2	  97109292 ns/op	82934616 B/op	  823308 allocs/op
+BenchmarkToolkit/n=1000/validate/links-10       	       3	  45789417 ns/op	41808520 B/op	  421954 allocs/op
+BenchmarkToolkit/n=1000/validate/orphans-10     	       4	  27918667 ns/op	21992644 B/op	  218810 allocs/op
+BenchmarkToolkit/n=1000/validate/all-10         	       1	 118285083 ns/op	107812384 B/op	 1079797 allocs/op
+BenchmarkToolkit/n=1000/graph/jsonld-10         	       1	 154010459 ns/op	117545608 B/op	 1384721 allocs/op
+BenchmarkToolkit/log/typed-10                   	  791252	       155.1 ns/op	      80 B/op	       2 allocs/op
+BenchmarkToolkit/footnotes/ownership-10         	   13966	      8810 ns/op	    7340 B/op	     101 allocs/op
+BenchmarkToolkit/interop/wrapped-log/typed-10   	   23869	      4953 ns/op	    5944 B/op	      66 allocs/op
+BenchmarkToolkit/interop/wrapped-log/validate-10         	     100	   1219625 ns/op	 1154672 B/op	   11510 allocs/op
+BenchmarkToolkit/temporal/legacy-date/parse-10           	    5119	     27535 ns/op	   24512 B/op	     264 allocs/op
+BenchmarkToolkit/temporal/legacy-date/cli-validate-10    	      12	   9643826 ns/op	   15880 B/op	      40 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/parse-10       	    5113	     27197 ns/op	   23736 B/op	     240 allocs/op
+BenchmarkToolkit/temporal/offset-datetime/cli-validate-10         	      12	   9519444 ns/op	   15992 B/op	      40 allocs/op
+PASS

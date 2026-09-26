@@ -25,7 +25,7 @@ steps:
       path: ${{ steps.okf.outputs['report-path'] }}
 ```
 
-The example pins the first OKF revision containing this Action; update its SHA when adopting later changes. A workflow in this repository exercises `uses: ./` against seven fixtures. In a consuming repository, `path` is resolved relative to `GITHUB_WORKSPACE`; absolute paths are accepted. Inputs are passed as arguments to Go, so spaces, quotes, and shell metacharacters remain path data.
+The example pins the implementation commit in this branch. It becomes usable from consuming repositories after that commit is published to GitHub; update its SHA when adopting later changes. A workflow in this repository exercises `uses: ./` against seven fixtures. In a consuming repository, `path` is resolved relative to `GITHUB_WORKSPACE`; absolute paths are accepted. Inputs are passed as arguments to Go, so spaces, quotes, and shell metacharacters remain path data.
 
 | Input | Default | Meaning |
 | --- | --- | --- |

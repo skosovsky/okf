@@ -1,8 +1,65 @@
 # Go toolkit benchmarks (issue 015)
 
-The pinned baseline is `ed7ddc28cd127682023bd150ee377906b817e099`.
-Corrected measurements await the frozen 004/005 commit. No regression verdict
-is claimed until matched corrected runs and correctness gates pass.
+The pinned baseline is `ed7ddc28cd127682023bd150ee377906b817e099`;
+the corrected implementation is
+`0f15ab4091203f11caa7fb0b9e02da47d719a051`. Both were measured from
+clean `/private/tmp` archive snapshots with identical benchmark source and
+corpus bytes. The final paired series ran after a concurrent full test suite
+was stopped. An earlier paired attempt under that load was discarded and is
+not part of the published comparison.
+The baseline archive did not originally contain this new harness: the exact
+`benchmarks/toolkit` tree from corrected commit `0f15ab4` was copied into it.
+`diff -rq` of those two harness trees returned no differences. Source SHA-256:
+`corpus.go` `91535e840efb20952b22e01fd512515f7c0a9b314f3e2a5c9bd3c78a114598f7`,
+`toolkit_test.go` `550eb581810580eb9ee26df4e74cffd8da70723c506b72dbd0d86fc9a202b4f9`.
+The input digests in the corpus table below match both snapshots.
+
+## Final paired result
+
+Five repetitions per commit were interleaved `AB BA AB BA AB` at
+`-benchtime=100ms` using prebuilt Go test and CLI binaries. Baseline and
+corrected gates passed before timing; the corrected gate includes the wrapped
+log, code-owned footnote, legacy date, and equal-instant offset datetime
+cases. Both pinned binaries also passed strict+links+orphans validation of the
+manual 10,000-concept corpus with zero diagnostics.
+
+The accepted raw files are
+[`baseline`](results/paired-ed7ddc28-0f15ab4-baseline.raw.txt) (SHA-256
+`cc278b342a0efa3f008e4631aa5ca622a5e6f873b20603a6d3962533ed862a79`)
+and [`corrected`](results/paired-ed7ddc28-0f15ab4-corrected.raw.txt)
+(SHA-256
+`3b9fa38bf6bcf052e52800496ec112969391c3315c830424103c43aa0849377a`).
+They contain 28 × 5 and 34 × 5 workload observations respectively.
+The [full comparison](results/paired-ed7ddc28-0f15ab4-summary.md)
+reports median ± MAD for ns/op, B/op, and allocs/op and labels corrected-only
+workloads `N/A` on the baseline. The analyzer source is pinned by SHA-256
+`ae78d8e8156eae85e9c27122609b46b515fa3262f614cf3b53ab8af7f5c5718d`.
+
+Representative medians from the clean paired series:
+
+| Workload | Baseline ns/op | Corrected ns/op | Time delta | Baseline → corrected B/op | Baseline → corrected allocs/op |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Plain typed log | 222 | 155 | −30.0% | 208 → 80 | 4 → 2 |
+| 100 concepts, all validation checks | 10,920,854 | 11,328,883 | +3.7% | 10,936,046 → 10,939,834 | 108,394 → 108,496 |
+| 1,000 concepts, all validation checks | 122,561,459 | 118,398,375 | −3.4% | 107,666,016 → 107,812,384 | 1,078,763 → 1,079,797 |
+| 1,000 concepts, graph JSON-LD | 160,772,166 | 150,407,708 | −6.4% | 116,700,032 → 117,430,704 | 1,384,703 → 1,384,695 |
+
+The corrected-only wrapped log parser measured 5,030 ns/op, 5,944 B/op,
+66 allocs/op. Its baseline counterpart rejected the valid input, so no speed
+ratio is reported. The 10-concept graph case was 6.3% slower while the
+1,000-concept graph case was 6.4% faster; validation deltas were also mixed.
+This five-pair series does not establish a broad scaling regression.
+CPU/heap profiles of the superseded pre-fast-path
+`ParseLog` implementation remain below as historical evidence, not as a
+profile of the pinned corrected commit.
+
+Machine: Apple M1 Max, macOS 27.0 / Darwin 27.0.0, `go1.26.5 darwin/arm64`,
+`CGO_ENABLED=1`, empty `GOFLAGS`. All runs used the same machine, Go cache,
+flags, corpus manifests, and benchmark source. Prebuilt binary SHA-256 values:
+baseline test `6aec602c02acb507a538ba185c9a7550fc0b126005604881feffc4a31e2b7b12`,
+baseline CLI `313ea5a941a037a3b29bec46ee1b60809e24f1d0e1eb31eec086bb8555f40def`,
+corrected test `9b13f43b270d87e67b7cd368f5bad7ab638f1d39a5016a9b22b6d7a1d2a9f2f1`,
+corrected CLI `c655b4c0b192d0525b287688063441d27632c3b5bc80c8fa1d701ce84d358fe8`.
 
 The Go generator builds immutable-in-use snapshots from consecutive numeric
 IDs. Each concept has one source and one Markdown edge. Directory groups have
@@ -50,9 +107,10 @@ The baseline run was on 2026-09-26 UTC: Apple M1 Max, macOS 27.0 / Darwin
 `31413f125813f0707dba65bec18e13a37d0f49b6e8efd3658fc90153bfcfddcd`.
 The older `-benchtime=3x` run is retained as exploratory evidence only. Even
 the 100ms run has noise: its median absolute deviation (MAD) is reported;
-no wall-clock gate or performance threshold is set. For a material delta,
-repeat the two commits in alternating order on the same machine, then save
-CPU and heap profiles if the regression persists. The local Go analyzer
+no wall-clock gate or performance threshold is set. The final paired run
+above supersedes this standalone baseline as comparison evidence. For a
+material delta in later runs, repeat both commits in alternating order on
+the same machine, then save CPU and heap profiles if it persists. The local Go analyzer
 reports median ± MAD for ns/op, B/op, and allocs/op, plus deltas only when
 both sides have equivalent workloads. Its source is pinned by SHA-256
 `ae78d8e8156eae85e9c27122609b46b515fa3262f614cf3b53ab8af7f5c5718d`.
@@ -84,7 +142,7 @@ The 10,000-concept corpus passed `OKF_BENCH_LARGE=1 go test
 ./benchmarks/toolkit -run '^TestCorpusContracts$'` with strict, links and
 orphans enabled and zero diagnostics on the exploratory corrected tree.
 
-For the final comparison, compile `./benchmarks/toolkit` with `go test -c`
+To repeat the final comparison, compile `./benchmarks/toolkit` with `go test -c`
 and `./cmd/okf` with `go build` once in each pinned checkout. Both checkouts
 must contain the same benchmark source bytes and corpus manifests. Then run
 the Go interleaver:
@@ -110,41 +168,11 @@ ten subprocesses completed, and the analyzer found five samples for each
 shared row plus corrected-only rows with `N/A` baseline. That smoke output is
 not part of the performance comparison.
 
-## Baseline measurements
+## Earlier standalone baseline
 
-The table uses median ± MAD across five raw observations. `N/A` means no
-correctness-equivalent corrected sample has been measured yet.
-
-| Workload | Baseline N | Baseline ns/op | Baseline B/op | Baseline allocs/op | Corrected N | Corrected ns/op | Corrected B/op | Corrected allocs/op | Δ time | Δ bytes | Δ allocs |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `BenchmarkToolkit/footnotes/ownership-10` | 5 | 9331 ± 106 | 7313 ± 6 | 100 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/log/typed-10` | 5 | 235 ± 3 | 208 ± 0 | 4 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/cli/validate-10` | 5 | 9496810 ± 341782 | 15750 ± 70 | 40 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/graph/jsonld-10` | 5 | 930775 ± 10320 | 1086064 ± 162 | 14446 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/load-10` | 5 | 206962 ± 978 | 237809 ± 0 | 2516 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/parse/document-10` | 5 | 17013 ± 4577 | 14184 ± 0 | 143 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/validate/all-10` | 5 | 1285064 ± 92749 | 1147613 ± 388 | 11449 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/validate/base-10` | 5 | 198554 ± 1757 | 237354 ± 1 | 2340 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/validate/links-10` | 5 | 449756 ± 8836 | 476770 ± 4 | 4819 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/validate/orphans-10` | 5 | 212604 ± 478 | 263658 ± 0 | 2651 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=10/validate/strict-10` | 5 | 1252630 ± 198752 | 879069 ± 889 | 8658 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/cli/validate-10` | 5 | 40036250 ± 8667167 | 15640 ± 0 | 40 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/graph/jsonld-10` | 5 | 10854533 ± 120155 | 11037746 ± 5008 | 139061 ± 1 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/load-10` | 5 | 2721254 ± 275223 | 2359597 ± 10 | 24536 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/parse/document-10` | 5 | 16342 ± 3381 | 14184 ± 0 | 143 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/validate/all-10` | 5 | 10977262 ± 223638 | 10944098 ± 11775 | 108398 ± 3 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/validate/base-10` | 5 | 2388596 ± 332865 | 1972746 ± 13 | 19462 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/validate/links-10` | 5 | 4228438 ± 70034 | 4214565 ± 42 | 42569 ± 1 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/validate/orphans-10` | 5 | 2245609 ± 29362 | 2220896 ± 7 | 22129 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=100/validate/strict-10` | 5 | 8563692 ± 397769 | 8432421 ± 13770 | 82624 ± 2 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/graph/jsonld-10` | 5 | 153827583 ± 2465292 | 116702616 ± 34824 | 1384704 ± 10 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/load-10` | 5 | 24648925 ± 973725 | 24324568 ± 14 | 244276 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/parse/document-10` | 5 | 14324 ± 947 | 14184 ± 0 | 143 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/validate/all-10` | 5 | 120305959 ± 1174001 | 107811768 ± 146280 | 1078789 ± 22 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/validate/base-10` | 5 | 25243448 ± 381260 | 19474177 ± 31 | 191138 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/validate/links-10` | 5 | 64797708 ± 10755042 | 41772640 ± 668 | 420937 ± 4 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/validate/orphans-10` | 5 | 27643240 ± 315052 | 21957608 ± 12 | 217799 ± 0 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
-| `BenchmarkToolkit/n=1000/validate/strict-10` | 5 | 113602542 ± 2837083 | 82918080 ± 34312 | 822299 ± 4 | N/A | N/A | N/A | N/A | N/A | N/A | N/A |
+The standalone `results/baseline-ed7ddc28-v3.raw.txt` run preceded the
+paired comparison. It remains as provenance but is superseded for
+before/after claims by the pinned paired raw files and full table above.
 
 ## Exploratory corrected run
 
@@ -160,8 +188,8 @@ exploratory run, not the pinned corrected result.
 The plain typed log case measured 235 ns/op, 208 B/op, 4 allocs/op at the
 baseline and 180 ns/op, 80 B/op, 2 allocs/op after the fast path. Wrapped
 entries still use the Markdown parser; their corrected-only typed case
-measured 5,290 ns/op, 5,944 B/op, 66 allocs/op. This outcome needs a final
-paired repeat before claiming a performance gain.
+measured 5,290 ns/op, 5,944 B/op, 66 allocs/op. The final paired repeat above
+supersedes these exploratory timing claims.
 
 Before the fast path, the first exploratory run measured 4,547 ns/op,
 4,504 B/op, 54 allocs/op on the plain typed case. Its raw file remains
@@ -175,5 +203,5 @@ profile attributes about 96.6% of allocation space to
 `markdownowner.TopLevelStructureContext` and its Goldmark calls. The profile
 was collected with instrumentation, so its ns/op was not used in the
 comparison. The fast path preserves the parser for wrapped items. Other
-exploratory deltas vary with machine load; the final paired run will decide
-whether fresh profiles are needed.
+exploratory deltas varied with machine load; the clean pinned paired run
+above is the accepted comparison.
