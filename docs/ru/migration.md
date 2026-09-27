@@ -22,6 +22,9 @@ conformant migration source. Unsupported canonical future declaration
 
 ## Safe workflow
 
+Для подготовки заполняемых CLI inputs и точных citation selectors см.
+[migration preparation](../contracts/migration-preparation.md).
+
 1. Preview без writes.
 2. Передать actor, time или citation mappings только для преобразований,
    которым они действительно нужны.
@@ -64,6 +67,8 @@ Leftover selected marker, missing keyed reference или wrong keyed reference
 Inline/fenced code и raw HTML opaque: marker-like bytes внутри них не являются
 ни claim evidence, ни replay failure. Любой mismatch zero-write и не возвращает
 proof или plan authorization.
+Литерал `[^label]` внутри одно- или многострочного code span также не участвует
+в replay; настоящая ссылка `[^label]` в prose участвует.
 Unrenderable individual migration field возвращает `invalid_request`.
 Normalized per-document SourceID collision вместо этого блокируется с
 `normalized_footnote_label_collision` и `disambiguate_citation_entry`, включая
@@ -232,3 +237,41 @@ Duplicate raw selector ambiguity не является destination ambiguity.
 См. полную
 [migration policy skill](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/migration-v01-v02.md)
 и [pinned §13 contract](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
+
+## Обновление временной редакции OKF 0.2
+
+Это отдельная операция после миграции v0.1 → v0.2. Исходная редакция 0.2
+использует календарные даты в `stale_after`, `usage_window.from/to` и
+`sources[].last_modified`; новая закреплённая редакция требует datetime с
+явным часовым поясом. Дата не содержит времени суток и offset. Укажи момент
+для **каждой найденной даты**: инструмент не подставляет полночь или конец дня.
+
+Файл `temporal-mappings.json`:
+
+```json
+{"mappings":[
+  {"concept":"payments/retries","path":"stale_after","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
+  {"concept":"payments/retries","path":"usage_window.from","from":"2026-09-01","to":"2026-09-01T09:00:00+07:00"},
+  {"concept":"payments/retries","path":"usage_window.to","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
+  {"concept":"payments/retries","path":"sources[0].last_modified","from":"2026-09-20","to":"2026-09-20T14:30:00+07:00"}
+]}
+```
+
+`sources[N]` — позиция источника с нуля в той редакции bundle, для которой
+сделан preview. Preview не пишет файлы и возвращает пропущенные даты в
+`unresolved`. Пока они есть, apply блокируется. Используй значения
+`preview.BaseRevision` и `plan_digest` из ответа preview:
+
+```sh
+okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json
+okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json --write --base-revision 'sha256:<hex из preview.BaseRevision>' --plan-digest 'sha256:<hex из plan_digest>'
+```
+
+Apply пересчитывает план на текущей ревизии и публикует одну транзакцию. Если
+bundle изменился после preview, повтори preview и проверь позиции источников
+и digest. Для чтения по новому контракту укажи
+`--temporal-profile instant-0b87c52`; прежний профиль дат остаётся default.
+Неподдерживаемое YAML-представление (например, alias или явно тегированное
+значение в кавычках, для которого lossless patcher не может доказать границу)
+блокируется. Перепиши такой scalar в plain-форме или с core-tag без кавычек и
+повтори preview.

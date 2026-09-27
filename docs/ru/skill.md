@@ -98,7 +98,9 @@ code не добавляется.
 - `get_semantic_graph`
 - `write_concept`
 
-Server предоставляет девять tools. Для четырёх safe v0.2 edits используй
+Два дополнительных read-only tools, `search_concepts` и `get_neighbors`,
+возвращают ограниченные результаты поиска и соседних concepts. Server
+предоставляет тринадцать tools. Для трёх v0.2 mutation workflows используй
 preview перед apply:
 
 - `preview_concept_patch` → `apply_concept_patch`: привязка через
@@ -110,6 +112,8 @@ preview перед apply:
   proof format не принимается. Live `target-noop` требует только `expected_source`, остаётся
   proofless и валидирует target document. Migration `expected_revision`
   отсутствует; если proof присутствует, `proof.base_revision` authoritative.
+- `preview_temporal_upgrade` → `apply_temporal_upgrade`: переход с date на
+  instant привязан к preview digest и revision.
 
 Source resolution вычисляй ровно один раз до Preview и используй тот же полный
 resolution в Preview и Apply. `expected_source` включает `requested_selector`,

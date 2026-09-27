@@ -36,7 +36,8 @@ okf validate --path <bundle> --check-links --check-orphans
 
 Base errors ограничены parsing/`type` concepts и reserved-file structure.
 Strict mode проверяет присутствующие v0.2 families как guidance. Для
-deterministic staleness используется explicit `--as-of`.
+deterministic staleness в профиле по умолчанию `--as-of` принимает дату, а с
+`--temporal-profile instant-0b87c52` — datetime с явным смещением.
 
 Missing optional fields, unknown types/keys/runtimes, broken links и missing
 indexes не становятся base errors.
@@ -46,6 +47,7 @@ indexes не становятся base errors.
 ```sh
 okf info <bundle> --spec auto --as-of 2026-07-29
 okf parse <concept.md>
+okf parse <concept.md> --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z --format json
 ```
 
 Version-aware projections не смешивают:
@@ -54,7 +56,7 @@ Version-aware projections не смешивают:
 - generated time и legacy-derived marker;
 - normalized verification events и derived trust;
 - raw/effective lifecycle status;
-- staleness на выбранную дату;
+- staleness на выбранную дату или момент;
 - sources/attributions;
 - inert Attested Computation summary.
 
@@ -255,11 +257,14 @@ Compatibility tools сохраняют text fallbacks:
 - `get_semantic_graph`
 - `write_concept`
 
-Server предоставляет девять tools. Четыре safe v0.2 tools работают парами
+Два дополнительных read-only tools, `search_concepts` и `get_neighbors`,
+возвращают ограниченные результаты поиска и соседних concepts. Server
+предоставляет тринадцать tools. Шесть v0.2 mutation workflow tools работают парами
 preview/apply:
 
 - `preview_concept_patch` / `apply_concept_patch`
 - `preview_v02_migration` / `apply_v02_migration`
+- `preview_temporal_upgrade` / `apply_temporal_upgrade`
 
 Structured outputs schema-validated. Patch apply требует `expected_revision` и
 preview plan digest. Migration apply discriminated по transition:

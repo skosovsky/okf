@@ -28,7 +28,13 @@ var advertisedContractRows = []advertisedContractRow{
 	{name: "list_concepts", readOnly: true, handler: handleListConcepts, input: func(_ *testing.T, root string) map[string]any {
 		return map[string]any{"bundle_path": root}
 	}},
+	{name: "search_concepts", readOnly: true, handler: handleSearchConcepts, input: func(_ *testing.T, root string) map[string]any {
+		return map[string]any{"bundle_path": root, "query": "alpha"}
+	}},
 	{name: "read_concept", readOnly: true, handler: handleReadConcept, input: func(_ *testing.T, root string) map[string]any {
+		return map[string]any{"bundle_path": root, "concept_id": "alpha"}
+	}},
+	{name: "get_neighbors", readOnly: true, handler: handleGetNeighbors, input: func(_ *testing.T, root string) map[string]any {
 		return map[string]any{"bundle_path": root, "concept_id": "alpha"}
 	}},
 	{name: "validate_bundle", readOnly: true, handler: handleValidateBundle, input: func(_ *testing.T, root string) map[string]any {
@@ -71,12 +77,28 @@ var advertisedContractRows = []advertisedContractRow{
 		}
 		return arguments
 	}},
+	{name: "preview_temporal_upgrade", readOnly: true, handler: handlePreviewTemporalUpgrade, input: func(t *testing.T, root string) map[string]any {
+		writeTestFile(t, root, "alpha.md", "---\ntype: Note\nstale_after: 2026-01-02\n---\nAlpha.\n")
+		return map[string]any{"bundle_path": root, "id": "upgrade", "actor": "human:reviewer"}
+	}},
+	{name: "apply_temporal_upgrade", handler: handleApplyTemporalUpgrade, input: func(t *testing.T, root string) map[string]any {
+		writeTestFile(t, root, "alpha.md", "---\ntype: Note\nstale_after: 2026-01-02\n---\nAlpha.\n")
+		arguments := map[string]any{"bundle_path": root, "id": "upgrade", "actor": "human:reviewer", "mappings": []any{map[string]any{"concept": "alpha", "path": "stale_after", "from": "2026-01-02", "to": "2026-01-02T12:00:00Z"}}}
+		preview := callHandler(t, contractToolHandler("preview_temporal_upgrade", handlePreviewTemporalUpgrade), arguments)
+		if preview.IsError {
+			t.Fatalf("temporal upgrade preview: %s", resultText(t, preview))
+		}
+		plan := preview.StructuredContent.(map[string]any)
+		arguments["base_revision"] = plan["base_revision"]
+		arguments["plan_digest"] = plan["plan_digest"]
+		return arguments
+	}},
 }
 
 func TestAdvertisedContractMatrix(t *testing.T) {
 	// Arrange.
-	if len(advertisedContractRows) != 9 {
-		t.Fatalf("advertised rows = %d, want 9", len(advertisedContractRows))
+	if len(advertisedContractRows) != 13 {
+		t.Fatalf("advertised rows = %d, want 13", len(advertisedContractRows))
 	}
 	tools := mustServerTools(t)
 	if len(tools) != len(advertisedContractRows) {
@@ -150,8 +172,8 @@ func TestCheckedInSchemaClosureMatrix(t *testing.T) {
 	for _, row := range advertisedContractRows {
 		contracts = append(contracts, row.name+".input", row.name+".output")
 	}
-	if len(contracts) != 22 {
-		t.Fatalf("schema descriptors = %d, want 22", len(contracts))
+	if len(contracts) != 30 {
+		t.Fatalf("schema descriptors = %d, want 30", len(contracts))
 	}
 	for _, name := range contracts {
 		t.Run(name, func(t *testing.T) {

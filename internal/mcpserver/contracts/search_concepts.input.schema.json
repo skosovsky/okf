@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/search_concepts.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_path",
+    "query"
+  ],
+  "properties": {
+    "bundle_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "\\S"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "as_of": {
+      "type": "string",
+      "oneOf": [
+        {
+          "format": "date"
+        },
+        {
+          "format": "date-time"
+        }
+      ]
+    },
+    "temporal_profile": {
+      "enum": [
+        "date-3fcbb9f",
+        "instant-0b87c52"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "temporal_profile": {
+            "const": "instant-0b87c52"
+          }
+        },
+        "required": [
+          "temporal_profile"
+        ]
+      },
+      "then": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    }
+  ]
+}

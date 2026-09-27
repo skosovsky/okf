@@ -20,6 +20,9 @@ Matching numeric components do not make one axis select another.
 
 Russian documentation: [README.ru.md](README.ru.md).
 
+The repository's own OKF bundle starts at [knowledge/index.md](knowledge/index.md);
+[docs/knowledge.md](docs/knowledge.md) explains how it is maintained.
+
 ## Surfaces
 
 1. `okf`: version-aware validation, inspection, formatting, indexing, graph
@@ -44,6 +47,20 @@ okf version --json
 ```
 
 ## Minimal OKF v0.2 bundle
+
+Create a draft bundle with the Go CLI, then replace the placeholder concept
+with knowledge from your own materials:
+
+```sh
+okf init ./my-knowledge
+okf validate --path ./my-knowledge --spec 0.2
+```
+
+`init` requires an absent directory with an existing parent. It never
+overwrites an existing file, directory, or symlink. The exact output and
+failure contract is in [the CLI init contract](docs/contracts/cli-init.md).
+
+The equivalent minimal files are:
 
 `index.md`:
 
@@ -120,10 +137,14 @@ is still preserved. Migration always blocks a document containing both
 Common commands:
 
 ```sh
+okf init <directory>
 okf validate --path <bundle> --spec auto
 okf validate --path <bundle> --spec auto --strict --as-of 2026-07-29
+okf validate --path <bundle> --spec 0.2 --strict --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z
 okf info <bundle> --spec auto --as-of 2026-07-29
+okf graph <bundle> --profile skosovsky/okf-v0.2-instant --format ntriples --as-of 2026-09-23T11:00:00Z
 okf parse <concept.md>
+okf parse <concept.md> --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z --format json
 okf fmt <concept.md>
 okf fmt <concept.md> -w
 okf index <bundle>
@@ -131,6 +152,14 @@ okf graph <bundle>
 okf migrate <bundle> --to 0.2
 okf migrate <bundle> --to 0.2 --citation-mappings <json-file>
 ```
+
+Two pinned upstream documents both call themselves OKF `0.2`. The original
+[`date-3fcbb9f`](fixtures/v02/spec-lock.json) temporal profile remains the
+default. Select [`instant-0b87c52`](fixtures/v02/spec-lock-instant.json) when
+`stale_after`, `sources[].last_modified`, and `usage_window` contain
+offset-bearing datetimes. This profile compares exact instants; a legacy date
+cannot be converted to one without an explicit timezone and time policy.
+The temporal decision is recorded in [ADR 0003](docs/adr/0003-okf-v02-temporal-revisions.md).
 
 Migration is dry-run by default. Applying it requires explicit inputs for safe
 timestamp conversion. Unresolved legacy Citations remain blockers until the
@@ -212,6 +241,11 @@ Validation remains layered:
 
 Unknown types/keys/runtimes, missing optional fields, broken links, and missing
 indexes do not become base errors.
+For reserved files, an initial index title and introduction may precede linked
+groups; unknown root frontmatter keys beside a valid `okf_version` are retained.
+Wrapped lines inside a flat `log.md` list item remain one entry. Strict source
+attribution ignores literal footnotes in code spans, while orphan coverage is
+reported only when requested.
 
 ## Go library
 
@@ -259,10 +293,20 @@ Compatibility tools:
 - `get_semantic_graph`
 - `write_concept`
 
-The server exposes four safe v0.2 tools, for nine tools total:
+Two bounded read-only tools provide literal concept search and neighboring
+Markdown/typed relation edges (with provenance sources kept separate):
+
+- `search_concepts`
+- `get_neighbors`
+
+The query contract, ordering, and bounds are documented in
+[MCP concept queries](docs/contracts/concept-queries.md).
+
+The server also exposes six v0.2 mutation workflow tools, for thirteen tools total:
 
 - `preview_concept_patch` / `apply_concept_patch`
 - `preview_v02_migration` / `apply_v02_migration`
+- `preview_temporal_upgrade` / `apply_temporal_upgrade`
 
 Patch apply uses `expected_revision` plus its preview plan digest. Migration
 apply is transition-discriminated: `v0.1-to-v0.2` requires preview proof

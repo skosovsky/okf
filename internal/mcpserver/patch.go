@@ -102,11 +102,12 @@ type patchAttestedComputationInput struct {
 }
 
 type conceptPatchArguments struct {
-	BundlePath         string                `json:"bundle_path"`
-	Actor              string                `json:"actor"`
-	Operations         []patchOperationInput `json:"operations"`
-	ExpectedRevision   string                `json:"expected_revision,omitempty"`
-	ExpectedPlanDigest string                `json:"expected_plan_digest,omitempty"`
+	BundlePath         string                 `json:"bundle_path"`
+	TemporalProfile    bundle.TemporalProfile `json:"temporal_profile,omitempty"`
+	Actor              string                 `json:"actor"`
+	Operations         []patchOperationInput  `json:"operations"`
+	ExpectedRevision   string                 `json:"expected_revision,omitempty"`
+	ExpectedPlanDigest string                 `json:"expected_plan_digest,omitempty"`
 }
 
 type patchPreviewResponse struct {
@@ -145,7 +146,7 @@ func handlePreviewConceptPatch(ctx context.Context, request mcp.CallToolRequest)
 	if result := requestContextCheckpoint(ctx, "decode patch arguments"); result != nil {
 		return result, nil
 	}
-	operations, result := buildPatchOperations(arguments.Operations)
+	operations, result := buildPatchOperations(arguments.Operations, arguments.TemporalProfile)
 	if result != nil {
 		return result, nil
 	}
@@ -161,7 +162,7 @@ func handlePreviewConceptPatch(ctx context.Context, request mcp.CallToolRequest)
 		return bundleDomainError("identify concept patch", "patch exceeds MCP resource limits", err), nil
 	}
 	planned, err := mutation.NewPlanner(&validator.ValidatorConfig{
-		Strict: true, Spec: bundle.OKFVersion,
+		Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile,
 	}).Plan(ctx, source, change)
 	preview := planned.Preview
 	if err != nil {
@@ -227,7 +228,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 	if err != nil {
 		return stableToolError("invalid_revision", "expected_revision is not a canonical revision", false), nil
 	}
-	operations, result := buildPatchOperations(arguments.Operations)
+	operations, result := buildPatchOperations(arguments.Operations, arguments.TemporalProfile)
 	if result != nil {
 		return result, nil
 	}
@@ -255,7 +256,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 	}
 	if revision == expected {
 		planned, planErr := mutation.NewPlanner(&validator.ValidatorConfig{
-			Strict: true, Spec: bundle.OKFVersion,
+			Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile,
 		}).Plan(ctx, source, change)
 		if planErr != nil {
 			var invalid *store.InvalidChangeSet
@@ -317,7 +318,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 		return result, nil
 	}
 	opened, err := storefs.OpenContext(ctx, root, withMCPStoreLimits(storefs.Config{
-		ValidatorConfig: &validator.ValidatorConfig{Strict: true, Spec: bundle.OKFVersion},
+		ValidatorConfig: &validator.ValidatorConfig{Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile},
 	}))
 	if err != nil {
 		return bundleDomainError("open transactional store", "patch store exceeds MCP resource limits", err), nil
@@ -393,6 +394,11 @@ func decodePatchArguments(request mcp.CallToolRequest) (conceptPatchArguments, *
 	if err := decoder.Decode(&arguments); err != nil {
 		return conceptPatchArguments{}, toolErrorf("decode patch arguments: %v", err)
 	}
+	profile, err := bundle.NormalizeTemporalProfile(arguments.TemporalProfile)
+	if err != nil {
+		return conceptPatchArguments{}, toolErrorf("temporal_profile: %v", err)
+	}
+	arguments.TemporalProfile = profile
 	if arguments.Actor == "" {
 		return conceptPatchArguments{}, toolError("actor is required")
 	}
@@ -413,7 +419,11 @@ func decodePatchArguments(request mcp.CallToolRequest) (conceptPatchArguments, *
 	return arguments, nil
 }
 
-func buildPatchOperations(inputs []patchOperationInput) ([]store.Operation, *mcp.CallToolResult) {
+func buildPatchOperations(inputs []patchOperationInput, profiles ...bundle.TemporalProfile) ([]store.Operation, *mcp.CallToolResult) {
+	profile := bundle.TemporalProfileDate
+	if len(profiles) != 0 {
+		profile = profiles[0]
+	}
 	operations := make([]store.Operation, 0, len(inputs))
 	for index, input := range inputs {
 		var concept bundle.ConceptID
@@ -453,7 +463,7 @@ func buildPatchOperations(inputs []patchOperationInput) ([]store.Operation, *mcp
 				source, err = storeSource(*input.Source)
 			}
 			if err == nil {
-				operation, err = store.NewPutSource(concept, source)
+				operation, err = store.NewPutSourceForProfile(concept, source, profile)
 			}
 		case "remove_source":
 			var selector store.SourceSelector
@@ -473,7 +483,7 @@ func buildPatchOperations(inputs []patchOperationInput) ([]store.Operation, *mcp
 					source, err = storeSource(*input.Source)
 				}
 				if err == nil {
-					selector, err = store.SourceByExact(source)
+					selector, err = store.SourceByExactForProfile(source, profile)
 				}
 			default:
 				return nil, toolErrorf("operations[%d] requires source_id or source", index)
@@ -500,7 +510,7 @@ func buildPatchOperations(inputs []patchOperationInput) ([]store.Operation, *mcp
 				if selectorErr != nil {
 					return nil, toolErrorf("operations[%d]: %v", index, selectorErr)
 				}
-				operation, err = store.NewSetUsageWindow(concept, &selector, window)
+				operation, err = store.NewSetUsageWindowForProfile(concept, &selector, window, profile)
 			case input.Source != nil:
 				if sourceErr := validateMCPPatchSource(*input.Source); sourceErr != nil {
 					return nil, toolErrorf("operations[%d]: %v", index, sourceErr)
@@ -509,21 +519,21 @@ func buildPatchOperations(inputs []patchOperationInput) ([]store.Operation, *mcp
 				if sourceErr != nil {
 					return nil, toolErrorf("operations[%d]: %v", index, sourceErr)
 				}
-				selector, selectorErr := store.SourceByExact(source)
+				selector, selectorErr := store.SourceByExactForProfile(source, profile)
 				if selectorErr != nil {
 					return nil, toolErrorf("operations[%d]: %v", index, selectorErr)
 				}
-				operation, err = store.NewSetUsageWindow(concept, &selector, window)
+				operation, err = store.NewSetUsageWindowForProfile(concept, &selector, window, profile)
 			default:
-				operation, err = store.NewSetUsageWindow(concept, nil, window)
+				operation, err = store.NewSetUsageWindowForProfile(concept, nil, window, profile)
 			}
 		case "set_lifecycle":
 			if input.Lifecycle == nil {
 				return nil, toolErrorf("operations[%d].lifecycle is required", index)
 			}
-			operation, err = store.NewSetLifecycle(concept, store.Lifecycle{
+			operation, err = store.NewSetLifecycleForProfile(concept, store.Lifecycle{
 				Status: input.Lifecycle.Status, StaleAfter: input.Lifecycle.StaleAfter,
-			})
+			}, profile)
 		case "put_attested_computation":
 			if input.AttestedComputation == nil {
 				return nil, toolErrorf("operations[%d].attested_computation is required", index)

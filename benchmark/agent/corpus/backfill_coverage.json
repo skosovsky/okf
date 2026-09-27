@@ -1,0 +1,1 @@
+{"included_events":3,"considered_events":3,"rejected_events":0,"missing_events":[],"unresolved_conflicts":[],"truncated_events":["git:cccccccccccccccccccccccccccccccccccccccc"],"skipped_files":{},"limitations":["Coverage proves event disposition, not factual correctness.","Git intent and partial diffs do not prove runtime behavior."]}

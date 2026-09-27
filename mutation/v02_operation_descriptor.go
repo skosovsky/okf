@@ -33,6 +33,7 @@ var v02OperationDescriptors = [...]v02OperationDescriptor{
 	describeV02Operation("set_lifecycle", (*planState).setLifecycle),
 	describeV02Operation("put_attested_computation", (*planState).putAttestedComputation),
 	describeV02Operation("set_bundle_version", (*planState).setBundleVersion),
+	describeV02Operation("upgrade_temporal_concept", (*planState).upgradeTemporalConcept),
 }
 
 func applyV02OperationDescriptor(state *planState, operation store.Operation) (bool, error) {

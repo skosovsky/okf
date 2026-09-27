@@ -45,7 +45,9 @@ func serverToolsWithSchemaLoader(load contractSchemaLoader) ([]server.ServerTool
 		handler     server.ToolHandlerFunc
 	}{
 		{name: "list_concepts", description: "List parsed OKF concepts for navigation.", readOnly: true, handler: handleListConcepts},
+		{name: "search_concepts", description: "Bounded literal Unicode case-folded search over concept ID, metadata, and body. Returns total and truncation; v1 has no pagination.", readOnly: true, handler: handleSearchConcepts},
 		{name: "read_concept", description: "Read one OKF concept Markdown file with frontmatter.", readOnly: true, handler: handleReadConcept},
+		{name: "get_neighbors", description: "Return bounded incoming and outgoing Markdown navigation and typed relation edges. Provenance sources are separate; v1 has no pagination.", readOnly: true, handler: handleGetNeighbors},
 		{name: "validate_bundle", description: "Validate an OKF bundle and return conformance and guidance separately.", readOnly: true, handler: handleValidateBundle},
 		{name: "get_semantic_graph", description: "Return the OKF semantic graph as JSON-LD.", readOnly: true, handler: handleSemanticGraph},
 		{name: "write_concept", description: "Create or update one whole OKF concept through validation staging.", handler: handleWriteConcept},
@@ -62,6 +64,8 @@ func serverToolsWithSchemaLoader(load contractSchemaLoader) ([]server.ServerTool
 			description: "Rebuild and transactionally publish a revision- and digest-bound OKF v0.2 migration using the same replay-sufficient citation evidence as preview.",
 			handler:     handleApplyV02Migration,
 		},
+		{name: "preview_temporal_upgrade", description: "Preview explicit legacy date to instant mappings for the OKF v0.2 temporal revision.", readOnly: true, handler: handlePreviewTemporalUpgrade},
+		{name: "apply_temporal_upgrade", description: "Apply a revision- and digest-bound temporal upgrade transaction.", handler: handleApplyTemporalUpgrade},
 	}
 	tools := make([]server.ServerTool, 0, len(specs))
 	for _, spec := range specs {

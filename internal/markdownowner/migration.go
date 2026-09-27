@@ -1044,11 +1044,11 @@ func collectInlineTokens(ctx context.Context, body []byte, document ast.Node, bo
 		default:
 			return ast.WalkContinue, nil
 		}
-		excluded, err := inlineExcludedSpansContext(ctx, body, node)
+		excluded, codeSpans, err := inlineExcludedSpansContext(ctx, body, node)
 		if err != nil {
 			return ast.WalkStop, err
 		}
-		footnoteExcluded, err := footnoteExcludedSpansContext(ctx, body, excluded)
+		footnoteExcluded, err := footnoteExcludedSpansContext(ctx, body, excluded, codeSpans)
 		if err != nil {
 			return ast.WalkStop, err
 		}
@@ -1114,15 +1114,16 @@ func collectInlineTokens(ctx context.Context, body []byte, document ast.Node, bo
 }
 
 func inlineExcludedSpans(source []byte, block ast.Node) []Span {
-	out, _ := inlineExcludedSpansContext(context.Background(), source, block)
+	out, _, _ := inlineExcludedSpansContext(context.Background(), source, block)
 	return out
 }
 
-func inlineExcludedSpansContext(ctx context.Context, source []byte, block ast.Node) ([]Span, error) {
+func inlineExcludedSpansContext(ctx context.Context, source []byte, block ast.Node) ([]Span, []Span, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var out []Span
+	var codeSpans []Span
 	usedAutoLinks := make(map[Span]struct{})
 	err := ast.Walk(block, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if err := ctx.Err(); err != nil {
@@ -1160,7 +1161,9 @@ func inlineExcludedSpansContext(ctx context.Context, source []byte, block ast.No
 		case *ast.Text:
 			for parent := value.Parent(); parent != nil && parent != block; parent = parent.Parent() {
 				if _, opaque := parent.(*ast.CodeSpan); opaque {
-					out = append(out, Span{Start: value.Segment.Start, End: value.Segment.Stop})
+					span := Span{Start: value.Segment.Start, End: value.Segment.Stop}
+					out = append(out, span)
+					codeSpans = append(codeSpans, span)
 					return ast.WalkContinue, nil
 				}
 			}
@@ -1168,25 +1171,25 @@ func inlineExcludedSpansContext(ctx context.Context, source []byte, block ast.No
 		return ast.WalkContinue, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := sortSpansContext(ctx, out); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return mergeSpans(out), nil
+	return mergeSpans(out), codeSpans, nil
 }
 
-func footnoteExcludedSpansContext(ctx context.Context, source []byte, excluded []Span) ([]Span, error) {
+func footnoteExcludedSpansContext(ctx context.Context, source []byte, excluded, codeSpans []Span) ([]Span, error) {
 	var out []Span
 	for _, span := range excluded {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		match := footnoteRefPattern.FindSubmatchIndex(source[span.Start:span.End])
-		if match != nil && match[0] == 0 && match[1] == span.End-span.Start &&
+		if !overlapsAny(span, codeSpans) && match != nil && match[0] == 0 && match[1] == span.End-span.Start &&
 			(span.End == len(source) || source[span.End] != '[') {
 			// OKF footnote ownership deliberately wins over CommonMark shortcut
 			// reference-link interpretation of the exact same [^label] bytes.

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OKF upkeep result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "fingerprint", "changes", "advisory"],
+  "properties": {
+    "status": {"enum": ["no_relevant_change", "needs_review", "reviewed_updated", "explicit_unaffected", "overridden", "loop_guard_allow", "unavailable"]},
+    "fingerprint": {"type": "string"},
+    "changes": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["path", "status"], "properties": {
+      "path": {"type": "string"}, "old_path": {"type": "string"}, "status": {"type": "string"}, "contents": {"type": "string"}
+    }}},
+    "reason": {"type": "string"},
+    "evidence": {"type": "array", "items": {"type": "string"}},
+    "advisory": {"type": "boolean"}
+  }
+}

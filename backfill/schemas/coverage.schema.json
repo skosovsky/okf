@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/skosovsky/okf/backfill/schemas/coverage.schema.json",
+  "title": "OKF backfill coverage report v1",
+  "type": "object",
+  "required": ["included_events", "considered_events", "rejected_events", "missing_events", "unresolved_conflicts", "truncated_events", "skipped_files", "limitations"],
+  "properties": {
+    "included_events": {"type": "integer", "minimum": 0}, "considered_events": {"type": "integer", "minimum": 0},
+    "rejected_events": {"type": "integer", "minimum": 0},
+    "missing_events": {"type": "array", "items": {"type": "string"}},
+    "unresolved_conflicts": {"type": "array", "items": {"type": "string"}},
+    "truncated_events": {"type": "array", "items": {"type": "string"}},
+    "skipped_files": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "usage": {"type": "object", "properties": {"input_tokens": {"type": "integer", "minimum": 0}, "output_tokens": {"type": "integer", "minimum": 0}, "cost_usd": {"type": "number", "minimum": 0}}, "additionalProperties": false},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }, "additionalProperties": false
+}

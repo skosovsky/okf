@@ -9,6 +9,7 @@ import (
 	"io"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,24 +26,39 @@ USAGE:
     okf <command> [args]
 
 COMMANDS:
+    init    <directory> Create a new draft OKF v0.2 bundle
     validate             Check a bundle against version-aware OKF conformance
     info     <bundle>    Summarize version, trust, lifecycle, provenance, and topology
     index    <bundle>    (Re)generate every index.md in the bundle
     graph    <bundle>    Export a selected graph projection (--format text|dot|mermaid|json-ld|ntriples)
+    view     <bundle>    Export a self-contained offline HTML viewer (--output FILE)
     parse    <file>      Parse one concept document and print its typed projection
     fmt      <file>      Normalize a document by parse + re-serialize (-w writes)
     migrate  <bundle>    Preview/apply transactional OKF v0.1 to v0.2 migration
+    migrate-prepare <bundle> Export fillable v0.1 migration inputs (--output-dir DIR)
+    temporal-upgrade <bundle> Preview/apply explicit OKF v0.2 date-to-instant revision upgrade
     version              Show CLI and supported/default OKF versions
 
 OPTIONS:
     --spec auto|0.1|0.2 Select/assert the OKF contract (default auto)
-    --profile PROFILE    Graph profile: legacy-v0.1 or skosovsky/okf-v0.2
+    --profile PROFILE    Graph profile: legacy-v0.1, skosovsky/okf-v0.2,
+                         or skosovsky/okf-v0.2-instant
                          (default follows the effective OKF version)
-    --as-of YYYY-MM-DD   Reference date for staleness-aware commands
+    --temporal-profile PROFILE
+                         Temporal revision: date-3fcbb9f (default) or instant-0b87c52
+    --as-of VALUE        Reference date or offset datetime (per temporal profile)
+    --max-warnings N      Fail validate when warnings exceed N (opt-in policy)
     --citation-mappings FILE
                          Strict JSON mappings for v0.1 -> v0.2 migration.
                          Reserved index/log replay requires exact legacy_entry
                          or complete title/resource evidence
+    --generated-at FILE   Explicit per-document instants for legacy documents
+                         without a timestamp (JSON array of path/at pairs)
+    --prepared-source-sha256 HEX
+                         Reject migration when source changed since preparation
+    --mappings FILE       Explicit per-field date-to-instant mappings for temporal-upgrade
+    --base-revision REV   Previewed bundle revision required with temporal-upgrade --write
+    --plan-digest DIGEST  Previewed plan digest required with temporal-upgrade --write
     -h, --help           Show this help
     -V, --version        Show version`
 
@@ -118,6 +134,8 @@ func runWithDependencies(
 		err  error
 	)
 	switch cmd {
+	case "init":
+		code, err = cmdInit(rest, stdout)
 	case "validate":
 		code, err = cmdValidate(
 			rest,
@@ -131,12 +149,18 @@ func runWithDependencies(
 		code, err = cmdIndex(rest, stdout, dependencies.regenerateIndexes)
 	case "graph":
 		code, err = cmdGraph(rest, stdout)
+	case "view":
+		code, err = cmdView(rest, stdout)
 	case "parse":
 		code, err = cmdParseWithDocumentSession(rest, stdout, dependencies.openDocument)
 	case "fmt":
 		code, err = cmdFmtWithDocumentSession(rest, stdout, dependencies.openDocument)
 	case "migrate":
 		code, err = dependencies.migrate(rest, stdout)
+	case "migrate-prepare":
+		code, err = cmdMigratePrepare(rest, stdout)
+	case "temporal-upgrade":
+		code, err = cmdTemporalUpgrade(rest, stdout)
 	case "-h", "--help", "help":
 		code, err = cmdHelp(rest, stdout)
 	case "-V", "--version", "version":
@@ -220,6 +244,8 @@ func cmdValidate(
 		{Name: "--json", Kind: boolFlag},
 		{Name: "--spec", Kind: stringFlag},
 		{Name: "--as-of", Kind: stringFlag},
+		{Name: "--temporal-profile", Kind: stringFlag},
+		{Name: "--max-warnings", Kind: stringFlag},
 	})
 	if err != nil {
 		return 0, err
@@ -242,16 +268,30 @@ func cmdValidate(
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseReferenceDate(parsed.value("--as-of", ""))
+	temporalProfile, err := parseTemporalProfile(parsed.value("--temporal-profile", ""))
 	if err != nil {
 		return 0, err
 	}
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
+	if err != nil {
+		return 0, err
+	}
+	var maxWarnings *int
+	if parsed.has("--max-warnings") {
+		value, err := strconv.ParseUint(parsed.value("--max-warnings", ""), 10, 64)
+		if err != nil || value > uint64(int(^uint(0)>>1)) {
+			return 0, fmt.Errorf("--max-warnings must be a nonnegative integer")
+		}
+		budget := int(value)
+		maxWarnings = &budget
+	}
 
 	cfg := validator.ValidatorConfig{
-		Strict:       parsed.boolValue("--strict"),
-		CheckLinks:   parsed.boolValue("--check-links"),
-		CheckOrphans: parsed.boolValue("--check-orphans"),
-		Spec:         spec,
+		Strict:          parsed.boolValue("--strict"),
+		CheckLinks:      parsed.boolValue("--check-links"),
+		CheckOrphans:    parsed.boolValue("--check-orphans"),
+		Spec:            spec,
+		TemporalProfile: temporalProfile,
 	}
 	if asOf != nil {
 		cfg.ReferenceDate = *asOf
@@ -263,6 +303,13 @@ func cmdValidate(
 	report, err := validateBundle(context.Background(), loaded, &cfg)
 	if err != nil {
 		return 0, err
+	}
+	if maxWarnings != nil && report.WarningCount() > *maxWarnings {
+		report.Diagnostics = append(report.Diagnostics, validator.Diagnostic{
+			Code: "warning_budget_exceeded", SpecRef: "toolkit#warning-budget",
+			Severity: validator.SeverityInfo, PolicyFailure: true,
+			Message: fmt.Sprintf("warning budget exceeded: %d warnings > maximum %d", report.WarningCount(), *maxWarnings),
+		})
 	}
 	if format == "json" {
 		return report.ExitCode(), writeValidationJSON(stdout, report)
@@ -320,22 +367,24 @@ func writeValidationJSON(stdout io.Writer, report validator.Report) error {
 	}
 	return json.NewEncoder(stdout).Encode(struct {
 		VersionDTO
-		ScannedFiles   int                        `json:"scanned_files"`
-		Conformant     bool                       `json:"conformant"`
-		PolicyFailures int                        `json:"policy_failures"`
-		Errors         int                        `json:"errors"`
-		Warnings       int                        `json:"warnings"`
-		Info           int                        `json:"info"`
-		Diagnostics    []ValidationJSONDiagnostic `json:"diagnostics"`
+		TemporalProfile bundle.TemporalProfile     `json:"temporal_profile"`
+		ScannedFiles    int                        `json:"scanned_files"`
+		Conformant      bool                       `json:"conformant"`
+		PolicyFailures  int                        `json:"policy_failures"`
+		Errors          int                        `json:"errors"`
+		Warnings        int                        `json:"warnings"`
+		Info            int                        `json:"info"`
+		Diagnostics     []ValidationJSONDiagnostic `json:"diagnostics"`
 	}{
-		VersionDTO:     projectVersion(report.Version),
-		ScannedFiles:   report.ScannedFiles,
-		Conformant:     report.IsConformant(),
-		PolicyFailures: report.PolicyFailureCount(),
-		Errors:         report.ErrorCount(),
-		Warnings:       report.WarningCount(),
-		Info:           report.InfoCount(),
-		Diagnostics:    diagnostics,
+		VersionDTO:      projectVersion(report.Version),
+		TemporalProfile: report.TemporalProfile,
+		ScannedFiles:    report.ScannedFiles,
+		Conformant:      report.IsConformant(),
+		PolicyFailures:  report.PolicyFailureCount(),
+		Errors:          report.ErrorCount(),
+		Warnings:        report.WarningCount(),
+		Info:            report.InfoCount(),
+		Diagnostics:     diagnostics,
 	})
 }
 
@@ -343,6 +392,7 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 	parsed, err := parseArgs(args, []flagSpec{
 		{Name: "--spec", Kind: stringFlag},
 		{Name: "--as-of", Kind: stringFlag},
+		{Name: "--temporal-profile", Kind: stringFlag},
 		{Name: "--format", Kind: stringFlag},
 		{Name: "--json", Kind: boolFlag},
 	})
@@ -357,7 +407,11 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseReferenceDate(parsed.value("--as-of", ""))
+	temporalProfile, err := parseTemporalProfile(parsed.value("--temporal-profile", ""))
+	if err != nil {
+		return 0, err
+	}
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
 	if err != nil {
 		return 0, err
 	}
@@ -394,12 +448,30 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 		byType[typ]++
 		trust.add(concept.Document.TrustTier())
 		lifecycle.add(concept.Document.StatusState())
-		sources += len(concept.Document.Sources())
+		if temporalProfile == bundle.TemporalProfileInstant {
+			states, err := concept.Document.Frontmatter.SourceStatesForProfileContext(context.Background(), temporalProfile)
+			if err != nil {
+				return 0, err
+			}
+			for _, state := range states {
+				if state.Valid {
+					sources++
+				}
+			}
+		} else {
+			sources += len(concept.Document.Sources())
+		}
 		if typ == "Attested Computation" {
 			computations++
 		}
-		if asOf != nil && concept.Document.IsStale(*asOf) {
-			stale++
+		if asOf != nil {
+			isStale, known, err := concept.Document.Frontmatter.IsStaleForProfileContext(context.Background(), *asOf, temporalProfile)
+			if err != nil {
+				return 0, err
+			}
+			if known && isStale {
+				stale++
+			}
 		}
 	}
 
@@ -411,6 +483,7 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 
 	response := infoResponse{
 		VersionDTO:           projectVersion(resolution),
+		TemporalProfile:      temporalProfile,
 		Bundle:               b.Root(),
 		Concepts:             b.Len(),
 		IndexFiles:           len(b.IndexFiles()),
@@ -426,7 +499,7 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 		ParseErrors:          len(parseErrors),
 	}
 	if asOf != nil {
-		response.AsOf = asOf.Format(time.DateOnly)
+		response.AsOf = formatTemporalReference(*asOf, temporalProfile)
 	}
 	if format == "json" {
 		return 0, json.NewEncoder(stdout).Encode(response)
@@ -437,20 +510,21 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 
 type infoResponse struct {
 	VersionDTO
-	Bundle               string          `json:"bundle"`
-	Concepts             int             `json:"concepts"`
-	IndexFiles           int             `json:"index_files"`
-	LogFiles             int             `json:"log_files"`
-	Types                map[string]int  `json:"types"`
-	InternalLinks        int             `json:"internal_links"`
-	BrokenLinks          int             `json:"broken_links"`
-	TrustTiers           trustCounts     `json:"trust_tiers"`
-	Lifecycle            lifecycleCounts `json:"lifecycle"`
-	AsOf                 string          `json:"as_of,omitempty"`
-	Stale                int             `json:"stale"`
-	Sources              int             `json:"sources"`
-	AttestedComputations int             `json:"attested_computations"`
-	ParseErrors          int             `json:"parse_errors"`
+	TemporalProfile      bundle.TemporalProfile `json:"temporal_profile"`
+	Bundle               string                 `json:"bundle"`
+	Concepts             int                    `json:"concepts"`
+	IndexFiles           int                    `json:"index_files"`
+	LogFiles             int                    `json:"log_files"`
+	Types                map[string]int         `json:"types"`
+	InternalLinks        int                    `json:"internal_links"`
+	BrokenLinks          int                    `json:"broken_links"`
+	TrustTiers           trustCounts            `json:"trust_tiers"`
+	Lifecycle            lifecycleCounts        `json:"lifecycle"`
+	AsOf                 string                 `json:"as_of,omitempty"`
+	Stale                int                    `json:"stale"`
+	Sources              int                    `json:"sources"`
+	AttestedComputations int                    `json:"attested_computations"`
+	ParseErrors          int                    `json:"parse_errors"`
 }
 
 func infoArgumentError(err error) error {
@@ -678,6 +752,8 @@ func parseGraphArgs(args []string) (graphOptions, error) {
 			opts.profile = graph.ProjectionProfileLegacyV01
 		case string(graph.ProjectionProfileToolkitV02):
 			opts.profile = graph.ProjectionProfileToolkitV02
+		case string(graph.ProjectionProfileToolkitV02Instant):
+			opts.profile = graph.ProjectionProfileToolkitV02Instant
 		default:
 			return graphOptions{}, fmt.Errorf("unsupported graph profile: %s", raw)
 		}
@@ -692,12 +768,13 @@ func parseGraphArgs(args []string) (graphOptions, error) {
 			return graphOptions{}, fmt.Errorf("unsupported extension relation policy: %s", raw)
 		}
 	}
-	if raw := parsed.value("--as-of", ""); raw != "" {
-		date, err := time.Parse(time.DateOnly, raw)
-		if err != nil {
-			return graphOptions{}, fmt.Errorf("invalid --as-of date %q (want YYYY-MM-DD)", raw)
-		}
-		opts.asOf = &date
+	profile := bundle.TemporalProfileDate
+	if opts.profile == graph.ProjectionProfileToolkitV02Instant {
+		profile = bundle.TemporalProfileInstant
+	}
+	opts.asOf, err = parseTemporalReference(parsed.value("--as-of", ""), profile)
+	if err != nil {
+		return graphOptions{}, err
 	}
 	return opts, nil
 }
@@ -731,6 +808,7 @@ func cmdParseWithDocumentSessionAndProjector(
 	parsed, err := parseArgs(args, []flagSpec{
 		{Name: "--spec", Kind: stringFlag},
 		{Name: "--as-of", Kind: stringFlag},
+		{Name: "--temporal-profile", Kind: stringFlag},
 		{Name: "--format", Kind: stringFlag},
 		{Name: "--json", Kind: boolFlag},
 	})
@@ -745,7 +823,11 @@ func cmdParseWithDocumentSessionAndProjector(
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseReferenceDate(parsed.value("--as-of", ""))
+	temporalProfile, err := parseTemporalProfile(parsed.value("--temporal-profile", ""))
+	if err != nil {
+		return 0, err
+	}
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
 	if err != nil {
 		return 0, err
 	}
@@ -764,7 +846,12 @@ func cmdParseWithDocumentSessionAndProjector(
 	if err != nil {
 		return 0, err
 	}
-	projection, err := project(ctx, path, session.Document(), session.VersionResolution(), asOf)
+	var projection parseResponse
+	if temporalProfile == bundle.TemporalProfileInstant {
+		projection, err = projectDocumentForTemporalProfile(ctx, path, session.Document(), session.VersionResolution(), asOf, temporalProfile)
+	} else {
+		projection, err = project(ctx, path, session.Document(), session.VersionResolution(), asOf)
+	}
 	if err != nil {
 		return 0, errors.Join(err, session.Close())
 	}
@@ -792,6 +879,9 @@ func cmdParseWithDocumentSessionAndProjector(
 
 func writeParseText(stdout io.Writer, projection parseResponse) {
 	fmt.Fprintf(stdout, "file: %s\n", renderTextString(projection.File))
+	if projection.TemporalProfile != "" {
+		fmt.Fprintf(stdout, "temporal profile: %s\n", renderTextString(string(projection.TemporalProfile)))
+	}
 	fmt.Fprintf(stdout, "declared version: %s\n", renderOptionalTextString(projection.VersionDTO.Declared))
 	fmt.Fprintf(stdout, "effective version: %s (%s, %s)\n",
 		renderTextString(projection.VersionDTO.Effective),
@@ -961,7 +1051,8 @@ func writeParseSourceText(stdout io.Writer, indent string, index int, source sou
 }
 
 type parseResponse struct {
-	File string `json:"file"`
+	File            string                 `json:"file"`
+	TemporalProfile bundle.TemporalProfile `json:"temporal_profile,omitempty"`
 	VersionDTO
 	Type                       string                `json:"type,omitempty"`
 	Title                      string                `json:"title,omitempty"`

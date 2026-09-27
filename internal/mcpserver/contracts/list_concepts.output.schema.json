@@ -27,7 +27,8 @@
         "value": {"type": ["string", "null"]}
       }
     },
-    "as_of": {"type": ["string", "null"], "format": "date"},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"]},
+    "as_of": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]},
     "concepts": {
       "type": "array",
       "maxItems": 10000,
@@ -54,7 +55,7 @@
           },
           "trust": {"enum": ["unverified", "machine-confirmed", "human-reviewed"]},
           "stale": {"type": ["boolean", "null"]},
-          "stale_after": {"type": ["string", "null"], "format": "date"},
+          "stale_after": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]},
           "generated_at": {"type": ["string", "null"], "format": "date-time"},
           "source_count": {"type": "integer", "minimum": 0},
           "computation": {
@@ -80,5 +81,10 @@
         }
       }
     }
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]},
+    "then": {"properties": {"as_of": {"format": "date-time"}, "concepts": {"items": {"properties": {"stale_after": {"format": "date-time"}}}}}},
+    "else": {"properties": {"as_of": {"format": "date"}, "concepts": {"items": {"properties": {"stale_after": {"format": "date"}}}}}}
+  }]
 }

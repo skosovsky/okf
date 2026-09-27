@@ -36,8 +36,9 @@ okf validate --path <bundle> --check-links --check-orphans
 ```
 
 Base errors are limited to concept parsing/`type` and reserved-file structure.
-Strict mode validates present v0.2 families as guidance. Staleness uses the
-explicit `--as-of` date for deterministic runs.
+Strict mode validates present v0.2 families as guidance. Deterministic staleness
+uses an explicit `--as-of` date in the default profile or an offset-bearing
+datetime with `--temporal-profile instant-0b87c52`.
 
 Missing optional fields, unknown types/keys/runtimes, broken links, and missing
 indexes do not become base errors.
@@ -47,6 +48,7 @@ indexes do not become base errors.
 ```sh
 okf info <bundle> --spec auto --as-of 2026-07-29
 okf parse <concept.md>
+okf parse <concept.md> --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z --format json
 ```
 
 Version-aware projections keep these values separate:
@@ -55,7 +57,7 @@ Version-aware projections keep these values separate:
 - generated time and legacy-derived marker;
 - normalized verification events and derived trust;
 - raw/effective lifecycle status;
-- staleness at the chosen date;
+- staleness at the chosen reference date or instant;
 - sources/attributions;
 - inert Attested Computation summary.
 
@@ -264,10 +266,14 @@ Compatibility tools retain their text fallbacks:
 - `get_semantic_graph`
 - `write_concept`
 
-The server exposes nine tools. Its four safe v0.2 tools are preview/apply pairs:
+Two additional read-only tools, `search_concepts` and `get_neighbors`, provide
+bounded literal search and concept neighborhoods with distinct navigation,
+relation, and provenance source results. The server exposes thirteen tools. Its
+six v0.2 mutation workflow tools are preview/apply pairs:
 
 - `preview_concept_patch` / `apply_concept_patch`
 - `preview_v02_migration` / `apply_v02_migration`
+- `preview_temporal_upgrade` / `apply_temporal_upgrade`
 
 Structured outputs are schema-validated. Patch apply requires
 `expected_revision` plus its preview plan digest. Migration apply is

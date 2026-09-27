@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/apply_temporal_upgrade.output.schema.json",
+  "type": "object",
+  "required": ["status", "request_digest", "result_revision"],
+  "properties": {
+    "status": {"const": "applied"},
+    "request_digest": {"type": "string"},
+    "result_revision": {"type": "string"}
+  },
+  "additionalProperties": false
+}

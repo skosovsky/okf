@@ -9,8 +9,15 @@ readonly ref_type="${REF_TYPE:-}"
 readonly base_sha="${BASE_SHA:-}"
 readonly head_sha="${HEAD_SHA:?HEAD_SHA is required}"
 readonly main_ref="${MAIN_REF:-refs/remotes/origin/main}"
+readonly pinned_spec="skills/open-knowledge-format/references/spec-v02-instant.md"
 
-git diff --check
+# This byte-exact upstream snapshot is checked by temporal_spec_lock_test.go.
+# Upstream has four trailing spaces; changing them would break the source pin.
+check_whitespace() {
+	git diff --check "$@" -- . ":(exclude)$pinned_spec"
+}
+
+check_whitespace
 
 if [[ "$event_name" == "push" && "$ref_type" == "tag" ]]; then
 	if ! git show-ref --verify --quiet "$main_ref"; then
@@ -21,13 +28,13 @@ if [[ "$event_name" == "push" && "$ref_type" == "tag" ]]; then
 		echo "version tags must point to a commit reachable from main" >&2
 		exit 1
 	fi
-	git diff --check "$empty_tree" "$head_sha"
+	check_whitespace "$empty_tree" "$head_sha"
 	exit 0
 fi
 
 if [[ -n "$base_sha" && "$base_sha" != "$zero_sha" ]] && git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
-	git diff --check "$base_sha" "$head_sha"
+	check_whitespace "$base_sha" "$head_sha"
 	exit 0
 fi
 
-git diff --check "$empty_tree" "$head_sha"
+check_whitespace "$empty_tree" "$head_sha"

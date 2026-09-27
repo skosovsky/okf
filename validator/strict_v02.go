@@ -248,10 +248,10 @@ func (v *validator) validateSources(concept bundle.Concept) error {
 
 		if modified, present, err := bundle.SemanticMappingValueContext(v.ctx, source, "last_modified"); err != nil {
 			return err
-		} else if valid, err := validDateScalarContext(v.ctx, modified); err != nil {
+		} else if _, valid, err := parseTemporalScalarContext(v.ctx, modified, v.cfg.TemporalProfile); err != nil {
 			return err
 		} else if present && !valid {
-			v.warn("source_field_invalid", concept.Path, path+".last_modified", fmt.Sprintf("'%s.last_modified' should be YYYY-MM-DD", path))
+			v.warn("source_field_invalid", concept.Path, path+".last_modified", fmt.Sprintf("'%s.last_modified' should be %s", path, temporalFormatDescription(v.cfg.TemporalProfile)))
 		}
 
 		localWindow, hasLocalWindow, err := bundle.SemanticMappingValueContext(v.ctx, source, "usage_window")
@@ -289,7 +289,7 @@ func (v *validator) validateSources(concept bundle.Concept) error {
 
 func (v *validator) validateUsageWindow(file, path string, node *yaml.Node) (bool, error) {
 	if node == nil || node.Kind != yaml.MappingNode {
-		v.warn("usage_window_invalid", file, path, fmt.Sprintf("'%s' should be a mapping with from/to dates", path))
+		v.warn("usage_window_invalid", file, path, fmt.Sprintf("'%s' should be a mapping with from/to %s", path, temporalFormatDescription(v.cfg.TemporalProfile)))
 		return false, nil
 	}
 	from, hasFrom, err := bundle.SemanticMappingValueContext(v.ctx, node, "from")
@@ -300,19 +300,19 @@ func (v *validator) validateUsageWindow(file, path string, node *yaml.Node) (boo
 	if err != nil {
 		return false, err
 	}
-	fromDate, fromOK, err := parseDateScalarContext(v.ctx, from)
+	fromDate, fromOK, err := parseTemporalScalarContext(v.ctx, from, v.cfg.TemporalProfile)
 	if err != nil {
 		return false, err
 	}
-	toDate, toOK, err := parseDateScalarContext(v.ctx, to)
+	toDate, toOK, err := parseTemporalScalarContext(v.ctx, to, v.cfg.TemporalProfile)
 	if err != nil {
 		return false, err
 	}
 	if !hasFrom || !fromOK {
-		v.warn("usage_window_invalid", file, path+".from", fmt.Sprintf("'%s.from' should be YYYY-MM-DD", path))
+		v.warn("usage_window_invalid", file, path+".from", fmt.Sprintf("'%s.from' should be %s", path, temporalFormatDescription(v.cfg.TemporalProfile)))
 	}
 	if !hasTo || !toOK {
-		v.warn("usage_window_invalid", file, path+".to", fmt.Sprintf("'%s.to' should be YYYY-MM-DD", path))
+		v.warn("usage_window_invalid", file, path+".to", fmt.Sprintf("'%s.to' should be %s", path, temporalFormatDescription(v.cfg.TemporalProfile)))
 	}
 	if fromOK && toOK && fromDate.After(toDate) {
 		v.warn("usage_window_order", file, path, fmt.Sprintf("'%s.from' should be on or before '%s.to'", path, path))
@@ -499,18 +499,25 @@ func (v *validator) validateLifecycle(concept bundle.Concept) error {
 	if !present {
 		return v.check()
 	}
-	_, ok, err := parseDateScalarContext(v.ctx, staleAfter)
+	_, ok, err := parseTemporalScalarContext(v.ctx, staleAfter, v.cfg.TemporalProfile)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		v.warn("stale_after_invalid", concept.Path, "stale_after", "'stale_after' should be YYYY-MM-DD")
+		v.warn("stale_after_invalid", concept.Path, "stale_after", "'stale_after' should be "+temporalFormatDescription(v.cfg.TemporalProfile))
 		return v.check()
 	}
 	if !v.cfg.ReferenceDate.IsZero() {
-		reference := civilDate(v.cfg.ReferenceDate)
-		if concept.Document.Frontmatter.IsStale(reference) {
-			v.warn("stale", concept.Path, "stale_after", fmt.Sprintf("concept is stale as of %s", reference.Format(time.DateOnly)))
+		stale, known, err := concept.Document.Frontmatter.IsStaleForProfileContext(v.ctx, v.cfg.ReferenceDate, v.cfg.TemporalProfile)
+		if err != nil {
+			return err
+		}
+		if known && stale {
+			reference := v.cfg.ReferenceDate.Format(time.DateOnly)
+			if v.cfg.TemporalProfile == bundle.TemporalProfileInstant {
+				reference = v.cfg.ReferenceDate.Format(time.RFC3339Nano)
+			}
+			v.warn("stale", concept.Path, "stale_after", fmt.Sprintf("concept is stale as of %s", reference))
 		}
 	}
 	return v.check()
@@ -911,6 +918,30 @@ func parseDateScalarContext(ctx context.Context, node *yaml.Node) (time.Time, bo
 		return time.Time{}, false, nil
 	}
 	value, err := time.Parse(time.DateOnly, node.Value)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return time.Time{}, false, ctxErr
+	}
+	return value, err == nil, nil
+}
+
+func temporalFormatDescription(profile bundle.TemporalProfile) string {
+	if profile == bundle.TemporalProfileInstant {
+		return "an offset-bearing RFC3339 datetime"
+	}
+	return "YYYY-MM-DD"
+}
+
+func parseTemporalScalarContext(ctx context.Context, node *yaml.Node, profile bundle.TemporalProfile) (time.Time, bool, error) {
+	if profile != bundle.TemporalProfileInstant {
+		return parseDateScalarContext(ctx, node)
+	}
+	if err := ctx.Err(); err != nil {
+		return time.Time{}, false, err
+	}
+	if node == nil || node.Kind != yaml.ScalarNode || node.Tag != "!!str" && node.Tag != "!!timestamp" {
+		return time.Time{}, false, nil
+	}
+	value, err := bundle.ParseOffsetDateTime(node.Value)
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return time.Time{}, false, ctxErr
 	}

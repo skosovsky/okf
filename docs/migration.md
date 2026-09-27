@@ -23,6 +23,9 @@ future declarations stay declared and are blocked from v0.1 migration.
 
 ## Safe workflow
 
+For a fillable CLI input template with parser-owned citation selectors, see
+[migration preparation](contracts/migration-preparation.md).
+
 1. Preview without writes.
 2. Supply an actor, time, or citation mappings only for transformations that
    actually need them.
@@ -65,6 +68,8 @@ keyed reference blocks with `migration_replay_mismatch` at the exact
 parser-owned span. Inline/fenced code and raw HTML are opaque: their marker-like
 bytes are neither claim evidence nor replay failures. Every mismatch is
 zero-write and returns no proof or plan authorization.
+Literal `[^label]` in inline or multiline code spans is also opaque; a real
+prose `[^label]` shortcut reference still participates in replay.
 An unrenderable individual migration field is `invalid_request`. A normalized
 per-document SourceID collision is instead blocked with
 `normalized_footnote_label_collision` and `disambiguate_citation_entry`,
@@ -235,3 +240,40 @@ Duplicate raw selector ambiguity is not destination ambiguity.
 See the full
 [skill migration policy](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/migration-v01-v02.md)
 and the [pinned §13 contract](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
+
+## Upgrade the OKF 0.2 temporal revision
+
+This is separate from the v0.1 → v0.2 migration. The original 0.2 revision
+uses calendar dates for `stale_after`, `usage_window.from/to`, and
+`sources[].last_modified`; the newer pinned revision requires offset-bearing
+datetimes. A date does not identify a time of day or timezone. Supply a value
+for **each observed date**; the tool never invents midnight or end of day.
+
+Create `temporal-mappings.json`:
+
+```json
+{"mappings":[
+  {"concept":"payments/retries","path":"stale_after","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
+  {"concept":"payments/retries","path":"usage_window.from","from":"2026-09-01","to":"2026-09-01T09:00:00+07:00"},
+  {"concept":"payments/retries","path":"usage_window.to","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
+  {"concept":"payments/retries","path":"sources[0].last_modified","from":"2026-09-20","to":"2026-09-20T14:30:00+07:00"}
+]}
+```
+
+`sources[N]` is the zero-based position in the previewed bundle revision.
+Preview is read-only and lists missing values in `unresolved`. Apply is blocked
+until every legacy date has an explicit mapping. Keep the exact `preview.BaseRevision`
+and `plan_digest` returned by preview:
+
+```sh
+okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json
+okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json --write --base-revision 'sha256:<preview.BaseRevision hex>' --plan-digest 'sha256:<preview plan_digest hex>'
+```
+
+Apply rebuilds the plan against the current revision and publishes one
+transaction. If the bundle changed after preview, rerun preview and review the
+new field positions and digest. Select the new read contract with
+`--temporal-profile instant-0b87c52`; the old date profile remains the default.
+Unsupported YAML presentation (for example, an alias or a tagged quoted scalar
+that the lossless patcher cannot prove) fails closed; rewrite that scalar in a
+plain or unquoted core-tag form and preview again.

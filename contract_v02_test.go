@@ -608,6 +608,8 @@ func TestV02ProvenanceClassifiesEveryRegularFixture(t *testing.T) {
 		}
 		_, rootIsMetadata := rootMetadata[relative]
 		isMetadata := rootIsMetadata ||
+			relative == "spec-lock-instant.json" ||
+			relative == "temporal-profiles/corpus.json" ||
 			filepath.Base(relative) == "manifest.yaml" ||
 			filepath.Base(relative) == "expected.json" ||
 			filepath.Base(relative) == "derivation.json"

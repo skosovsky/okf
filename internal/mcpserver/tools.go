@@ -23,6 +23,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/graph"
+	"github.com/skosovsky/okf/internal/markdownowner"
 	"github.com/skosovsky/okf/mutation"
 	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
@@ -152,10 +153,11 @@ type conceptSummaryV02 struct {
 }
 
 type listConceptsStructured struct {
-	Version            versionDTO            `json:"version"`
-	VersionDeclaration versionDeclarationDTO `json:"version_declaration"`
-	AsOf               *string               `json:"as_of"`
-	Concepts           []conceptSummaryV02   `json:"concepts"`
+	Version            versionDTO             `json:"version"`
+	VersionDeclaration versionDeclarationDTO  `json:"version_declaration"`
+	TemporalProfile    bundle.TemporalProfile `json:"temporal_profile"`
+	AsOf               *string                `json:"as_of"`
+	Concepts           []conceptSummaryV02    `json:"concepts"`
 }
 
 type diagnosticDTO struct {
@@ -261,14 +263,15 @@ type legacyFallbackDTO struct {
 }
 
 type readConceptStructured struct {
-	ID                 string                `json:"id"`
-	Path               string                `json:"path"`
-	Version            versionDTO            `json:"version"`
-	VersionDeclaration versionDeclarationDTO `json:"version_declaration"`
-	FrontmatterYAML    string                `json:"frontmatter_yaml"`
-	Body               string                `json:"body"`
-	Projection         conceptProjectionDTO  `json:"projection"`
-	LegacyFallback     legacyFallbackDTO     `json:"legacy_fallback"`
+	ID                 string                 `json:"id"`
+	Path               string                 `json:"path"`
+	Version            versionDTO             `json:"version"`
+	VersionDeclaration versionDeclarationDTO  `json:"version_declaration"`
+	TemporalProfile    bundle.TemporalProfile `json:"temporal_profile"`
+	FrontmatterYAML    string                 `json:"frontmatter_yaml"`
+	Body               string                 `json:"body"`
+	Projection         conceptProjectionDTO   `json:"projection"`
+	LegacyFallback     legacyFallbackDTO      `json:"legacy_fallback"`
 }
 
 type readConceptProjectionCollections struct {
@@ -352,6 +355,14 @@ func statusStateFromBundle(state bundle.StatusState) statusStateDTO {
 func validDate(value string) bool {
 	parsed, err := time.Parse("2006-01-02", value)
 	return err == nil && parsed.Format("2006-01-02") == value
+}
+
+func validMCPTemporal(value string, profile bundle.TemporalProfile) bool {
+	if profile != bundle.TemporalProfileInstant {
+		return validDate(value)
+	}
+	_, err := bundle.ParseOffsetDateTime(value)
+	return err == nil
 }
 
 func validTimestamp(value string) bool {
@@ -478,6 +489,10 @@ func projectDocumentContext(
 	ctx context.Context,
 	document bundle.Document,
 ) (conceptProjectionDTO, *mcp.CallToolResult) {
+	return projectDocumentForProfileContext(ctx, document, bundle.TemporalProfileDate)
+}
+
+func projectDocumentForProfileContext(ctx context.Context, document bundle.Document, profile bundle.TemporalProfile) (conceptProjectionDTO, *mcp.CallToolResult) {
 	collections, err := collectReadConceptProjectionContext(ctx, document)
 	if err != nil {
 		return conceptProjectionDTO{}, bundleDomainError(
@@ -486,10 +501,37 @@ func projectDocumentContext(
 			err,
 		)
 	}
+	if profile == bundle.TemporalProfileInstant {
+		states, err := document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
+		if err != nil {
+			return conceptProjectionDTO{}, bundleDomainError("project captured concept", "concept projection exceeds MCP resource limits", err)
+		}
+		collections.Sources = nil
+		for _, state := range states {
+			if state.Valid {
+				collections.Sources = append(collections.Sources, state.Value)
+			}
+		}
+		for index := range collections.Attributions {
+			collections.Attributions[index].Sources = nil
+			for _, source := range collections.Sources {
+				if source.ID == "" {
+					continue
+				}
+				normalized, err := markdownowner.NormalizeFootnoteLabelContext(ctx, source.ID)
+				if err != nil {
+					return conceptProjectionDTO{}, bundleDomainError("join concept sources", "concept projection exceeds MCP resource limits", err)
+				}
+				if normalized == collections.Attributions[index].NormalizedID {
+					collections.Attributions[index].Sources = append(collections.Attributions[index].Sources, source)
+				}
+			}
+		}
+	}
 	if result := validateReadConceptProjectionCapsContext(ctx, collections); result != nil {
 		return conceptProjectionDTO{}, result
 	}
-	projection, err := projectDocumentCollectionsContext(ctx, document, collections)
+	projection, err := projectDocumentCollectionsForProfileContext(ctx, document, collections, profile)
 	if err != nil {
 		return conceptProjectionDTO{}, bundleDomainError(
 			"project captured concept",
@@ -505,6 +547,10 @@ func projectDocumentCollectionsContext(
 	document bundle.Document,
 	collections readConceptProjectionCollections,
 ) (conceptProjectionDTO, error) {
+	return projectDocumentCollectionsForProfileContext(ctx, document, collections, bundle.TemporalProfileDate)
+}
+
+func projectDocumentCollectionsForProfileContext(ctx context.Context, document bundle.Document, collections readConceptProjectionCollections, profile bundle.TemporalProfile) (conceptProjectionDTO, error) {
 	if err := ctx.Err(); err != nil {
 		return conceptProjectionDTO{}, err
 	}
@@ -536,7 +582,7 @@ func projectDocumentCollectionsContext(
 		if err := ctx.Err(); err != nil {
 			return conceptProjectionDTO{}, err
 		}
-		projection.Sources = append(projection.Sources, projectSource(source))
+		projection.Sources = append(projection.Sources, projectSourceForProfile(source, profile))
 	}
 	for _, attribution := range collections.Attributions {
 		if err := ctx.Err(); err != nil {
@@ -553,7 +599,7 @@ func projectDocumentCollectionsContext(
 			if err := ctx.Err(); err != nil {
 				return conceptProjectionDTO{}, err
 			}
-			item.Sources = append(item.Sources, projectSource(source))
+			item.Sources = append(item.Sources, projectSourceForProfile(source, profile))
 		}
 		for _, reference := range attribution.References {
 			if err := ctx.Err(); err != nil {
@@ -573,8 +619,12 @@ func projectDocumentCollectionsContext(
 		}
 		projection.Attributions = append(projection.Attributions, item)
 	}
-	if window, ok := document.UsageWindow(); ok && validDate(window.From) && validDate(window.To) {
-		projection.UsageWindow = &usageWindowDTO{From: window.From, To: window.To}
+	window, err := document.Frontmatter.UsageWindowForProfileContext(ctx, profile)
+	if err != nil {
+		return conceptProjectionDTO{}, err
+	}
+	if window.Valid {
+		projection.UsageWindow = &usageWindowDTO{From: window.Value.From, To: window.Value.To}
 	}
 	generated := document.GenerationState()
 	if generated.HasValue {
@@ -596,7 +646,12 @@ func projectDocumentCollectionsContext(
 			projection.Verified = append(projection.Verified, verificationDTO{By: verification.By, At: verification.At})
 		}
 	}
-	if value, ok := document.StaleAfter(); ok && validDate(value) {
+	staleAfter, err := document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
+	if err != nil {
+		return conceptProjectionDTO{}, err
+	}
+	if staleAfter.Value.State == bundle.TemporalValid {
+		value := staleAfter.Value.Raw
 		projection.StaleAfter = &value
 	}
 	if computation := collections.Computation; computation != nil {
@@ -639,6 +694,10 @@ func projectDocumentCollectionsContext(
 }
 
 func projectSource(source bundle.ProvenanceSource) sourceDTO {
+	return projectSourceForProfile(source, bundle.TemporalProfileDate)
+}
+
+func projectSourceForProfile(source bundle.ProvenanceSource, profile bundle.TemporalProfile) sourceDTO {
 	item := sourceDTO{
 		ID:       source.ID,
 		Resource: source.Resource,
@@ -649,11 +708,11 @@ func projectSource(source bundle.ProvenanceSource) sourceDTO {
 		value := strconv.FormatUint(*source.UsageCount, 10)
 		item.UsageCount = &value
 	}
-	if validDate(source.LastModified) {
+	if validMCPTemporal(source.LastModified, profile) {
 		value := source.LastModified
 		item.LastModified = &value
 	}
-	if source.UsageWindow != nil && validDate(source.UsageWindow.From) && validDate(source.UsageWindow.To) {
+	if source.UsageWindow != nil && validMCPTemporal(source.UsageWindow.From, profile) && validMCPTemporal(source.UsageWindow.To, profile) {
 		item.UsageWindow = &usageWindowDTO{From: source.UsageWindow.From, To: source.UsageWindow.To}
 	}
 	return item
@@ -791,13 +850,14 @@ type guidanceDTO struct {
 }
 
 type validateBundleStructured struct {
-	Version            versionDTO            `json:"version"`
-	VersionDeclaration versionDeclarationDTO `json:"version_declaration"`
-	AsOf               *string               `json:"as_of,omitempty"`
-	ScannedFiles       int                   `json:"scanned_files"`
-	Conformance        conformanceDTO        `json:"conformance"`
-	Guidance           guidanceDTO           `json:"guidance"`
-	Diagnostics        []wireDiagnostic      `json:"diagnostics"`
+	Version            versionDTO             `json:"version"`
+	VersionDeclaration versionDeclarationDTO  `json:"version_declaration"`
+	TemporalProfile    bundle.TemporalProfile `json:"temporal_profile"`
+	AsOf               *string                `json:"as_of,omitempty"`
+	ScannedFiles       int                    `json:"scanned_files"`
+	Conformance        conformanceDTO         `json:"conformance"`
+	Guidance           guidanceDTO            `json:"guidance"`
+	Diagnostics        []wireDiagnostic       `json:"diagnostics"`
 }
 
 type writeConceptResponse struct {
@@ -810,7 +870,11 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	if result := requireCanonicalToolInput(ctx, "list_concepts", request); result != nil {
 		return result, nil
 	}
-	asOf, result := optionalDate(request, "as_of")
+	profile, result := optionalTemporalProfile(request)
+	if result != nil {
+		return result, nil
+	}
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
 	if result != nil {
 		return result, nil
 	}
@@ -863,10 +927,11 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	structured := listConceptsStructured{
 		Version:            versionDTOFromBundle(resolution),
 		VersionDeclaration: versionDeclarationDTOFromBundle(declaration),
+		TemporalProfile:    profile,
 		Concepts:           make([]conceptSummaryV02, 0, len(concepts)),
 	}
 	if asOf != nil {
-		value := asOf.Format("2006-01-02")
+		value := formatMCPTemporalReference(*asOf, profile)
 		structured.AsOf = &value
 	}
 	for _, concept := range concepts {
@@ -893,6 +958,19 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 				"concept list exceeds MCP resource limits",
 				sourcesErr,
 			), nil
+		}
+		sourceCount := len(sources)
+		if profile == bundle.TemporalProfileInstant {
+			states, err := concept.Document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
+			if err != nil {
+				return bundleDomainError("project concept sources", "concept list exceeds MCP resource limits", err), nil
+			}
+			sourceCount = 0
+			for _, state := range states {
+				if state.Valid {
+					sourceCount++
+				}
+			}
 		}
 		trust, trustErr := concept.Document.TrustTierContext(ctx)
 		if trustErr != nil {
@@ -921,7 +999,7 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			Status:      status.Effective,
 			StatusState: status,
 			Trust:       string(trust),
-			SourceCount: len(sources),
+			SourceCount: sourceCount,
 			Computation: computation,
 			LegacyDerived: legacyDerivedDTO{
 				Generated: fallback.TimestampActive,
@@ -929,10 +1007,20 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			},
 		}
 		if asOf != nil {
-			stale := concept.Document.IsStale(*asOf)
-			summary.Stale = &stale
+			stale, known, err := concept.Document.Frontmatter.IsStaleForProfileContext(ctx, *asOf, profile)
+			if err != nil {
+				return bundleDomainError("project concept staleness", "concept list exceeds MCP resource limits", err), nil
+			}
+			if known || profile == bundle.TemporalProfileDate {
+				summary.Stale = &stale
+			}
 		}
-		if value, ok := concept.Document.StaleAfter(); ok && validDate(value) {
+		staleAfter, err := concept.Document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
+		if err != nil {
+			return bundleDomainError("project stale_after", "concept list exceeds MCP resource limits", err), nil
+		}
+		if staleAfter.Value.State == bundle.TemporalValid {
+			value := staleAfter.Value.Raw
 			summary.StaleAfter = &value
 		}
 		if value, ok := concept.Document.EffectiveContentChangeTime(); ok && validTimestamp(value) {
@@ -954,6 +1042,10 @@ func handleReadConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 	if result != nil {
 		return result, nil
 	}
+	profile, result := optionalTemporalProfile(request)
+	if result != nil {
+		return result, nil
+	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
 		return result, nil
@@ -965,7 +1057,7 @@ func handleReadConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 	if result := parseErrorsResult(root, loaded.ParseErrors()); result != nil {
 		return result, nil
 	}
-	return readConceptFromBundleContext(ctx, root, loaded, id), nil
+	return readConceptFromBundleContext(ctx, root, loaded, id, profile), nil
 }
 
 // readConceptFromBundleContext projects one concept exclusively from the
@@ -977,7 +1069,12 @@ func readConceptFromBundleContext(
 	root string,
 	loaded *bundle.Bundle,
 	id bundle.ConceptID,
+	profiles ...bundle.TemporalProfile,
 ) *mcp.CallToolResult {
+	profile := bundle.TemporalProfileDate
+	if len(profiles) != 0 {
+		profile = profiles[0]
+	}
 	path, ok, err := loaded.ConceptPathContext(ctx, id)
 	if err != nil {
 		return bundleLoadError("resolve captured concept path", err)
@@ -1004,7 +1101,7 @@ func readConceptFromBundleContext(
 	if result != nil {
 		return result
 	}
-	projection, result := projectDocumentContext(ctx, document)
+	projection, result := projectDocumentForProfileContext(ctx, document, profile)
 	if result != nil {
 		return result
 	}
@@ -1030,6 +1127,7 @@ func readConceptFromBundleContext(
 		Path:               path,
 		Version:            resolution,
 		VersionDeclaration: versionDeclarationDTOFromBundle(declaration),
+		TemporalProfile:    profile,
 		FrontmatterYAML:    string(document.FrontmatterYAML()),
 		Body:               document.Body,
 		Projection:         projection,
@@ -1094,7 +1192,11 @@ func handleValidateBundle(ctx context.Context, request mcp.CallToolRequest) (*mc
 	default:
 		return toolErrorf("argument %q must be auto, 0.1, or 0.2", "target_version"), nil
 	}
-	asOf, result := optionalDate(request, "as_of")
+	profile, result := optionalTemporalProfile(request)
+	if result != nil {
+		return result, nil
+	}
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
 	if result != nil {
 		return result, nil
 	}
@@ -1107,10 +1209,11 @@ func handleValidateBundle(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return bundleLoadError("load bundle", err), nil
 	}
 	cfg := validator.ValidatorConfig{
-		Strict:       strict,
-		CheckLinks:   checkLinks,
-		CheckOrphans: checkOrphans,
-		Spec:         targetVersion,
+		Strict:          strict,
+		CheckLinks:      checkLinks,
+		CheckOrphans:    checkOrphans,
+		Spec:            targetVersion,
+		TemporalProfile: profile,
 	}
 	if asOf != nil {
 		cfg.ReferenceDate = *asOf
@@ -1141,13 +1244,14 @@ func handleValidateBundle(ctx context.Context, request mcp.CallToolRequest) (*mc
 	structured := validateBundleStructured{
 		Version:            version,
 		VersionDeclaration: versionDeclarationDTOFromBundle(report.VersionDeclaration),
+		TemporalProfile:    profile,
 		ScannedFiles:       report.ScannedFiles,
 		Conformance:        conformanceDTO{Conformant: report.IsConformant(), Errors: report.ErrorCount()},
 		Guidance:           guidanceDTO{Warnings: report.WarningCount(), Info: report.InfoCount()},
 		Diagnostics:        make([]wireDiagnostic, 0, len(report.Diagnostics)),
 	}
 	if asOf != nil {
-		value := asOf.Format("2006-01-02")
+		value := formatMCPTemporalReference(*asOf, profile)
 		structured.AsOf = &value
 	}
 	for _, diagnostic := range report.Diagnostics {
@@ -1178,7 +1282,11 @@ func handleSemanticGraph(ctx context.Context, request mcp.CallToolRequest) (*mcp
 	if result := requireCanonicalToolInput(ctx, "get_semantic_graph", request); result != nil {
 		return result, nil
 	}
-	asOf, result := optionalDate(request, "as_of")
+	profile, result := optionalTemporalProfile(request)
+	if result != nil {
+		return result, nil
+	}
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
 	if result != nil {
 		return result, nil
 	}
@@ -1202,8 +1310,12 @@ func handleSemanticGraph(ctx context.Context, request mcp.CallToolRequest) (*mcp
 	}
 
 	out := newBoundedOutputBuffer(maxConceptReadBytes)
+	graphProfile := graph.ProjectionProfileToolkitV02
+	if profile == bundle.TemporalProfileInstant {
+		graphProfile = graph.ProjectionProfileToolkitV02Instant
+	}
 	if err := graph.RenderJSONLDWithOptionsContext(ctx, out, loaded, graph.Options{
-		Profile:            graph.ProjectionProfileToolkitV02,
+		Profile:            graphProfile,
 		AsOf:               asOf,
 		ExtensionRelations: graph.ExtensionRelationsInclude,
 		VersionSelector:    "",
@@ -2733,6 +2845,45 @@ func optionalDate(request mcp.CallToolRequest, key string) (*time.Time, *mcp.Cal
 		return nil, toolErrorf("argument %q must be YYYY-MM-DD", key)
 	}
 	return &parsed, nil
+}
+
+func optionalTemporalProfile(request mcp.CallToolRequest) (bundle.TemporalProfile, *mcp.CallToolResult) {
+	raw, result := optionalStringDefault(request, "temporal_profile", string(bundle.TemporalProfileDate))
+	if result != nil {
+		return "", result
+	}
+	profile, err := bundle.NormalizeTemporalProfile(bundle.TemporalProfile(raw))
+	if err != nil {
+		return "", toolErrorf("argument %q must be %q or %q", "temporal_profile", bundle.TemporalProfileDate, bundle.TemporalProfileInstant)
+	}
+	return profile, nil
+}
+
+func optionalTemporalReference(request mcp.CallToolRequest, key string, profile bundle.TemporalProfile) (*time.Time, *mcp.CallToolResult) {
+	if profile != bundle.TemporalProfileInstant {
+		return optionalDate(request, key)
+	}
+	args := request.GetArguments()
+	value, ok := args[key]
+	if !ok {
+		return nil, nil
+	}
+	raw, ok := value.(string)
+	if !ok {
+		return nil, toolErrorf("argument %q is not a string", key)
+	}
+	parsed, err := bundle.ParseOffsetDateTime(raw)
+	if err != nil {
+		return nil, toolErrorf("argument %q must be an RFC3339 datetime with UTC offset", key)
+	}
+	return &parsed, nil
+}
+
+func formatMCPTemporalReference(at time.Time, profile bundle.TemporalProfile) string {
+	if profile == bundle.TemporalProfileInstant {
+		return at.Format(time.RFC3339Nano)
+	}
+	return at.Format(time.DateOnly)
 }
 
 func parseErrorsResult(root string, errors []bundle.ParseError) *mcp.CallToolResult {

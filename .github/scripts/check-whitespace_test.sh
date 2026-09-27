@@ -17,6 +17,16 @@ git -C "$test_repo" add fixture.txt
 git -C "$test_repo" commit --quiet -m "clean root"
 readonly main_head="$(git -C "$test_repo" rev-parse HEAD)"
 
+mkdir -p "$test_repo/skills/open-knowledge-format/references"
+printf 'upstream bytes with trailing space \n' >"$test_repo/skills/open-knowledge-format/references/spec-v02-instant.md"
+git -C "$test_repo" add skills/open-knowledge-format/references/spec-v02-instant.md
+git -C "$test_repo" commit --quiet -m "pinned upstream source"
+readonly pinned_head="$(git -C "$test_repo" rev-parse HEAD)"
+(
+	cd "$test_repo"
+	EVENT_NAME=pull_request REF_TYPE=branch BASE_SHA="$main_head" HEAD_SHA="$pinned_head" bash "$checker"
+)
+
 (
 	cd "$test_repo"
 	EVENT_NAME=push REF_TYPE=tag BASE_SHA=0000000000000000000000000000000000000000 HEAD_SHA="$main_head" MAIN_REF=refs/heads/main bash "$checker"

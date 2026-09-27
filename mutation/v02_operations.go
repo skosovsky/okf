@@ -272,7 +272,7 @@ func (s *planState) setLifecycle(op store.SetLifecycle, operationName string) er
 		}
 		var staleAfter *yamlRenderValue
 		if lifecycle.StaleAfter != nil {
-			value, err := yamlDate(*lifecycle.StaleAfter)
+			value, err := yamlTemporal(*lifecycle.StaleAfter)
 			if err != nil {
 				return nil, err
 			}
@@ -412,7 +412,7 @@ func sourceRender(source store.ProvenanceSource) (yamlRenderValue, error) {
 		entries = append(entries, yamlEntry("usage_count", yamlUint(*source.UsageCount)))
 	}
 	if source.LastModified != "" {
-		value, err := yamlDate(source.LastModified)
+		value, err := yamlTemporal(source.LastModified)
 		if err != nil {
 			return yamlRenderValue{}, err
 		}
@@ -589,12 +589,22 @@ func normalizeUsageWindow(window yamlRenderValue) (yamlRenderValue, bool, error)
 	return normalized, extensions, nil
 }
 
+// yamlTemporal renders the already validated scalar without changing its
+// precision. Calendar dates retain the historical style; offset datetimes
+// retain their explicit timezone and fractional digits.
+func yamlTemporal(raw string) (yamlRenderValue, error) {
+	if len(raw) == len("2006-01-02") {
+		return yamlDate(raw)
+	}
+	return yamlDateTime(raw)
+}
+
 func usageWindowRender(window store.UsageWindow) (yamlRenderValue, error) {
-	from, err := yamlDate(window.From)
+	from, err := yamlTemporal(window.From)
 	if err != nil {
 		return yamlRenderValue{}, err
 	}
-	to, err := yamlDate(window.To)
+	to, err := yamlTemporal(window.To)
 	if err != nil {
 		return yamlRenderValue{}, err
 	}
@@ -618,7 +628,7 @@ func mutateKnownSource(mutation *yamlMutation, item *yaml.Node, source store.Pro
 		entries[4].value = yamlUint(*source.UsageCount)
 	}
 	if source.LastModified != "" {
-		value, err := yamlDate(source.LastModified)
+		value, err := yamlTemporal(source.LastModified)
 		if err != nil {
 			return err
 		}

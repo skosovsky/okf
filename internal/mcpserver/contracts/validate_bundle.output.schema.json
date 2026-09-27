@@ -27,7 +27,8 @@
         "value": {"type": ["string", "null"]}
       }
     },
-    "as_of": {"type": "string", "format": "date"},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"]},
+    "as_of": {"type": "string", "anyOf": [{"format": "date"}, {"format": "date-time"}]},
     "scanned_files": {"type": "integer", "minimum": 0},
     "conformance": {
       "type": "object",
@@ -65,5 +66,10 @@
         }
       }
     }
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]},
+    "then": {"properties": {"as_of": {"format": "date-time"}}},
+    "else": {"properties": {"as_of": {"format": "date"}}}
+  }]
 }

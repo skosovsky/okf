@@ -39,14 +39,43 @@ func resolveBundleVersion(loaded *bundle.Bundle, selector string) (bundle.Versio
 }
 
 func parseReferenceDate(raw string) (*time.Time, error) {
+	return parseTemporalReference(raw, bundle.TemporalProfileDate)
+}
+
+func parseTemporalReference(raw string, profile bundle.TemporalProfile) (*time.Time, error) {
+	profile, err := bundle.NormalizeTemporalProfile(profile)
+	if err != nil {
+		return nil, err
+	}
 	if raw == "" {
 		return nil, nil
 	}
-	date, err := time.Parse(time.DateOnly, raw)
+	format := time.DateOnly
+	if profile == bundle.TemporalProfileInstant {
+		format = time.RFC3339
+	}
+	date, err := time.Parse(format, raw)
+	if profile == bundle.TemporalProfileInstant {
+		date, err = bundle.ParseOffsetDateTime(raw)
+	}
 	if err != nil {
+		if profile == bundle.TemporalProfileInstant {
+			return nil, fmt.Errorf("invalid --as-of datetime %q (want RFC3339 with UTC offset)", raw)
+		}
 		return nil, fmt.Errorf("invalid --as-of date %q (want YYYY-MM-DD)", raw)
 	}
 	return &date, nil
+}
+
+func parseTemporalProfile(raw string) (bundle.TemporalProfile, error) {
+	return bundle.NormalizeTemporalProfile(bundle.TemporalProfile(raw))
+}
+
+func formatTemporalReference(at time.Time, profile bundle.TemporalProfile) string {
+	if profile == bundle.TemporalProfileInstant {
+		return at.Format(time.RFC3339Nano)
+	}
+	return at.Format(time.DateOnly)
 }
 
 type trustCounts struct {

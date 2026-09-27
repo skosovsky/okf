@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/preview_temporal_upgrade.output.schema.json",
+  "type": "object",
+  "required": ["status", "base_revision", "result_revision", "unresolved"],
+  "properties": {
+    "status": {"enum": ["ready", "incomplete", "noop"]},
+    "base_revision": {"type": "string"},
+    "result_revision": {"type": "string"},
+    "plan_digest": {"type": "string"},
+    "unresolved": {"type": "array", "items": {"type": "object", "required": ["concept", "path", "from"], "properties": {
+      "concept": {"type": "string"}, "path": {"type": "string"}, "from": {"type": "string", "format": "date"}
+    }, "additionalProperties": false}}
+  },
+  "additionalProperties": false
+}

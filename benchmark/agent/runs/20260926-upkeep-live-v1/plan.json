@@ -1,0 +1,118 @@
+{
+  "id": "upkeep-live-20260926-v1",
+  "source_corpus_sha256": "4c23a1ce55f666c737dde8eea0baf44ba82d5e0365585b98a699a72a2a03f85f",
+  "repeats": 1,
+  "writer_model": "gpt-6-luna",
+  "consumer_model": "gpt-6-luna",
+  "writer_prompt_sha256": "f755ee7995f9f39e4383fc751ef55fc7fca1edb000f5036ab33fb57b38fa139e",
+  "consumer_prompt_sha256": "86a8d806fceaddea4b93cb28e09122115c4fe234e2410e0e20c1c4067e5e6f59",
+  "checker_sha256": "a0565afc973e6c1ef3d0a14ca732069d9a09416b6503e0d7f595688143a44b45",
+  "cases": [
+    {
+      "id": "upkeep-reversal",
+      "writer_task": "Change decision.go from Mode A to Mode B. Apply the target code exactly.",
+      "initial_code": [
+        {
+          "id": "decision-code",
+          "path": "decision.go",
+          "content": "const Mode = \"A\"\n"
+        }
+      ],
+      "target_code": [
+        {
+          "id": "decision-code",
+          "path": "decision.go",
+          "content": "const Mode = \"B\"\n"
+        }
+      ],
+      "initial_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode A.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe complete captured evidence indicates that the handler rollout finished.\n"
+        }
+      ],
+      "consumer_question": "Which mode is the current decision?",
+      "expected": {
+        "answer": "B",
+        "evidence": [
+          "decision"
+        ],
+        "support": [
+          {
+            "artifact_id": "decision",
+            "quote": "",
+            "control_quote": "+const Mode = \"B\"",
+            "treatment_quote": "mode B"
+          }
+        ],
+        "stale_answers": [
+          "A"
+        ]
+      }
+    },
+    {
+      "id": "upkeep-truncated",
+      "writer_task": "Replace handler-capture.txt's complete trace with the supplied partial, truncated capture. Apply the target file exactly.",
+      "initial_code": [
+        {
+          "id": "handler-capture",
+          "path": "handler-capture.txt",
+          "content": "Captured diff is complete; rollout was completed.\n"
+        }
+      ],
+      "target_code": [
+        {
+          "id": "handler-capture",
+          "path": "handler-capture.txt",
+          "content": "Captured diff is partial; rollout status cannot be established.\ndiff --git a/handler.go b/handler.go\n@@ -1,100 +1,100 @@\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+        }
+      ],
+      "initial_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode A.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe complete captured evidence indicates that the handler rollout finished.\n"
+        }
+      ],
+      "consumer_question": "Does the captured evidence prove that the handler rollout completed?",
+      "expected": {
+        "answer": "Insufficient evidence",
+        "evidence": [
+          "handler"
+        ],
+        "support": [
+          {
+            "artifact_id": "handler",
+            "quote": "",
+            "control_quote": "Captured diff is partial",
+            "treatment_quote": "Evidence is incomplete"
+          }
+        ],
+        "stale_answers": [
+          "Yes"
+        ]
+      }
+    }
+  ]
+}

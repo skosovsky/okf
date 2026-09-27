@@ -157,8 +157,8 @@ func TestValidateTimestampAndReservedEdges(t *testing.T) {
 		t.Fatalf("warnings = %#v, want timestamp warning", warnings)
 	}
 	errors := report.Of(SeverityError)
-	if !validationDiagnosticsContain(errors, "root index.md frontmatter") {
-		t.Fatalf("errors = %#v, want root index extra key error", errors)
+	if validationDiagnosticsContain(errors, "root index.md frontmatter") {
+		t.Fatalf("errors = %#v, unknown root extension must be accepted", errors)
 	}
 }
 

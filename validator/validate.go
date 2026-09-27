@@ -25,6 +25,9 @@ type ValidatorConfig struct {
 	// bundle's shared version resolution policy. Supported explicit values are
 	// "0.1" and "0.2".
 	Spec string
+	// TemporalProfile selects a pinned OKF 0.2 temporal revision. Empty keeps
+	// the original calendar-date contract for existing callers.
+	TemporalProfile bundle.TemporalProfile
 	// ReferenceDate injects the civil date used by strict stale_after policy.
 	// A zero value disables time-dependent diagnostics.
 	ReferenceDate time.Time
@@ -172,6 +175,7 @@ func (d Diagnostic) String() string {
 type Report struct {
 	Diagnostics        []Diagnostic
 	ScannedFiles       int
+	TemporalProfile    bundle.TemporalProfile
 	VersionDeclaration bundle.VersionDeclarationState
 	// Version is the shared bundle contract resolution used for validation.
 	// When VersionDeclaration is present but invalid, Version remains the
@@ -277,6 +281,11 @@ func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *Validator
 	if cfg != nil {
 		config = *cfg
 	}
+	profile, err := bundle.NormalizeTemporalProfile(config.TemporalProfile)
+	if err != nil {
+		return Report{}, err
+	}
+	config.TemporalProfile = profile
 
 	if b == nil {
 		return Report{Diagnostics: []Diagnostic{{
@@ -335,6 +344,7 @@ func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *Validator
 		readErrors:    newValidatorStringBuckets(config.stringDigestOrDefault()),
 	}
 	v.report.ScannedFiles = len(v.files)
+	v.report.TemporalProfile = profile
 	v.report.VersionDeclaration = declarationState
 	v.report.Version = version
 	if policyErr != nil {
@@ -553,27 +563,20 @@ func (v *validator) validateReservedFiles() error {
 			if err != nil {
 				return err
 			}
-			for _, key := range keys {
-				if err := v.check(); err != nil {
-					return err
-				}
-				if key != "okf_version" {
-					v.addIndexError(path, key, "root index.md frontmatter should declare only 'okf_version'")
-					break
-				}
-			}
 			if len(keys) == 0 {
 				v.addVersionDeclarationTypeError(path)
 			} else if state, err := document.Frontmatter.SemanticValueStateContext(v.ctx, "okf_version"); err != nil {
 				return err
 			} else if state.Ambiguous {
 				v.addVersionDeclarationAmbiguousError(path)
-			} else if len(keys) == 1 && keys[0] == "okf_version" {
+			} else {
 				state, err := document.Frontmatter.VersionDeclarationStateContext(v.ctx)
 				if err != nil {
 					return err
 				}
-				if !state.Valid {
+				if !state.Present {
+					v.addVersionDeclarationTypeError(path)
+				} else if !state.Valid {
 					node, present, err := document.Frontmatter.SemanticGetContext(v.ctx, "okf_version")
 					if err != nil {
 						return err
@@ -629,6 +632,9 @@ func (v *validator) validateIndexBody(path, body string) error {
 	seenEntry := false
 	sectionHeading := ""
 	sectionHasEntry := false
+	sectionLevel := 0
+	sectionCount := 0
+	sectionHasIntro := false
 
 	blocks, err := markdownowner.TopLevelStructureContext(v.ctx, body)
 	if err != nil {
@@ -640,14 +646,22 @@ func (v *validator) validateIndexBody(path, body string) error {
 		}
 		if block.Kind == markdownowner.TopLevelHeading {
 			if seenHeading && !sectionHasEntry {
-				v.addIndexError(path, "body", v.diagnosticMessage("index.md section has no entries: %q", sectionHeading))
+				if sectionCount != 1 || sectionLevel != 1 || (!sectionHasIntro && block.HeadingLevel <= sectionLevel) {
+					v.addIndexError(path, "body", v.diagnosticMessage("index.md section has no entries: %q", sectionHeading))
+				}
 			}
 			seenHeading = true
+			sectionCount++
+			sectionLevel = block.HeadingLevel
 			sectionHeading = block.Text
 			sectionHasEntry = false
+			sectionHasIntro = false
 			continue
 		}
 		if block.Kind != markdownowner.TopLevelList || block.Indent != 0 {
+			if seenHeading && sectionCount == 1 && block.Kind == markdownowner.TopLevelOther && strings.TrimSpace(block.Raw) != "" {
+				sectionHasIntro = true
+			}
 			continue
 		}
 		for _, item := range block.Items {
@@ -728,7 +742,6 @@ func (v *validator) validateLog(path, body string) error {
 					continue
 				}
 				current.entries++
-				nonListLines = append(nonListLines, item.ContinuationTexts...)
 			}
 		default:
 			if current != nil && strings.TrimSpace(block.Raw) != "" {

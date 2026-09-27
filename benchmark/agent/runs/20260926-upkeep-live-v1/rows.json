@@ -1,0 +1,218 @@
+{
+  "writers": [
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_off",
+      "repeat": 1,
+      "session_id": "01a0ddb0-1d51-7a50-9b87-421136c01cdb",
+      "starting_sha256": "8ea0de0381c5618130fbffbfdb85756dbdbdf92f6854aa641c7bb6a167901660",
+      "final_code": [
+        {
+          "id": "decision-code",
+          "path": "decision.go",
+          "content": "const Mode = \"B\"\n"
+        }
+      ],
+      "final_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode B.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe complete captured evidence indicates that the handler rollout finished.\n"
+        }
+      ],
+      "input_tokens": 15284,
+      "output_tokens": 280
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "session_id": "01a0ddb0-8b13-77e3-9a80-44dfb4212559",
+      "starting_sha256": "8ea0de0381c5618130fbffbfdb85756dbdbdf92f6854aa641c7bb6a167901660",
+      "final_code": [
+        {
+          "id": "decision-code",
+          "path": "decision.go",
+          "content": "const Mode = \"B\"\n"
+        }
+      ],
+      "final_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode A.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe complete captured evidence indicates that the handler rollout finished.\n"
+        }
+      ],
+      "checker_initial": "{\"status\":\"needs_review\",\"fingerprint\":\"d3862fe76799885cb55913915f71192886416a02807f48e4c473ae81b8f5ca4b\",\"changes\":[{\"path\":\"decision.go\",\"status\":\" M\",\"contents\":\"064eb04bc4859529b4e59d4134d23ff2ceb8e983728fdcf9c526439bb7f507c8\"}],\"advisory\":true}",
+      "checker_result": "{\"status\":\"needs_review\",\"fingerprint\":\"d3862fe76799885cb55913915f71192886416a02807f48e4c473ae81b8f5ca4b\",\"changes\":[{\"path\":\"decision.go\",\"status\":\" M\",\"contents\":\"064eb04bc4859529b4e59d4134d23ff2ceb8e983728fdcf9c526439bb7f507c8\"}],\"advisory\":true}",
+      "input_tokens": 30996,
+      "output_tokens": 560
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "session_id": "01a0ddb0-f2e2-7a81-a3af-944c337158bc",
+      "starting_sha256": "c45b6b4e735b6f9e09e730b0d8d47df5f4fd1d166334ee4c68a9468eef171d69",
+      "final_code": [
+        {
+          "id": "handler-capture",
+          "path": "handler-capture.txt",
+          "content": "Captured diff is partial; rollout status cannot be established.\ndiff --git a/handler.go b/handler.go\n@@ -1,100 +1,100 @@\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+        }
+      ],
+      "final_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode A.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe captured diff is partial, so rollout status cannot be established.\n"
+        }
+      ],
+      "checker_initial": "{\"status\":\"needs_review\",\"fingerprint\":\"2a4d0f76179118cb9886b401de48bb34d976f217010b62736e8f3619c782927e\",\"changes\":[{\"path\":\"handler-capture.txt\",\"status\":\" M\",\"contents\":\"0ae408025cf4b9d4fd77f33325caa29b450eb8c08961534619e5416d99047066\"}],\"advisory\":true}",
+      "checker_result": "{\"status\":\"reviewed_updated\",\"fingerprint\":\"2a4d0f76179118cb9886b401de48bb34d976f217010b62736e8f3619c782927e\",\"changes\":[{\"path\":\"handler-capture.txt\",\"status\":\" M\",\"contents\":\"0ae408025cf4b9d4fd77f33325caa29b450eb8c08961534619e5416d99047066\"}],\"evidence\":[\".okf/handler-status.md\"],\"advisory\":true}",
+      "input_tokens": 31135,
+      "output_tokens": 638
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_off",
+      "repeat": 1,
+      "session_id": "01a0ddb1-3ae4-7403-ba6b-a1c1640e722d",
+      "starting_sha256": "c45b6b4e735b6f9e09e730b0d8d47df5f4fd1d166334ee4c68a9468eef171d69",
+      "final_code": [
+        {
+          "id": "handler-capture",
+          "path": "handler-capture.txt",
+          "content": "Captured diff is partial; rollout status cannot be established.\ndiff --git a/handler.go b/handler.go\n@@ -1,100 +1,100 @@\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+        }
+      ],
+      "final_bundle": [
+        {
+          "id": "bundle-index",
+          "path": "index.md",
+          "content": "---\nokf_version: \"0.2\"\n---\n\n# Concepts\n- [Mode decision](decision.md) - Current mode decision.\n\n- [Handler rollout evidence](handler-status.md) - Current handler rollout evidence.\n"
+        },
+        {
+          "id": "decision",
+          "path": "decision.md",
+          "content": "---\ntype: Note\ntitle: Mode decision\ndescription: Current mode decision.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe current decision and implementation use mode A.\n"
+        },
+        {
+          "id": "handler",
+          "path": "handler-status.md",
+          "content": "---\ntype: Note\ntitle: Handler rollout evidence\ndescription: Current handler rollout evidence.\nstatus: draft\ngenerated:\n  at: \"2026-01-01T00:00:00Z\"\n  by: process:okf-upkeep-study\n---\n\nThe partial captured evidence does not establish the handler rollout status.\n"
+        }
+      ],
+      "input_tokens": 15333,
+      "output_tokens": 318
+    }
+  ],
+  "consumers": [
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_off",
+      "repeat": 1,
+      "consumer_session_id": "01a0ddb0-4301-7e12-8ec5-eb6f12784e6d",
+      "visible_bundle_sha256": "111c1769750832b0aec94bb939a0d8f30144fdc5d93feb67a58763a8fd03b244",
+      "observation": {
+        "answer": "Mode B.",
+        "evidence": [
+          "decision"
+        ],
+        "tool_calls": 0,
+        "toolkit_calls": 0,
+        "input_tokens": 15174,
+        "output_tokens": 27,
+        "cache_tokens": 0,
+        "elapsed_ms": 0
+      }
+    },
+    {
+      "case_id": "upkeep-reversal",
+      "arm": "checker_on",
+      "repeat": 1,
+      "consumer_session_id": "01a0ddb0-b1f2-7492-b3c7-88a213840fa6",
+      "visible_bundle_sha256": "a219e8c41f7a982d3a10168ad90fd54cc30af1d83f6e039db7cb85ffdfffe2fa",
+      "observation": {
+        "answer": "Mode A",
+        "evidence": [
+          "decision"
+        ],
+        "tool_calls": 0,
+        "toolkit_calls": 0,
+        "input_tokens": 15176,
+        "output_tokens": 27,
+        "cache_tokens": 0,
+        "elapsed_ms": 0
+      }
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_on",
+      "repeat": 1,
+      "consumer_session_id": "01a0ddb1-2410-7f40-8e2a-4791d418ce4f",
+      "visible_bundle_sha256": "c3de222591192406ece1697f8eee968d0b8085cb62bc24c986a2a7cd3b32d723",
+      "observation": {
+        "answer": "Insufficient evidence.",
+        "evidence": [
+          "handler: The captured diff is partial, so rollout status cannot be established."
+        ],
+        "tool_calls": 0,
+        "toolkit_calls": 0,
+        "input_tokens": 15180,
+        "output_tokens": 41,
+        "cache_tokens": 0,
+        "elapsed_ms": 0
+      }
+    },
+    {
+      "case_id": "upkeep-truncated",
+      "arm": "checker_off",
+      "repeat": 1,
+      "consumer_session_id": "01a0ddb1-65cd-7461-bb6b-4f9fcbb214eb",
+      "visible_bundle_sha256": "8ae7179fbcc005f57603eb4a90eb1d87309e55bf355a7d78541e9c389ff70fb7",
+      "observation": {
+        "answer": "Insufficient evidence.",
+        "evidence": [
+          "handler"
+        ],
+        "tool_calls": 0,
+        "toolkit_calls": 0,
+        "input_tokens": 15181,
+        "output_tokens": 28,
+        "cache_tokens": 0,
+        "elapsed_ms": 0
+      }
+    }
+  ]
+}

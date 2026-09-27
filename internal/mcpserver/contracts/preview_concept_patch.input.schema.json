@@ -2,13 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://okf.dev/mcp/v0.2/preview_concept_patch.input.schema.json",
   "$defs": {
+    "instant_timestamp": {"format": "date-time", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$", "not": {"pattern": "-00:00$"}},
+    "date_timestamp": {"format": "date"},
+    "instant_temporal_patch": {"properties": {"operations": {"items": {"properties": {
+      "source": {"properties": {"last_modified": {"$ref": "#/$defs/instant_timestamp"}, "usage_window": {"properties": {"from": {"$ref": "#/$defs/instant_timestamp"}, "to": {"$ref": "#/$defs/instant_timestamp"}}}}},
+      "usage_window": {"properties": {"from": {"$ref": "#/$defs/instant_timestamp"}, "to": {"$ref": "#/$defs/instant_timestamp"}}},
+      "lifecycle": {"properties": {"stale_after": {"$ref": "#/$defs/instant_timestamp"}}}
+    }}}}},
+    "date_temporal_patch": {"properties": {"operations": {"items": {"properties": {
+      "source": {"properties": {"last_modified": {"$ref": "#/$defs/date_timestamp"}, "usage_window": {"properties": {"from": {"$ref": "#/$defs/date_timestamp"}, "to": {"$ref": "#/$defs/date_timestamp"}}}}},
+      "usage_window": {"properties": {"from": {"$ref": "#/$defs/date_timestamp"}, "to": {"$ref": "#/$defs/date_timestamp"}}},
+      "lifecycle": {"properties": {"stale_after": {"$ref": "#/$defs/date_timestamp"}}}
+    }}}}},
     "usage_window": {
       "type": "object",
       "additionalProperties": false,
       "required": ["from", "to"],
       "properties": {
-        "from": {"type": "string", "format": "date"},
-        "to": {"type": "string", "format": "date"}
+        "from": {"type": "string", "anyOf": [{"format": "date"}, {"format": "date-time"}]},
+        "to": {"type": "string", "anyOf": [{"format": "date"}, {"format": "date-time"}]}
       }
     },
     "source": {
@@ -21,7 +33,7 @@
         "title": {"type": "string", "maxLength": 4096},
         "author": {"type": "string", "maxLength": 4096},
         "usage_count": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
-        "last_modified": {"type": "string", "format": "date"},
+        "last_modified": {"type": "string", "anyOf": [{"format": "date"}, {"format": "date-time"}]},
         "usage_window": {"$ref": "#/$defs/usage_window"}
       }
     },
@@ -76,6 +88,7 @@
   "required": ["bundle_path", "actor", "operations"],
   "properties": {
     "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
     "actor": {"type": "string", "minLength": 1, "maxLength": 256},
     "operations": {
       "type": "array",
@@ -117,7 +130,7 @@
             "required": ["status", "stale_after"],
             "properties": {
               "status": {"enum": ["draft", "stable", "deprecated", null]},
-              "stale_after": {"type": ["string", "null"], "format": "date"}
+              "stale_after": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]}
             }
           },
           "attested_computation": {"$ref": "#/$defs/computation"},
@@ -254,5 +267,10 @@
         ]
       }
     }
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]},
+    "then": {"$ref": "#/$defs/instant_temporal_patch"},
+    "else": {"$ref": "#/$defs/date_temporal_patch"}
+  }]
 }

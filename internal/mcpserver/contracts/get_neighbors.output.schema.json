@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.2/get_neighbors.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "concept",
+    "as_of",
+    "direction",
+    "kinds",
+    "total",
+    "truncated",
+    "edges",
+    "sources",
+    "temporal_profile"
+  ],
+  "properties": {
+    "concept": {
+      "$ref": "#/$defs/card"
+    },
+    "as_of": {
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "direction": {
+      "enum": [
+        "in",
+        "out",
+        "both"
+      ]
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "navigation",
+          "relation",
+          "source"
+        ]
+      }
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "temporal_profile": {
+      "enum": [
+        "date-3fcbb9f",
+        "instant-0b87c52"
+      ]
+    }
+  },
+  "$defs": {
+    "card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "path",
+        "type",
+        "title",
+        "description",
+        "tags",
+        "status",
+        "trust",
+        "stale",
+        "stale_after",
+        "status_state"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "trust": {
+          "enum": [
+            "unverified",
+            "machine-confirmed",
+            "human-reviewed"
+          ]
+        },
+        "stale": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "stale_after": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status_state": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "present",
+            "valid",
+            "raw",
+            "effective"
+          ],
+          "properties": {
+            "present": {
+              "type": "boolean"
+            },
+            "valid": {
+              "type": "boolean"
+            },
+            "raw": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "effective": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "kind",
+        "relation_type",
+        "source",
+        "target"
+      ],
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "navigation",
+            "relation"
+          ]
+        },
+        "relation_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/card"
+        },
+        "target": {
+          "$ref": "#/$defs/card"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "resource",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
