@@ -22,6 +22,25 @@ Skill нужен, чтобы:
 - спланировать explicit migration v0.1 → v0.2;
 - разобрать provenance, trust, lifecycle или Attested Computation contract.
 
+Установленный skill направляет authoring и reading через короткие процедуры.
+Validation и offline viewer остаются recipes: определить root, version,
+profile и reference time, выполнить доступную команду и показать report либо
+проверить локальный HTML. Upkeep выделен в `okf-maintain`: baseline до правок
+репозитория, сверка relevant concepts с текущим кодом и контрактами, затем
+решение `updated` или обоснованное `unaffected` с fingerprint после последней
+правки. Отдельный `okf-backfill` ведёт Git extract, анализ evidence, review
+plan, разрешённый apply и независимую проверку через существующий Go pipeline. Каждый
+каталог skill самодостаточен. Для установленного CLI используй `okf help`.
+Validation и viewer export не подтверждают фактическую верность claims.
+[Быстрый старт с командами]({{ '/ru/quickstart/' | relative_url }}) показывает
+локальный create/check/open и даёт ссылку на
+[публичный viewer]({{ '/demo/knowledge.html' | relative_url }}) bundle репозитория.
+
+Если OKF MCP server недоступен, проверь установленный CLI или Go команду из
+checkout; если нет обоих, называй ручной осмотр отдельно от выполненной
+инструментальной проверки. Viewer пишет локальный файл вне bundle; заменять
+существующий output можно только при разрешённом `--overwrite`.
+
 ## Authoring sequence
 
 1. Выбрать target version и записать её только в root `index.md`.
@@ -182,6 +201,11 @@ NOT создавать или редактировать sanctioned computation.
 ## References
 
 - [Full skill](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/SKILL.md)
+- [Authoring and reading](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/authoring-and-reading.md)
+- [MCP operations](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/mcp-operations.md)
+- [Validation и viewer recipes](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/operational-workflows.md)
+- [Knowledge upkeep skill](https://github.com/skosovsky/okf/blob/main/skills/okf-maintain/SKILL.md)
+- [Git backfill skill](https://github.com/skosovsky/okf/blob/main/skills/okf-backfill/SKILL.md)
 - [Pinned spec](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md)
 - [Migration policy](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/migration-v01-v02.md)
 - [Adversarial matrix](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/adversarial-v02.md)

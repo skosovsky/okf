@@ -1,5 +1,7 @@
 # GitHub Action: validate an OKF bundle
 
+For an interactive check before CI, follow the [validation recipe](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/operational-workflows.md#validate-and-explain-a-bundle). It keeps base conformance, optional strict guidance, and the warning-budget policy separate.
+
 Use the repository Action at an immutable commit SHA. The Action builds the Go toolkit from that exact revision and runs the same `okf validate` command used locally. It does not download another validator release.
 
 ```yaml

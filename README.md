@@ -1,6 +1,6 @@
 # okf
 
-`okf` is a Go toolkit, CLI, MCP server, and agent skill for
+`okf` is a Go toolkit, CLI, MCP server, and agent skills for
 [Open Knowledge Format (OKF) v0.2](skills/open-knowledge-format/references/spec-v02.md):
 portable knowledge bundles made of Markdown concepts with YAML frontmatter.
 
@@ -10,7 +10,8 @@ This repository supports three OKF version modes:
 - `0.1`: intentional legacy read/validate/migration source;
 - unknown future declarations: best-effort, lossless consumption.
 
-The version axes are independent:
+The version axes are independent (these values illustrate the distinction,
+not a release lookup):
 
 - plugin package: `0.2.0`;
 - repository/Go module release tag: `v0.2.1`;
@@ -19,6 +20,10 @@ The version axes are independent:
 Matching numeric components do not make one axis select another.
 
 Russian documentation: [README.ru.md](README.ru.md).
+
+For a first local run, follow the [quickstart](docs/quickstart.md). Its
+[published knowledge viewer](https://skosovsky.github.io/okf/demo/knowledge.html)
+is a reproducible snapshot of this repository's public `knowledge/` bundle.
 
 The repository's own OKF bundle starts at [knowledge/index.md](knowledge/index.md);
 [docs/knowledge.md](docs/knowledge.md) explains how it is maintained.
@@ -30,7 +35,13 @@ The repository's own OKF bundle starts at [knowledge/index.md](knowledge/index.m
 2. Go packages: `bundle`, `validator`, `graph`, `store`, `store/fs`, and
    `mutation`.
 3. `okf-mcp`: schema-first stdio tools with legacy text fallbacks.
-4. `open-knowledge-format`: an agent skill pinned to the upstream v0.2 spec.
+4. [`open-knowledge-format`](skills/open-knowledge-format/SKILL.md): the agent
+   skill for authoring, reading, validation, viewer export, and migration,
+   pinned to the upstream v0.2 spec.
+5. [`okf-maintain`](skills/okf-maintain/SKILL.md): a separate workflow for
+   reviewing repository knowledge after code or contract changes.
+6. [`okf-backfill`](skills/okf-backfill/SKILL.md): evidence-bound Git history
+   reconstruction through the existing Go backfill pipeline.
 
 ## Install
 
@@ -45,6 +56,15 @@ Check the binary separately from the supported OKF specs:
 okf version
 okf version --json
 ```
+
+For a standalone skill installation, copy the selected directory under
+`skills/` into your host's skills directory. The skill's relative Markdown
+references stay inside that directory. `open-knowledge-format` needs an
+installed `okf` CLI or connected `okf-mcp` server for automated operations;
+`okf-maintain` additionally needs `okf-upkeep`, and `okf-backfill` needs
+`okf-backfill` plus the toolkit's `backfill/PROTOCOL.md` and schemas. The skill
+package does not install those binaries or grant tool permissions. Check the
+actual host's skill registration and MCP connection separately.
 
 ## Minimal OKF v0.2 bundle
 
@@ -376,6 +396,19 @@ go vet ./...
 git diff --check
 ```
 
-The final lock-file check verifies that `skills-lock.json` matches the exact
-contents of `skills/open-knowledge-format`. Recompute that lock only after the
-skill and its references are stable.
+`skills.sh.json`, both plugin manifests, and `skills-lock.json` register the three
+skills. Run `node scripts/update-skills-lock.mjs --check` to verify the locked
+content of `skills/open-knowledge-format`, `skills/okf-maintain`, and
+`skills/okf-backfill`. Recompute the lock after changes to any skill and its
+references are stable.
+
+`skill-dependencies.json` lists workflow dependencies by name and path without
+copying tool schemas. CI checks those names against the runtime MCP catalog and
+CLI dispatch, verifies packaged links and toolkit assets, then copies only `skills/`
+into a temporary install root and checks it there. Run
+`node scripts/check-skill-package.mjs` locally after editing skills or tools.
+The check uses the Go YAML parser for frontmatter and resolves both inline and
+reference-style Markdown links inside the installed skill tree.
+This is a filesystem/package smoke test. Codex, Claude Code, and skills.sh host
+activation and invocation remain untested in CI; verify them in their actual
+hosts before a release claim.

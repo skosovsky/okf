@@ -11,7 +11,7 @@ permalink: /ru/toolkit/
 Toolkit по умолчанию читает v0.2, сохраняет explicit v0.1 compatibility и
 best-effort потребляет unknown future declarations без потери version.
 
-Version axes независимы: plugin package `0.2.0`, release tag repo/Go module
+Version axes независимы (это примеры значений): plugin package `0.2.0`, release tag repo/Go module
 `v0.2.1` и document spec `okf_version: "0.2"`. Ни одна ось не выбирает другую.
 Document contract — [pinned spec](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
 
@@ -266,6 +266,13 @@ preview/apply:
 - `preview_v02_migration` / `apply_v02_migration`
 - `preview_temporal_upgrade` / `apply_temporal_upgrade`
 
+`search_concepts` и `get_neighbors` возвращают `total` и `truncated`, когда
+лимит отсёк часть совпадений или связей. Курсора нет; можно уточнить входные
+параметры либо запросить весь граф, если он помещается в лимит. Жёсткий
+`resource_limit` завершает вызов ошибкой и не означает частичную страницу.
+Неверный ввод возвращает стабильный код и ограниченную подсказку по полю.
+Точные правила приведены в [контракте запросов]({{ '/contracts/concept-queries/' | relative_url }}).
+
 Structured outputs schema-validated. Patch apply требует `expected_revision` и
 preview plan digest. Migration apply discriminated по transition:
 `v0.1-to-v0.2` требует preview proof `format_version: 2` с non-empty
@@ -289,6 +296,9 @@ form отсутствует. Empty `source_id`, mixed/unknown selector forms и 
 exact anonymous matches отклоняются.
 
 ## Security boundary
+
+Границы preview/apply, повторов и авторизации описаны в
+[MCP mutation and trust boundary]({{ '/contracts/mcp-mutation-trust-boundaries/' | relative_url }}).
 
 - Bundle paths используют containment/no-follow rules.
 - Resource fields не авторизуют filesystem, network, shell или secret use.

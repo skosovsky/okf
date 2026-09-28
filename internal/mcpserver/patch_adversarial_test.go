@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcptest"
@@ -217,11 +218,35 @@ func TestMCPConceptPatchExternalWriterWinsAfterPreview(t *testing.T) {
 	if envelope["code"] != "revision_conflict" || envelope["retryable"] != true {
 		t.Fatalf("stale apply error = %#v, want retryable revision_conflict", envelope)
 	}
+	diagnostics, ok := envelope["diagnostics"].([]any)
+	if !ok || len(diagnostics) != 1 {
+		t.Fatalf("stale apply recovery diagnostics = %#v", envelope["diagnostics"])
+	}
+	step, ok := diagnostics[0].(map[string]any)
+	if !ok || step["field"] != "expected_revision" ||
+		!strings.Contains(step["message"].(string), "preview again") {
+		t.Fatalf("stale apply recovery step = %#v", diagnostics[0])
+	}
 	if got := readTestFile(t, root, "a.md"); got != externalDocument {
 		t.Fatalf("external writer content was overwritten:\n%s", got)
 	}
 	if afterApply := protocolTreeSnapshot(t, root); !reflect.DeepEqual(afterApply, afterExternalWrite) {
 		t.Fatalf("stale apply changed bundle tree:\nexternal=%#v\nafter=%#v", afterExternalWrite, afterApply)
+	}
+	// Recovery: a fresh preview against the external writer's revision can be applied.
+	fresh := callMCPTool(t, srv, "preview_concept_patch", arguments)
+	if fresh.IsError {
+		t.Fatalf("fresh preview returned error: %s", resultText(t, fresh))
+	}
+	freshPlan := fresh.StructuredContent.(map[string]any)
+	if freshPlan["status"] != "applicable" || freshPlan["base_revision"] == payload["base_revision"] {
+		t.Fatalf("fresh preview did not bind current revision: %#v", freshPlan)
+	}
+	applyArguments["expected_revision"] = freshPlan["base_revision"]
+	applyArguments["expected_plan_digest"] = freshPlan["plan_digest"]
+	recovered := callMCPTool(t, srv, "apply_concept_patch", applyArguments)
+	if recovered.IsError || recovered.StructuredContent.(map[string]any)["status"] != "applied" {
+		t.Fatalf("fresh apply did not recover: %#v", recovered)
 	}
 }
 

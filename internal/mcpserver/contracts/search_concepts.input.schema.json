@@ -8,23 +8,23 @@
     "query"
   ],
   "properties": {
-    "bundle_path": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.",
       "type": "string",
       "minLength": 1,
       "maxLength": 4096
     },
-    "query": {
+    "query": {"examples": ["cache invalidation"], "description": "One nonblank literal Unicode case-folded substring (max 512 characters), not a regex or AND of words. Refine with a distinctive ID, title, or phrase when truncated. Example: cache invalidation.",
       "type": "string",
       "minLength": 1,
       "maxLength": 512,
       "pattern": "\\S"
     },
-    "limit": {
+    "limit": {"examples": [20], "description": "Maximum returned hits, from 1 to 100; defaults to 20. total/truncated indicate omitted hits. There is no cursor: increase limit or refine query when truncated.",
       "type": "integer",
       "minimum": 1,
       "maximum": 100
     },
-    "as_of": {
+    "as_of": {"description": "Explicit reference time for temporal evaluation: YYYY-MM-DD with the date profile, RFC 3339 date-time with the instant profile. Omit to leave the request reference unset; pass a value for reproducible freshness.",
       "type": "string",
       "oneOf": [
         {
@@ -35,7 +35,7 @@
         }
       ]
     },
-    "temporal_profile": {
+    "temporal_profile": {"description": "Temporal interpretation: date-3fcbb9f by default, or instant-0b87c52 for upgraded bundles. Match as_of format to the profile.",
       "enum": [
         "date-3fcbb9f",
         "instant-0b87c52"

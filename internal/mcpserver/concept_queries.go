@@ -139,7 +139,7 @@ func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query str
 		return result, err
 	}
 	if len(ids) > maxConceptItems {
-		return result, errMCPResourceLimit
+		return result, errMCPConceptCountLimit
 	}
 	type ranked struct {
 		hit   conceptSearchHit
@@ -258,7 +258,7 @@ func neighborConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, id bund
 		return result, err
 	}
 	if len(ids) > maxConceptItems {
-		return result, errMCPResourceLimit
+		return result, errMCPConceptCountLimit
 	}
 	for _, sourceID := range ids {
 		if err := ctx.Err(); err != nil {

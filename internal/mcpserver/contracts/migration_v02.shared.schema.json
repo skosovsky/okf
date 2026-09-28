@@ -137,8 +137,9 @@
         "additionalProperties": false,
         "required": ["path", "entries"],
         "properties": {
-          "path": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "path": {"description": "Bundle-relative document path containing legacy citations, e.g. concepts/cache.md.", "examples": ["concepts/cache.md"], "type": "string", "minLength": 1, "maxLength": 4096},
           "entries": {
+            "description": "One or more explicit legacy citation selectors and v0.2 source projections for this exact document.",
             "type": "array",
             "minItems": 1,
             "maxItems": 10000,
@@ -159,7 +160,7 @@
                   "minLength": 1,
                   "maxLength": 4096
                 },
-                "source_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+                "source_id": {"description": "Stable v0.2 citation source ID, e.g. cache-design; pair with an exact legacy selector.", "examples": ["cache-design"], "type": "string", "minLength": 1, "maxLength": 4096},
                 "title": {
                   "description": "Optional link title; requires resource to form a complete explicit projection.",
                   "type": "string",

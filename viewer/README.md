@@ -1,6 +1,10 @@
 # Offline knowledge viewer
 
+For a runnable source-linked demo, use the [quickstart](../docs/quickstart.md)
+and `scripts/build-viewer-demo.sh OUTPUT.html` from the repository root.
+
 `okf view <bundle> --output viewer.html` exports a single read-only HTML file.
+The [operational viewer recipe](../skills/open-knowledge-format/references/operational-workflows.md#export-and-inspect-an-offline-viewer) covers root/version/reference-time selection, output collision, local inspection, and missing-tool fallback.
 The file embeds its CSS, JavaScript, concept projection, and relationship data.
 It opens from disk without a server, network fetch, CDN, external fonts, or
 runtime other than a browser. The UI contains a searchable list, a type filter,

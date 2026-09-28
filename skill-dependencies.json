@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "mcpServer": "okf-mcp",
+  "skills": {
+    "open-knowledge-format": {
+      "mcpTools": ["list_concepts", "search_concepts", "read_concept", "get_neighbors", "validate_bundle", "get_semantic_graph", "write_concept", "preview_concept_patch", "apply_concept_patch", "preview_v02_migration", "apply_v02_migration", "preview_temporal_upgrade", "apply_temporal_upgrade"],
+      "cli": {"okf": ["init", "validate", "view", "migrate", "temporal-upgrade"]},
+      "references": ["references/spec-v02.md", "references/spec-v02-instant.md", "references/authoring-and-reading.md", "references/operational-workflows.md", "references/mcp-operations.md", "references/migration-v01-v02.md", "references/conversion.md", "references/examples.md", "references/adversarial-v02.md"]
+    },
+    "okf-maintain": {
+      "mcpTools": ["search_concepts", "read_concept"],
+      "cli": {"okf-upkeep": ["baseline", "check"], "okf": ["validate"]},
+      "references": []
+    },
+    "okf-backfill": {
+      "mcpTools": [],
+      "cli": {"okf-backfill": ["extract", "plan", "apply"]},
+      "references": ["references/analyst.md"]
+    }
+  },
+  "toolkitAssets": [
+    "upkeep/contracts/config.schema.json",
+    "backfill/PROTOCOL.md",
+    "backfill/schemas/manifest.schema.json",
+    "backfill/schemas/event.schema.json",
+    "backfill/schemas/analysis.schema.json",
+    "backfill/schemas/candidate.schema.json",
+    "backfill/schemas/checkpoint.schema.json",
+    "backfill/schemas/coverage.schema.json"
+  ]
+}

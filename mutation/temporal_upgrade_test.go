@@ -28,6 +28,40 @@ func temporalUpgradeMappings(t *testing.T) []TemporalUpgradeMapping {
 	}
 }
 
+func TestTemporalUpgradeRequestDigestMatchesPreviewCanonicalChange(t *testing.T) {
+	// Arrange.
+	request := TemporalUpgradeRequest{ID: "digest-005", Actor: "human:reviewer", Mappings: temporalUpgradeMappings(t)}
+	reversed := request
+	reversed.Mappings = append([]TemporalUpgradeMapping(nil), request.Mappings...)
+	for i, j := 0, len(reversed.Mappings)-1; i < j; i, j = i+1, j-1 {
+		reversed.Mappings[i], reversed.Mappings[j] = reversed.Mappings[j], reversed.Mappings[i]
+	}
+	preview, err := NewTemporalUpgradePlanner().Preview(context.Background(), temporalUpgradeFixture(), request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previewDigest, err := preview.Change.RequestDigest()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Act.
+	canonicalChange, canonicalErr := temporalUpgradeChangeFromRequest(TemporalUpgradeApplyRequest{Request: request, BaseRevision: preview.Preview.BaseRevision})
+	reorderedChange, reorderedErr := temporalUpgradeChangeFromRequest(TemporalUpgradeApplyRequest{Request: reversed, BaseRevision: preview.Preview.BaseRevision})
+	var canonical, reordered string
+	if canonicalErr == nil {
+		canonical, canonicalErr = canonicalChange.RequestDigest()
+	}
+	if reorderedErr == nil {
+		reordered, reorderedErr = reorderedChange.RequestDigest()
+	}
+
+	// Assert.
+	if canonicalErr != nil || reorderedErr != nil || canonical != previewDigest || reordered != previewDigest {
+		t.Fatalf("digests: preview=%q request=%q/%v reordered=%q/%v", previewDigest, canonical, canonicalErr, reordered, reorderedErr)
+	}
+}
+
 func TestTemporalUpgradePreviewRequiresEveryExplicitInstantAndPreservesPresentation(t *testing.T) {
 	// Arrange.
 	source := temporalUpgradeFixture()

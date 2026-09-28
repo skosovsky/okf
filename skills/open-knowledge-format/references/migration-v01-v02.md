@@ -4,6 +4,18 @@
 изменения перечислены в §13 [pinned OKF v0.2 spec](spec-v02.md). Toolkit policy
 не расширяет upstream conformance.
 
+## Contents
+
+- [Что меняется](#что-меняется)
+- [Transaction contract](#transaction-contract)
+- [`timestamp` → `generated`](#timestamp--generated)
+- [`# Citations` → `sources`](#-citations--sources)
+- [RelationRef wire extension](#skosovskyokf-relationref-wire-extension)
+- [Attested Computation boundary](#attested-computation-boundary)
+- [Запрещённые выводы](#запрещённые-выводы)
+- [Legacy consumption](#legacy-consumption-после-migration-tooling)
+- [Review checklist](#review-checklist)
+
 ## Что меняется
 
 Два breaking changes:

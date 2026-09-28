@@ -5,10 +5,10 @@
   "additionalProperties": false,
   "required": ["bundle_path", "timestamp_policy", "citation_mappings"],
   "properties": {
-    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "from": {"enum": ["auto", "0.1", "0.2"], "default": "auto"},
-    "generated_by": {"type": "string", "maxLength": 256},
-    "generated_at": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.", "type": "string", "minLength": 1, "maxLength": 4096},
+    "from": {"examples": ["auto"], "description": "Source version: auto (default), 0.1 or 0.2; auto resolves from the bundle.", "enum": ["auto", "0.1", "0.2"], "default": "auto"},
+    "generated_by": {"examples": ["human:reviewer"], "description": "Producer provenance for migrated generated fields, e.g. human:reviewer; not an authorization principal.", "type": "string", "maxLength": 256},
+    "generated_at": {"examples": [[{"concept_id": "architecture/cache", "at": "2026-09-27T10:00:00Z"}]], "description": "Explicit per-concept generated timestamps (RFC 3339 date-time); no inferred time is supplied.",
       "type": "array",
       "maxItems": 10000,
       "items": {
@@ -21,12 +21,12 @@
         }
       }
     },
-    "timestamp_conflict_policy": {
+    "timestamp_conflict_policy": {"examples": ["reject"], "description": "How to resolve an existing timestamp versus generated.at; reject by default.",
       "enum": ["reject", "use_generated", "use_timestamp"],
       "default": "reject"
     },
-    "timestamp_policy": {"enum": ["preserve", "remove_after_copy"]},
-    "citation_mappings": {"$ref": "#/$defs/citation_mappings"},
-    "computations": {"$ref": "#/$defs/computations"}
+    "timestamp_policy": {"examples": ["preserve"], "description": "Preserve legacy timestamp or remove it after copying to generated.at; required.", "enum": ["preserve", "remove_after_copy"]},
+    "citation_mappings": {"description": "Explicit citation mappings with replay-sufficient selectors; use exact legacy_entry bytes or resource projection for reserved index/log documents.", "$ref": "#/$defs/citation_mappings"},
+    "computations": {"description": "Explicit attested computation mappings; computation content is inert and is never executed by this tool.", "$ref": "#/$defs/computations"}
   }
 }

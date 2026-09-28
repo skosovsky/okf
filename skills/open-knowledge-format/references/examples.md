@@ -1,10 +1,24 @@
 # OKF v0.2 examples
 
-Canonical examples live in the shared `fixtures/v02` corpus. Do not duplicate
-their YAML here: fixture-backed files are parsed by bundle/validator/CLI/MCP
-tests and therefore cannot silently drift from documentation.
+## Contents
 
-Use `fixtures/v02/corpus.yaml` to locate the exact paths for:
+- [Minimal authoring pattern](#minimal-authoring-pattern)
+- [Human-authored versus verified](#human-authored-is-not-automatically-verified)
+- [Multiple sources](#multiple-sources)
+- [Bare/list verification](#barelist-verification)
+- [Computation](#computation-examples-are-inert)
+- [Compatibility](#intentional-compatibility-examples)
+- [Citation selectors](#citation-mapping-selector-examples)
+- [RelationRef wire](#skosovskyokf-relationref-wire-examples)
+- [MCP usage count](#mcp-usage_count-wire-example)
+- [MCP patch selectors](#mcp-set_usage_window-selector-examples)
+- [MCP remove_source selectors](#mcp-remove_source-selector-examples)
+
+This installed skill includes compact examples below. In a repository
+checkout, additional tested examples live in the optional `fixtures/v02`
+corpus (`fixtures/v02/corpus.yaml`). The skill does not require that checkout.
+
+The repository corpus covers:
 
 - minimal type-only concept;
 - Appendix A bundle;

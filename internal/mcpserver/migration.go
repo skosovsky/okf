@@ -274,7 +274,7 @@ func handlePreviewV02Migration(ctx context.Context, request mcp.CallToolRequest)
 		return jsonStructuredResultContext(ctx, "project migration source", response, response), nil
 	}
 	if resolution.Transition != mutation.MigrationTransitionV01ToV02 {
-		return stableToolError("unsupported_migration_source", "migration source transition is unsupported", false), nil
+		return stableToolErrorWithRecovery("unsupported_migration_source", "migration source transition is unsupported", false), nil
 	}
 	domain, err := migrationRequestFromInput(resolution, migrationInput)
 	if err != nil {
@@ -343,7 +343,7 @@ func handleApplyV02Migration(ctx context.Context, request mcp.CallToolRequest) (
 			return stableToolError("source_conflict", "migration source resolution changed after preview", true), nil
 		}
 		if resolutionErr != nil || resolution.Transition != mutation.MigrationTransitionTargetNoop {
-			return stableToolError("unsupported_migration_source", "migration source is no longer a target noop", false), nil
+			return stableToolErrorWithRecovery("unsupported_migration_source", "migration source is no longer a target noop", false), nil
 		}
 		preflight, preflightErr := mutation.PreflightV01ToV02MigrationInput(
 			ctx,
@@ -394,7 +394,7 @@ func handleApplyV02Migration(ctx context.Context, request mcp.CallToolRequest) (
 			return bundleDomainError("inspect transactional store metadata", "migration metadata exceeds MCP resource limits", metadataErr), nil
 		}
 		if !metadataExists {
-			return stableToolError("revision_conflict", "bundle revision changed after migration preview", true), nil
+			return stableToolErrorWithRecovery("revision_conflict", "bundle revision changed after migration preview", true), nil
 		}
 		return applyMigrationPlan(ctx, root, planner, domain, expectedSource, proof, arguments.ExpectedPlanDigest)
 	}
@@ -402,13 +402,13 @@ func handleApplyV02Migration(ctx context.Context, request mcp.CallToolRequest) (
 		return stableToolError("source_conflict", "migration source resolution changed after preview", true), nil
 	}
 	if resolution.Transition == mutation.MigrationTransitionBlocked {
-		return stableToolError("unsupported_migration_source", "migration source is blocked", false), nil
+		return stableToolErrorWithRecovery("unsupported_migration_source", "migration source is blocked", false), nil
 	}
 	if resolutionErr != nil {
 		return bundleDomainError("resolve migration source", "migration source exceeds MCP resource limits", resolutionErr), nil
 	}
 	if resolution.Transition != mutation.MigrationTransitionV01ToV02 {
-		return stableToolError("unsupported_migration_source", "migration source transition is unsupported", false), nil
+		return stableToolErrorWithRecovery("unsupported_migration_source", "migration source transition is unsupported", false), nil
 	}
 	preview, previewErr := planner.Preview(ctx, source, resolution, domain)
 	paths, pathsErr := previewPathsContext(ctx, preview.Preview)
@@ -440,7 +440,7 @@ func handleApplyV02Migration(ctx context.Context, request mcp.CallToolRequest) (
 	if !equalMigrationSource(preview.Resolution, expectedSource) ||
 		preview.PlanDigest != arguments.ExpectedPlanDigest ||
 		!reflect.DeepEqual(preview.Proof, proof) {
-		return stableToolError("plan_mismatch", "migration proof or digest does not match the rebuilt plan", false), nil
+		return stableToolErrorWithRecovery("plan_mismatch", "migration proof or digest does not match the rebuilt plan", false), nil
 	}
 	if preview.Preview.BaseRevision == preview.Preview.ResultRevision ||
 		len(preview.Preview.Writes)+len(preview.Preview.Deletes)+len(preview.Preview.Renames) == 0 {
@@ -838,13 +838,13 @@ func migrationApplyError(err error) *mcp.CallToolResult {
 	case errors.Is(err, store.ErrStorageCorrupt):
 		return stableToolError("operation_rejected", "migration commit receipt failed integrity validation", false)
 	case errors.Is(err, mutation.ErrMigrationPlanMismatch):
-		return stableToolError("plan_mismatch", "expected_plan_digest does not match the rebuilt migration plan", false)
+		return stableToolErrorWithRecovery("plan_mismatch", "expected_plan_digest does not match the rebuilt migration plan", false)
 	case errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded):
 		return stableToolError("operation_cancelled", "apply v0.2 migration was cancelled", true)
 	}
 	var conflict *store.Conflict
 	if errors.As(err, &conflict) {
-		return stableToolError("revision_conflict", "bundle revision changed after migration preview", conflict.Retryable)
+		return stableToolErrorWithRecovery("revision_conflict", "bundle revision changed after migration preview", conflict.Retryable)
 	}
 	return toolErrorf("apply v0.2 migration: %v", err)
 }
@@ -1236,7 +1236,7 @@ func migrationInputPreflightError(
 	if preflightErr != nil {
 		return toolErrorf("preflight migration input: %v", preflightErr)
 	}
-	return stableToolError("migration_blocked", "migration input preflight requires manual action", false)
+	return stableToolErrorWithRecovery("migration_blocked", "migration input preflight requires manual action", false)
 }
 
 func migrationInputValidationError(err error) *mcp.CallToolResult {

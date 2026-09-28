@@ -5,13 +5,13 @@
   "additionalProperties": false,
   "required": ["bundle_path"],
   "properties": {
-    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "strict": {"type": "boolean", "default": false},
-    "check_links": {"type": "boolean", "default": false},
-    "check_orphans": {"type": "boolean", "default": false},
-    "target_version": {"enum": ["auto", "0.1", "0.2"], "default": "auto"},
-    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
-    "as_of": {"type": "string"}
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.", "type": "string", "minLength": 1, "maxLength": 4096},
+    "strict": {"description": "If true, run additional version-specific strict checks; findings retain their reported severity. Defaults to false.", "type": "boolean", "default": false},
+    "check_links": {"description": "Check Markdown link targets; defaults to false.", "type": "boolean", "default": false},
+    "check_orphans": {"description": "Check whether each concept is directly linked from index.md in its own directory. Unlisted concepts get warnings; a directory without index.md gets an info diagnostic and is skipped. Defaults to false.", "type": "boolean", "default": false},
+    "target_version": {"description": "OKF version to validate; auto resolves from bundle declaration by default.", "enum": ["auto", "0.1", "0.2"], "default": "auto"},
+    "temporal_profile": {"description": "Temporal interpretation: date-3fcbb9f by default, or instant-0b87c52 for upgraded bundles. Match as_of format to the profile.", "enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
+    "as_of": {"description": "Explicit reference time for temporal evaluation: YYYY-MM-DD with the date profile, RFC 3339 date-time with the instant profile. Omit to leave the request reference unset; pass a value for reproducible freshness.", "type": "string"}
   },
   "allOf": [{"if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]}, "then": {"properties": {"as_of": {"format": "date-time", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$", "not": {"pattern": "-00:00$"}}}}, "else": {"properties": {"as_of": {"format": "date"}}}}]
 }

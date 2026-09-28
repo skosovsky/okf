@@ -10,6 +10,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+var errMCPConceptCountLimit = errors.New("MCP concept count limit exceeded")
+
 func handleSearchConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	if result := requireCanonicalToolInput(ctx, "search_concepts", request); result != nil {
 		return result, nil
@@ -123,11 +125,15 @@ func conceptQueryLimit(request mcp.CallToolRequest) (int, *mcp.CallToolResult) {
 	case int:
 		limit = typed
 	case int64:
-		if typed < 1 || typed > maxConceptQueryLimit { return 0, stableToolError("resource_limit", "limit exceeds the advertised bounds", false) }
+		if typed < 1 || typed > maxConceptQueryLimit {
+			return 0, stableToolError("resource_limit", "limit exceeds the advertised bounds", false)
+		}
 		limit = int(typed)
 	case json.Number:
 		parsed, err := strconv.Atoi(string(typed))
-		if err != nil { return 0, stableToolError("schema_validation", "limit must be an integer", false) }
+		if err != nil {
+			return 0, stableToolError("schema_validation", "limit must be an integer", false)
+		}
 		limit = parsed
 	default:
 		return 0, stableToolError("schema_validation", "limit must be an integer", false)
@@ -180,7 +186,16 @@ func conceptQueryError(operation string, err error) *mcp.CallToolResult {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return stableToolError("operation_cancelled", operation+" was cancelled", true)
 	}
+	if errors.Is(err, errMCPConceptCountLimit) {
+		return withRecoveryStep(
+			stableToolError("resource_limit", operation+" exceeds MCP resource limits", false),
+			"bundle_path", "The selected bundle has too many concepts; use a smaller bundle. Narrowing query will not change this limit.",
+		)
+	}
 	if errors.Is(err, errMCPResourceLimit) {
+		if operation == "search concepts" {
+			return stableToolErrorWithRecovery("resource_limit", operation+" exceeds MCP resource limits", false)
+		}
 		return stableToolError("resource_limit", operation+" exceeds MCP resource limits", false)
 	}
 	return bundleDomainError(operation, operation+" failed", err)

@@ -6,7 +6,9 @@
       "title": "Knowledge Formats",
       "description": "Portable, version-aware knowledge bundle workflows for AI agents.",
       "skills": [
-        "open-knowledge-format"
+        "open-knowledge-format",
+        "okf-maintain",
+        "okf-backfill"
       ]
     }
   ]

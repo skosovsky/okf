@@ -1,7 +1,7 @@
 {
   "name": "okf",
   "displayName": "Open Knowledge Format",
-  "description": "OKF toolkit and agent skill for v0.2 authoring, legacy consumption, validation, and explicit migration.",
+  "description": "OKF toolkit and agent skills for v0.2 authoring, legacy consumption, validation, explicit migration, knowledge upkeep, and Git history backfill.",
   "version": "0.2.0",
   "author": {
     "name": "Sergey Kosovsky"

@@ -48,7 +48,6 @@ var russianMigrationPages = []string{
 	"docs/ru/migration.md",
 	"docs/ru/toolkit.md",
 	"docs/ru/skill.md",
-	"skills/open-knowledge-format/SKILL.md",
 	"skills/open-knowledge-format/references/migration-v01-v02.md",
 }
 
@@ -407,6 +406,20 @@ func TestMCPContractsHaveCanonicalSchemaAndRuntimeOwners(t *testing.T) {
 			}
 		}
 	}
+	// The skill entrypoint routes to conditional references instead of repeating
+	// the migration DTO. Keep both the route and the reference contract locked.
+	skill := readText(t, filepath.Join(root, "skills", "open-knowledge-format", "SKILL.md"))
+	for _, path := range []string{"references/migration-v01-v02.md", "references/mcp-operations.md"} {
+		if !strings.Contains(skill, "("+path+")") {
+			t.Errorf("skill entrypoint does not route to %s", path)
+		}
+	}
+	mcpReference := readText(t, filepath.Join(root, "skills", "open-knowledge-format", "references", "mcp-operations.md"))
+	for _, token := range []string{"format_version: 2", "resolution_digest", "expected_source"} {
+		if !strings.Contains(mcpReference, token) {
+			t.Errorf("MCP operations reference omits canonical migration ABI token %q", token)
+		}
+	}
 }
 
 func walkJSON(value any, visit func(string, any)) {
@@ -466,7 +479,8 @@ func TestPublishedDocumentationLinksResolve(t *testing.T) {
 		for _, match := range linkPattern.FindAllStringSubmatch(markdownWithoutCode(readText(t, path)), -1) {
 			target := strings.Trim(strings.TrimSpace(match[1]), "<>")
 			if liquid := liquidPattern.FindStringSubmatch(target); len(liquid) == 2 {
-				if !strings.HasPrefix(relative, "docs/") || !permalinks[liquid[1]] {
+				staticDemo := liquid[1] == "/demo/knowledge.html" && fileExists(filepath.Join(docsRoot, "demo", "knowledge.html"))
+				if !strings.HasPrefix(relative, "docs/") || (!permalinks[liquid[1]] && !staticDemo) {
 					t.Errorf("%s has unknown Jekyll target %q", relative, target)
 				}
 				continue
@@ -501,6 +515,11 @@ func TestPublishedDocumentationLinksResolve(t *testing.T) {
 			}
 		}
 	}
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
 
 func assertExists(t *testing.T, root, owner, relative string) {
@@ -733,7 +752,7 @@ type pluginManifest struct {
 	} `json:"interface"`
 }
 
-func TestPluginManifestsPublishOneConsistentSkill(t *testing.T) {
+func TestPluginManifestsPublishConsistentSkills(t *testing.T) {
 	t.Parallel()
 	root := repositoryRoot(t)
 	var claude, codex pluginManifest
@@ -767,16 +786,15 @@ func TestPluginManifestsPublishOneConsistentSkill(t *testing.T) {
 		} `json:"groupings"`
 	}
 	decodeJSONFile(t, filepath.Join(root, "skills.sh.json"), &skills)
-	count := 0
+	counts := map[string]int{}
 	for _, grouping := range skills.Groupings {
 		for _, skill := range grouping.Skills {
-			if skill == "open-knowledge-format" {
-				count++
-			}
+			counts[skill]++
 		}
 	}
-	if skills.Schema != "https://skills.sh/schemas/skills.sh.schema.json" || count != 1 {
-		t.Errorf("skills.sh registration = schema %q count %d", skills.Schema, count)
+	if skills.Schema != "https://skills.sh/schemas/skills.sh.schema.json" ||
+		len(counts) != 3 || counts["open-knowledge-format"] != 1 || counts["okf-maintain"] != 1 || counts["okf-backfill"] != 1 {
+		t.Errorf("skills.sh registration = schema %q skills %v", skills.Schema, counts)
 	}
 }
 
