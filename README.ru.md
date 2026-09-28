@@ -1,6 +1,6 @@
 # okf
 
-`okf` — Go toolkit, CLI, MCP server и agent skill для
+`okf` — Go toolkit, CLI, MCP server и agent skills для
 [Open Knowledge Format (OKF) v0.2](skills/open-knowledge-format/references/spec-v02.md):
 переносимых knowledge bundles из Markdown concepts с YAML frontmatter.
 
@@ -10,7 +10,8 @@
 - `0.1` — intentional legacy для чтения, validation и migration source;
 - неизвестная future declaration — best-effort lossless consumption.
 
-Version axes независимы:
+Version axes независимы (значения ниже поясняют разницу, а не показывают
+последний релиз):
 
 - plugin package: `0.2.0`;
 - release tag repo/Go module: `v0.2.1`;
@@ -19,6 +20,10 @@ Version axes независимы:
 Совпадающие числа не означают, что одна ось выбирает другую.
 
 English documentation: [README.md](README.md).
+
+Первый локальный запуск показан в [быстром старте](docs/ru/quickstart.md).
+[Публичный viewer](https://skosovsky.github.io/okf/demo/knowledge.html) —
+воспроизводимый снимок открытого bundle `knowledge/` этого репозитория.
 
 Собственный OKF bundle репозитория начинается в
 [knowledge/index.md](knowledge/index.md); порядок поддержки описан в
@@ -31,7 +36,13 @@ English documentation: [README.md](README.md).
 2. Go packages: `bundle`, `validator`, `graph`, `store`, `store/fs` и
    `mutation`.
 3. `okf-mcp`: schema-first stdio tools с legacy text fallbacks.
-4. `open-knowledge-format`: agent skill, pinned на upstream v0.2 spec.
+4. [`open-knowledge-format`](skills/open-knowledge-format/SKILL.md): agent skill
+   для создания, чтения, проверки, viewer export и migration, pinned на
+   upstream v0.2 spec.
+5. [`okf-maintain`](skills/okf-maintain/SKILL.md): отдельный workflow для ревью
+   knowledge после изменений кода или контрактов репозитория.
+6. [`okf-backfill`](skills/okf-backfill/SKILL.md): восстановление knowledge по
+   истории Git через существующий Go backfill pipeline.
 
 ## Установка
 
@@ -46,6 +57,15 @@ go install github.com/skosovsky/okf/cmd/okf-mcp@latest
 okf version
 okf version --json
 ```
+
+Чтобы установить отдельный скил, скопируй выбранный каталог из `skills/` в
+каталог скилов своего host. Относительные Markdown-ссылки остаются внутри
+каталога скила. Для автоматических операций `open-knowledge-format` нужен
+установленный CLI `okf` либо подключённый сервер `okf-mcp`; `okf-maintain`
+дополнительно требует `okf-upkeep`, а `okf-backfill` — бинарник
+`okf-backfill` вместе с `backfill/PROTOCOL.md` и схемами toolkit. Пакет скила
+не устанавливает эти бинарники и не выдаёт разрешения инструментам. Отдельно
+проверь регистрацию скила и подключение MCP в выбранном host.
 
 ## Минимальный OKF v0.2 bundle
 
@@ -379,6 +399,15 @@ go vet ./...
 git diff --check
 ```
 
-Финальный lock-file test проверяет, что `skills-lock.json` совпадает с точным
-содержимым `skills/open-knowledge-format`. Lock пересчитывается только после
-стабилизации skill и references.
+`skills.sh.json`, оба plugin manifests и `skills-lock.json` регистрируют три
+скила. Команда `node scripts/update-skills-lock.mjs --check` сверяет lock с
+содержимым `skills/open-knowledge-format`, `skills/okf-maintain` и
+`skills/okf-backfill`. Пересчитывай lock после стабилизации изменений любого
+из этих каталогов и его references.
+
+`skill-dependencies.json` фиксирует зависимости workflows по именам и путям,
+не дублируя схемы инструментов. CI сверяет их с каталогом MCP и командами CLI,
+проверяет ссылки и файлы скилов и пробную установку из одного каталога
+`skills/`. После правок запускай `node scripts/check-skill-package.mjs`.
+Эта проверка подтверждает состав пакета, но не активацию скила в Codex,
+Claude Code или skills.sh; её проверяют отдельно в конкретном host.

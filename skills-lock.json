@@ -1,10 +1,20 @@
 {
   "version": 1,
   "skills": {
+    "okf-backfill": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "9cefbe8944fdcde613666f689c38ce128a12cd20dcf421e786c76004439bdf29"
+    },
+    "okf-maintain": {
+      "source": ".",
+      "sourceType": "local",
+      "computedHash": "f2cca9161808c70b8a0673964e2d2356a88ee7586cec3253bc54bd257fe56f56"
+    },
     "open-knowledge-format": {
       "source": ".",
       "sourceType": "local",
-      "computedHash": "3837cd9a5f11b7181e0b9b7c3b85b1e48dce39bf8d7c0e9696cfc06a51b54082"
+      "computedHash": "cab0318e4f4ad59c24ee879adf4e0992a2e95dc912967279c183cdb062cf353b"
     }
   }
 }

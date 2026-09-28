@@ -7,8 +7,13 @@ readonly checker="$script_dir/check-whitespace.sh"
 readonly test_repo="$(mktemp -d)"
 trap 'rm -rf "$test_repo"' EXIT
 
+git() {
+	env -i PATH="$PATH" HOME="$test_repo" GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_GLOBAL=/dev/null git "$@"
+}
+
 git init --quiet --initial-branch=main "$test_repo"
 git -C "$test_repo" config commit.gpgsign false
+git -C "$test_repo" config core.hooksPath /dev/null
 git -C "$test_repo" config user.name "CI Test"
 git -C "$test_repo" config user.email "ci-test@example.invalid"
 

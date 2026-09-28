@@ -20,9 +20,9 @@
     }
   },
   "properties": {
-    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
-    "concept_id": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.", "type": "string", "minLength": 1, "maxLength": 4096},
+    "temporal_profile": {"description": "Temporal interpretation: date-3fcbb9f by default, or instant-0b87c52 for upgraded bundles. Match as_of format to the profile.", "enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
+    "concept_id": {"examples": ["architecture/cache"], "description": "Concept ID relative to the bundle, without .md. Example: architecture/cache.",
       "allOf": [
         {"$ref": "#/$defs/concept_id"},
         {"maxLength": 4096}

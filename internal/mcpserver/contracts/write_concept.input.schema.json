@@ -20,14 +20,14 @@
     }
   },
   "properties": {
-    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "concept_id": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.", "type": "string", "minLength": 1, "maxLength": 4096},
+    "concept_id": {"examples": ["architecture/cache"], "description": "Concept ID relative to the bundle, without .md. Example: architecture/cache.",
       "allOf": [
         {"$ref": "#/$defs/concept_id"},
         {"maxLength": 4096}
       ]
     },
-    "frontmatter": {"type": "string", "maxLength": 1048576},
-    "body": {"type": "string", "maxLength": 16777216}
+    "frontmatter": {"examples": ["type: Note\ntitle: Cache\n"], "description": "YAML frontmatter content without Markdown fences, at most 1 MiB. Example: type: Note\\ntitle: Cache\\n.", "type": "string", "maxLength": 1048576},
+    "body": {"examples": ["# Cache\nPolicy details.\n"], "description": "Concept Markdown body without frontmatter, at most 16 MiB. Example: # Cache\\nPolicy details.\\n.", "type": "string", "maxLength": 16777216}
   }
 }

@@ -292,7 +292,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 			return bundleDomainError("digest concept patch plan", "patch preview exceeds MCP resource limits", digestErr), nil
 		}
 		if digest != arguments.ExpectedPlanDigest {
-			return stableToolError("plan_mismatch", "expected_plan_digest does not match the rebuilt plan", false), nil
+			return stableToolErrorWithRecovery("plan_mismatch", "expected_plan_digest does not match the rebuilt plan", false), nil
 		}
 		if preview.BaseRevision == preview.ResultRevision ||
 			len(preview.Writes)+len(preview.Deletes)+len(preview.Renames) == 0 {
@@ -308,7 +308,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 			return bundleDomainError("inspect transactional store metadata", "patch metadata exceeds MCP resource limits", metadataErr), nil
 		}
 		if !metadataExists {
-			return stableToolError("revision_conflict", "bundle revision changed after preview", true), nil
+			return stableToolErrorWithRecovery("revision_conflict", "bundle revision changed after preview", true), nil
 		}
 	}
 	observeMigrationIO(ctx, func(observer migrationIOObserver) func() {
@@ -354,14 +354,14 @@ func applyPatchCommitWithStore(
 			return stableToolError("operation_rejected", "patch commit receipt failed integrity validation", false), nil
 		}
 		if errors.Is(err, mutation.ErrMigrationPlanMismatch) {
-			return stableToolError("plan_mismatch", "committed patch receipt does not match expected_plan_digest", false), nil
+			return stableToolErrorWithRecovery("plan_mismatch", "committed patch receipt does not match expected_plan_digest", false), nil
 		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return stableToolError("operation_cancelled", "apply concept patch was cancelled", true), nil
 		}
 		var conflict *store.Conflict
 		if errors.As(err, &conflict) {
-			return stableToolError("revision_conflict", "bundle revision changed after preview", conflict.Retryable), nil
+			return stableToolErrorWithRecovery("revision_conflict", "bundle revision changed after preview", conflict.Retryable), nil
 		}
 		return toolErrorf("apply concept patch: %v", err), nil
 	}

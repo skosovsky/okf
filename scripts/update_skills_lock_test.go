@@ -27,6 +27,7 @@ func TestSkillsLockContract(t *testing.T) {
 		{name: "rename sensitivity", scenario: "hash", relation: "different", rename: [2]string{"before", "after"}, a: map[string]string{"before": "same"}},
 		{name: "delimiter ambiguity", scenario: "hash", relation: "equal", want: ambiguityHash, a: map[string]string{"ab": "c"}, b: map[string]string{"a": "bc"}},
 		{name: "check write lifecycle", scenario: "lifecycle"},
+		{name: "registered and installed coverage", scenario: "coverage"},
 		{name: "invalid schema no write", scenario: "schema"},
 		{name: "optional fields canonical", scenario: "optional"},
 	}
@@ -68,6 +69,7 @@ func TestSkillsLockContract(t *testing.T) {
 				// Arrange.
 				r := t.TempDir()
 				put(t, filepath.Join(r, "skills", "valid"), "SKILL.md", "skill")
+				registerSkills(t, r, "valid")
 				h := hash(t, filepath.Join(r, "skills", "valid"))
 				stale := document("valid", `{"computedHash":"`+strings.Repeat("0", 64)+`","sourceType":"local","source":"."}`)
 				put(t, r, "skills-lock.json", stale)
@@ -104,6 +106,7 @@ func TestSkillsLockContract(t *testing.T) {
 				r := t.TempDir()
 				d := filepath.Join(r, "skills", "valid")
 				put(t, d, "SKILL.md", "valid")
+				registerSkills(t, r, "valid")
 				h := hash(t, d)
 				doc := document("valid", `{"wellKnownDigest":"sha256:abc","subagents":["","worker"],"computedHash":"`+h+`","skillPath":"skills/valid/SKILL.md","sourceType":"github","ref":"main","sourceUrl":"https://example.invalid/repo.git","source":"owner/repo"}`)
 				put(t, r, "skills-lock.json", doc)
@@ -115,6 +118,32 @@ func TestSkillsLockContract(t *testing.T) {
 					ok(t, strings.Contains(string(written), field), "canonical output missing %s", field)
 				}
 				ok(t, check.code == 0 && write.code == 0, "optional check/write = %d/%d", check.code, write.code)
+			case "coverage":
+				// Arrange: a newly registered local skill is absent from the old lock.
+				r := t.TempDir()
+				put(t, filepath.Join(r, "skills", "valid"), "SKILL.md", "valid")
+				put(t, filepath.Join(r, "skills", "new"), "SKILL.md", "new")
+				registerSkills(t, r, "valid", "new")
+				validHash := hash(t, filepath.Join(r, "skills", "valid"))
+				put(t, r, "skills-lock.json", document("valid", `{"source":".","sourceType":"local","computedHash":"`+validHash+`"}`))
+				// Act: check catches the omission; write adds the installed skill.
+				missing := tool(t, "--check", "--root", r)
+				written := tool(t, "--write", "--root", r)
+				fresh := tool(t, "--check", "--root", r)
+				lock, err := os.ReadFile(filepath.Join(r, "skills-lock.json"))
+				must(t, err)
+				// Assert.
+				ok(t, missing.code == 1 && strings.Contains(missing.err, "new: missing from skills-lock.json"), "missing skill not detected: %#v", missing)
+				ok(t, written.code == 0 && fresh.code == 0 && strings.Contains(string(lock), `"new": {`), "write did not add skill: %#v / %#v", written, fresh)
+				// Registration drift and orphan lock entries fail separately.
+				registerSkills(t, r, "valid")
+				registrationDrift := tool(t, "--check", "--root", r)
+				ok(t, registrationDrift.code == 2 && strings.Contains(registrationDrift.err, "registration mismatch"), "registration drift not detected: %#v", registrationDrift)
+				registerSkills(t, r, "valid", "new")
+				must(t, os.RemoveAll(filepath.Join(r, "skills", "new")))
+				registerSkills(t, r, "valid")
+				orphan := tool(t, "--check", "--root", r)
+				ok(t, orphan.code == 1 && strings.Contains(orphan.err, "new: lock entry has no installed/registered skill"), "orphan lock not detected: %#v", orphan)
 			}
 		})
 	}
@@ -150,6 +179,15 @@ func writeFiles(t *testing.T, root string, files map[string]string) {
 	for name, content := range files {
 		put(t, root, name, content)
 	}
+}
+
+func registerSkills(t *testing.T, root string, names ...string) {
+	t.Helper()
+	quoted := make([]string, len(names))
+	for i, name := range names {
+		quoted[i] = fmt.Sprintf("%q", name)
+	}
+	put(t, root, "skills.sh.json", `{"groupings":[{"skills":[`+strings.Join(quoted, ",")+`] }]}`)
 }
 
 func put(t *testing.T, root, name, content string) {

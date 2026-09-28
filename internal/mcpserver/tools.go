@@ -30,14 +30,18 @@ import (
 )
 
 const (
-	maxConceptReadBytes            = 16 << 20
-	maxFrontmatterBytes            = 1 << 20
-	maxConceptItems                = 10_000
-	maxReadConceptProjectionItems  = maxConceptItems
-	maxReadConceptComputationItems = 256
-	maxBundleTotalBytes            = 64 << 20
-	maxBundlePathDepth             = 64
-	maxMCPArgumentItems            = 100_000
+	maxMCPErrorDiagnostics            = 64
+	maxMCPErrorResultBytes            = 64 << 10
+	maxMCPErrorDiagnosticMessageBytes = 512
+	maxMCPErrorDiagnosticFileBytes    = 512
+	maxConceptReadBytes               = 16 << 20
+	maxFrontmatterBytes               = 1 << 20
+	maxConceptItems                   = 10_000
+	maxReadConceptProjectionItems     = maxConceptItems
+	maxReadConceptComputationItems    = 256
+	maxBundleTotalBytes               = 64 << 20
+	maxBundlePathDepth                = 64
+	maxMCPArgumentItems               = 100_000
 )
 
 var errMCPResourceLimit = errors.New("MCP bundle resource limit exceeded")
@@ -896,7 +900,10 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		return bundleLoadError("list captured concepts", err), nil
 	}
 	if len(ids) > maxConceptItems {
-		return stableToolError("resource_limit", "bundle contains too many concepts", false), nil
+		return withRecoveryStep(
+			stableToolError("resource_limit", "bundle contains too many concepts", false),
+			"bundle_path", "The selected bundle has too many concepts; use a smaller bundle.",
+		), nil
 	}
 	concepts := make([]bundle.Concept, 0, len(ids))
 	for _, id := range ids {
@@ -1146,7 +1153,7 @@ func readConceptFromBundleContext(
 }
 
 func conceptNotFoundResult(id bundle.ConceptID) *mcp.CallToolResult {
-	return stableToolError("concept_not_found", "concept not found: "+id.String(), false)
+	return stableToolErrorWithRecovery("concept_not_found", "concept not found: "+id.String(), false)
 }
 
 func legacyFallbackObservation(
@@ -1450,10 +1457,13 @@ func handleWriteConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 				err,
 			), nil
 		}
-		return toolError(err.Error()), nil
+		return withRecoveryStep(
+			stableToolError("invalid_request", "invalid concept frontmatter", false),
+			"frontmatter", "Check YAML syntax and alias references, then retry with corrected frontmatter.",
+		), nil
 	}
 	if _, err := bundle.NewDocument(frontmatter, body).Serialize(); err != nil {
-		return toolError(err.Error()), nil
+		return stableToolError("invalid_request", "cannot serialize concept document", false), nil
 	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
@@ -2786,19 +2796,19 @@ func parseCanonicalConceptID(raw string) (bundle.ConceptID, error) {
 		strings.Contains(raw, ":") ||
 		strings.HasPrefix(raw, "/") || strings.HasSuffix(raw, "/") ||
 		strings.HasSuffix(raw, ".md") {
-		return bundle.ConceptID{}, fmt.Errorf("concept_id is not canonical: %q", raw)
+		return bundle.ConceptID{}, fmt.Errorf("concept_id is not canonical")
 	}
 	id, err := bundle.ParseConceptID(raw)
 	if err != nil {
-		return bundle.ConceptID{}, err
+		return bundle.ConceptID{}, fmt.Errorf("concept_id is invalid")
 	}
 	if id.String() != raw {
-		return bundle.ConceptID{}, fmt.Errorf("concept_id is not canonical: %q", raw)
+		return bundle.ConceptID{}, fmt.Errorf("concept_id is not canonical")
 	}
 	for _, segment := range id.Segments() {
 		if segment == "index" || segment == "log" || segment == "." || segment == ".." ||
 			strings.HasPrefix(segment, ".") || strings.Contains(segment, string(filepath.Separator)) {
-			return bundle.ConceptID{}, fmt.Errorf("concept_id contains reserved segment %q", segment)
+			return bundle.ConceptID{}, fmt.Errorf("concept_id contains a reserved segment")
 		}
 	}
 	return id, nil
@@ -2890,13 +2900,16 @@ func parseErrorsResult(root string, errors []bundle.ParseError) *mcp.CallToolRes
 	if len(errors) == 0 {
 		return nil
 	}
+	if len(errors) > maxMCPErrorDiagnostics {
+		return stableToolError("resource_limit", "bundle parse diagnostics exceed MCP output limits", false)
+	}
 	diagnostics := make([]diagnosticDTO, 0, len(errors))
 	for _, parseError := range errors {
 		diagnostics = append(diagnostics, diagnosticDTO{
 			Code:     bundleParseErrorCode(parseError.Err),
 			Severity: validator.SeverityError.String(),
 			File:     relativeSlashPath(root, parseError.Path),
-			Message:  redactSensitivePaths("unparseable concept document: " + parseError.Err.Error()),
+			Message:  "unparseable concept document; inspect its frontmatter and encoding",
 		})
 	}
 	return jsonErrorResult(parseErrorResponse{
@@ -2912,7 +2925,7 @@ func bundleParseErrorResult(root, path string, err error) *mcp.CallToolResult {
 			Code:     bundleParseErrorCode(err),
 			Severity: validator.SeverityError.String(),
 			File:     relativeSlashPath(root, filepath.Join(root, filepath.FromSlash(path))),
-			Message:  redactSensitivePaths("unparseable root index document: " + err.Error()),
+			Message:  "unparseable root index document; inspect its frontmatter and encoding",
 		}},
 	})
 }
@@ -3042,11 +3055,21 @@ func jsonStructuredResultContext(
 func jsonErrorResult(value any) *mcp.CallToolResult {
 	switch typed := value.(type) {
 	case writeConceptResponse:
+		if len(typed.Diagnostics) > maxMCPErrorDiagnostics {
+			return stableToolError("resource_limit", "tool error diagnostics exceed MCP output limits", false)
+		}
 		typed.Diagnostics = sanitizeDiagnosticDTOs(typed.Diagnostics)
 		value = typed
 	case parseErrorResponse:
+		if len(typed.Diagnostics) > maxMCPErrorDiagnostics {
+			return stableToolError("resource_limit", "tool error diagnostics exceed MCP output limits", false)
+		}
 		typed.Diagnostics = sanitizeDiagnosticDTOs(typed.Diagnostics)
 		value = typed
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil || len(encoded) > maxMCPErrorResultBytes {
+		return stableToolError("resource_limit", "tool error result exceeds MCP output limits", false)
 	}
 	result := jsonTextResult(value)
 	result.IsError = true
@@ -3077,14 +3100,32 @@ func jsonErrorResult(value any) *mcp.CallToolResult {
 		Retryable:   false,
 		Diagnostics: diagnostics,
 	}
+	finalWire, err := json.Marshal(result)
+	if err != nil || len(finalWire) > maxMCPErrorResultBytes {
+		return stableToolError("resource_limit", "tool error result exceeds MCP output limits", false)
+	}
 	return result
 }
 
 func sanitizeDiagnosticDTOs(diagnostics []diagnosticDTO) []diagnosticDTO {
 	sanitized := append([]diagnosticDTO(nil), diagnostics...)
 	for index := range sanitized {
+		if len(sanitized[index].Code) > 64 {
+			sanitized[index].Code = "operation_rejected"
+		} else if sanitized[index].Code != "" {
+			sanitized[index].Code = stableDiagnosticCode(sanitized[index].Code)
+		}
+		if len(sanitized[index].Severity) > 16 {
+			sanitized[index].Severity = "error"
+		}
 		sanitized[index].File = filepathSafe(sanitized[index].File)
 		sanitized[index].Message = redactSensitivePaths(sanitized[index].Message)
+		if len(sanitized[index].Message) > maxMCPErrorDiagnosticMessageBytes {
+			sanitized[index].Message = "diagnostic message exceeds MCP output limit; inspect the bundle locally"
+		}
+		if len(sanitized[index].File) > maxMCPErrorDiagnosticFileBytes {
+			sanitized[index].File = ""
+		}
 	}
 	return sanitized
 }
@@ -3128,6 +3169,15 @@ type wireDiagnostic struct {
 func stableToolError(code, message string, retryable bool) *mcp.CallToolResult {
 	code = stableDiagnosticCode(code)
 	message = redactSensitivePaths(message)
+	const maxToolErrorMessageBytes = 512
+	if len(message) > maxToolErrorMessageBytes {
+		const suffix = " [truncated]"
+		message = strings.ToValidUTF8(message[:maxToolErrorMessageBytes-len(suffix)], "")
+		for !utf8.ValidString(message) {
+			message = message[:len(message)-1]
+		}
+		message += suffix
+	}
 	result := mcp.NewToolResultError(message)
 	result.StructuredContent = errorEnvelope{
 		Code:        code,

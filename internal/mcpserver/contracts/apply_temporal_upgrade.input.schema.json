@@ -11,32 +11,32 @@
     "plan_digest"
   ],
   "properties": {
-    "bundle_path": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.",
       "type": "string",
       "minLength": 1
     },
-    "id": {
+    "id": {"description": "Stable upgrade request ID, up to 128 characters. Reuse the same ID across preview and apply.",
       "type": "string",
       "minLength": 1,
       "maxLength": 128
     },
-    "actor": {
+    "actor": {"examples": ["human:reviewer"], "description": "Audit actor identifier, e.g. human:reviewer; this is provenance, not authentication.",
       "type": "string",
       "minLength": 1,
       "maxLength": 256
     },
-    "mappings": {
+    "mappings": {"description": "Explicit legacy date to RFC 3339 instant mappings (up to 10000); use the same mappings in preview and apply.",
       "type": "array",
       "maxItems": 10000,
       "items": {
         "$ref": "#/$defs/mapping"
       }
     },
-    "base_revision": {
+    "base_revision": {"examples": ["sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"], "description": "Base bundle revision returned by preview_temporal_upgrade; apply rejects a stale revision.",
       "type": "string",
       "minLength": 1
     },
-    "plan_digest": {
+    "plan_digest": {"examples": ["sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"], "description": "Plan digest (sha256: plus 64 lowercase hex digits) returned by preview_temporal_upgrade.",
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     }
@@ -52,19 +52,19 @@
         "to"
       ],
       "properties": {
-        "concept": {
+        "concept": {"description": "Concept ID containing the legacy date, e.g. architecture/cache.",
           "type": "string",
           "minLength": 1
         },
-        "path": {
+        "path": {"description": "Exact field path to convert, e.g. stale_after.",
           "type": "string",
           "minLength": 1
         },
-        "from": {
+        "from": {"description": "Existing date value (YYYY-MM-DD) to match exactly; example: 2026-01-02.",
           "type": "string",
           "format": "date"
         },
-        "to": {
+        "to": {"description": "Explicit RFC 3339 instant with known offset; example: 2026-01-02T12:00:00Z. Do not infer a timezone.",
           "type": "string",
           "format": "date-time",
           "not": {

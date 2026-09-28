@@ -64,6 +64,10 @@ func schemaTool(
 	tool.RawOutputSchema = outputSchema
 	tool.Annotations.ReadOnlyHint = mcp.ToBoolPtr(readOnly)
 	tool.Annotations.DestructiveHint = mcp.ToBoolPtr(!readOnly)
+	// Reads and previews have no bundle-side effect. A write may support a
+	// verified replay, but clients must not blindly retry it: a changed bundle
+	// or a different request identity can produce a different result.
+	tool.Annotations.IdempotentHint = mcp.ToBoolPtr(readOnly)
 	tool.Annotations.OpenWorldHint = mcp.ToBoolPtr(false)
 	return tool, nil
 }

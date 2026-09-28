@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/temporalrequest"
 	"github.com/skosovsky/okf/mutation"
 	"github.com/skosovsky/okf/store"
 	storefs "github.com/skosovsky/okf/store/fs"
@@ -113,17 +116,88 @@ func handleApplyTemporalUpgrade(ctx context.Context, request mcp.CallToolRequest
 	}
 	backend, err := openTemporalUpgradeStoreContext(ctx, root)
 	if err != nil {
-		return stableToolError("operation_rejected", "cannot open temporal upgrade store", false), nil
+		return withRecoveryStep(
+			stableToolError("operation_rejected", "cannot open temporal upgrade store", false),
+			"bundle_path", "Check that the selected bundle root is accessible, then retry after restoring the backend.",
+		), nil
 	}
 	receipt, applyErr := mutation.NewTemporalUpgradePlanner().Apply(ctx, backend, mutation.TemporalUpgradeApplyRequest{Request: planRequest, BaseRevision: base, PlanDigest: args.PlanDigest})
-	closeErr := backend.Close()
+	receipt, applyErr = classifyMCPTemporalCommitOutcome(planRequest, base, args.PlanDigest, receipt, applyErr)
+	// The commit outcome, not cleanup, decides whether publication happened.
+	// Once a receipt is valid, cleanup failure must not mask durable success.
+	_ = backend.Close()
 	if applyErr != nil {
+		if errors.Is(applyErr, mutation.ErrPlanDigestMismatch) {
+			return withRecoveryStep(
+				stableToolError("operation_rejected", "temporal upgrade plan or receipt did not match", false),
+				"plan_digest", "Inspect current bundle data and preview_temporal_upgrade again before applying a new plan.",
+			), nil
+		}
+		if errors.Is(applyErr, context.Canceled) || errors.Is(applyErr, context.DeadlineExceeded) {
+			return withRecoveryStep(
+				stableToolError("operation_cancelled", "temporal upgrade outcome is not confirmed", true),
+				"base_revision", "Inspect the bundle for the result, then retry the same apply_temporal_upgrade arguments to resolve receipt replay before a new preview.",
+			), nil
+		}
+		var conflict *store.Conflict
+		if errors.As(applyErr, &conflict) {
+			return withRecoveryStep(
+				stableToolError("operation_rejected", "temporal upgrade apply failed", false),
+				"base_revision", "Run preview_temporal_upgrade again against current bundle data; review its new revision and plan digest before apply.",
+			), nil
+		}
 		return stableToolError("operation_rejected", "temporal upgrade apply failed", false), nil
 	}
-	if closeErr != nil {
-		return stableToolError("operation_rejected", "temporal upgrade store cleanup failed", false), nil
-	}
 	return mcp.NewToolResultStructured(map[string]any{"status": "applied", "request_digest": receipt.RequestDigest, "result_revision": receipt.ResultRevision.String()}, ""), nil
+}
+
+func classifyMCPTemporalCommitOutcome(
+	request mutation.TemporalUpgradeRequest,
+	base store.Revision,
+	planDigest string,
+	receipt store.CommitReceipt,
+	commitErr error,
+) (store.CommitReceipt, error) {
+	var committed *store.CommittedError
+	if commitErr != nil && !errors.As(commitErr, &committed) {
+		return store.CommitReceipt{}, commitErr
+	}
+	if err := store.ValidateCommitReceipt(receipt); err != nil {
+		return store.CommitReceipt{}, joinDurableOutcomeError(commitErr,
+			fmt.Errorf("temporal upgrade returned invalid receipt: %w", err))
+	}
+	if committed != nil && !reflect.DeepEqual(receipt, committed.Receipt()) {
+		return store.CommitReceipt{}, errors.Join(commitErr,
+			fmt.Errorf("%w: temporal upgrade receipt differs from committed receipt", mutation.ErrPlanDigestMismatch))
+	}
+	key, err := mutation.PlanDigestIdempotencyKey("temporal-upgrade:v1", planDigest, "")
+	if err != nil {
+		return store.CommitReceipt{}, joinDurableOutcomeError(commitErr, err)
+	}
+	requestDigest, err := temporalUpgradeRequestDigest(request, base)
+	if err != nil {
+		return store.CommitReceipt{}, joinDurableOutcomeError(commitErr, err)
+	}
+	if receipt.ChangeSetID != request.ID || receipt.IdempotencyKey != key ||
+		receipt.BaseRevision != base || receipt.RequestDigest != requestDigest {
+		return store.CommitReceipt{}, joinDurableOutcomeError(commitErr,
+			fmt.Errorf("%w: temporal upgrade receipt does not match authorized request", mutation.ErrPlanDigestMismatch))
+	}
+	return receipt.Clone(), nil
+}
+
+func temporalUpgradeRequestDigest(request mutation.TemporalUpgradeRequest, base store.Revision) (string, error) {
+	mappings := make([]temporalrequest.Mapping, 0, len(request.Mappings))
+	for _, mapping := range request.Mappings {
+		mappings = append(mappings, temporalrequest.Mapping{
+			Concept: mapping.Concept, Path: mapping.Path, From: mapping.From, To: mapping.To,
+		})
+	}
+	change, err := temporalrequest.ChangeSet(request.ID, request.Actor, base, mappings)
+	if err != nil {
+		return "", err
+	}
+	return change.RequestDigest()
 }
 
 // The upgrade uses the same transactional filesystem backend as semantic

@@ -11,7 +11,7 @@ permalink: /toolkit/
 The toolkit reads v0.2 by default, retains explicit v0.1 compatibility, and
 preserves unknown future declarations for best-effort consumption.
 
-The version axes are independent: plugin package `0.2.0`, repository/Go module
+The version axes are independent (illustrative values): plugin package `0.2.0`, repository/Go module
 release tag `v0.2.1`, and document spec `okf_version: "0.2"`. None selects
 another.
 The document contract is the [pinned spec](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
@@ -275,6 +275,14 @@ six v0.2 mutation workflow tools are preview/apply pairs:
 - `preview_v02_migration` / `apply_v02_migration`
 - `preview_temporal_upgrade` / `apply_temporal_upgrade`
 
+`search_concepts` and `get_neighbors` report `total` and `truncated` when a
+bounded result omits hits or edges. They have no cursor; narrowing the input
+or requesting a whole graph is the continuation path when it fits. A hard
+`resource_limit` fails the call rather than returning a partial page. Invalid
+inputs return stable error codes and bounded field guidance. The detailed
+[query and output limits]({{ '/contracts/concept-queries/' | relative_url }}) are part of the public
+contract.
+
 Structured outputs are schema-validated. Patch apply requires
 `expected_revision` plus its preview plan digest. Migration apply is
 transition-discriminated: `v0.1-to-v0.2` requires preview proof
@@ -299,6 +307,9 @@ has no shared form. Empty `source_id`, mixed or unknown selector forms, and
 ambiguous exact anonymous matches are rejected.
 
 ## Security boundary
+
+The current mutation binding, replay and authorization boundaries are
+summarized in [MCP mutation and trust boundary]({{ '/contracts/mcp-mutation-trust-boundaries/' | relative_url }}).
 
 - Bundle paths use containment/no-follow rules.
 - Resource fields do not authorize filesystem, network, shell, or secret use.

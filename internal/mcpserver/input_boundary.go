@@ -47,16 +47,18 @@ func requireCanonicalToolInput(
 	}
 	if err := validateContract(tool+".input", request.GetArguments()); err != nil {
 		if contractLimitViolation(err) {
-			return stableToolError(
+			return inputContractError(
+				tool+".input",
 				"resource_limit",
 				"tool input exceeds the advertised schema limits",
-				false,
+				err,
 			)
 		}
-		return stableToolError(
+		return inputContractError(
+			tool+".input",
 			"invalid_request",
 			"tool input does not match the advertised schema",
-			false,
+			err,
 		)
 	}
 	return nil

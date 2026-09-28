@@ -114,7 +114,8 @@ func TestUpkeepFixtureCheckerDetectsBothRelevantPaths(t *testing.T) {
 				}
 			}
 			for _, args := range [][]string{{"init", "-q"}, {"add", "."}, {"-c", "user.name=OKF Test", "-c", "user.email=okf@example.invalid", "-c", "commit.gpgsign=false", "commit", "-qm", "baseline"}} {
-				cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+				cmd := exec.Command("git", append([]string{"-C", root, "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"}, args...)...)
+				cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + root, "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_GLOBAL=/dev/null"}
 				if out, err := cmd.CombinedOutput(); err != nil {
 					t.Fatalf("git %v: %s: %v", args, out, err)
 				}

@@ -75,8 +75,31 @@ function validate(lock) {
 
 async function expectedLock(root, lock) {
   const skills = {};
-  for (const name of Object.keys(lock.skills).sort()) {
-    const entry = lock.skills[name], computedHash = await computeSkillFolderHash(join(root, 'skills', name));
+  const installed = (await readdir(join(root, 'skills'), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+  for (const name of installed) {
+    if (!NAME.test(name)) fail(`invalid installed skill name: ${JSON.stringify(name)}`);
+    try { await readFile(join(root, 'skills', name, 'SKILL.md')); }
+    catch (error) { throw new SchemaError(`installed skill ${name} lacks SKILL.md: ${error.message}`); }
+  }
+  let registration;
+  try { registration = JSON.parse(await readFile(join(root, 'skills.sh.json'), 'utf8')); }
+  catch (error) { throw new SchemaError(`cannot read skills.sh.json: ${error.message}`); }
+  if (!object(registration) || !Array.isArray(registration.groupings)) fail('skills.sh.json groupings must be an array');
+  const registered = [];
+  for (const group of registration.groupings) {
+    if (!object(group) || !Array.isArray(group.skills)) fail('skills.sh.json grouping skills must be an array');
+    for (const name of group.skills) {
+      if (typeof name !== 'string' || !NAME.test(name)) fail(`invalid registered skill name: ${JSON.stringify(name)}`);
+      registered.push(name);
+    }
+  }
+  if (new Set(registered).size !== registered.length) fail('skills.sh.json has duplicate skill registrations');
+  registered.sort();
+  if (registered.join('\0') !== installed.join('\0')) fail(`skill registration mismatch: installed=${installed.join(',')} registered=${registered.join(',')}`);
+  for (const name of installed) {
+    const entry = lock.skills[name] ?? { source: '.', sourceType: 'local' };
+    const computedHash = await computeSkillFolderHash(join(root, 'skills', name));
     skills[name] = {};
     for (const key of FIELDS) if (key in entry || key === 'computedHash') skills[name][key] = key === 'computedHash' ? computedHash : entry[key];
   }
@@ -92,9 +115,13 @@ async function run(argv) {
   try { lock = JSON.parse(await readFile(path, 'utf8')); } catch (error) { throw new SchemaError(`cannot read ${path}: ${error.message}`); }
   validate(lock);
   const expected = await expectedLock(root, lock);
-  const stale = Object.keys(expected.skills).filter((name) => expected.skills[name].computedHash !== lock.skills[name].computedHash);
+  const missing = Object.keys(expected.skills).filter((name) => !(name in lock.skills));
+  const orphan = Object.keys(lock.skills).filter((name) => !(name in expected.skills));
+  const stale = Object.keys(expected.skills).filter((name) => name in lock.skills && expected.skills[name].computedHash !== lock.skills[name].computedHash);
   if (mode === 'check') {
-    if (!stale.length) return void process.stdout.write('skills-lock.json is current\n');
+    if (!missing.length && !orphan.length && !stale.length) return void process.stdout.write('skills-lock.json is current\n');
+    for (const name of missing) process.stderr.write(`${name}: missing from skills-lock.json\n`);
+    for (const name of orphan) process.stderr.write(`${name}: lock entry has no installed/registered skill\n`);
     for (const name of stale) process.stderr.write(`${name}: lock has ${lock.skills[name].computedHash}, expected ${expected.skills[name].computedHash}\n`);
     return 1;
   }

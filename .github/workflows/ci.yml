@@ -36,6 +36,10 @@ jobs:
         run: go mod verify
       - name: Verify go.mod and go.sum are tidy
         run: go mod tidy -diff
+      - name: Test skill package negative fixtures
+        run: node --test scripts/check-skill-package.test.mjs
+      - name: Check standalone skill installation and dependency lock
+        run: node scripts/check-skill-package.mjs
       - name: Test whitespace gate
         run: bash .github/scripts/check-whitespace_test.sh
       - name: Check whitespace errors
@@ -52,6 +56,12 @@ jobs:
         run: go test ./...
       - name: Validate repository knowledge bundle
         run: go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0 --json
+      - name: Verify published knowledge viewer snapshot
+        run: |
+          snapshot_dir="$(mktemp -d)"
+          trap 'rm -rf "$snapshot_dir"' EXIT
+          ./scripts/build-viewer-demo.sh "$snapshot_dir/knowledge.html"
+          cmp docs/demo/knowledge.html "$snapshot_dir/knowledge.html"
       - name: Build knowledge viewer
         run: go run ./cmd/okf view knowledge --output "$RUNNER_TEMP/knowledge-view.html" --spec auto --as-of 2026-09-26
       - name: Upload knowledge viewer

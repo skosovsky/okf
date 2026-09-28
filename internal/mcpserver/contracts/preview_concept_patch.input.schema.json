@@ -32,7 +32,7 @@
         "resource": {"type": "string", "maxLength": 4096},
         "title": {"type": "string", "maxLength": 4096},
         "author": {"type": "string", "maxLength": 4096},
-        "usage_count": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
+        "usage_count": {"description": "Canonical nonnegative decimal count as a string (no leading zeros), e.g. 12; not a JSON number.", "examples": ["12"], "type": "string", "pattern": "^(0|[1-9][0-9]*)$", "maxLength": 20},
         "last_modified": {"type": "string", "anyOf": [{"format": "date"}, {"format": "date-time"}]},
         "usage_window": {"$ref": "#/$defs/usage_window"}
       }
@@ -87,10 +87,11 @@
   "additionalProperties": false,
   "required": ["bundle_path", "actor", "operations"],
   "properties": {
-    "bundle_path": {"type": "string", "minLength": 1, "maxLength": 4096},
-    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
-    "actor": {"type": "string", "minLength": 1, "maxLength": 256},
-    "operations": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.", "type": "string", "minLength": 1, "maxLength": 4096},
+    "temporal_profile": {"description": "Temporal interpretation: date-3fcbb9f by default, or instant-0b87c52 for upgraded bundles. Match as_of format to the profile.", "enum": ["date-3fcbb9f", "instant-0b87c52"], "default": "date-3fcbb9f"},
+    "actor": {"examples": ["human:reviewer"], "description": "Audit actor identifier, e.g. human:reviewer; this is provenance, not authentication.", "type": "string", "minLength": 1, "maxLength": 256},
+    "operations": {"description": "One to 256 typed domain operations. Each kind requires its matching payload; preview and apply must use identical operations.",
+      "examples": [[{"kind": "set_lifecycle", "concept_id": "example", "lifecycle": {"status": "stable", "stale_after": null}}]],
       "type": "array",
       "minItems": 1,
       "maxItems": 256,
@@ -99,7 +100,7 @@
         "additionalProperties": false,
         "required": ["kind"],
         "properties": {
-          "kind": {"enum": ["set_generated", "ensure_verification", "remove_verification", "put_source", "remove_source", "set_usage_window", "set_lifecycle", "put_attested_computation", "set_bundle_version"]},
+          "kind": {"description": "Discriminator selecting one operation payload; use only the matching fields listed in allOf.", "enum": ["set_generated", "ensure_verification", "remove_verification", "put_source", "remove_source", "set_usage_window", "set_lifecycle", "put_attested_computation", "set_bundle_version"]},
           "concept_id": {"type": "string", "minLength": 1, "maxLength": 4096},
           "generated": {
             "type": "object",
@@ -120,7 +121,7 @@
             }
           },
           "source": {"$ref": "#/$defs/source"},
-          "source_id": {"type": "string", "minLength": 1, "maxLength": 4096},
+          "source_id": {"description": "Exact structured source ID for removal or source-scoped update; do not guess from title or URL.", "type": "string", "minLength": 1, "maxLength": 4096},
           "usage_window": {
             "anyOf": [{"$ref": "#/$defs/usage_window"}, {"type": "null"}]
           },
@@ -161,7 +162,7 @@
             }
           },
           {
-            "if": {"properties": {"kind": {"enum": ["ensure_verification", "remove_verification"]}}},
+            "if": {"properties": {"kind": {"description": "Discriminator selecting one operation payload; use only the matching fields listed in allOf.", "enum": ["ensure_verification", "remove_verification"]}}},
             "then": {
               "required": ["verification"],
               "not": {"anyOf": [

@@ -33,6 +33,11 @@ future versions remain declared and are read best-effort.
 
 ## Quickstart {#quickstart}
 
+For the runnable create/check/open sequence and offline viewer export, see the
+[full quickstart]({{ '/quickstart/' | relative_url }}).
+You can also [open the public knowledge viewer]({{ '/demo/knowledge.html' | relative_url }})
+without installing the toolkit.
+
 ```text
 knowledge/
 ├── index.md

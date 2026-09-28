@@ -12,7 +12,15 @@ import (
 
 func git(t *testing.T, root string, args ...string) {
 	t.Helper()
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+	// Snapshot runs Git subprocesses too; keep the whole fixture independent of
+	// user config, not just the setup commands issued through this helper.
+	t.Setenv("HOME", root)
+	t.Setenv("GIT_CONFIG_SYSTEM", "/dev/null")
+	t.Setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+	t.Setenv("GIT_CONFIG_PARAMETERS", "")
+	t.Setenv("GIT_CONFIG_COUNT", "0")
+	cmd := exec.Command("git", append([]string{"-C", root, "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"}, args...)...)
+	cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + root, "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_GLOBAL=/dev/null"}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v: %s: %v", args, out, err)
 	}

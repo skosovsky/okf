@@ -18,8 +18,8 @@ import (
 
 func gitTest(t *testing.T, dir string, args ...string) string {
 	t.Helper()
-	c := exec.Command("git", append([]string{"-C", dir, "-c", "commit.gpgsign=false"}, args...)...)
-	c.Env = append(os.Environ(), "GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.invalid", "GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.invalid", "GIT_AUTHOR_DATE=2026-01-01T00:00:00Z", "GIT_COMMITTER_DATE=2026-01-01T00:00:00Z")
+	c := exec.Command("git", append([]string{"-C", dir, "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"}, args...)...)
+	c.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + dir, "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_GLOBAL=/dev/null", "GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.invalid", "GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.invalid", "GIT_AUTHOR_DATE=2026-01-01T00:00:00Z", "GIT_COMMITTER_DATE=2026-01-01T00:00:00Z"}
 	b, err := c.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %v: %v: %s", args, err, b)
@@ -240,12 +240,15 @@ func TestAnalysisRejectsAmbiguousAndTruncatedInference(t *testing.T) {
 		t.Fatalf("ambiguous outcome: report=%#v active=%#v err=%v", report, active, err)
 	}
 	m.Events[1].DiffTruncated = true
+	m.Events[1].DiffBytes = 2
+	m.Events[1].DiffSHA256 = digest([]byte("BC"))
 	eb, _ := json.Marshal(m.Events)
 	m.EventsSHA256 = digest(eb)
 	a.EventsSHA256 = m.EventsSHA256
+	a.Candidates[1].Evidence[0].DiffSHA256 = m.Events[1].DiffSHA256
 	a.Candidates[1].EvidenceIncomplete = false
-	if _, _, err := ValidateAnalysis(m, a); err == nil {
-		t.Fatal("truncated evidence accepted without acknowledgment")
+	if _, _, err := ValidateAnalysis(m, a); err == nil || !strings.Contains(err.Error(), "must acknowledge truncated evidence") {
+		t.Fatalf("truncated evidence not rejected for missing acknowledgment: %v", err)
 	}
 }
 

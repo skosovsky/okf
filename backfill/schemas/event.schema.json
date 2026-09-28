@@ -12,10 +12,10 @@
     "author_time": {"type": "string", "format": "date-time"},
     "committer_time": {"type": "string", "format": "date-time"},
     "files": {"type": "array", "items": {"$ref": "#/$defs/file"}},
-    "diff": {"type": "string"},
-    "diff_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "diff_bytes": {"type": "integer", "minimum": 0},
-    "diff_truncated": {"type": "boolean"}
+    "diff": {"type": "string", "description": "UTF-8-safe displayed prefix of the included-file diff; it may omit bytes."},
+    "diff_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the complete included-file diff before display trimming."},
+    "diff_bytes": {"type": "integer", "minimum": 0, "description": "Byte count of the complete included-file diff before display trimming."},
+    "diff_truncated": {"type": "boolean", "description": "True when the displayed diff omits any byte of the complete included-file diff, including UTF-8 trimming."}
   },
   "additionalProperties": false,
   "$defs": {"file": {

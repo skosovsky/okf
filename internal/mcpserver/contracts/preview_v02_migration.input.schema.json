@@ -9,12 +9,12 @@
     "citation_mappings"
   ],
   "properties": {
-    "bundle_path": {
+    "bundle_path": {"examples": ["/workspace/knowledge"], "description": "Local OKF bundle root path (up to 4096 characters where constrained); server enforces root and symlink boundaries. Example: /workspace/knowledge.",
       "type": "string",
       "minLength": 1,
       "maxLength": 4096
     },
-    "from": {
+    "from": {"examples": ["auto"], "description": "Source version: auto (default), 0.1 or 0.2; auto resolves from the bundle.",
       "enum": [
         "auto",
         "0.1",
@@ -22,11 +22,11 @@
       ],
       "default": "auto"
     },
-    "generated_by": {
+    "generated_by": {"examples": ["human:reviewer"], "description": "Producer provenance for migrated generated fields, e.g. human:reviewer; not an authorization principal.",
       "type": "string",
       "maxLength": 256
     },
-    "generated_at": {
+    "generated_at": {"examples": [[{"concept_id": "architecture/cache", "at": "2026-09-27T10:00:00Z"}]], "description": "Explicit per-concept generated timestamps (RFC 3339 date-time); no inferred time is supplied.",
       "type": "array",
       "maxItems": 10000,
       "items": {
@@ -49,7 +49,7 @@
         }
       }
     },
-    "timestamp_conflict_policy": {
+    "timestamp_conflict_policy": {"examples": ["reject"], "description": "How to resolve an existing timestamp versus generated.at; reject by default.",
       "enum": [
         "reject",
         "use_generated",
@@ -57,16 +57,16 @@
       ],
       "default": "reject"
     },
-    "timestamp_policy": {
+    "timestamp_policy": {"examples": ["preserve"], "description": "Preserve legacy timestamp or remove it after copying to generated.at; required.",
       "enum": [
         "preserve",
         "remove_after_copy"
       ]
     },
-    "citation_mappings": {
+    "citation_mappings": {"description": "Explicit citation mappings with replay-sufficient selectors; use exact legacy_entry bytes or resource projection for reserved index/log documents.",
       "$ref": "#/$defs/citation_mappings"
     },
-    "computations": {
+    "computations": {"description": "Explicit attested computation mappings; computation content is inert and is never executed by this tool.",
       "$ref": "#/$defs/computations"
     }
   },
@@ -231,11 +231,14 @@
         ],
         "properties": {
           "path": {
+            "description": "Bundle-relative document path containing legacy citations, e.g. concepts/cache.md.",
+            "examples": ["concepts/cache.md"],
             "type": "string",
             "minLength": 1,
             "maxLength": 4096
           },
           "entries": {
+            "description": "One or more explicit legacy citation selectors and v0.2 source projections for this exact document.",
             "type": "array",
             "minItems": 1,
             "maxItems": 10000,
@@ -259,6 +262,8 @@
                   "maxLength": 4096
                 },
                 "source_id": {
+                  "description": "Stable v0.2 citation source ID, e.g. cache-design; pair with an exact legacy selector.",
+                  "examples": ["cache-design"],
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 4096

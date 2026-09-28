@@ -33,6 +33,11 @@ versions сохраняют declaration и читаются best-effort.
 
 ## Быстрый старт {#quickstart}
 
+Рабочие команды создания, проверки и offline viewer — в
+[полном быстром старте]({{ '/ru/quickstart/' | relative_url }}).
+[Публичный viewer]({{ '/demo/knowledge.html' | relative_url }}) можно открыть
+без установки toolkit.
+
 ```text
 knowledge/
 ├── index.md

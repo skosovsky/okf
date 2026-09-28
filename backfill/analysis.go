@@ -39,6 +39,10 @@ func ValidateAnalysis(m Manifest, a Analysis) (Coverage, []Candidate, error) {
 	}
 	events := make(map[string]Event, len(m.Events))
 	for _, e := range m.Events {
+		shownBytes := int64(len(e.Diff))
+		if e.DiffBytes < shownBytes || e.DiffTruncated != (e.DiffBytes > shownBytes) || (!e.DiffTruncated && e.DiffSHA256 != digest([]byte(e.Diff))) {
+			return report, nil, fmt.Errorf("event %s has inconsistent diff completeness", e.ID)
+		}
 		if _, err := time.Parse(time.RFC3339, e.AuthorTime); err != nil {
 			return report, nil, fmt.Errorf("event %s has invalid author_time", e.ID)
 		}

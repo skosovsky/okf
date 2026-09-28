@@ -148,7 +148,7 @@ func Snapshot(ctx context.Context, cfg Config) (Baseline, error) {
 	if err != nil {
 		return Baseline{}, err
 	}
-	cmd := exec.CommandContext(ctx, "git", "-C", cfg.RepoRoot, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=no")
+	cmd := exec.CommandContext(ctx, "git", "-C", cfg.RepoRoot, "-c", "core.fsmonitor=false", "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=no")
 	cmd.WaitDelay = 100 * time.Millisecond
 	buf, err := cmd.Output()
 	if err != nil {

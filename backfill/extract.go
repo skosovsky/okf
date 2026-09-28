@@ -237,10 +237,8 @@ func extractEvent(ctx context.Context, root, sha string, cfg Config) (Event, err
 	if err := ctx.Err(); err != nil {
 		return Event{}, err
 	}
-	for !utf8.Valid(capWriter.prefix) && len(capWriter.prefix) > 0 {
-		capWriter.prefix = capWriter.prefix[:len(capWriter.prefix)-1]
-	}
-	return Event{ID: "git:" + sha, Commit: sha, Parents: parents, Subject: fields[1], Body: fields[2], Author: fields[3], AuthorTime: fields[4], CommitterTime: fields[5], Files: files, Diff: string(capWriter.prefix), DiffSHA256: hex.EncodeToString(capWriter.hash.Sum(nil)), DiffBytes: capWriter.count, DiffTruncated: capWriter.count > int64(cfg.MaxDiffBytes)}, nil
+	diff, truncated := capWriter.displayedDiff()
+	return Event{ID: "git:" + sha, Commit: sha, Parents: parents, Subject: fields[1], Body: fields[2], Author: fields[3], AuthorTime: fields[4], CommitterTime: fields[5], Files: files, Diff: diff, DiffSHA256: hex.EncodeToString(capWriter.hash.Sum(nil)), DiffBytes: capWriter.count, DiffTruncated: truncated}, nil
 }
 
 func emptyTree(ctx context.Context, root string) (string, error) {
@@ -274,6 +272,22 @@ func (w *boundedWriter) Write(p []byte) (int, error) {
 		w.prefix = append(w.prefix, p[:n]...)
 	}
 	return len(p), nil
+}
+
+func (w *boundedWriter) displayedDiff() (string, bool) {
+	validBytes := 0
+	for validBytes < len(w.prefix) {
+		r, size := utf8.DecodeRune(w.prefix[validBytes:])
+		if r == utf8.RuneError && size == 1 {
+			break
+		}
+		validBytes += size
+	}
+	shown := w.prefix[:validBytes]
+	// Count all bytes that Git emitted, including bytes discarded to keep the
+	// displayed prefix valid UTF-8. Stop at the first invalid sequence in one
+	// pass; rescanning a shortened prefix would be quadratic on bad input.
+	return string(shown), w.count > int64(len(shown))
 }
 
 func parseNumstat(raw []byte, skip []string) ([]File, error) {

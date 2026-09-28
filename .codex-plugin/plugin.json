@@ -1,7 +1,7 @@
 {
   "name": "okf",
   "version": "0.2.0",
-  "description": "OKF toolkit and agent skill for v0.2 authoring, legacy consumption, validation, and explicit migration.",
+  "description": "OKF toolkit and agent skills for v0.2 authoring, legacy consumption, validation, explicit migration, knowledge upkeep, and Git history backfill.",
   "author": {
     "name": "Sergey Kosovsky"
   },
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Open Knowledge Format",
     "shortDescription": "Author, validate, consume, and migrate OKF bundles.",
-    "longDescription": "Provides the open-knowledge-format skill and toolkit guidance for OKF v0.2 authoring, version-aware consumption, validation, and explicit lossless migration from legacy v0.1.",
+    "longDescription": "Provides open-knowledge-format for authoring, reading, validation, viewer and migration, okf-maintain for fingerprint-bound repository review, and okf-backfill for Git history reconstruction.",
     "developerName": "Sergey Kosovsky",
     "category": "Productivity",
     "capabilities": [
@@ -29,7 +29,9 @@
     "defaultPrompt": [
       "Use $open-knowledge-format to validate this OKF bundle.",
       "Use $open-knowledge-format to design an OKF bundle.",
-      "Use $open-knowledge-format to migrate this legacy bundle to OKF v0.2."
+      "Use $open-knowledge-format to migrate this legacy bundle to OKF v0.2.",
+      "Use $okf-maintain to review repository knowledge after this code change.",
+      "Use $okf-backfill to reconstruct draft knowledge from this Git history."
     ]
   }
 }

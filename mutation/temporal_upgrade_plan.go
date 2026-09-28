@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/temporalrequest"
 	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
 	"gopkg.in/yaml.v3"
@@ -218,30 +218,13 @@ func temporalUpgradeMappingKey(id bundle.ConceptID, path string) string {
 }
 
 func temporalUpgradeChangeFromRequest(request TemporalUpgradeApplyRequest) (store.ChangeSet, error) {
-	byConcept := make(map[string][]store.TemporalFieldRewrite)
+	mappings := make([]temporalrequest.Mapping, 0, len(request.Request.Mappings))
 	for _, mapping := range request.Request.Mappings {
-		key := mapping.Concept.String()
-		byConcept[key] = append(byConcept[key], store.TemporalFieldRewrite{Path: mapping.Path, From: mapping.From, To: mapping.To})
+		mappings = append(mappings, temporalrequest.Mapping{
+			Concept: mapping.Concept, Path: mapping.Path, From: mapping.From, To: mapping.To,
+		})
 	}
-	keys := make([]string, 0, len(byConcept))
-	for key := range byConcept {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	var ops []store.Operation
-	for _, key := range keys {
-		id, err := bundle.ParseConceptID(key)
-		if err != nil {
-			return store.ChangeSet{}, err
-		}
-		op, err := store.NewUpgradeTemporalConcept(id, byConcept[key])
-		if err != nil {
-			return store.ChangeSet{}, err
-		}
-		ops = append(ops, op)
-	}
-	change := store.ChangeSet{Version: store.ChangeSetFormatVersion, ID: request.Request.ID, Actor: request.Request.Actor, BaseRevision: request.BaseRevision, Operations: ops}
-	return change, change.Validate()
+	return temporalrequest.ChangeSet(request.Request.ID, request.Request.Actor, request.BaseRevision, mappings)
 }
 
 func temporalUpgradeObserve(p *presentation) ([]store.TemporalFieldRewrite, error) {

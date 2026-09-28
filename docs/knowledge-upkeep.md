@@ -1,6 +1,6 @@
 # Optional knowledge upkeep check
 
-The portable instructions for [AGENTS.md](snippets/AGENTS-okf.md) and [CLAUDE.md](snippets/CLAUDE-okf.md) ask an agent to read only relevant concepts and review them after a code change. They need no Python, Node, or host plugin. The Go checker below provides session evidence for that review. It does not decide whether a concept is factually correct or set `status`, `trust`, or `verified`.
+The portable instructions for [AGENTS.md](snippets/AGENTS-okf.md) and [CLAUDE.md](snippets/CLAUDE-okf.md) ask an agent to read only relevant concepts and review them after a code change. They need no Python, Node, or host plugin. The separate [okf-maintain skill](https://github.com/skosovsky/okf/blob/main/skills/okf-maintain/SKILL.md) guides the baseline → concept review → decision → final fingerprint check workflow; this page describes the checker's exact options. The Go checker provides session evidence for that review. It does not decide whether a concept is factually correct or set `status`, `trust`, or `verified`.
 
 The policy belongs in a separate JSON file outside the OKF root index. For this repository, an example at the repository root is:
 

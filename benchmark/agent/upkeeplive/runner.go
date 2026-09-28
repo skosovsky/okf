@@ -433,10 +433,17 @@ func startingHash(c agent.UpkeepCase) (string, error) {
 }
 
 func prepareRepo(ctx context.Context, root string, c agent.UpkeepCase) error {
-	for _, args := range [][]string{{"init", "-q"}, {"config", "user.email", "okf-study@example.invalid"}, {"config", "user.name", "OKF Study"}, {"config", "commit.gpgsign", "false"}} {
-		cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...)
+	fixtureGit := func(args ...string) error {
+		cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root, "-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"}, args...)...)
+		cmd.Env = []string{"PATH=" + os.Getenv("PATH"), "HOME=" + root, "GIT_CONFIG_SYSTEM=/dev/null", "GIT_CONFIG_GLOBAL=/dev/null"}
 		if out, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("git %v: %w: %s", args, err, out)
+		}
+		return nil
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"config", "user.email", "okf-study@example.invalid"}, {"config", "user.name", "OKF Study"}, {"config", "commit.gpgsign", "false"}} {
+		if err := fixtureGit(args...); err != nil {
+			return err
 		}
 	}
 	if err := writeArtifacts(root, "", c.InitialCode); err != nil {
@@ -446,9 +453,8 @@ func prepareRepo(ctx context.Context, root string, c agent.UpkeepCase) error {
 		return err
 	}
 	for _, args := range [][]string{{"add", "--all"}, {"commit", "-q", "-m", "frozen baseline"}} {
-		cmd := exec.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("git %v: %w: %s", args, err, out)
+		if err := fixtureGit(args...); err != nil {
+			return err
 		}
 	}
 	return nil
