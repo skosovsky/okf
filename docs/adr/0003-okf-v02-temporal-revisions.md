@@ -1,9 +1,21 @@
-# ADR 0003: Explicit temporal revisions within OKF 0.2
+---
+layout: default
+title: "ADR 0003: Explicit temporal revisions within OKF 0.2"
+lang: en
+document_id: docs-adr-0003-okf-v02-temporal-revisions
+permalink: /adr/0003-okf-v02-temporal-revisions/
+---
+
+<a id="adr-0003-explicit-temporal-revisions-within-okf-02"></a>
+
+# ADR 0003: Explicit temporal revisions within OKF 0.2 {#doc-section-001}
 
 - Status: Accepted
 - Date: 2026-09-26
 
-## Context
+<a id="context"></a>
+
+## Context {#doc-section-002}
 
 Two pinned normative documents both declare OKF `0.2`. The original
 `knowledge-catalog` revision `3fcbb9f` uses calendar dates for
@@ -17,7 +29,9 @@ are recorded in `fixtures/v02/spec-lock.json` and
 from one value also fails for bundles that omit these optional fields or mix
 date and datetime values.
 
-## Decision
+<a id="decision"></a>
+
+## Decision {#doc-section-003}
 
 The toolkit names two temporal profiles: `date-3fcbb9f` and
 `instant-0b87c52`. The former remains the default for existing Go, CLI,
@@ -55,7 +69,9 @@ legacy bytes. The instant projection is a separate contract with
 keep their identity and digest; any new temporal operation must use an
 additive tag or an explicitly versioned envelope.
 
-## Compatibility and rollout
+<a id="compatibility-and-rollout"></a>
+
+## Compatibility and rollout {#doc-section-004}
 
 The default continues to interpret a date-only bundle as before. Consumers
 must select the instant profile explicitly for the revised spec. Producers
@@ -66,7 +82,9 @@ date-only `as_of` remains valid only for the date profile; the instant profile
 requires a datetime. JSON output reports the profile's date or offset
 datetime form, retaining instant precision through nanoseconds.
 
-## Consequences
+<a id="consequences"></a>
+
+## Consequences {#doc-section-005}
 
 The duplicated `0.2` identifier makes the explicit profile necessary until
 upstream publishes an unambiguous revision marker. The profile is toolkit

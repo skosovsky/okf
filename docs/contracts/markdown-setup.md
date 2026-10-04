@@ -1,10 +1,14 @@
 ---
-title: Prepare existing Markdown
-description: Preview and apply a managed copy into a new OKF bundle.
+layout: default
+title: Managed Markdown setup contract
+lang: en
+document_id: docs-contracts-markdown-setup
 permalink: /contracts/markdown-setup/
 ---
 
-# Managed Markdown setup contract (v1)
+<a id="managed-markdown-setup-contract-v1"></a>
+
+# Managed Markdown setup contract (v1) {#doc-section-001}
 
 `okf setup --source DIR --target NEW_DIR [--files a.md,b/c.md] [--type Guide] [--json]`
 previews a managed copy. `--apply --plan-digest SHA256` publishes the exact

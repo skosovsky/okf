@@ -1,9 +1,22 @@
-# GitHub Action: validate an OKF bundle
+---
+title: "Validation in GitHub Actions"
+description: "Validation in GitHub Actions"
+permalink: /github-action/
+---
 
-For an interactive check before CI, follow the [validation recipe](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/operational-workflows.md#validate-and-explain-a-bundle). It keeps base conformance, optional strict guidance, and the warning-budget policy separate.
+{% include nav.html %}
 
-Use the repository Action at an immutable commit SHA. The Action builds the Go toolkit from that exact revision and runs the same `okf validate` command used locally. It does not download another validator release.
+<span id="github-action-validate-an-okf-bundle"></span>
 
+# Validate knowledge in GitHub Actions {#page-top}
+
+If a bundle lives in your repository, check it alongside code. You need a GitHub repository with `knowledge/` and permission to edit its workflow. First confirm local validation passes, then add these steps to a CI job.
+
+## Configure the steps {#configure}
+
+This example pins OKF to published revision `61e75e9aa9a8719dfb480bf1f5226553b3a21d70`. The Action builds the Go program from that revision and runs the same validator as locally; it does not download a different release.
+
+{% raw %}
 ```yaml
 permissions:
   contents: read
@@ -11,7 +24,7 @@ permissions:
 steps:
   - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
   - id: okf
-    uses: skosovsky/okf@0f15ab4091203f11caa7fb0b9e02da47d719a051
+    uses: skosovsky/okf@61e75e9aa9a8719dfb480bf1f5226553b3a21d70
     with:
       path: knowledge
       spec: auto
@@ -26,26 +39,37 @@ steps:
       name: okf-validation
       path: ${{ steps.okf.outputs['report-path'] }}
 ```
+{% endraw %}
 
-The example pins the implementation commit in this branch. It becomes usable from consuming repositories after that commit is published to GitHub; update its SHA when adopting later changes. A workflow in this repository exercises `uses: ./` against seven fixtures. In a consuming repository, `path` is resolved relative to `GITHUB_WORKSPACE`; absolute paths are accepted. Inputs are passed as arguments to Go, so spaces, quotes, and shell metacharacters remain path data.
+Expected result for a valid bundle: a successful step and a JSON `okf-validation` artifact. Structural failures or excess warnings fail the step while leaving a report available to upload. `path` resolves against `GITHUB_WORKSPACE`; absolute paths are accepted. Spaces, quotes, and shell metacharacters remain path data.
+
+## Choose checks {#inputs}
 
 | Input | Default | Meaning |
 | --- | --- | --- |
-| `path` | `.` | Bundle directory |
-| `spec` | `auto` | Version selector: `auto`, `0.1`, or `0.2` |
-| `temporal-profile` | empty | Temporal revision; empty uses the CLI default (`date-3fcbb9f`) |
-| `strict` | `false` | Additional advisory checks; it does not make every warning an error |
-| `check-links` | `false` | Additional Markdown link checks |
-| `check-orphans` | `false` | Additional index coverage checks |
-| `as-of` | empty | Reference date or offset datetime according to the selected temporal revision |
-| `max-warnings` | empty | Optional warning budget; `0` rejects any warning |
+| `path` | `.` | Bundle folder |
+| `spec` | `auto` | Version selector: `auto`, `0.1`, `0.2` |
+| `temporal-profile` | empty | Temporal revision; default `date-3fcbb9f` |
+| `strict` | `false` | Additional metadata guidance |
+| `check-links` | `false` | Markdown link checks |
+| `check-orphans` | `false` | Index coverage checks |
+| `as-of` | empty | Date or offset timestamp for the selected revision |
+| `max-warnings` | empty | Warning budget; `0` rejects every warning |
 
-`max-warnings=N` passes when the report has at most N warnings. Exceeding N fails the CI step through a separate toolkit policy. The bundle's `conformant` value still reports base OKF conformance. `strict` merely enables more checks. Base errors take precedence in diagnosis: a report can contain both base errors and a warning-budget policy failure, but the Action produces one `validation_failure` outcome. Operational errors (bad inputs, missing directory, I/O failure, incomplete report) produce `operational_failure` with no JSON report. Existing CLI exit codes remain 0 for passing validation and 1 for validation or operational failure; the Action distinguishes the latter two by whether the CLI produced a complete JSON report.
+`max-warnings=N` permits at most N warnings. This is a separate CI policy; `conformant` still reports base OKF conformance. `strict` enables additional checks. Structural errors take priority in diagnosis when multiple issues occur.
 
-The Action invokes the validator once and exposes:
+## Read the result {#outputs}
 
 - `outcome`: `pass`, `validation_failure`, or `operational_failure`.
-- `report`: complete JSON when at most 60,000 bytes; otherwise empty. It is also empty after operational failure.
-- `report-path`: full JSON report in a temporary file on the same runner, including validation failures. Upload it in a later step with `if: always()` when durable CI evidence is needed. The path is empty after operational failure.
+- `report`: complete JSON if no larger than 60,000 bytes; otherwise empty. Also empty on operational failure.
+- `report-path`: temporary path to the full report on the same runner, including validation failures. Upload it with `if: always()`; the path is empty after operational failure.
 
-For local parity, run `go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings 0 --format json`. Compare this output with the Action's `report-path` file for the same bundle snapshot and flags. A failed validation still writes JSON to stdout. An operational error writes to stderr and has no JSON report.
+Invalid inputs, a missing folder, I/O failure, or an incomplete report produce `operational_failure`. CLI exits 0 on success and 1 for either failure class; the Action distinguishes them by the presence of a complete JSON report.
+
+## Compare with a local run {#troubleshooting}
+
+```sh
+go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings 0 --format json
+```
+
+Use the same files, program revision, and flags. Validation failures still print JSON to stdout; operational failures write stderr without JSON. A workflow in this repository tests `uses: ./` on seven fixtures. The full input contract is in [action.yml](https://github.com/skosovsky/okf/blob/main/action.yml).

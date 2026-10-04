@@ -1,90 +1,94 @@
-# Техническое задание: generalized lossless YAML engine для v0.2
+---
+lang: en
+title: "Generalized lossless YAML engine for v0.2"
+permalink: /development/v0.2/tasks/task13/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Расширить приватный mutation engine структурными mapping/sequence primitives,
-не ослабляя fail-closed и byte-preservation contract.
+# Technical specification: Generalized lossless YAML engine for v0.2 {#section001}
 
-Зависимости: [`task09.md`](task09.md), [`task10.md`](task10.md).
+> Historical document from source revision `61e75e9`. This plan records the work proposed at that revision; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task13.md).
 
-## 2. Gap
+## 1. Goal {#section002}
 
-Текущий engine ориентирован на `relations`, `id`, `anchor` и string scalars.
-OKF v0.2 использует nested mappings/sequences, bool/int/date/datetime и flow
-forms. Touched flow nodes сейчас полностью отвергаются.
+Extend the private mutation engine with structural mapping and sequence primitives without weakening the fail-closed and byte-preservation contract.
 
-Flow style не надо патчить изнутри: разрешается атомарная замена целого
-доказанного collection value.
+Dependencies: [`task09.md`]({{ '/development/v0.2/tasks/task09/' | relative_url }}), [`task10.md`]({{ '/development/v0.2/tasks/task10/' | relative_url }}).
 
-## 3. Приватные primitives
+## 2. Gap {#section003}
 
-Добавить:
+The current engine focuses on `relations`, `id`, `anchor`, and string scalars. OKF v0.2 uses nested mappings and sequences, bool/int/date/datetime values, and flow forms. Touched flow nodes are currently rejected outright.
 
-- replace/insert/delete root mapping entry;
-- replace/insert/delete nested mapping entry;
-- whole-value replacement mapping/sequence;
-- ensure/update/remove sequence item по unique selector;
-- bare mapping → one-element sequence;
-- exact span ownership mapping entry/collection value;
-- render string/bool/int/date/datetime/mapping/sequence;
-- semantic reparse и проверку неизменности bytes вне patch spans.
+Do not patch flow style internally: atomic replacement of an entire collection value is allowed when its boundaries and ownership have been proven.
+
+## 3. Private primitives {#section004}
+
+Add:
+
+- replacement, insertion, and deletion of root mapping entries;
+- replacement, insertion, and deletion of nested mapping entries;
+- whole-value replacement of mappings and sequences;
+- ensuring, updating, and removing sequence items by a unique selector;
+- conversion of a bare mapping into a one-element sequence;
+- exact span ownership for mapping entries and collection values;
+- rendering of string/bool/int/date/datetime/mapping/sequence values;
+- semantic reparsing and verification that bytes outside patch spans remain unchanged.
 
 Selector routes:
 
-- `sources[]` по `id`, entry без ID только exact-value;
-- `verified[]` по `(by, at)`;
-- `parameters[]` по `name`;
-- nested mapping по unique scalar key.
+- `sources[]` by `id`; entries without an ID support exact-value selection only;
+- `verified[]` by `(by, at)`;
+- `parameters[]` by `name`;
+- nested mappings by a unique scalar key.
 
-Generic raw YAML path не должен становиться public API.
+A generic raw YAML path must not become a public API.
 
-## 4. Fail-closed contract
+## 4. Fail-closed contract {#section005}
 
-- Duplicate touched keys/selectors → `Ambiguous`.
-- Alias/merge provenance → `Ambiguous`.
-- Anchor/tag/complex key/unowned trivia → `Unsupported`.
-- Недоказуемый comment ownership → `Unsupported`.
-- Nested flow patch allowed только whole-value.
-- Unrelated YAML/Markdown остаётся byte-identical.
-- Любая ошибка создаёт zero stage/writes/renames/plan.
+- Duplicate touched keys or selectors → `Ambiguous`.
+- Alias or merge provenance → `Ambiguous`.
+- Anchors, tags, complex keys, or unowned trivia → `Unsupported`.
+- Unprovable comment ownership → `Unsupported`.
+- Nested flow patches are allowed only as whole-value replacements.
+- Unrelated YAML and Markdown remain byte-identical.
+- Any error produces no staging, writes, renames, or plan.
 
-Добавить stable error codes и in-bounds source locations.
+Add stable error codes and source locations within bounds.
 
-## 5. Файлы
+## 5. Files {#section006}
 
 - `mutation/presentation.go`;
 - `mutation/yaml_resolver.go`;
 - `mutation/presentation_errors.go`;
-- focused tests, parser-backed corpus и fuzz corpus.
+- focused tests, a parser-backed corpus, and a fuzz corpus.
 
-## 6. Tests
+## 6. Tests {#section007}
 
-Все tests — AAA.
+All tests follow AAA.
 
-- Insert/update/delete mapping entries.
-- Block и whole-value flow forms.
+- Insert, update, and delete mapping entries.
+- Block forms and whole-value flow forms.
 - Bare/list sequence normalization.
-- String/bool/int/date/datetime.
-- LF/CRLF, comments, quotes.
-- Duplicate keys/selectors, aliases, merges, anchors, tags, complex keys.
-- Invalid UTF-8, nested flow, mixed sequences.
-- Caller/source bytes не мутируются.
-- Bytes outside spans identical.
-- Reparsed semantic projection exact.
-- Rejection содержит typed error/location и zero public plan.
-- Desired-state second application creates zero diff.
-- Fuzz: no panic, spans in bounds, parseable result.
-- Race: concurrent planning и caller mutation.
+- String/bool/int/date/datetime values.
+- LF/CRLF, comments, and quotes.
+- Duplicate keys/selectors, aliases, merges, anchors, tags, and complex keys.
+- Invalid UTF-8, nested flow forms, and mixed sequences.
+- Caller-owned and source bytes are not mutated.
+- Bytes outside spans remain identical.
+- The reparsed semantic projection matches exactly.
+- Rejection includes a typed error and location, with no public plan.
+- A second desired-state application produces no diff.
+- Fuzz: no panics, spans within bounds, and a parseable result.
+- Race: concurrent planning and caller mutation.
 
-## 7. Acceptance criteria
+## 7. Acceptance criteria {#section008}
 
-- Upstream flow examples можно менять whole-family replacement.
-- Ни один существующий relation/move/rename digest или semantic contract не
-  изменился.
-- Lossless guarantees доказаны property/fuzz tests.
-- `go test -race ./mutation ./store` проходит.
+- Upstream flow examples can be modified by whole-family replacement.
+- No existing relation/move/rename digest or semantic contract changes.
+- Property and fuzz tests prove the lossless guarantees.
+- `go test -race ./mutation ./store` passes.
 
-## 8. Out of scope
+## 8. Out of scope {#section009}
 
-Public v0.2 operations, semantic migration, executor runtime и generic
-caller-controlled `SetYAML`.
+Public v0.2 operations, semantic migration, executor runtime, and generic caller-controlled `SetYAML`.

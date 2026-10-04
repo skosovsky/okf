@@ -1,277 +1,132 @@
 ---
-title: Migration OKF v0.1 в v0.2
-description: Lossless explicit transaction-bound migration из OKF v0.1.
+title: Переход с OKF 0.1 на 0.2
+description: Сохранить старые заметки и явно связать их цитаты с источниками.
 permalink: /ru/migration/
 ---
 
 {% include nav_ru.html %}
 
-# Migration v0.1 → v0.2
+# Переход с OKF 0.1 на 0.2 {#page-top}
 
-v0.2 меняет две legacy формы:
+Миграция переносит старое время `timestamp` в `generated.at` и старые цитаты из `# Citations` в `sources` с именованными сносками. Она нужна владельцу уже существующего набора v0.1. Для обычных Markdown без OKF используйте [подготовку документов]({{ "/ru/toolkit/" | relative_url }}#setup). Чтение или форматирование старого файла само по себе его не мигрирует.
 
-- `timestamp` superseded by `generated.at`;
-- body `# Citations` superseded by frontmatter `sources` и keyed footnotes.
+## Перед началом {#before}
 
-Legacy read не является migration. Parse, format, index, graph и обычные read
-operations сохраняют legacy bytes.
-Absent declaration разрешается по documented source rules. Present malformed
-root `okf_version` — hard reserved-index error, а не absent/default или
-conformant migration source. Unsupported canonical future declaration
-сохраняется и блокируется для v0.1 migration.
-
-## Safe workflow
-
-Для подготовки заполняемых CLI inputs и точных citation selectors см.
-[migration preparation](../contracts/migration-preparation.md).
-
-1. Preview без writes.
-2. Передать actor, time или citation mappings только для преобразований,
-   которым они действительно нужны.
-3. Разрешить conflicts/manual actions.
-4. Сохранить unknown YAML, Markdown и assets.
-5. Провалидировать весь staged bundle как v0.2.
-6. Stage и publish physical write/rename root `index.md` последним; его
-   `okf_version` change — финальная visible publication transaction.
-7. Apply atomic относительно preview-frozen `expected_source`; для transition
-   `v0.1-to-v0.2` также повторить proof v2 и non-empty
-   `expected_plan_digest`.
-
-Каждая non-publication ветка preview, noop, rejected, blocked, invalid или
-cancelled оставляет всё filesystem tree идентичным path-for-path и byte-for-byte
-и не создаёт `.okf` или staging artifacts. Filesystem changes может публиковать
-только authorized actual commit; identical successful replay возвращает
-записанный result без второй publication.
-Migration input validation выполняется до source resolution. Любое переданное
-structurally/domain-invalid individual actor, timestamp, citation, generated-at,
-computation или asset field отклоняется даже для `target-noop` или rootless
-bundle с той же zero-write гарантией.
-Source resolution вычисляется ровно один раз до Preview; Preview и Apply
-используют один и тот же полный frozen `expected_source`. Он содержит
-`requested_selector`, declaration state (`declaration_present`,
-`declaration_valid`, `declaration_raw`, `declared_version`),
-resolved/provenance и transition fields, а также ordered legacy candidates и
-blockers. Apply отклоняет изменённый resolution или его evidence.
-§13 fallback является presence-only и не зависит от version source: default,
-declared или explicit v0.1/v0.2 и future resolution используют один predicate.
-`GeneratedPresent`/`SourcesPresent` подавляют fallback даже при malformed value;
-`TimestampAllowed`/`CitationsAllowed` фиксируют отсутствие replacement, а
-`TimestampActive`/`CitationsActive` дополнительно требуют actual legacy form.
-`CitationsActive` требует parser-owned exact heading `# Citations`; одного
-numeric marker недостаточно.
-Для каждого citation mapping с nonzero `legacy_number` replay требует, чтобы
-выбранный parser-owned marker `[n]` исчез, а reference на normalized keyed
-`[^SourceID]` существовал. Entry-only mapping не требует claim reference.
-Leftover selected marker, missing keyed reference или wrong keyed reference
-блокируется с `migration_replay_mismatch` на exact parser-owned span.
-Inline/fenced code и raw HTML opaque: marker-like bytes внутри них не являются
-ни claim evidence, ни replay failure. Любой mismatch zero-write и не возвращает
-proof или plan authorization.
-Литерал `[^label]` внутри одно- или многострочного code span также не участвует
-в replay; настоящая ссылка `[^label]` в prose участвует.
-Unrenderable individual migration field возвращает `invalid_request`.
-Normalized per-document SourceID collision вместо этого блокируется с
-`normalized_footnote_label_collision` и `disambiguate_citation_entry`, включая
-`target-noop`; existing-document collision возвращает тот же exact span. Ни
-одна ветка не публикуется, обе zero-write.
-Proof-bound apply `v0.1-to-v0.2` может вернуть transition-noop только после
-authentication и rebuild exact proof и plan digest; noop возвращается до
-открытия store и не создаёт `.okf`. Для live `target-noop` MCP остаётся
-proofless и не открывает store, CLI dry-run строит proof без открытия store, а
-CLI `--write` выполняет empty CAS с durable receipt в `.okf`. Каждая поверхность
-оставляет revision-visible bundle files path-and-byte identical.
-
-Identical successful apply replay-safe: adapter возвращает записанный result,
-а не публикует migration повторно.
-
-Preview разрешает `from: auto|0.1` в frozen source identity. MCP preview ветки
-`v0.1-to-v0.2` с non-empty plan digest также возвращает content-free proof с
-`format_version: 2` и обязательным non-empty `resolution_digest`; apply этой
-ветки требует proof, non-empty `expected_plan_digest` и тот же frozen
-`expected_source`. Более ранний proof format не принимается. Live-ветка `target-noop` требует
-frozen `expected_source`, но не передаёт ни proof, ни plan digest и всё равно
-валидирует переданное migration target state. Blocked preview применить нельзя.
-Отдельного migration `expected_revision` нет: если proof присутствует,
-`proof.base_revision` authoritative. Proof фиксирует request и полный source
-resolution, revision digests, read paths, write path+digest pairs, deletes,
-renames, affected/reverse-impact refs и changed file/ref summaries. Его arrays
-non-null; file bytes, frontmatter и body в proof отсутствуют. Noop/blocked
-preview proof не возвращает.
-
-## Timestamp rule
-
-Legacy timestamp не содержит actor. Он переносится в `generated.at` только если
-caller передал `generated.by`. Transaction actor, git author, file owner или
-current user не становятся implicit producer.
-
-В `okf migrate` flag `--actor` задаёт этого explicit document producer и
-записывается в `generated.by`. Это не `store.ChangeSet.Actor`; CLI adapter
-использует отдельный internal transaction principal. Dry preview может
-пропустить `--actor`; если plan требует generation metadata, preview вернёт
-manual action. Для apply такого change с `--write` actor обязателен.
-
-Если type-only legacy bundle не содержит timestamp для conversion, migration
-меняет только root version declaration, не требует actor/time и не создаёт
-`generated`.
-
-Для MCP actor-bearing fields отдельный 256-byte transport/resource cap
-выполняется до semantic validation: 257+ bytes возвращает `resource_limit`, а
-не invalid actor. Внутри cap semantics определяет shared `ValidActor`. Adapter
-cap не является actor grammar и не ограничивает bundle/store domain.
-
-Unknown actor — manual action, а не guessed value. Конфликт
-`timestamp`/`generated.at` требует explicit policy.
-
-## Citation rule
-
-Каждой legacy entry нужен explicit mapping в stable source ID. CLI принимает
-его только через bounded JSON file `--citation-mappings <json-file>`; MCP
-использует тот же exact closed array
-`[{path,entries:[{legacy_number?,legacy_entry?,source_id,title?,resource?}]}]`.
-Каждая group keyed по bundle-relative Markdown `path`, а не concept ID, поэтому
-адресуются root `index.md`, log files и nested Markdown без угадывания identity.
-Каждая mapping entry требует один или оба selector:
-
-- nonzero `legacy_number` выбирает numbered `[1]`;
-- exact nonblank `legacy_entry` выбирает raw entry text, включая unnumbered
-  bullet или raw URL;
-- если заданы оба, они AND-match одну actual entry.
-
-`legacy_entry` сравнивается exactly, без trim, case folding, URL canonicalization
-или newline normalization. Значение должно быть valid UTF-8, 1..4096 bytes,
-nonblank по `strings.TrimSpace` и без NUL. TAB (`0x09`), LF (`0x0a`) и CR
-(`0x0d`) разрешены; остальные C0 controls и DEL (`0x7f`) запрещены. Validation
-не trim'ит value: exact bytes сохраняются и bind authorization/digest. Поэтому
-LF и CRLF authorize/digest как distinct values. Entry-only selector, совпавший
-с duplicate identical raw entries, ambiguous и отклоняется. Duplicate nonzero
-`legacy_number` всегда запрещён. Один `legacy_entry` допустим, только если
-каждый reuse также содержит distinct nonzero number и образует disjoint full
-AND-selector pair. Entry-only плюс любой reuse того же raw text пересекаются и
-отклоняются; два entry-only тоже.
-Distinct full pairs по number допустимы. Implementations canonical-sort по
-path, затем `legacy_number`, затем exact `legacy_entry`; отклоняют overlapping
-selectors и требуют consistent metadata при reuse source ID. Unknown fields,
-unsafe paths, oversized files/arrays/values и incomplete mappings fail closed.
-В keyed footnotes переписываются только claim markers с доказуемым ownership.
-
-CLI file не имеет wrapper object:
-
-```json
-[
-  {
-    "path": "index.md",
-    "entries": [
-      {
-        "legacy_number": 1,
-        "source_id": "policy",
-        "title": "Synthetic policy",
-        "resource": "https://example.invalid/policy"
-      }
-    ]
-  },
-  {
-    "path": "logs/2026-07.md",
-    "entries": [
-      {
-        "legacy_entry": "https://example.invalid/runbook",
-        "source_id": "runbook"
-      }
-    ]
-  },
-  {
-    "path": "nested/report.md",
-    "entries": [
-      {
-        "legacy_number": 2,
-        "legacy_entry": "[Incident](https://example.invalid/incident)",
-        "source_id": "incident-report"
-      },
-      {
-        "legacy_number": 3,
-        "legacy_entry": "[Incident](https://example.invalid/incident)",
-        "source_id": "incident-report-copy"
-      }
-    ]
-  }
-]
-```
-
-Migration не выдумывает source titles, authors, usage, last-modified dates или
-claim mappings. Ambiguous/duplicate/unresolved Markdown блокирует migration.
-
-Когда `sources` и legacy Citations сосуществуют, effective read всё ещё
-использует `sources`, потому что fallback действует только при отсутствии
-`sources`. Migration всегда блокирует такой документ: она не merge'ит, не
-deduplicate'ит и не удаляет ни одну форму; manual action —
-`reconcile_sources_and_citations`.
-
-Explicit citation/generated-at/computation path должен указывать на existing
-bundle document. Missing path блокируется с `migration_document_missing`,
-возвращает empty manual actions и не может быть создан mappings; новый action
-code не добавляется.
-
-Stable migration manual-action taxonomy точна:
-
-- `provide_citation_mapping`: mapping отсутствует/unresolved или
-  `legacy_number` + `legacy_entry` противоречат actual entry;
-- `disambiguate_citation_entry`: duplicate number/raw selector matches;
-- `disambiguate_citation_destination`: parser ownership не может выбрать один
-  link destination;
-- `normalize_citations_section`: opaque или unowned extra section content;
-- `reconcile_sources_and_citations`: structured `sources` сосуществуют с legacy
-  Citations;
-- `repair_invalid_utf8`: invalid UTF-8;
-- `provide_generated_at`: generation time required, но отсутствует;
-- `provide_generated_by`: producer actor required, но отсутствует.
-
-Duplicate raw selector ambiguity не является destination ambiguity.
-
-## Что migration не выводит
-
-- `verified`, verification или trust;
-- lifecycle status или stale date;
-- credibility score/signals;
-- receipt/verdict или successful attestation;
-- Attested Computation из narrative prose.
-
-См. полную
-[migration policy skill](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/migration-v01-v02.md)
-и [pinned §13 contract](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md).
-
-## Обновление временной редакции OKF 0.2
-
-Это отдельная операция после миграции v0.1 → v0.2. Исходная редакция 0.2
-использует календарные даты в `stale_after`, `usage_window.from/to` и
-`sources[].last_modified`; новая закреплённая редакция требует datetime с
-явным часовым поясом. Дата не содержит времени суток и offset. Укажи момент
-для **каждой найденной даты**: инструмент не подставляет полночь или конец дня.
-
-Файл `temporal-mappings.json`:
-
-```json
-{"mappings":[
-  {"concept":"payments/retries","path":"stale_after","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
-  {"concept":"payments/retries","path":"usage_window.from","from":"2026-09-01","to":"2026-09-01T09:00:00+07:00"},
-  {"concept":"payments/retries","path":"usage_window.to","from":"2026-09-26","to":"2026-09-26T18:00:00+07:00"},
-  {"concept":"payments/retries","path":"sources[0].last_modified","from":"2026-09-20","to":"2026-09-20T14:30:00+07:00"}
-]}
-```
-
-`sources[N]` — позиция источника с нуля в той редакции bundle, для которой
-сделан preview. Preview не пишет файлы и возвращает пропущенные даты в
-`unresolved`. Пока они есть, apply блокируется. Используй значения
-`preview.BaseRevision` и `plan_digest` из ответа preview:
+Выполните сборку из исходников по [инструкции первого запуска]({{ "/ru/quickstart/" | relative_url }}) в той же оболочке, затем сделайте собранную программу доступной для команд ниже:
 
 ```sh
-okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json
-okf temporal-upgrade ./knowledge --id temporal-2026-09 --actor human:reviewer --mappings temporal-mappings.json --write --base-revision 'sha256:<hex из preview.BaseRevision>' --plan-digest 'sha256:<hex из plan_digest>'
+export PATH="$demo_dir:$PATH"
+okf version
 ```
 
-Apply пересчитывает план на текущей ревизии и публикует одну транзакцию. Если
-bundle изменился после preview, повтори preview и проверь позиции источников
-и digest. Для чтения по новому контракту укажи
-`--temporal-profile instant-0b87c52`; прежний профиль дат остаётся default.
-Неподдерживаемое YAML-представление (например, alias или явно тегированное
-значение в кавычках, для которого lossless patcher не может доказать границу)
-блокируется. Перепиши такой scalar в plain-форме или с core-tag без кавычек и
-повтори preview.
+Сохраните копию настоящего набора и выясните создателя текста и материалы каждой цитаты. Время миграции нельзя подставлять вместо исторического времени создания.
+
+Ниже используются **вымышленные учебные требования**: доставка повторяется 24 часа, затем подключается оператор. Пример выполняется в новом временном каталоге; создаваемые файлы — предоставленные учебные материалы, а не сведения о реальном продукте.
+
+## Создайте старый пример {#example}
+
+```sh
+migration_demo=$(mktemp -d)
+cd "$migration_demo"
+mkdir old-knowledge
+cat > old-knowledge/index.md <<'EOF'
+---
+okf_version: "0.1"
+---
+
+# Заметки
+
+* [Повторы доставки](retries.md)
+* [Учебные требования](requirements.md)
+EOF
+cat > old-knowledge/requirements.md <<'EOF'
+---
+type: Note
+title: Учебные требования
+timestamp: 2026-06-01T10:00:00Z
+---
+
+# Учебные требования
+
+Повторять доставку не дольше 24 часов; затем передать задачу оператору.
+EOF
+cat > old-knowledge/retries.md <<'EOF'
+---
+type: Note
+title: Повторы доставки
+timestamp: 2026-06-01T10:00:00Z
+---
+
+# Повторы доставки
+
+Повторять доставку не дольше 24 часов; затем передать задачу оператору.[1]
+
+# Citations
+
+[1] [Учебные требования](requirements.md)
+EOF
+okf validate --path old-knowledge --spec 0.1
+```
+
+## Явно задайте источник {#mapping}
+
+Утверждение заканчивается `[1]`. Свяжите этот номер в `retries.md` с устойчивым идентификатором источника `requirements`. `path` — относительный путь файла, а не идентификатор заметки. Верхний уровень JSON — массив.
+
+```sh
+cat > citation-mappings.json <<'EOF'
+[
+  {"path":"retries.md","entries":[
+    {"legacy_number":1,"source_id":"requirements","title":"Учебные требования","resource":"requirements.md"}
+  ]}
+]
+EOF
+```
+
+## Просмотрите план {#preview}
+
+`human:trainer` — известный создатель этого учебного текста. Для настоящего набора укажите реального создателя; автор транзакции задаётся отдельно. Предпросмотр без автора вернёт ручное действие, если преобразованию нужен автор.
+
+Следующая команда сохраняет отпечаток исходника вне набора, не изменяя его. Скопируйте `source_sha256` из `migration-inputs/preparation-report.json` в приглашение ввода и выполните предпросмотр с заполненным сопоставлением. Для больших миграций помощник также создаёт пустые шаблоны; идентичность источника он за вас не подтверждает.
+
+```sh
+okf migrate-prepare old-knowledge --output-dir migration-inputs --format json
+cat migration-inputs/preparation-report.json
+printf 'Вставьте source_sha256 из отчёта: '
+read -r source_sha256
+okf migrate old-knowledge --to 0.2 --actor human:trainer \
+  --citation-mappings citation-mappings.json \
+  --prepared-source-sha256 "$source_sha256" --format json
+```
+
+Проверьте, что план меняет только ожидаемые документы: версия корня станет `0.2`, старое время получит известного автора, цитата №1 станет источником `requirements` и сноской `[^requirements]`. Старое время сохраняется согласно политике CLI. При блокировке разрешите перечисленные ручные действия и повторите предпросмотр.
+
+## Примените проверенные данные {#apply}
+
+Между проверкой и применением сохраните входные файлы и исходный набор неизменными. CLI заново строит и проверяет план внутри команды; `--prepared-source-sha256` дополнительно отклоняет изменённый исходник. После изменения исходника подготовьте новый каталог и заново проверьте план.
+
+```sh
+okf migrate old-knowledge --to 0.2 --actor human:trainer \
+  --citation-mappings citation-mappings.json \
+  --prepared-source-sha256 "$source_sha256" --write --format json
+okf validate --path old-knowledge --spec 0.2 --strict
+cat old-knowledge/retries.md
+okf view old-knowledge --output migrated.html --lang ru
+```
+
+Ожидаемый результат: корневой `index.md` объявляет `0.2`, у заметки есть `generated.by: human:trainer`, источник `requirements` указывает на `requirements.md`, а утверждение использует именованную сноску. Неизвестные поля и нетронутый текст сохраняются. Проверка формата подтверждает структуру, а содержание следует сверить с предоставленными требованиями.
+
+## Частые причины блокировки {#failures}
+
+| Ситуация | Следующее действие |
+| --- | --- |
+| Неизвестен создатель или время создания | Найдите реальные записи; не угадывайте. Переход только по типам без времени не требует ни автора, ни времени. |
+| Повторную или ненумерованную цитату нельзя однозначно выбрать | Изучите отчёт подготовки, разрешите неоднозначность в исходнике и подготовьте заново. |
+| Одновременно есть `sources` и старый `# Citations` | Явно согласуйте две формы; программа их не объединяет. |
+| Изменился подготовленный исходник | Используйте новый каталог подготовки и проверьте новый план. |
+| Путь документа неправильный или отсутствует | Исправьте путь; сопоставление не создаёт отсутствующий документ. |
+
+Предпросмотр и отказ не записывают набор и не создают `.okf`. Настоящий CLI `--write` может создать там квитанцию транзакции, в том числе для уже преобразованного набора. См. [точные правила миграции]({{ '/ru/reference/' | relative_url }}#migration-input), [правила выбора цитат]({{ '/ru/reference/' | relative_url }}#citation-mappings) и [запись и отсутствие изменений]({{ '/ru/reference/' | relative_url }}#migration-writes).
+
+## Обновление календарных дат внутри v0.2 {#temporal-upgrade}
+
+Отдельная операция переводит календарные даты старой редакции v0.2 в дату и время с часовым смещением. Для каждого обнаруженного значения укажите реальное время и часовой пояс; программа не подставляет полночь. Используйте [справочник обновления времени]({{ "/ru/reference/" | relative_url }}#temporal-upgrade), сохраняя ревизию и отпечаток предпросмотра. Это не меняет `okf_version` на новый номер.

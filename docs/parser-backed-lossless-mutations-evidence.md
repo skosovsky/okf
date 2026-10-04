@@ -1,10 +1,18 @@
 ---
-title: Parser-backed lossless mutations implementation evidence
-description: Verification commands and performance evidence for parser-backed lossless mutations.
+title: "Parser-backed lossless mutations implementation evidence"
+description: "Historical verification and performance evidence."
+lang: en
 permalink: /parser-backed-lossless-mutations-evidence/
+documentation_id: docs-parser-backed-lossless-mutations-evidence
+status: historical
+source_revision: 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
 ---
 
-# Parser-backed lossless mutations implementation evidence
+{% include nav.html %}
+
+> Historical record. Measurements and status refer to the original report date. Read the [English original at revision `61e75e9`](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/docs/parser-backed-lossless-mutations-evidence.md).
+
+# Parser-backed lossless mutations implementation evidence {#parser-backed-lossless-mutations-implementation-evidence}
 
 This record covers the parser-backed lossless mutation phase implemented by
 commit [`bb9c169`](https://github.com/skosovsky/okf/commit/bb9c169). That phase
@@ -12,7 +20,7 @@ continued the transactional mutation design from
 [GitHub issue #1](https://github.com/skosovsky/okf/issues/1). This record
 supplements that phase's normative acceptance matrix; it does not relax it.
 
-## Verification commands
+## Verification commands {#verification-commands}
 
 Run from the repository root after all implementation files are present:
 
@@ -160,7 +168,7 @@ parsers; its LF/CRLF/non-canonical/unterminated matrix prevents loader-owned
 YAML bytes from being reclassified as Markdown. Goldmark `v1.8.2` and `yaml.v3`
 `v3.0.1` are pinned in `go.mod`; goccy and tree-sitter are absent.
 
-## Benchmark note
+## Benchmark note {#benchmark-note}
 
 The overlay matrix covers 0, 1, 100, and 10,000 visible files where the
 operation is defined on an empty overlay (clone, Paths, and manifest delta),
@@ -173,11 +181,11 @@ allocations, keeps fixture construction outside its timed region, and consumes
 the produced result with semantic assertions.
 
 The durable
-[`overlay baseline vs result`](parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md)
+[`overlay baseline vs result`]({{ '/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/' | relative_url }})
 uses one self-contained 10,000-file fixture on commit `43f7214` and the result
 tree with the same Go version, hardware, `-benchmem`, `-benchtime=3x`, and
 three samples. The separate
-[`planner profile`](parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md) records the
+[`planner profile`]({{ '/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/' | relative_url }}) records the
 complete 10,000-concept result transaction plus CPU and allocation profiles.
 
 The 10,000-concept planner semantic case contains 10,001 visible files including
@@ -303,11 +311,11 @@ belongs to the parser-backed mutation phase.
 
 The durable representative benchmark and full 40-node CPU/alloc-space textual
 profiles are tracked at
-[`parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md`](parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md).
+[`parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md`]({{ '/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/' | relative_url }}).
 The binary `/private/tmp` profiles are reproducible scratch inputs to that
 report, not the delivery artifact.
 
-### Recorded overlay sample
+### Recorded overlay sample {#recorded-overlay-sample}
 
 Command (2026-07-20, local workspace):
 

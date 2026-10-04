@@ -1,10 +1,14 @@
 ---
+layout: default
 title: Section search v1
-description: Lexical search with source-pinned line ranges.
+lang: en
+document_id: docs-contracts-section-search
 permalink: /contracts/section-search/
 ---
 
-# Section search v1
+<a id="section-search-v1"></a>
+
+# Section search v1 {#doc-section-001}
 
 `okf search <bundle> --query TEXT [--limit N] [--json]` and MCP
 `search_sections` share the Go `retrieval` package. They are additive;

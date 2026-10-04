@@ -1,0 +1,98 @@
+++ mktemp -d
++ work_dir=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi
++ go build -o /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf ./cmd/okf
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf init /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/new-knowledge
+Created OKF v0.2 bundle at /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/new-knowledge
++ cp -R examples/project-knowledge/ru /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --spec auto --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge
+OKF version: declared=0.2 effective=0.2 resolution=declared compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --query 'доставку оператор' --limit 5
+"retry-policy.md" lines 9–15 · "Когда подключать оператора"
+"# Когда подключать оператора\n\nПовторяйте неудачную доставку задания в течение 24 часов. После этого нужен оператор.[^requirements]\n\nОткройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.\n\n[^requirements]: Учебные требования к доставке, предоставленный учебный материал."
+"source-material.md" lines 5–9 · "Учебные требования к доставке"
+"оставке\n\nЭто вымышленные требования для знакомства с OKF.\n\nПовторяйте неудачную доставку задания в течение 24 часов. Если доставка всё ещё не удалась, передайте задание оператору. Оператор проверяет причину ошибки перед следующей попыткой."
+2 sections matched; truncated=false
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge.html --lang ru
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge.html"
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf info /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --spec auto
+bundle:     "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge"
+okf_version: "0.2"
+effective:  "0.2" ("declared", "native")
+concepts:   2
+index.md:   1
+log.md:     0
+
+types:
+     2  "Guide"
+
+links:      1 internal (0 broken)
+trust tiers:
+  unverified:        2
+  machine-confirmed: 0
+  human-reviewed:    0
+lifecycle:
+  draft:      0
+  stable:     2
+  deprecated: 0
+  invalid:    0
+stale:       not evaluated (use --as-of)
+sources:     1
+attested computations: 0
+parse errors: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf parse /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge/retry-policy.md --format json
+{"file":"/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge/retry-policy.md","declared_version":"0.2","effective_version":"0.2","resolution":"declared","compatibility":"native","type":"Guide","title":"Когда подключать оператора","generated_audit":{"family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"mapping":false,"valid":false,"has_value":false,"by":{"present":false,"valid":false},"at":{"state":""}},"legacy_fallback":false,"verified":[],"verified_audit":{"family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"entries":[]},"trust_tier":"unverified","status":"stable","status_present":false,"status_valid":true,"sources":[{"id":"requirements","resource":"source-material.md","title":"Учебные требования к доставке"}],"sources_audit":{"family":{"present":true,"ambiguous":false,"shape":"sequence","resolved_shape":"sequence","shape_valid":true,"raw":"- id: requirements\n  title: Учебные требования к доставке\n  resource: source-material.md","resolved_raw":"- id: requirements\n  title: Учебные требования к доставке\n  resource: source-material.md"},"entries":[{"present":true,"mapping":true,"valid":true,"has_value":true,"id":{"present":true,"valid":true,"raw":"requirements","value":"requirements"},"resource":{"present":true,"valid":true,"raw":"source-material.md","value":"source-material.md"},"title":{"present":true,"valid":true,"raw":"Учебные требования к доставке","value":"Учебные требования к доставке"},"author":{"present":false,"valid":false},"usage_count":{"present":false,"valid":false,"value":0},"last_modified":{"state":"absent"},"usage_window":{"present":false,"mapping":false,"valid":false,"has_value":false,"from":{"state":""},"to":{"state":""}},"value":{"id":"requirements","resource":"source-material.md","title":"Учебные требования к доставке"}}]},"usage_window_audit":{"family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"present":false,"mapping":false,"valid":false,"has_value":false,"from":{"state":""},"to":{"state":""}},"attributions":[{"id":"requirements","normalized_id":"requirements","sources":[{"id":"requirements","resource":"source-material.md","title":"Учебные требования к доставке"}],"references":[{"id":"requirements","raw":"[^requirements]"}],"definitions":[{"id":"requirements","text":"Учебные требования к доставке, предоставленный учебный материал.","raw":"[^requirements]:"}]}],"attributions_audit":{"entries":1,"sources":1,"references":1,"definitions":1,"source_family":{"present":true,"ambiguous":false,"shape":"sequence","resolved_shape":"sequence","shape_valid":true,"raw":"- id: requirements\n  title: Учебные требования к доставке\n  resource: source-material.md","resolved_raw":"- id: requirements\n  title: Учебные требования к доставке\n  resource: source-material.md"},"entry_evidence":[{"index":0,"family":{"present":true,"ambiguous":false,"shape":"mapping","resolved_shape":"mapping","shape_valid":true,"raw":"id: requirements\ntitle: Учебные требования к доставке\nresource: source-material.md","resolved_raw":"id: requirements\ntitle: Учебные требования к доставке\nresource: source-material.md"},"ambiguous":false,"valid":true,"normalized_id":"requirements","source":{"present":true,"mapping":true,"valid":true,"has_value":true,"id":{"present":true,"valid":true,"raw":"requirements","value":"requirements"},"resource":{"present":true,"valid":true,"raw":"source-material.md","value":"source-material.md"},"title":{"present":true,"valid":true,"raw":"Учебные требования к доставке","value":"Учебные требования к доставке"},"author":{"present":false,"valid":false},"usage_count":{"present":false,"valid":false,"value":0},"last_modified":{"state":"absent"},"usage_window":{"present":false,"mapping":false,"valid":false,"has_value":false,"from":{"state":""},"to":{"state":""}},"value":{"id":"requirements","resource":"source-material.md","title":"Учебные требования к доставке"}},"value":{"id":"requirements","normalized_id":"requirements","sources":[{"id":"requirements","resource":"source-material.md","title":"Учебные требования к доставке"}],"references":[{"id":"requirements","raw":"[^requirements]"}],"definitions":[{"id":"requirements","text":"Учебные требования к доставке, предоставленный учебный материал.","raw":"[^requirements]:"}]}}]},"attested_computation_audit":{"type_matches":false,"contract_present":false,"valid":false,"mode":"absent","contract":{"present":false,"valid":true,"runtime":{"present":false,"valid":false},"parameters_family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"parameters_present":false,"parameters_valid":false,"parameters":[],"computation":{"present":false,"valid":false},"executor_family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"executor":{"present":false,"mapping":true,"valid":false,"has_value":false,"resource_family":{"present":false,"ambiguous":false,"shape":"","shape_valid":false},"resource":{"present":false,"valid":false},"receipt_family":{"present":false,"ambiguous":false,"shape":"","shape_valid":false},"receipt":{"present":false,"valid":true,"item_families":[],"items":[],"values":[]}},"attester_family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"attester":{"present":false,"mapping":false,"valid":false,"has_value":false,"resource":{"present":false,"valid":false}}},"fence_spans":[],"unclosed":false,"multiple":false,"conflict":false},"lifecycle_audit":{"status_family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"status":{"present":false,"valid":true,"effective":"stable"},"stale_after_family":{"present":false,"ambiguous":false,"shape":"absent","resolved_shape":"absent","shape_valid":true},"stale_after":{"state":"absent"}},"conformant":true,"body_bytes":535,"links":[{"kind":"relative","text":"предоставленные требования","target":"source-material.md"}],"legacy_citations":[]}
++ mkdir /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/team-notes
++ cat
++ cat
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf setup --source /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/team-notes --target /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge --type Guide
+Setup: 2 documents; applicable=true; published=false
+Plan digest: e9610bd36fc53b760a9e11866ab1641f57e1daaf6d8222c67f3fd255d0344cfa
++ printf 'Вставьте контрольную сумму просмотренного плана: '
+Вставьте контрольную сумму просмотренного плана: + read -r plan_digest
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf setup --source /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/team-notes --target /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge --type Guide --apply --plan-digest e9610bd36fc53b760a9e11866ab1641f57e1daaf6d8222c67f3fd255d0344cfa
+Setup: 2 documents; applicable=true; published=true
+Plan digest: e9610bd36fc53b760a9e11866ab1641f57e1daaf6d8222c67f3fd255d0344cfa
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge.html --lang ru
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge.html"
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf graph /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --format mermaid
+graph LR
+  n0["retry-policy"] --> n1["source-material"]
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf fmt /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge/retry-policy.md
+---
+type: Guide
+title: Когда подключать оператора
+sources:
+  - id: requirements
+    title: Учебные требования к доставке
+    resource: source-material.md
+---
+
+# Когда подключать оператора
+
+Повторяйте неудачную доставку задания в течение 24 часов. После этого нужен оператор.[^requirements]
+
+Откройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.
+
+[^requirements]: Учебные требования к доставке, предоставленный учебный материал.
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf index /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge --spec auto
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge/index.md"
+
+1 index file(s) regenerated.
++ printf 'VALIDATION_WORK=%s\n' /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi
+VALIDATION_WORK=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi

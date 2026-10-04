@@ -19,12 +19,32 @@
   <body>
     <div class="wrapper">
       <section>
+        {% unless content contains '<nav class="site-nav"' %}
+          {% if page.lang == 'ru' %}{% include nav_ru.html %}{% else %}{% include nav.html %}{% endif %}
+        {% endunless %}
         {{ content }}
       </section>
       <footer>
+        {% if page.lang == 'ru' %}
+        <p><small>Размещено на GitHub Pages &mdash; автор темы: <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+        {% else %}
         <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+        {% endif %}
       </footer>
     </div>
+    <script>
+      // Shared section IDs are authored in both languages. Preserve the current
+      // fragment without deriving routes from translated headings or fetching pages.
+      function updateLocaleLinks() {
+        document.querySelectorAll('[data-locale-switch]').forEach(function (link) {
+          var destination = new URL(link.getAttribute('href'), window.location.href);
+          destination.hash = window.location.hash;
+          link.href = destination.href;
+        });
+      }
+      updateLocaleLinks();
+      window.addEventListener('hashchange', updateLocaleLinks);
+    </script>
     <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
   </body>
 </html>

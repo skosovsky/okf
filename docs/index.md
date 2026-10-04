@@ -1,46 +1,42 @@
 ---
-title: Project knowledge beside your code
-description: Markdown decisions, constraints, and instructions for your team and AI agents.
+title: "OKF: project knowledge"
+description: "OKF: project knowledge"
+permalink: /
 ---
 
 {% include nav.html %}
 
-# Project knowledge beside your code
+<span id="project-knowledge-beside-your-code"></span>
 
-Keep decisions, constraints, and instructions in Markdown with links to their sources. OKF checks note structure, gives agents tools to read and change the knowledge, and builds a page you can open in your browser.
+# OKF: project knowledge beside your code {#page-top}
 
-[Explore the example]({{ '/demo/knowledge.html#architecture' | relative_url }}) · [Try it locally]({{ '/quickstart/' | relative_url }})
+Keep rules, decisions, and instructions in Markdown so your team and AI agents can find an answer and open its source.
 
-## When is it useful?
+For example, a service retries failed delivery for 24 hours, then involves an operator. Record the rule, link it to the requirements, and let an agent find the answer. When the deadline changes, update the source and the note in the same workflow.
 
-- Recover why a design decision was made and find the evidence behind it.
-- Find a constraint before changing a service.
-- Review affected notes after the code changes.
+[Open the training example]({{ '/demo/project-en.html#retry-policy' | relative_url }}) · [Try it locally]({{ '/quickstart/' | relative_url }})
 
-## What does OKF add? {#spec}
+## When it helps {#use-cases}
 
-Knowledge stays in ordinary files: Markdown, YAML metadata, and an `index.md` list. You can read it in an editor, keep it in Git, and review changes. OKF adds shared source metadata, structural validation, and tools for agents to work with these files.
+- Before changing a service: find a constraint and inspect its source.
+- When handing over a project: explain a decision together with the material behind it.
+- After requirements change: find and review the affected notes.
 
-[Open Knowledge Format](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md) is the upstream format. This project provides Go libraries, a CLI, an MCP server, and agent instructions. It supports `0.2` documents plus `0.1` reading and migration. Version and compatibility details live in the [reference]({{ '/reference/' | relative_url }}).
+## What OKF includes {#components}
 
-## Try it {#quickstart}
+**Open Knowledge Format** describes Markdown files with metadata and links to sources. A knowledge bundle is a folder of these files with a root `index.md`.
 
-[Open the demo]({{ '/demo/knowledge.html#architecture' | relative_url }}) without installing anything. Find **Package boundaries**: the note answers “Where should an implementation change go?”, lists sources, and links to related decisions.
+This repository provides Go libraries, the `okf` command, an `okf-mcp` server, agent instructions, and an offline HTML viewer. Start with files and viewing, then connect an agent.
 
-The [quickstart]({{ '/quickstart/' | relative_url }}) reproduces that example locally and creates a note of your own. [Connect MCP]({{ '/getting-started-mcp/' | relative_url }}) to try reading it from an agent.
+## What to check yourself {#validation}
 
-## Examples {#examples}
+OKF validation finds structural and link errors. Compare content with its source: the presence of `sources` does not mean a claim was checked. Add `verified` only after a real check. Document version `0.2` and program release version are separate values.
 
-Start with [this repository's knowledge](https://github.com/skosovsky/okf/tree/main/knowledge). The separate [format test cases](https://github.com/skosovsky/okf/blob/main/examples/README.md) help test implementations.
+## Next step {#next-steps}
 
-## Tools {#tools}
+1. [Create and find your first rule]({{ '/quickstart/' | relative_url }}).
+2. [Install an agent skill]({{ '/skill/' | relative_url }}) and [connect MCP]({{ '/getting-started-mcp/' | relative_url }}).
+3. [Work with files and commands]({{ '/toolkit/' | relative_url }}).
+4. [Review knowledge after changes]({{ '/knowledge-upkeep/' | relative_url }}).
 
-[CLI and libraries]({{ '/toolkit/' | relative_url }}) · [Agent instructions]({{ '/skill/' | relative_url }}) · [Migration]({{ '/migration/' | relative_url }}) · [Reference]({{ '/reference/' | relative_url }})
-
-## Questions {#faq}
-
-**Does validation prove a claim?** No. It checks structure. `sources` records evidence, `generated` identifies a known producer, and `verified` records real checks. Successful structural validation does not create any of them.
-
-**Will an agent connect automatically?** Connect MCP in your client separately from installing a skill, then check that tools are present and used.
-
-**Can a note run code?** Computation fields are data. Execution needs a separately trusted and authorized runtime.
+Exact fields, limits, and interfaces are in the [reference]({{ '/reference/' | relative_url }}). The [architecture example for this repository]({{ '/demo/knowledge.html#architecture' | relative_url }}) remains available separately in English.

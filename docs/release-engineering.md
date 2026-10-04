@@ -1,71 +1,53 @@
 ---
-title: Release engineering
-description: Supported platforms, deterministic CI gates, and release traceability for OKF.
+title: "Release engineering"
+description: "Release engineering"
 permalink: /release-engineering/
 ---
 
-# Release engineering
+{% include nav.html %}
 
-OKF releases use the repository's `CI` workflow as the executable quality
-contract. It runs for pull requests, pushes to `main`, version tags, and manual
-dispatches. The workflow grants read-only repository permissions and pins
-third-party actions to immutable commit SHAs.
+<span id="release-engineering"></span>
 
-## Deterministic gates
+# Release a checked OKF version {#page-top}
 
-The normal workflow runs:
+This process is for repository maintainers. You need GitHub access, Git, and the required Go version. First prepare an issue and PR for changes, wait for required checks, then publish the tag and release with supporting evidence.
 
-- `go test ./...` and `go test -race ./...` on Linux;
-- `go vet ./...`, `go mod verify`, `go mod tidy -diff`, and
-  `git diff --check`;
-- `go build ./...` on Linux;
-- skill dependency, lock, and standalone package smoke checks with negative
-  missing-tool and missing-reference fixtures;
-- `go test ./store/fs` and `go build ./...` on Darwin;
-- native Windows `go build ./...` plus targeted runtime tests proving the typed
-  unsupported-platform result from `Open` and `OpenContext`;
-- Android cross-build plus Android/iOS source-selection assertions proving that
-  derived Go tags do not accidentally select the Darwin/Linux backend.
+## Required checks {#checks}
 
-For a version-tag push, CI additionally requires the tagged commit to be
-reachable from `main`. Because GitHub supplies a zero `before` SHA when a tag is
-created, the whitespace gate compares the complete tagged tree with Git's empty
-tree instead of silently reducing the range check to a clean-worktree no-op.
+The `CI` workflow runs for PRs, pushes to `main`, version tags, and manual dispatch. Repository permissions are read-only; third-party actions are pinned to immutable SHAs.
 
-Long fuzz campaigns and 10,000-concept profiles remain reproducible manual
-gates documented in the parser-backed mutation evidence. They are deliberately
-not placed on the latency-sensitive pull-request path.
+Linux runs:
 
-## Platform contract
+```sh
+go test ./...
+go test -race ./...
+go vet ./...
+go mod verify
+go mod tidy -diff
+git diff --check
+go build ./...
+```
 
-| Target | `store/fs` runtime contract | Other packages |
+Skill dependencies, the lock file, and standalone packages are also checked, including negative cases for missing tools and reference files. Darwin runs `go test ./store/fs` and `go build ./...`. Windows runs builds and tests the typed unsupported-platform result from `Open` and `OpenContext`. Android is cross-built; Android/iOS source-selection assertions prevent derived Go tags from accidentally selecting the Darwin/Linux backend.
+
+For tags, CI also checks that the commit is reachable from `main`. GitHub supplies a zero `before` SHA on tag creation, so whitespace checks compare the entire tag against Git’s empty tree. Long fuzz runs and 10,000-note profiles remain manual checks described in the [mutation evidence]({{ '/parser-backed-lossless-mutations-evidence/' | relative_url }}).
+
+## Platforms and durability boundary {#platforms}
+
+| Platform | `store/fs` contract | Other packages |
 | --- | --- | --- |
-| Darwin | Durable single-filesystem backend, subject to capability checks | Supported |
-| Linux | Durable single-filesystem backend, subject to capability checks | Supported |
-| Windows and other targets | Compile-safe; `Open` and `OpenContext` return `*fs.UnsupportedPlatformError` | Buildable |
+| Darwin | Durable storage on one filesystem after capability checks | Supported |
+| Linux | Durable storage on one filesystem after capability checks | Supported |
+| Windows and others | Compile-safe; `Open` and `OpenContext` return `*fs.UnsupportedPlatformError` | Buildable |
 
-Callers can recognize an unsupported durable backend with
-`errors.Is(err, fs.ErrUnsupportedPlatform)` and inspect `GOOS`/`GOARCH` with
-`errors.As`. An unsupported target never falls through to partial filesystem
-initialization.
+Use `errors.Is(err, fs.ErrUnsupportedPlatform)` to recognize the error and `errors.As` to inspect `GOOS`/`GOARCH`. An unsupported platform does not start partial initialization.
 
-The durability boundary remains one filesystem. Leases are advisory: raw
-editors do not participate, and raw readers can observe a multi-file rename
-during publication. Recovery completes a recorded transaction; it is not
-distributed isolation.
+The durability boundary is one filesystem. Leases are advisory: ordinary editors do not participate, and readers can observe multi-file renaming during publication. Recovery completes a recorded transaction; it does not provide distributed isolation.
 
-## Traceability
+## Release evidence {#release}
 
-Material changes must use an issue-linked pull request and green required
-checks. If repository rules cannot enforce a required check, the release
-evidence must record that limitation and link the successful check explicitly.
-A release record must link its issue, reviewable diff, commits, CI run, existing
-annotated tag, verification evidence, and any remaining follow-ups. Closing
-comments must use those artifacts rather than an unlinked completion claim.
+Record the issue, PR with a reviewable diff, commits, successful CI, existing annotated tag, verification, and open follow-ups. If GitHub rules cannot enforce a required status, explicitly record the limitation and link a successful check. Completion messages must link these artifacts.
 
-The historical [`v0.2.0`]({{ '/releases/v0.2.0/' | relative_url }}) and
-[`v0.2.2`]({{ '/releases/v0.2.2/' | relative_url }}) release records are separate
-from current work. Parser-backed mutation verification is tracked in
-[`parser-backed-lossless-mutations-evidence.md`](parser-backed-lossless-mutations-evidence.md).
-The issue #2 requirement map is
-[`issue-2-release-engineering-evidence.md`](issue-2-release-engineering-evidence.md).
+Expected result: a published release whose changes can be traced to a PR and checks. If a check fails, investigate before claiming successful acceptance; record follow-ups and limitations in the release.
+
+[Current releases](https://github.com/skosovsky/okf/releases). Historical [v0.2.0]({{ '/releases/v0.2.0/' | relative_url }}) and [v0.2.2]({{ '/releases/v0.2.2/' | relative_url }}) records describe their own versions. The [issue #2 requirement map]({{ '/issue-2-release-engineering-evidence/' | relative_url }}) preserves that verification history.

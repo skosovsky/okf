@@ -1,12 +1,14 @@
 ---
-title: MCP mutation and trust boundary
-description: Preview, apply, durable replay, and trust limits in the stdio adapter.
+layout: default
+title: "MCP mutation and trust boundary"
+lang: en
+document_id: docs-contracts-mcp-mutation-trust-boundaries
 permalink: /contracts/mcp-mutation-trust-boundaries/
 ---
 
-{% include nav.html %}
+<a id="mcp-mutation-and-trust-boundary"></a>
 
-# MCP mutation and trust boundary
+# MCP mutation and trust boundary {#doc-section-001}
 
 This records the current local stdio adapter contract. The live input/output
 schemas under `internal/mcpserver/contracts/` are authoritative for wire

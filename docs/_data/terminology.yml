@@ -1,0 +1,45 @@
+{
+  "policy": "Translate ordinary prose and teaching prompts; retain commands, schema/API fields, identifiers, reserved headings and proper names. Historical raw evidence remains verbatim with Russian explanation.",
+  "terms": [
+    {
+      "en": "knowledge bundle",
+      "ru": "набор знаний"
+    },
+    {
+      "en": "concept",
+      "ru": "понятие (в контракте); заметка (в пользовательском руководстве)"
+    },
+    {
+      "en": "source",
+      "ru": "источник"
+    },
+    {
+      "en": "preview",
+      "ru": "предпросмотр (команда preview без перевода)"
+    },
+    {
+      "en": "apply",
+      "ru": "применить (команда apply без перевода)"
+    },
+    {
+      "en": "skill",
+      "ru": "навык (каталог и стандарт SKILL.md без перевода)"
+    },
+    {
+      "en": "staleness",
+      "ru": "актуальность (поле staleness без перевода)"
+    },
+    {
+      "en": "trust",
+      "ru": "проверка / доверие (поле trust без перевода)"
+    },
+    {
+      "en": "receipt",
+      "ru": "квитанция"
+    },
+    {
+      "en": "bounded idempotency receipts",
+      "ru": "ограниченное хранение квитанций идемпотентности"
+    }
+  ]
+}

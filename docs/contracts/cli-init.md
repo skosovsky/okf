@@ -1,4 +1,14 @@
-# `okf init` CLI contract
+---
+layout: default
+title: "`okf init` CLI contract"
+lang: en
+document_id: docs-contracts-cli-init
+permalink: /contracts/cli-init/
+---
+
+<a id="okf-init-cli-contract"></a>
+
+# `okf init` CLI contract {#doc-section-001}
 
 `okf init <directory> [--json]` creates a new OKF 0.2 bundle. The directory
 argument is required and explicit. Its parent must already exist. The command

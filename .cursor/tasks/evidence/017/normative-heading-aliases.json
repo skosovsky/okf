@@ -1,0 +1,172 @@
+[
+  {
+    "source": "backfill/PROTOCOL.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "git-history-backfill-protocol"
+    ]
+  },
+  {
+    "source": "docs/adr/0001-okf-v02-graph-projection.md",
+    "stable_heading_ids": [
+      "doc-section-001",
+      "doc-section-002",
+      "doc-section-003",
+      "doc-section-004"
+    ],
+    "legacy_english_aliases": [
+      "adr-0001-toolkit-graph-projection-for-okf-v02",
+      "context",
+      "decision",
+      "consequences"
+    ]
+  },
+  {
+    "source": "docs/adr/0002-changeset-v1-additive-operation-tags.md",
+    "stable_heading_ids": [
+      "doc-section-001",
+      "doc-section-002",
+      "doc-section-003",
+      "doc-section-004",
+      "doc-section-005"
+    ],
+    "legacy_english_aliases": [
+      "adr-0002-additive-semantic-operation-tags-in-changeset-format-v1",
+      "context",
+      "decision",
+      "compatibility",
+      "future-version-bump-criteria"
+    ]
+  },
+  {
+    "source": "docs/adr/0003-okf-v02-temporal-revisions.md",
+    "stable_heading_ids": [
+      "doc-section-001",
+      "doc-section-002",
+      "doc-section-003",
+      "doc-section-004",
+      "doc-section-005"
+    ],
+    "legacy_english_aliases": [
+      "adr-0003-explicit-temporal-revisions-within-okf-02",
+      "context",
+      "decision",
+      "compatibility-and-rollout",
+      "consequences"
+    ]
+  },
+  {
+    "source": "docs/contracts/cli-init.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "okf-init-cli-contract"
+    ]
+  },
+  {
+    "source": "docs/contracts/concept-queries.md",
+    "stable_heading_ids": [
+      "doc-section-001",
+      "doc-section-002",
+      "doc-section-003",
+      "doc-section-004",
+      "doc-section-005"
+    ],
+    "legacy_english_aliases": [
+      "mcp-concept-queries-v1",
+      "search",
+      "neighbors",
+      "continuing-bounded-reads",
+      "temporal-observation-and-bounds"
+    ]
+  },
+  {
+    "source": "docs/contracts/markdown-setup.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "managed-markdown-setup-contract-v1"
+    ]
+  },
+  {
+    "source": "docs/contracts/mcp-mutation-trust-boundaries.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "mcp-mutation-and-trust-boundary"
+    ]
+  },
+  {
+    "source": "docs/contracts/migration-preparation.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "preparing-a-v01-migration"
+    ]
+  },
+  {
+    "source": "docs/contracts/okf-v0.2-conformance.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "okf-v02-conformance-matrix"
+    ]
+  },
+  {
+    "source": "docs/contracts/okf-v0.2.md",
+    "stable_heading_ids": [
+      "doc-section-001",
+      "doc-section-002",
+      "doc-section-003",
+      "doc-section-004",
+      "doc-section-005",
+      "doc-section-006",
+      "doc-section-007",
+      "doc-section-008"
+    ],
+    "legacy_english_aliases": [
+      "okf-v02-executable-contract",
+      "normative-source",
+      "version-resolution",
+      "conformance-boundary",
+      "duplicate-yaml-key-policy",
+      "toolkit-ambiguity-ledger",
+      "deferred-abi",
+      "canonical-corpus"
+    ]
+  },
+  {
+    "source": "docs/contracts/section-search.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "section-search-v1"
+    ]
+  },
+  {
+    "source": "graph/contracts/v0.2-instant.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "skosovskyokf-v02-instant-graph-projection"
+    ]
+  },
+  {
+    "source": "graph/contracts/v0.2.md",
+    "stable_heading_ids": [
+      "doc-section-001"
+    ],
+    "legacy_english_aliases": [
+      "skosovskyokf-v02-graph-projection-contract"
+    ]
+  }
+]

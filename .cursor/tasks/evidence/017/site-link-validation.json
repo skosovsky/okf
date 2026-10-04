@@ -1,0 +1,622 @@
+{
+  "site_directory": "/tmp/okf017-site",
+  "html_pages": 197,
+  "local_link_checks": 3148,
+  "external_or_non_http_skipped": 940,
+  "paired_pages_checked": 97,
+  "pairs": [
+    {
+      "document": "backfill-protocol",
+      "en": "/okf/readings/backfill/PROTOCOL/",
+      "ru": "/okf/ru/readings/backfill/PROTOCOL/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-backfill-consumer",
+      "en": "/okf/readings/benchmark/agent/BACKFILL-CONSUMER/",
+      "ru": "/okf/ru/readings/benchmark/agent/BACKFILL-CONSUMER/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "benchmark-agent-before-after",
+      "en": "/okf/readings/benchmark/agent/BEFORE-AFTER/",
+      "ru": "/okf/ru/readings/benchmark/agent/BEFORE-AFTER/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "benchmark-agent-metadata-contrast",
+      "en": "/okf/readings/benchmark/agent/METADATA-CONTRAST/",
+      "ru": "/okf/ru/readings/benchmark/agent/METADATA-CONTRAST/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-pilot-diagnostic",
+      "en": "/okf/readings/benchmark/agent/PILOT-DIAGNOSTIC/",
+      "ru": "/okf/ru/readings/benchmark/agent/PILOT-DIAGNOSTIC/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-pilot-precomputed",
+      "en": "/okf/readings/benchmark/agent/PILOT-PRECOMPUTED/",
+      "ru": "/okf/ru/readings/benchmark/agent/PILOT-PRECOMPUTED/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-pilot",
+      "en": "/okf/readings/benchmark/agent/PILOT/",
+      "ru": "/okf/ru/readings/benchmark/agent/PILOT/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-readme",
+      "en": "/okf/readings/benchmark/agent/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-upkeep-study",
+      "en": "/okf/readings/benchmark/agent/UPKEEP-STUDY/",
+      "ru": "/okf/ru/readings/benchmark/agent/UPKEEP-STUDY/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "benchmark-agent-writer-consumer-baseline",
+      "en": "/okf/readings/benchmark/agent/WRITER-CONSUMER-BASELINE/",
+      "ru": "/okf/ru/readings/benchmark/agent/WRITER-CONSUMER-BASELINE/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "benchmark-agent-beforeafter-live",
+      "en": "/okf/readings/benchmark/agent/beforeafter/LIVE/",
+      "ru": "/okf/ru/readings/benchmark/agent/beforeafter/LIVE/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-beforeafter-readme",
+      "en": "/okf/readings/benchmark/agent/beforeafter/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/beforeafter/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-backfill-consumer-v2-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-beforeafter-v1-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-beforeafter-v1/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-diagnostic-read-v1-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-diagnostic-read-v2-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-exploratory-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-exploratory/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-exploratory/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-manual-writer-consumer-v3-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-metadata-only-v2-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-metadata-only-v2/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-metadata-only-v2/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-primary-blocked-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-primary-blocked/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-primary-blocked/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-primary-bundled-v2-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-primary-live-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-primary-live/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-primary-live/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-primary-precomputed-v1-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-upkeep-live-v1-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-runs-20260926-upkeep-live-v2-readme",
+      "en": "/okf/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmark-agent-upkeeplive-live-v2",
+      "en": "/okf/readings/benchmark/agent/upkeeplive/LIVE-V2/",
+      "ru": "/okf/ru/readings/benchmark/agent/upkeeplive/LIVE-V2/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "benchmark-agent-upkeeplive-live",
+      "en": "/okf/readings/benchmark/agent/upkeeplive/LIVE/",
+      "ru": "/okf/ru/readings/benchmark/agent/upkeeplive/LIVE/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "benchmark-agent-upkeeplive-readme",
+      "en": "/okf/readings/benchmark/agent/upkeeplive/README/",
+      "ru": "/okf/ru/readings/benchmark/agent/upkeeplive/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmarks-retrieval-readme",
+      "en": "/okf/readings/benchmarks/retrieval/README/",
+      "ru": "/okf/ru/readings/benchmarks/retrieval/README/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "benchmarks-toolkit-readme",
+      "en": "/okf/readings/benchmarks/toolkit/README/",
+      "ru": "/okf/ru/readings/benchmarks/toolkit/README/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "benchmarks-toolkit-results-paired-ed7ddc28-0f15ab4-summary",
+      "en": "/okf/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary/",
+      "ru": "/okf/ru/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary/",
+      "shared_fragments": 0
+    },
+    {
+      "document": "docs-adr-0001-okf-v02-graph-projection",
+      "en": "/okf/adr/0001-okf-v02-graph-projection/",
+      "ru": "/okf/ru/adr/0001-okf-v02-graph-projection/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "docs-adr-0002-changeset-v1-additive-operation-tags",
+      "en": "/okf/adr/0002-changeset-v1-additive-operation-tags/",
+      "ru": "/okf/ru/adr/0002-changeset-v1-additive-operation-tags/",
+      "shared_fragments": 10
+    },
+    {
+      "document": "docs-adr-0003-okf-v02-temporal-revisions",
+      "en": "/okf/adr/0003-okf-v02-temporal-revisions/",
+      "ru": "/okf/ru/adr/0003-okf-v02-temporal-revisions/",
+      "shared_fragments": 10
+    },
+    {
+      "document": "docs-contracts-cli-init",
+      "en": "/okf/contracts/cli-init/",
+      "ru": "/okf/ru/contracts/cli-init/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-contracts-concept-queries",
+      "en": "/okf/contracts/concept-queries/",
+      "ru": "/okf/ru/contracts/concept-queries/",
+      "shared_fragments": 10
+    },
+    {
+      "document": "docs-contracts-markdown-setup",
+      "en": "/okf/contracts/markdown-setup/",
+      "ru": "/okf/ru/contracts/markdown-setup/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-contracts-mcp-mutation-trust-boundaries",
+      "en": "/okf/contracts/mcp-mutation-trust-boundaries/",
+      "ru": "/okf/ru/contracts/mcp-mutation-trust-boundaries/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-contracts-migration-preparation",
+      "en": "/okf/contracts/migration-preparation/",
+      "ru": "/okf/ru/contracts/migration-preparation/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-contracts-okf-v0-2-conformance",
+      "en": "/okf/contracts/okf-v0.2-conformance/",
+      "ru": "/okf/ru/contracts/okf-v0.2-conformance/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-contracts-okf-v0-2",
+      "en": "/okf/contracts/okf-v0.2/",
+      "ru": "/okf/ru/contracts/okf-v0.2/",
+      "shared_fragments": 16
+    },
+    {
+      "document": "docs-contracts-section-search",
+      "en": "/okf/contracts/section-search/",
+      "ru": "/okf/ru/contracts/section-search/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "docs-development-v0-2-tasks-readme",
+      "en": "/okf/development/v0.2/tasks/README/",
+      "ru": "/okf/ru/development/v0.2/tasks/README/",
+      "shared_fragments": 1
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task09",
+      "en": "/okf/development/v0.2/tasks/task09/",
+      "ru": "/okf/ru/development/v0.2/tasks/task09/",
+      "shared_fragments": 10
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task10",
+      "en": "/okf/development/v0.2/tasks/task10/",
+      "ru": "/okf/ru/development/v0.2/tasks/task10/",
+      "shared_fragments": 13
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task11",
+      "en": "/okf/development/v0.2/tasks/task11/",
+      "ru": "/okf/ru/development/v0.2/tasks/task11/",
+      "shared_fragments": 14
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task12",
+      "en": "/okf/development/v0.2/tasks/task12/",
+      "ru": "/okf/ru/development/v0.2/tasks/task12/",
+      "shared_fragments": 11
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task13",
+      "en": "/okf/development/v0.2/tasks/task13/",
+      "ru": "/okf/ru/development/v0.2/tasks/task13/",
+      "shared_fragments": 9
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task14",
+      "en": "/okf/development/v0.2/tasks/task14/",
+      "ru": "/okf/ru/development/v0.2/tasks/task14/",
+      "shared_fragments": 11
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task15",
+      "en": "/okf/development/v0.2/tasks/task15/",
+      "ru": "/okf/ru/development/v0.2/tasks/task15/",
+      "shared_fragments": 10
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task16",
+      "en": "/okf/development/v0.2/tasks/task16/",
+      "ru": "/okf/ru/development/v0.2/tasks/task16/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task17",
+      "en": "/okf/development/v0.2/tasks/task17/",
+      "ru": "/okf/ru/development/v0.2/tasks/task17/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task18",
+      "en": "/okf/development/v0.2/tasks/task18/",
+      "ru": "/okf/ru/development/v0.2/tasks/task18/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task19",
+      "en": "/okf/development/v0.2/tasks/task19/",
+      "ru": "/okf/ru/development/v0.2/tasks/task19/",
+      "shared_fragments": 17
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task20",
+      "en": "/okf/development/v0.2/tasks/task20/",
+      "ru": "/okf/ru/development/v0.2/tasks/task20/",
+      "shared_fragments": 16
+    },
+    {
+      "document": "docs-development-v0-2-tasks-task21",
+      "en": "/okf/development/v0.2/tasks/task21/",
+      "ru": "/okf/ru/development/v0.2/tasks/task21/",
+      "shared_fragments": 12
+    },
+    {
+      "document": "docs-getting-started-mcp",
+      "en": "/okf/getting-started-mcp/",
+      "ru": "/okf/ru/getting-started-mcp/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "docs-github-action",
+      "en": "/okf/github-action/",
+      "ru": "/okf/ru/github-action/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "docs-index",
+      "en": "/okf/",
+      "ru": "/okf/ru/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "docs-issue-2-release-engineering-evidence",
+      "en": "/okf/issue-2-release-engineering-evidence/",
+      "ru": "/okf/ru/issue-2-release-engineering-evidence/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "docs-knowledge-manual-review",
+      "en": "/okf/knowledge-manual-review/",
+      "ru": "/okf/ru/knowledge-manual-review/",
+      "shared_fragments": 3
+    },
+    {
+      "document": "docs-knowledge-upkeep",
+      "en": "/okf/knowledge-upkeep/",
+      "ru": "/okf/ru/knowledge-upkeep/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "docs-knowledge",
+      "en": "/okf/knowledge/",
+      "ru": "/okf/ru/knowledge/",
+      "shared_fragments": 5
+    },
+    {
+      "document": "docs-migration",
+      "en": "/okf/migration/",
+      "ru": "/okf/ru/migration/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "docs-parser-backed-lossless-mutations-evidence",
+      "en": "/okf/parser-backed-lossless-mutations-evidence/",
+      "ru": "/okf/ru/parser-backed-lossless-mutations-evidence/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "docs-parser-backed-lossless-mutations-profiles-overlay-baseline-vs-result-2026-07-20",
+      "en": "/okf/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/",
+      "ru": "/okf/ru/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/",
+      "shared_fragments": 1
+    },
+    {
+      "document": "docs-parser-backed-lossless-mutations-profiles-planner-10000-2026-07-20",
+      "en": "/okf/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/",
+      "ru": "/okf/ru/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "docs-quickstart",
+      "en": "/okf/quickstart/",
+      "ru": "/okf/ru/quickstart/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "docs-reference",
+      "en": "/okf/reference/",
+      "ru": "/okf/ru/reference/",
+      "shared_fragments": 21
+    },
+    {
+      "document": "docs-release-engineering",
+      "en": "/okf/release-engineering/",
+      "ru": "/okf/ru/release-engineering/",
+      "shared_fragments": 5
+    },
+    {
+      "document": "docs-releases-v0-2-0",
+      "en": "/okf/releases/v0.2.0/",
+      "ru": "/okf/ru/releases/v0.2.0/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "docs-releases-v0-2-2",
+      "en": "/okf/releases/v0.2.2/",
+      "ru": "/okf/ru/releases/v0.2.2/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "docs-skill",
+      "en": "/okf/skill/",
+      "ru": "/okf/ru/skill/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "docs-snippets-agents-okf",
+      "en": "/okf/readings/docs/snippets/AGENTS-okf/",
+      "ru": "/okf/ru/readings/docs/snippets/AGENTS-okf/",
+      "shared_fragments": 1
+    },
+    {
+      "document": "docs-snippets-claude-okf",
+      "en": "/okf/readings/docs/snippets/CLAUDE-okf/",
+      "ru": "/okf/ru/readings/docs/snippets/CLAUDE-okf/",
+      "shared_fragments": 1
+    },
+    {
+      "document": "docs-toolkit",
+      "en": "/okf/toolkit/",
+      "ru": "/okf/ru/toolkit/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "docs-viewer-browser-review",
+      "en": "/okf/viewer-browser-review/",
+      "ru": "/okf/ru/viewer-browser-review/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "graph-contracts-v0-2-instant",
+      "en": "/okf/readings/graph/contracts/v0.2-instant/",
+      "ru": "/okf/ru/readings/graph/contracts/v0.2-instant/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "graph-contracts-v0-2",
+      "en": "/okf/readings/graph/contracts/v0.2/",
+      "ru": "/okf/ru/readings/graph/contracts/v0.2/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "skills-okf-backfill-skill",
+      "en": "/okf/readings/skills/okf-backfill/SKILL/",
+      "ru": "/okf/ru/readings/skills/okf-backfill/SKILL/",
+      "shared_fragments": 5
+    },
+    {
+      "document": "skills-okf-backfill-references-analyst",
+      "en": "/okf/readings/skills/okf-backfill/references/analyst/",
+      "ru": "/okf/ru/readings/skills/okf-backfill/references/analyst/",
+      "shared_fragments": 3
+    },
+    {
+      "document": "skills-okf-maintain-skill",
+      "en": "/okf/readings/skills/okf-maintain/SKILL/",
+      "ru": "/okf/ru/readings/skills/okf-maintain/SKILL/",
+      "shared_fragments": 5
+    },
+    {
+      "document": "skills-open-knowledge-format-skill",
+      "en": "/okf/readings/skills/open-knowledge-format/SKILL/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/SKILL/",
+      "shared_fragments": 8
+    },
+    {
+      "document": "skills-open-knowledge-format-references-adversarial-v02",
+      "en": "/okf/readings/skills/open-knowledge-format/references/adversarial-v02/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/adversarial-v02/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "skills-open-knowledge-format-references-authoring-and-reading",
+      "en": "/okf/readings/skills/open-knowledge-format/references/authoring-and-reading/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/authoring-and-reading/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "skills-open-knowledge-format-references-conversion",
+      "en": "/okf/readings/skills/open-knowledge-format/references/conversion/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/conversion/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "skills-open-knowledge-format-references-examples",
+      "en": "/okf/readings/skills/open-knowledge-format/references/examples/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/examples/",
+      "shared_fragments": 13
+    },
+    {
+      "document": "skills-open-knowledge-format-references-mcp-operations",
+      "en": "/okf/readings/skills/open-knowledge-format/references/mcp-operations/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/mcp-operations/",
+      "shared_fragments": 6
+    },
+    {
+      "document": "skills-open-knowledge-format-references-migration-v01-v02",
+      "en": "/okf/readings/skills/open-knowledge-format/references/migration-v01-v02/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/migration-v01-v02/",
+      "shared_fragments": 11
+    },
+    {
+      "document": "skills-open-knowledge-format-references-operational-workflows",
+      "en": "/okf/readings/skills/open-knowledge-format/references/operational-workflows/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/operational-workflows/",
+      "shared_fragments": 4
+    },
+    {
+      "document": "skills-open-knowledge-format-references-spec-v02-instant",
+      "en": "/okf/readings/skills/open-knowledge-format/references/spec-v02-instant/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/spec-v02-instant/",
+      "shared_fragments": 75
+    },
+    {
+      "document": "skills-open-knowledge-format-references-spec-v02",
+      "en": "/okf/readings/skills/open-knowledge-format/references/spec-v02/",
+      "ru": "/okf/ru/readings/skills/open-knowledge-format/references/spec-v02/",
+      "shared_fragments": 41
+    },
+    {
+      "document": "viewer-readme",
+      "en": "/okf/readings/viewer/README/",
+      "ru": "/okf/ru/readings/viewer/README/",
+      "shared_fragments": 7
+    },
+    {
+      "document": "documentation-index",
+      "en": "/okf/documentation/",
+      "ru": "/okf/ru/documentation/",
+      "shared_fragments": 3
+    },
+    {
+      "document": "history-index",
+      "en": "/okf/history/",
+      "ru": "/okf/ru/history/",
+      "shared_fragments": 2
+    },
+    {
+      "document": "fixtures-interoperability-readme",
+      "en": "/okf/readings/fixtures/interoperability/README/",
+      "ru": "/okf/ru/readings/fixtures/interoperability/README/",
+      "shared_fragments": 3
+    },
+    {
+      "document": "viewer-testdata-regression-016-readme",
+      "en": "/okf/readings/viewer/testdata/regression-016/README/",
+      "ru": "/okf/ru/readings/viewer/testdata/regression-016/README/",
+      "shared_fragments": 2
+    }
+  ],
+  "dynamic_viewer_routes": [
+    {
+      "source": "/okf/",
+      "link": "/okf/demo/project-en.html#retry-policy",
+      "resolved": "/okf/demo/project-en.html",
+      "fragment": "retry-policy",
+      "reason": "viewer concept route validated by viewer tests"
+    },
+    {
+      "source": "/okf/",
+      "link": "/okf/demo/knowledge.html#architecture",
+      "resolved": "/okf/demo/knowledge.html",
+      "fragment": "architecture",
+      "reason": "viewer concept route validated by viewer tests"
+    },
+    {
+      "source": "/okf/ru/",
+      "link": "/okf/demo/project-ru.html#retry-policy",
+      "resolved": "/okf/demo/project-ru.html",
+      "fragment": "retry-policy",
+      "reason": "viewer concept route validated by viewer tests"
+    },
+    {
+      "source": "/okf/ru/",
+      "link": "/okf/demo/knowledge.html#architecture",
+      "resolved": "/okf/demo/knowledge.html",
+      "fragment": "architecture",
+      "reason": "viewer concept route validated by viewer tests"
+    }
+  ],
+  "errors": []
+}

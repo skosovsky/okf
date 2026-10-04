@@ -1,0 +1,80 @@
+[
+  {
+    "locale": "en",
+    "assertions": "PASS",
+    "quickstart": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR",
+    "toolkit": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.8ZWBrxCKrE",
+    "migration": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.eeR9CKkyVQ",
+    "artifacts": [
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge.html",
+        "sha256": "14018a73aed5f73af5b6b994f9cafc7a7241d495efc59fa861ffd347510ed202",
+        "size": 19958
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.8ZWBrxCKrE/knowledge.html",
+        "sha256": "8b4e556b21942f91e6f5976486dcbc5cfb541860a8fdb9ad7c1f91488eac19ab",
+        "size": 19958
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.8ZWBrxCKrE/imported-knowledge.html",
+        "sha256": "6a2c68baa9979f8f4b3f1ea96b8a09536fcc6dbbeedb6b48df265e64c43e9640",
+        "size": 18547
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.eeR9CKkyVQ/migrated.html",
+        "sha256": "e21140d134c3bdabbccc20a84b0a51ae9f3054fd1ad82d3938988ebce3947b82",
+        "size": 19273
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf",
+        "sha256": "634763be0cdf6b8ad5af1b01c9bc2c298a5c7a6bb6e6485f814c2a9957a835ab",
+        "size": 12990130
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.8ZWBrxCKrE/okf",
+        "sha256": "634763be0cdf6b8ad5af1b01c9bc2c298a5c7a6bb6e6485f814c2a9957a835ab",
+        "size": 12990130
+      }
+    ]
+  },
+  {
+    "locale": "ru",
+    "assertions": "PASS",
+    "quickstart": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI",
+    "toolkit": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi",
+    "migration": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d",
+    "artifacts": [
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge.html",
+        "sha256": "52e14695bc1e7c7ecae6367ac7bddbf0e3b26d63e3cf5536400f1bfc2d8b1df6",
+        "size": 21042
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/knowledge.html",
+        "sha256": "ce7243bf2d362c163a50ad7662fe6dd63e7de91e8a977a574bfb9b550558c230",
+        "size": 21042
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/imported-knowledge.html",
+        "sha256": "48732a6cdfbfdb12b5b5fa2fde64b4a4372e1744bf4745094ed4439f62433bf2",
+        "size": 18990
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d/migrated.html",
+        "sha256": "5dcf440457a0c290635982033ea88f6b159e9b1e4fb7edb9e453850389304c29",
+        "size": 19711
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf",
+        "sha256": "634763be0cdf6b8ad5af1b01c9bc2c298a5c7a6bb6e6485f814c2a9957a835ab",
+        "size": 12990130
+      },
+      {
+        "path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.uRnlYLUnhi/okf",
+        "sha256": "634763be0cdf6b8ad5af1b01c9bc2c298a5c7a6bb6e6485f814c2a9957a835ab",
+        "size": 12990130
+      }
+    ]
+  }
+]

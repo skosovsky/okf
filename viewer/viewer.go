@@ -32,12 +32,28 @@ const ExporterVersion = "1"
 const DefaultMaxNodes = 10000
 
 type Options struct {
+	// Language selects en or ru; the empty value defaults to en.
+	Language        string
 	AsOf            *time.Time
 	MaxNodes        int
 	Overwrite       bool
 	TemporalProfile bundle.TemporalProfile
 	VersionSelector string
 }
+
+// RenderOptions selects presentation without changing the semantic projection.
+type RenderOptions struct{ Language string }
+
+func normalizeLanguage(language string) (string, error) {
+	if language == "" {
+		return "en", nil
+	}
+	if language != "en" && language != "ru" {
+		return "", fmt.Errorf("unsupported viewer language %q (want en or ru)", language)
+	}
+	return language, nil
+}
+
 type Projection struct {
 	ExporterVersion string    `json:"exporter_version"`
 	SpecVersion     string    `json:"spec_version"`
@@ -240,6 +256,15 @@ var safeMarkdown = goldmark.New(goldmark.WithExtensions(extension.Footnote), gol
 
 // Render encodes JSON so input cannot close its script element.
 func Render(ctx context.Context, p Projection) ([]byte, error) {
+	return RenderWithOptions(ctx, p, RenderOptions{})
+}
+
+// RenderWithOptions renders an offline viewer in the selected interface language.
+func RenderWithOptions(ctx context.Context, p Projection, options RenderOptions) ([]byte, error) {
+	language, err := normalizeLanguage(options.Language)
+	if err != nil {
+		return nil, err
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -257,12 +282,20 @@ func Render(ctx context.Context, p Projection) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	ui := map[string]string{"title": "OKF knowledge viewer", "search": "Search", "type": "Type", "all": "All types", "graph": "Show graph", "language": "Language"}
+	if language == "ru" {
+		ui = map[string]string{"title": "Просмотр знаний OKF", "search": "Поиск", "type": "Тип", "all": "Все типы", "graph": "Показать граф", "language": "Язык"}
+	}
+	enSelected, ruSelected := " selected", ""
+	if language == "ru" {
+		enSelected, ruSelected = "", " selected"
+	}
 	var out bytes.Buffer
-	out.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"referrer\" content=\"no-referrer\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src ")
+	out.WriteString("<!doctype html><html lang=\"" + language + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"referrer\" content=\"no-referrer\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src ")
 	out.WriteString(jsPolicy)
-	out.WriteString("; img-src 'none'; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'\"><title>OKF knowledge viewer</title><style>")
+	out.WriteString("; img-src 'none'; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'\"><title>" + ui["title"] + "</title><style>")
 	out.Write(css)
-	out.WriteString("</style></head><body><header><h1>OKF knowledge viewer</h1><span id=\"summary\"></span></header><main><aside><label>Search <input id=\"search\" type=\"search\" autocomplete=\"off\"></label><label>Type <select id=\"type\"><option value=\"\">All types</option></select></label><label><input id=\"show-graph\" type=\"checkbox\"> Show graph</label><div id=\"list\" role=\"list\"></div></aside><section id=\"detail\" aria-live=\"polite\"></section></main><script id=\"okf-data\" type=\"application/json\">")
+	out.WriteString("</style></head><body><header><h1 id=\"viewer-title\">" + ui["title"] + "</h1><span id=\"summary\"></span></header><main><aside><label><span id=\"search-label\">" + ui["search"] + "</span> <input id=\"search\" type=\"search\" autocomplete=\"off\"></label><label><span id=\"type-label\">" + ui["type"] + "</span> <select id=\"type\"><option id=\"all-types\" value=\"\">" + ui["all"] + "</option></select></label><label><input id=\"show-graph\" type=\"checkbox\"> <span id=\"graph-label\">" + ui["graph"] + "</span></label><label><span id=\"language-label\">" + ui["language"] + "</span><select id=\"language\"><option value=\"en\"" + enSelected + ">English</option><option value=\"ru\"" + ruSelected + ">Русский</option></select></label><div id=\"list\" role=\"list\"></div></aside><section id=\"detail\" aria-live=\"polite\"></section></main><script id=\"okf-data\" type=\"application/json\">")
 	out.Write(data)
 	out.WriteString("</script><script>")
 	out.Write(js)
@@ -276,6 +309,9 @@ func Render(ctx context.Context, p Projection) ([]byte, error) {
 // Export publishes via a sibling temporary file, never truncating an old file.
 func Export(ctx context.Context, b *bundle.Bundle, output string, options Options) error {
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if _, err := normalizeLanguage(options.Language); err != nil {
 		return err
 	}
 	if output == "" {
@@ -292,7 +328,7 @@ func Export(ctx context.Context, b *bundle.Bundle, output string, options Option
 	if err != nil {
 		return err
 	}
-	htmlBytes, err := Render(ctx, p)
+	htmlBytes, err := RenderWithOptions(ctx, p, RenderOptions{Language: options.Language})
 	if err != nil {
 		return err
 	}

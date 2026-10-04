@@ -1,0 +1,47 @@
+++ pwd
++ repo_root=/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/okf
+++ mktemp -d
++ demo_dir=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI
++ go build -o /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf ./cmd/okf
++ cp -R examples/project-knowledge/ru /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge.html --spec 0.2 --lang ru
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge.html"
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --query 'доставку оператор' --limit 5
+"retry-policy.md" lines 9–15 · "Когда подключать оператора"
+"# Когда подключать оператора\n\nПовторяйте неудачную доставку задания в течение 24 часов. После этого нужен оператор.[^requirements]\n\nОткройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.\n\n[^requirements]: Учебные требования к доставке, предоставленный учебный материал."
+"source-material.md" lines 5–9 · "Учебные требования к доставке"
+"оставке\n\nЭто вымышленные требования для знакомства с OKF.\n\nПовторяйте неудачную доставку задания в течение 24 часов. Если доставка всё ещё не удалась, передайте задание оператору. Оператор проверяет причину ошибки перед следующей попыткой."
+2 sections matched; truncated=false
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --query 'доставку оператор' --limit 5 --json
+{"query":"доставку оператор","terms":["доставку","оператор"],"snapshot_revision":"c4ef14aa597d5640b498de11d8baafeb4532514da59bd59de0ffd16287db6d01","total":2,"truncated":false,"hits":[{"concept_id":"retry-policy","path":"retry-policy.md","heading":"Когда подключать оператора","locator":"retry-policy.md#L9-L15","line_start":9,"line_end":15,"content_sha256":"c81a4f06ee4d5450e0422f4f11745e1225b016f15c27a9bbabe74270a716ce7c","snippet":"# Когда подключать оператора\n\nПовторяйте неудачную доставку задания в течение 24 часов. После этого нужен оператор.[^requirements]\n\nОткройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.\n\n[^requirements]: Учебные требования к доставке, предоставленный учебный материал.","score":0.37036051432360817,"matched_terms":["доставку","оператор"]},{"concept_id":"source-material","path":"source-material.md","heading":"Учебные требования к доставке","locator":"source-material.md#L5-L9","line_start":5,"line_end":9,"content_sha256":"458c046471c66badcf7c2340c2b5ff0ca781b6e31b80f31dbcd92ebba4eef81e","snippet":"оставке\n\nЭто вымышленные требования для знакомства с OKF.\n\nПовторяйте неудачную доставку задания в течение 24 часов. Если доставка всё ещё не удалась, передайте задание оператору. Оператор проверяет причину ошибки перед следующей попыткой.","score":0.3590995527394444,"matched_terms":["доставку","оператор"]}]}
++ export OKF_VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI
++ OKF_VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI
++ python3 -
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --query 'доставку оператор' --limit 5
+"retry-policy.md" lines 9–15 · "Когда подключать оператора"
+"# Когда подключать оператора\n\nПовторяйте неудачную доставку задания в течение 48 часов. После этого нужен оператор.[^requirements]\n\nОткройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.\n\n[^requirements]: Учебные требования к доставке, предоставленный учебный материал."
+"source-material.md" lines 5–9 · "Учебные требования к доставке"
+"оставке\n\nЭто вымышленные требования для знакомства с OKF.\n\nПовторяйте неудачную доставку задания в течение 48 часов. Если доставка всё ещё не удалась, передайте задание оператору. Оператор проверяет причину ошибки перед следующей попыткой."
+2 sections matched; truncated=false
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge.html --spec 0.2 --lang ru --overwrite
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI/my-knowledge.html"
++ printf 'VALIDATION_DEMO=%s\n' /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI
+VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI

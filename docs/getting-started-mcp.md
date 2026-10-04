@@ -1,45 +1,69 @@
 ---
-title: Connect MCP
+title: "Connect MCP"
+description: "Connect MCP"
 permalink: /getting-started-mcp/
 ---
 
 {% include nav.html %}
 
-# Connect MCP to Codex CLI
+<span id="connect-mcp-to-codex-cli"></span>
 
-Continue from the [quickstart]({{ '/quickstart/' | relative_url }}). Requires an installed Codex CLI and an authenticated account. This example configures one session; `-c` overrides do not save a server to global settings.
+# Let an agent find the rule through MCP {#page-top}
 
-From the clone root:
+MCP gives an agent tools to read knowledge. Here the agent should find the delivery rule, read the note and its source, then answer with citations. You need an authenticated Codex CLI and the source checkout from the quickstart.
+
+## Prepare a separate session {#connect}
+
+Run from the checkout root. Use a separate training bundle copy and settings for this session; `-c` does not save the MCP server to global configuration.
 
 ```sh
 codex --version
 mcp_demo_dir=$(mktemp -d)
 go build -o "$mcp_demo_dir/okf-mcp" ./cmd/okf-mcp
-knowledge_root="$(pwd)/knowledge"
+cp -R examples/project-knowledge/en "$mcp_demo_dir/knowledge"
+knowledge_root="$mcp_demo_dir/knowledge"
 printf '%s\n' "$knowledge_root"
+cd "$mcp_demo_dir"
 codex -c "mcp_servers.okf.command=\"$mcp_demo_dir/okf-mcp\"" -c 'mcp_servers.okf.args=[]'
 ```
 
-In Codex, open `/mcp` and check that `okf` is connected and `search_concepts`, `read_concept`, and `get_neighbors` are available. A configured entry alone does not prove a connection. If the server fails to start, check the absolute binary path and client messages. The server accepts no `-root` option: each tool call supplies an absolute `bundle_path`.
+Open `/mcp` in the client. The `okf` server should be connected, and its tools should include `search_sections` and `read_concept`. The server receives an absolute `bundle_path` with every call, rather than a `-root` command argument.
 
-Copy `knowledge_root` from your shell and substitute it for `<absolute knowledge path>` in this prompt:
+## Ask a question {#ask}
 
-> Use the okf MCP server with bundle_path `<absolute knowledge path>`. Find Package boundaries using search_concepts, read architecture using read_concept, and get its outgoing links using get_neighbors. Where should an implementation change start, and what role do CLI/MCP play? Cite the note and original source. Show which tools you called. Do not change anything.
+Substitute the printed path for `<absolute path>`, then send:
 
-Expected calls:
+> Use the okf MCP server with bundle_path `<absolute path>`. Find the delivery rule using search_sections with query `delivery operator`, read retry-policy using read_concept, then read source-material as its source. When should an operator get involved? Answer from the supplied requirements, citing the note and source. Show the calls actually made. Do not change anything.
+
+Expected result: the agent actually calls the tools and answers **24 hours**, citing `retry-policy` and `source-material`. Compare its answer with the documents. If you instead use the updated copy from the quickstart, the expected deadline is **48 hours**.
+
+## Check individual calls {#diagnostics}
+
+If the client answers without tools, request these calls explicitly. The JSON path must be absolute:
+
+`search_sections`:
 
 ```json
-{"bundle_path":"<absolute knowledge path>","query":"Package boundaries","limit":5}
+{"bundle_path":"<absolute path>","query":"delivery operator","limit":5}
+```
+
+`read_concept`:
+
+```json
+{"bundle_path":"<absolute path>","concept_id":"retry-policy"}
 ```
 
 ```json
-{"bundle_path":"<absolute knowledge path>","concept_id":"architecture"}
+{"bundle_path":"<absolute path>","concept_id":"source-material"}
 ```
 
-```json
-{"bundle_path":"<absolute knowledge path>","concept_id":"architecture","direction":"out","limit":10}
-```
+Search returns snippets, lines, and digests. Reading returns the note content and source metadata; the second read lets you inspect the source itself. Retain the client version, settings without secrets, prompt, calls, and answer as evidence of this particular integration run.
 
-The answer should start from the relevant Go package's contract: CLI/MCP expose it rather than inventing OKF semantics. Its source is **Toolkit guide** in `architecture.sources`; related notes include **Version resolution** and **Mutation boundary**. Compare citations with the [original note](https://github.com/skosovsky/okf/blob/main/knowledge/architecture.md). An answer without tool calls does not verify the connection.
+## If something fails {#troubleshooting}
 
-For evidence, retain the client version, configuration without secrets, actual prompt, tool calls, and answer. This single run checks integration, not model quality. A skill installs instructions separately and does not launch the MCP server.
+- The server does not start: check the absolute path to the built `okf-mcp` and the client messages.
+- The bundle is missing: use the absolute path printed before launching the client.
+- Search is empty: check the training folder language and query words.
+- The answer has no calls: request the diagnostic calls; a configuration entry alone does not confirm a connection.
+
+[Agent skill]({{ '/skill/' | relative_url }}) is installed separately. The catalog of all 14 tools and their limits is in the [reference]({{ '/reference/' | relative_url }}). This run checks connectivity and reading, rather than measuring model quality.

@@ -1,8 +1,20 @@
-# OKF v0.2 executable contract
+---
+layout: default
+title: OKF v0.2 executable contract
+lang: en
+document_id: docs-contracts-okf-v0-2
+permalink: /contracts/okf-v0.2/
+---
+
+<a id="okf-v02-executable-contract"></a>
+
+# OKF v0.2 executable contract {#doc-section-001}
 
 Status: accepted for the v0.2 read/validation migration.
 
-## Normative source
+<a id="normative-source"></a>
+
+## Normative source {#doc-section-002}
 
 The normative source is `GoogleCloudPlatform/knowledge-catalog/okf/SPEC.md` at
 commit `3fcbb9f828c2f23d109c855ee403c3a4c81f3a96`. The immutable raw URL is:
@@ -14,7 +26,9 @@ Its SHA-256 is
 `fixtures/v02/spec-lock.json` is the machine-readable lock. Normative clauses
 are §§1–13; Appendix A is the canonical end-to-end example.
 
-## Version resolution
+<a id="version-resolution"></a>
+
+## Version resolution {#doc-section-003}
 
 The reader keeps the declaration and the effective contract separate.
 
@@ -42,7 +56,9 @@ declaration is always retained. The executable version matrix covers `0.0`,
 `0.3`, `0.10`, `1.0`, very large canonical components, and malformed
 leading-zero forms.
 
-## Conformance boundary
+<a id="conformance-boundary"></a>
+
+## Conformance boundary {#doc-section-004}
 
 Base conformance errors are limited to SPEC §11:
 
@@ -63,7 +79,9 @@ The v0.1 fallbacks are reads, never implicit migrations:
 A present but malformed replacement suppresses its legacy fallback. Reading,
 formatting, indexing and graph projection do not rewrite source documents.
 
-## Duplicate YAML key policy
+<a id="duplicate-yaml-key-policy"></a>
+
+## Duplicate YAML key policy {#doc-section-005}
 
 Duplicate YAML mapping keys are preserved by permissive loading rather than
 treated as a whole-document parse failure. Unrelated producer-defined
@@ -79,7 +97,9 @@ diagnostics with their normal family field paths. Lossless mutation rejects a
 duplicate only when the requested operation touches that ambiguous path or
 selector; unrelated duplicates remain byte-preserved.
 
-## Toolkit ambiguity ledger
+<a id="toolkit-ambiguity-ledger"></a>
+
+## Toolkit ambiguity ledger {#doc-section-006}
 
 These decisions are toolkit policy, not additions to upstream OKF:
 
@@ -98,14 +118,18 @@ These decisions are toolkit policy, not additions to upstream OKF:
 | fenced block “under `# Computation`” | sanctioned payload is one closed fenced block that is a direct top-level AST child inside the single top-level H1 section; prose siblings are allowed, while list/blockquote fences are quoted or example content and make the payload conflicting rather than absent |
 | YAML `relations` | `skosovsky/okf` extension, not upstream v0.2 |
 
-## Deferred ABI
+<a id="deferred-abi"></a>
+
+## Deferred ABI {#doc-section-007}
 
 The reader, validator and graph do not execute bundle content. Parameter
 binding, executor runtime, receipt/verdict wire formats, attester ABI,
 portability, sandboxing and attestation caching are deliberately deferred.
 `store.CommitReceipt` has no relation to `executor.receipt`.
 
-## Canonical corpus
+<a id="canonical-corpus"></a>
+
+## Canonical corpus {#doc-section-008}
 
 `fixtures/v02/corpus.yaml` inventories shared fixtures for minimal v0.2,
 Appendix A, inline and file-backed computation, verified mapping/list shapes,

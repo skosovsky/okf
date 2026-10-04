@@ -1,0 +1,5 @@
+++ mktemp -d
++ work_dir=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.LjwMA6pVVN
++ go build -o /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.LjwMA6pVVN/okf ./cmd/okf
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.LjwMA6pVVN/okf init /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.LjwMA6pVVN/new-knowledge --spec 0.2
+error: "unknown flag: --spec"

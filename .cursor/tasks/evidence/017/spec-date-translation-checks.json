@@ -1,0 +1,11 @@
+{
+  "normative_sha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+  "matched_heading_anchors": 41,
+  "fence_markers": 46,
+  "en_body_matches_after_removing_anchors": true,
+  "functional_example_fields_sql_and_dates_equal": true,
+  "rendered_matching_headings": 41,
+  "unique_heading_ids": true,
+  "parser": "Kramdown GFM",
+  "heading_id_syntax": "{:id=\"slug\"}"
+}

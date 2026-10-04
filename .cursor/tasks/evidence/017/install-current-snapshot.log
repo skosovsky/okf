@@ -1,0 +1,47 @@
++ go install ./cmd/okf ./cmd/okf-mcp
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/installed/okf help
+okf - Open Knowledge Format toolkit
+
+okf is a command-line toolkit for building, validating, analyzing, and exporting Open Knowledge Format (OKF) bundles.
+
+USAGE:
+    okf <command> [args]
+
+COMMANDS:
+    init    <directory> Create a new draft OKF v0.2 bundle
+    validate             Check a bundle against version-aware OKF conformance
+    info     <bundle>    Summarize version, trust, lifecycle, provenance, and topology
+    index    <bundle>    (Re)generate every index.md in the bundle
+    graph    <bundle>    Export a selected graph projection (--format text|dot|mermaid|json-ld|ntriples)
+    view     <bundle>    Export a self-contained offline HTML viewer (--output FILE)
+    parse    <file>      Parse one concept document and print its typed projection
+    fmt      <file>      Normalize a document by parse + re-serialize (-w writes)
+    migrate  <bundle>    Preview/apply transactional OKF v0.1 to v0.2 migration
+    migrate-prepare <bundle> Export fillable v0.1 migration inputs (--output-dir DIR)
+    temporal-upgrade <bundle> Preview/apply explicit OKF v0.2 date-to-instant revision upgrade
+    version              Show CLI and supported/default OKF versions
+    search  <bundle>    Search Markdown sections (--query TEXT, --limit N, --json)
+    setup                Preview/copy existing Markdown (--source DIR --target DIR --type TYPE)
+
+OPTIONS:
+    --spec auto|0.1|0.2 Select/assert the OKF contract (default auto)
+    --profile PROFILE    Graph profile: legacy-v0.1, skosovsky/okf-v0.2,
+                         or skosovsky/okf-v0.2-instant
+                         (default follows the effective OKF version)
+    --temporal-profile PROFILE
+                         Temporal revision: date-3fcbb9f (default) or instant-0b87c52
+    --as-of VALUE        Reference date or offset datetime (per temporal profile)
+    --max-warnings N      Fail validate when warnings exceed N (opt-in policy)
+    --citation-mappings FILE
+                         Strict JSON mappings for v0.1 -> v0.2 migration.
+                         Reserved index/log replay requires exact legacy_entry
+                         or complete title/resource evidence
+    --generated-at FILE   Explicit per-document instants for legacy documents
+                         without a timestamp (JSON array of path/at pairs)
+    --prepared-source-sha256 HEX
+                         Reject migration when source changed since preparation
+    --mappings FILE       Explicit per-field date-to-instant mappings for temporal-upgrade
+    --base-revision REV   Previewed bundle revision required with temporal-upgrade --write
+    --plan-digest DIGEST  Previewed plan digest required with temporal-upgrade --write
+    -h, --help           Show this help
+    -V, --version        Show version

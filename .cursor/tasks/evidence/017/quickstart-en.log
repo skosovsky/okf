@@ -1,0 +1,47 @@
+++ pwd
++ repo_root=/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/okf
+++ mktemp -d
++ demo_dir=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR
++ go build -o /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf ./cmd/okf
++ cp -R examples/project-knowledge/en /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge.html --spec 0.2 --lang en
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge.html"
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --query 'delivery operator' --limit 5
+"source-material.md" lines 5–9 · "Training delivery requirements"
+"# Training delivery requirements\n\nThese are fictional requirements for learning OKF.\n\nRetry failed job delivery for 24 hours. If delivery still fails, hand the job to an operator. The operator checks the cause before another attempt."
+"retry-policy.md" lines 9–15 · "When to involve an operator"
+"# When to involve an operator\n\nRetry failed job delivery for 24 hours. After that, involve an operator.[^requirements]\n\nOpen the [supplied requirements](source-material.md) to check the deadline and the operator’s action.\n\n[^requirements]: Training delivery requirements, supplied training material."
+2 sections matched; truncated=false
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --query 'delivery operator' --limit 5 --json
+{"query":"delivery operator","terms":["delivery","operator"],"snapshot_revision":"71196f4ca8d8946bf2a51ff65dba88b9e66b32fd4cc9f5cba1a8c7d87dc6abcf","total":2,"truncated":false,"hits":[{"concept_id":"source-material","path":"source-material.md","heading":"Training delivery requirements","locator":"source-material.md#L5-L9","line_start":5,"line_end":9,"content_sha256":"5224c6216894b6c9f1b2da0e4bf3aec46c1baa88367d26f53a70fed7709ec6cc","snippet":"# Training delivery requirements\n\nThese are fictional requirements for learning OKF.\n\nRetry failed job delivery for 24 hours. If delivery still fails, hand the job to an operator. The operator checks the cause before another attempt.","score":0.6143694968907742,"matched_terms":["delivery","operator"]},{"concept_id":"retry-policy","path":"retry-policy.md","heading":"When to involve an operator","locator":"retry-policy.md#L9-L15","line_start":9,"line_end":15,"content_sha256":"7501799ff59aded59309d1718744b0772929da1ca98e3fbc573cdafbac4f3216","snippet":"# When to involve an operator\n\nRetry failed job delivery for 24 hours. After that, involve an operator.[^requirements]\n\nOpen the [supplied requirements](source-material.md) to check the deadline and the operator’s action.\n\n[^requirements]: Training delivery requirements, supplied training material.","score":0.5854756172034994,"matched_terms":["delivery","operator"]}]}
++ export OKF_VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR
++ OKF_VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR
++ python3 -
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf validate --path /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+Validating bundle: /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf search /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --query 'delivery operator' --limit 5
+"source-material.md" lines 5–9 · "Training delivery requirements"
+"# Training delivery requirements\n\nThese are fictional requirements for learning OKF.\n\nRetry failed job delivery for 48 hours. If delivery still fails, hand the job to an operator. The operator checks the cause before another attempt."
+"retry-policy.md" lines 9–15 · "When to involve an operator"
+"# When to involve an operator\n\nRetry failed job delivery for 48 hours. After that, involve an operator.[^requirements]\n\nOpen the [supplied requirements](source-material.md) to check the deadline and the operator’s action.\n\n[^requirements]: Training delivery requirements, supplied training material."
+2 sections matched; truncated=false
++ /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/okf view /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge --output /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge.html --spec 0.2 --lang en --overwrite
+wrote "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR/my-knowledge.html"
++ printf 'VALIDATION_DEMO=%s\n' /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR
+VALIDATION_DEMO=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.f24G6nn9gR

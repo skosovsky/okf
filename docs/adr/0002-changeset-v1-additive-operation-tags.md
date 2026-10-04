@@ -1,9 +1,21 @@
-# ADR 0002: Additive semantic operation tags in ChangeSet format v1
+---
+layout: default
+title: "ADR 0002: Additive semantic operation tags in ChangeSet format v1"
+lang: en
+document_id: docs-adr-0002-changeset-v1-additive-operation-tags
+permalink: /adr/0002-changeset-v1-additive-operation-tags/
+---
+
+<a id="adr-0002-additive-semantic-operation-tags-in-changeset-format-v1"></a>
+
+# ADR 0002: Additive semantic operation tags in ChangeSet format v1 {#doc-section-001}
 
 - Status: Accepted
 - Date: 2026-07-29
 
-## Context
+<a id="context"></a>
+
+## Context {#doc-section-002}
 
 `store.ChangeSet` format v1 is the canonical request envelope used for request
 digests, journal binding, receipt replay, and idempotency. OKF v0.2 adds narrow
@@ -15,7 +27,9 @@ new members would invalidate existing request digests and force every store
 backend to introduce a second envelope decoder without gaining a distinct wire
 contract.
 
-## Decision
+<a id="decision"></a>
+
+## Decision {#doc-section-003}
 
 ChangeSet format remains version `1`. New operation kinds receive unique,
 lowercase canonical tags within the existing length-prefixed operation slot:
@@ -52,7 +66,9 @@ canonical dispatch. A decoder or adapter that encounters an unknown canonical
 tag must reject the request as unsupported; it must not skip, reinterpret, or
 execute the payload.
 
-## Compatibility
+<a id="compatibility"></a>
+
+## Compatibility {#doc-section-004}
 
 Canonical bytes and request digests of every pre-v0.2 operation and
 precondition remain byte-for-byte unchanged. Adding a new tag changes only
@@ -64,7 +80,9 @@ Frozen legacy vectors and per-operation field-sensitivity tests are executable
 compatibility guards. A tag rename, tag reuse, field reorder, implicit
 optional-field encoding, or change to a legacy primitive is a breaking change.
 
-## Future version bump criteria
+<a id="future-version-bump-criteria"></a>
+
+## Future version bump criteria {#doc-section-005}
 
 Increment `ChangeSetFormatVersion` only when at least one of these changes is
 required:

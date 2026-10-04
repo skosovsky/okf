@@ -1,25 +1,34 @@
-# Техническое задание: version-aware validator OKF v0.2
+---
+lang: en
+title: "Version-aware OKF v0.2 validator"
+permalink: /development/v0.2/tasks/task11/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Добавить version-aware base/strict policy для OKF v0.1 и v0.2 без расширения
-hard conformance сверх §11.
+# Version-aware OKF v0.2 validator {#section001}
 
-Зависимости: [`task09.md`](task09.md), [`task10.md`](task10.md).
+> Historical document. This plan is preserved from source revision `61e75e9`; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task11.md).
 
-## 2. Version policy
+## 1. Objective {#section002}
+
+Add version-aware base/strict policy for OKF v0.1 and v0.2 without expanding
+hard conformance beyond §11.
+
+Dependencies: [`task09.md`]({{ '/development/v0.2/tasks/task09/' | relative_url }}), [`task10.md`]({{ '/development/v0.2/tasks/task10/' | relative_url }}).
+
+## 2. Version policy {#section003}
 
 | Target | Base | Strict |
 | --- | --- | --- |
-| `0.1` | существующий contract | legacy `timestamp`/`# Citations` |
-| `0.2` | §11 | v0.2 families/computation guidance |
-| absent | v0.2 + §13 fallbacks | validate present families |
-| future | best-effort | только безопасный известный subset |
+| `0.1` | existing contract | legacy `timestamp`/`# Citations` |
+| `0.2` | §11 | v0.2 field families/computation guidance |
+| absent | v0.2 + §13 fallbacks | validate present field families |
+| future | best-effort | only the safe, known subset |
 
-Version resolution должен быть shared domain API, а не локальная эвристика
-validator.
+Version resolution must be a shared domain API, not a validator-local heuristic.
 
-## 3. Severity contract
+## 3. Severity contract {#section004}
 
 `ERROR`:
 
@@ -27,119 +36,121 @@ validator.
 - missing/empty string `type`;
 - invalid reserved file structure.
 
-`WARNING` только strict/policy:
+`WARNING`, strict/policy only:
 
-- malformed присутствующая v0.2 family;
+- malformed present v0.2 field family;
 - source-footnote integrity;
 - malformed lifecycle/freshness;
 - unusable Attested Computation contract;
-- stale boundary.
+- staleness boundary.
 
-Missing optional families, unknown type/key/runtime, broken resource/path не
-являются conformance errors.
+Missing optional families, unknown types/keys/runtimes, and broken resources/paths
+are not conformance errors.
 
-Каждая новая диагностика получает stable `Code`, file и точный field path
-вроде `sources[2].resource`.
+Each new diagnostic receives a stable `Code`, a file, and an exact field path
+such as `sources[2].resource`.
 
-## 4. Strict families
+## 4. Strict field families {#section005}
 
-### Sources
+### Sources {#section006}
 
-- `sources` — sequence mappings.
-- `resource` required и non-empty scalar в каждом entry.
-- `id`, `title`, `author` проверять при наличии.
-- IDs уникальны как toolkit attribution policy.
-- `usage_count` — non-negative integer toolkit profile.
-- Effective `usage_window` имеет `from/to`, valid dates и `from <= to`.
-- `usage_count` требует effective window.
-- Source footnotes join по ID; code fences игнорируются.
-- `sources[].resource` может быть scope descriptor.
-- `sources[].author` проверять только как non-empty string из-за upstream
+- `sources` is a sequence of mappings.
+- `resource` is required and is a non-empty scalar in every entry.
+- Check `id`, `title`, and `author` when present.
+- IDs are unique as a toolkit attribution policy.
+- `usage_count` is a non-negative integer under the toolkit profile.
+- The effective `usage_window` has `from/to`, valid dates, and `from <= to`.
+- `usage_count` requires an effective window.
+- Source footnotes join by ID; ignore code fences.
+- `sources[].resource` may be a scope descriptor.
+- Check `sources[].author` only as a non-empty string because of the upstream
   `team:*` ambiguity.
 
-### Generated/verified
+### Generated/verified {#section007}
 
-- `generated` mapping; `by` required внутри присутствующего mapping;
-  `at`, если есть, RFC3339.
-- Actor convention применять к `generated.by`/`verified.by`.
-- `verified` принимает mapping и sequence.
-- Каждое событие содержит `by/at`; bare mapping нормализуется.
-- Trust tier derived, never stored.
-- Legacy timestamp fallback только при полном отсутствии `generated`.
+- `generated` is a mapping; `by` is required inside a present mapping;
+  `at`, when present, is RFC3339.
+- Apply the actor convention to `generated.by`/`verified.by`.
+- `verified` accepts a mapping or a sequence.
+- Each event contains `by/at`; normalize a bare mapping.
+- The trust tier is derived, never stored.
+- Fall back to legacy timestamp only when `generated` is entirely absent.
 
-### Lifecycle
+### Lifecycle {#section008}
 
 - status: `draft|stable|deprecated`, absent → stable.
 - `stale_after`: valid `YYYY-MM-DD`.
-- Reference date инъецируется; `today == stale_after` означает stale.
+- Inject the reference date; `today == stale_after` means stale.
 
-### Path-valued fields
+### Path-valued fields {#section009}
 
-Поддержать absolute URL, bundle-relative и relative path для:
+Support absolute URLs, bundle-relative paths, and relative paths for:
 
 - `resource`;
 - `computation`;
 - `executor.resource`;
 - `attester.resource`.
 
-Не проверять сеть/существование target как conformance requirement.
+Do not check the network/target existence as a conformance requirement.
 
-## 5. Attested Computation
+## 5. Attested Computation {#section010}
 
-Для exact type:
+For the exact type:
 
-- `runtime` non-empty, unknown values allowed;
-- parameters — mappings `{name,type,required}`, unique names, boolean required;
-- computation задан inline либо path, но не обоими;
-- inline mode — один fence под top-level `# Computation`;
-- executor/attester shapes проверяются при наличии;
-- receipt — unique non-empty field names.
+- `runtime` is non-empty; unknown values are allowed;
+- parameters are mappings `{name,type,required}`, with unique names and boolean
+  `required`;
+- computation is supplied inline or by path, but not both;
+- inline mode has one fence under top-level `# Computation`;
+- check executor/attester shapes when present;
+- receipt consists of unique, non-empty field names.
 
-Missing runtime/computation/executor/attester остаются strict warnings, не base
-errors. Deferred ABI не валидировать.
+Missing runtime/computation/executor/attester remain strict warnings, not base
+errors. Do not validate the deferred ABI.
 
-## 6. Legacy fallback
+## 6. Legacy fallback {#section011}
 
-- Explicit v0.1 сохраняет старые strict rules.
-- v0.2 consumer читает timestamp/Citations только при отсутствии replacement.
-- Numeric `[1]` в explicit v0.2 не включает legacy policy автоматически.
-- Fallback не переписывает document и не создаёт warning только за legacy form.
+- Explicit v0.1 preserves the existing strict rules.
+- A v0.2 consumer reads timestamp/Citations only when the replacement is absent.
+- Numeric `[1]` in explicit v0.2 does not automatically enable legacy policy.
+- Fallback does not rewrite the document or produce a warning merely for a legacy
+  form.
 
-## 7. Fixtures/tests
+## 7. Fixtures/tests {#section012}
 
-Добавить groups `v02/positive`, `v02/strict`, `v02/compat`,
+Add groups `v02/positive`, `v02/strict`, `v02/compat`,
 `v02/adversarial`.
 
-Покрыть:
+Cover:
 
-- minimal type-only concept;
+- a minimal type-only concept;
 - Appendix A;
-- mapping/list verified;
+- mapping/list forms of verified;
 - local/relative/scope resources;
-- malformed shape каждой family;
+- malformed shapes for each family;
 - duplicate IDs/orphan footnotes/code fences;
 - actor cases;
 - invalid timestamps/dates/windows;
-- stale before/equal/after;
+- staleness before/equal/after the boundary;
 - parameter/computation variants;
 - declared 0.1, absent, 0.2, future;
 - YAML implicit timestamps/dates;
 - malformed optional family → warning, `ErrorCount == 0`.
 
-Все tests — AAA, output deterministic.
+All tests use AAA; output is deterministic.
 
-## 8. Acceptance criteria
+## 8. Acceptance criteria {#section013}
 
-- Official v0.2 examples base-conformant.
-- Canonical Appendix fixture strict-clean.
-- v0.1 regression fixtures проходят.
-- Type-only document остаётся conformant.
-- Bare verified equals one-item list.
-- Нет false warning по missing `timestamp` в v0.2.
-- Codes/field paths стабильны.
-- `go test ./validator ./bundle` и `go test ./...` проходят.
+- Official v0.2 examples conform to base rules.
+- The canonical Appendix fixture has no strict diagnostics.
+- v0.1 regression fixtures pass.
+- A type-only document remains conformant.
+- Bare verified equals a one-item list.
+- No false warning for a missing `timestamp` in v0.2.
+- Codes/field paths are stable.
+- `go test ./validator ./bundle` and `go test ./...` pass.
 
-## 9. Out of scope
+## 9. Out of scope {#section014}
 
 Execution, receipt/verdict ABI, attester runtime/sandbox/cache, runtime-specific
-binding, network checks и migration.
+binding, network checks, and migration.

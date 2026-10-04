@@ -1,0 +1,244 @@
+{
+  "pairs": [
+    {
+      "id": "readme",
+      "en_path": "README.md",
+      "ru_path": "README.ru.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "c897c6401d6a40faf612c38f3990f0c0d460a160725d72911ec3cea6d3ad7d5f",
+      "ru_sha256": "27e5d588ab816c572ade4dfc1b62aefbdbe9de3e96ae84254229461679d6158a"
+    },
+    {
+      "id": "benchmarks-retrieval-readme",
+      "en_path": "docs/readings/benchmarks/retrieval/README.md",
+      "ru_path": "docs/ru/readings/benchmarks/retrieval/README.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "7f3a2737c631b82c243bdb67b6fba2dc148e0817311d7d38de5f569df35edffc",
+      "ru_sha256": "7f359623a6b26713c0400c8b4403a0ca31ae2e756a76839f65197977aa8b11eb"
+    },
+    {
+      "id": "benchmarks-toolkit-readme",
+      "en_path": "docs/readings/benchmarks/toolkit/README.md",
+      "ru_path": "docs/ru/readings/benchmarks/toolkit/README.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "cafa53a098a26bc44a4d9e2532186b0e2ac6c1d920c1d054e17747f5958ea45a",
+      "ru_sha256": "da44b62d9e1e8c16c979c4e24b4689bb3b59ae9a3b2f0116573e90366e579708"
+    },
+    {
+      "id": "docs-adr-0001-okf-v02-graph-projection",
+      "en_path": "docs/adr/0001-okf-v02-graph-projection.md",
+      "ru_path": "docs/ru/adr/0001-okf-v02-graph-projection.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "859a8ac5d4fda2fffb18ead69b46356e96c904f14b34751d556d90e73c502f25",
+      "ru_sha256": "7a5f949cd2e4fcd550a3983e03276070887e955f1d9a1e504a18d0bf7b85d44b"
+    },
+    {
+      "id": "docs-adr-0002-changeset-v1-additive-operation-tags",
+      "en_path": "docs/adr/0002-changeset-v1-additive-operation-tags.md",
+      "ru_path": "docs/ru/adr/0002-changeset-v1-additive-operation-tags.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "ce27527861e0eb8c7a2003d86462cbd3a0d7d5e00453d6cc5d7b2d573572d054",
+      "ru_sha256": "f556e5768ff63137cb798531597f48ad421395d8773b4d6fe5ab48f216ecd370"
+    },
+    {
+      "id": "docs-adr-0003-okf-v02-temporal-revisions",
+      "en_path": "docs/adr/0003-okf-v02-temporal-revisions.md",
+      "ru_path": "docs/ru/adr/0003-okf-v02-temporal-revisions.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "5d63d621fa32c70360a47d02f039971738f020134aa36ff619a159a0cbfd3c7e",
+      "ru_sha256": "0b73c2981487a59f38d8dc296b1dfd4c024d5e73c9371f94d4e6afd4c580253a"
+    },
+    {
+      "id": "docs-getting-started-mcp",
+      "en_path": "docs/getting-started-mcp.md",
+      "ru_path": "docs/ru/getting-started-mcp.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "1de93e6a99e00a02116a11d198a8fd771338de8a92363aad44383f670b4e1fe8",
+      "ru_sha256": "6b9e97e7727fec16dd59bfa757ccd3b907cee890a7222d54061483abbcbbf576"
+    },
+    {
+      "id": "docs-github-action",
+      "en_path": "docs/github-action.md",
+      "ru_path": "docs/ru/github-action.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "2a341e19a894ea544e0381e149a2548e7892ceaf38be7bb0935c7a06a6aa525c",
+      "ru_sha256": "3f5d075518c8459bb5f581db1203179388e85f1c3fbfb2b101af4881874da2e5"
+    },
+    {
+      "id": "docs-index",
+      "en_path": "docs/index.md",
+      "ru_path": "docs/ru/index.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "94099fc9d06a7c2eb6029ecd207d73a442c14d112203c3cb7572ff03f3603e73",
+      "ru_sha256": "ed5c1aa6953dd5642a673befa9ece4ce7da420ffdfa8cfaf524b4eeedb6cfc11"
+    },
+    {
+      "id": "docs-knowledge-manual-review",
+      "en_path": "docs/knowledge-manual-review.md",
+      "ru_path": "docs/ru/knowledge-manual-review.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "eff58d33af9ad30a29965a8b89fc176d76e399f1e21dc42350f3a39bb380d82d",
+      "ru_sha256": "84ac5742cd6b56f4993608c3c6a45493b52d22db834f0a789c5fcf977840084b"
+    },
+    {
+      "id": "docs-knowledge-upkeep",
+      "en_path": "docs/knowledge-upkeep.md",
+      "ru_path": "docs/ru/knowledge-upkeep.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "bf51d84532c285ab9a282c7b3ff18b581f9f1efca90558506abd4476caa913d4",
+      "ru_sha256": "3825ceddff2c0f343d9213ed11bd0e0d7352cde01c5dbcb25f1eb277b3568d41"
+    },
+    {
+      "id": "docs-knowledge",
+      "en_path": "docs/knowledge.md",
+      "ru_path": "docs/ru/knowledge.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "ec991d896db69616a34de92c4e4f26d1d4ea6a7af87f86b9c7c8b3bd28c5f2af",
+      "ru_sha256": "f3f8079d2a79ee19af5e0daad706351403b767bb80a19f9ee24762bc356aac86"
+    },
+    {
+      "id": "docs-migration",
+      "en_path": "docs/migration.md",
+      "ru_path": "docs/ru/migration.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "e57991a8273f1363b4c66f8932e8f7f6b254cc30f82fad5b289fd4310179a92f",
+      "ru_sha256": "bc181e1cb1a589dff201271556847732fcff26e18e27b0640ca2a1067f31c21b"
+    },
+    {
+      "id": "docs-quickstart",
+      "en_path": "docs/quickstart.md",
+      "ru_path": "docs/ru/quickstart.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "fffda3b6a00a0ab2e8bdbff06477c47873b26559bc6e6bd2e48058f9c9a1b0a6",
+      "ru_sha256": "73bf279f0efcaf297dbe600edf16e92e187636a53aee8fff474021d9ba21025c"
+    },
+    {
+      "id": "docs-reference",
+      "en_path": "docs/reference.md",
+      "ru_path": "docs/ru/reference.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "66a70b231d59bc3326a81c7e951bd3c0d637dc5cb22c9d041884d491d40225e8",
+      "ru_sha256": "7870e979151375d785409f40afa34ccbbd6382c9f2f0c39d7f43b44bed6cff1b"
+    },
+    {
+      "id": "docs-release-engineering",
+      "en_path": "docs/release-engineering.md",
+      "ru_path": "docs/ru/release-engineering.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "41e24053561a259cf11e1c449adb34000d23b7080eb2ab0fd94f45669f34d84b",
+      "ru_sha256": "9b1eba6b5a406f55c5499ba1f58659110a5ebaa46d270bf81d0e6e78e8d1a36f"
+    },
+    {
+      "id": "docs-skill",
+      "en_path": "docs/skill.md",
+      "ru_path": "docs/ru/skill.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "79bf9f1d6ac3183652f3be0342abaf5fb6c4f22e1579ab4d3c451bc0db48972d",
+      "ru_sha256": "16e6f52e35adc660aa38c2c59f93761fde542d85d06fe8b8b6585dd3b243eb7b"
+    },
+    {
+      "id": "docs-toolkit",
+      "en_path": "docs/toolkit.md",
+      "ru_path": "docs/ru/toolkit.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "2bf35b089bf1c671f50466242cc8d31bc593d8e538b9d0d41cf70b04909fb7eb",
+      "ru_sha256": "a0252e086ac2c12d1f7caf78790c91b56c88e64165a00c66da81b08720479221"
+    },
+    {
+      "id": "examples-readme",
+      "en_path": "examples/README.md",
+      "ru_path": "examples/README.ru.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "4e3d5a5f1958c0e879aefc042e83f7f44c615e401fa5fbad3126595ceac41b86",
+      "ru_sha256": "1ba05c49b3dc133f2d259b9aaba37071cb3ab4af2abc5d60066ffd92ccd59060"
+    },
+    {
+      "id": "viewer-readme",
+      "en_path": "docs/readings/viewer/README.md",
+      "ru_path": "docs/ru/readings/viewer/README.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "aa754de8403949b02142f1dab4dda44125d659af3dee6a345ffd6d0ee685bc6a",
+      "ru_sha256": "4f133db688a187d73c7fab4f9cb4fe30a6192395370851b2c75358fd99a3bde6"
+    },
+    {
+      "id": "documentation-index",
+      "en_path": "docs/documentation.md",
+      "ru_path": "docs/ru/documentation.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "1e539fb13d2ffebba5c4da03b44542aef94a80e78b6ca7530644c8a6483a5aea",
+      "ru_sha256": "e9e3dcc222901edb86ae0b3c59ff9bb8d2c3a98dfe495973235d9d9058496df9"
+    },
+    {
+      "id": "history-index",
+      "en_path": "docs/history.md",
+      "ru_path": "docs/ru/history.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer",
+      "facts_actions_examples_limits_parity": "reviewed",
+      "russian_prose": "reviewed",
+      "en_sha256": "57c10580d84acc340e437ec2a481179fc2daa3634e4c3df025bf0a52d50c3b18",
+      "ru_sha256": "3f1f4b0e12bf1a9d90488cdcf915ed788c0e6fdef14cbfc3c9dee713a7751711"
+    },
+    {
+      "id": "fixtures-interoperability-readme",
+      "en_path": "docs/readings/fixtures/interoperability/README.md",
+      "ru_path": "docs/ru/readings/fixtures/interoperability/README.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer; compared pinned original README",
+      "facts_actions_examples_limits_parity": "pass; no confirmed mismatch",
+      "russian_prose": "pass; no confirmed issue",
+      "en_sha256": "7194546ceb64225d456330790b43e86d3141fd84d90f9ebc8c4d07301b14b495",
+      "ru_sha256": "9dd722fc6c0342bbad768a124036c2180b4c222ed7bd0ef426ea131f8fd49555"
+    },
+    {
+      "id": "viewer-testdata-regression-016-readme",
+      "en_path": "docs/readings/viewer/testdata/regression-016/README.md",
+      "ru_path": "docs/ru/readings/viewer/testdata/regression-016/README.md",
+      "coverage": "full manual EN/RU reading by primary editorial reviewer; compared pinned original README",
+      "facts_actions_examples_limits_parity": "pass; no confirmed mismatch",
+      "russian_prose": "pass; no confirmed issue",
+      "en_sha256": "48c0be95ac63ab7a6be3067e95516ecd282bc660b2a1cd3dd13930fc255e4148",
+      "ru_sha256": "3a91bc99d5fe63dd7b359ec1b3ff1da066fd8799451e1a3d685a834f4ae666f4"
+    }
+  ]
+}

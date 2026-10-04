@@ -1,0 +1,49 @@
+---
+layout: default
+title: "Paired ed7ddc28 and 0f15ab4 comparison: full table"
+lang: en
+permalink: /readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary/
+documentation_id: benchmarks-toolkit-results-paired-ed7ddc28-0f15ab4-summary
+source_revision: 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+historical: true
+---
+{% include nav.html %}
+
+**Historical reading edition.** Source: [benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md), repository revision `61e75e9aa9a8719dfb480bf1f5226553b3a21d70` (2026-10-04). This page preserves the methods, dates, measurements and status recorded in that revision. Historical results describe those runs, not the current product or a recommendation to run agents today.
+
+| Workload | Baseline N | Baseline ns/op | Baseline B/op | Baseline allocs/op | Corrected N | Corrected ns/op | Corrected B/op | Corrected allocs/op | Δ time | Δ bytes | Δ allocs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `BenchmarkToolkit/footnotes/ownership-10` | 5 | 8906 ± 64 | 7320 ± 1 | 100 ± 0 | 5 | 8842 ± 168 | 7338 ± 8 | 101 ± 0 | -0.7% | +0.2% | +1.0% |
+| `BenchmarkToolkit/interop/wrapped-log/typed-10` | N/A | N/A | N/A | N/A | 5 | 5030 ± 12 | 5944 ± 0 | 66 ± 0 | N/A | N/A | N/A |
+| `BenchmarkToolkit/interop/wrapped-log/validate-10` | N/A | N/A | N/A | N/A | 5 | 1181926 ± 20796 | 1151725 ± 671 | 11509 ± 0 | N/A | N/A | N/A |
+| `BenchmarkToolkit/log/typed-10` | 5 | 222 ± 8 | 208 ± 0 | 4 ± 0 | 5 | 155 ± 0 | 80 ± 0 | 2 ± 0 | -30.0% | -61.5% | -50.0% |
+| `BenchmarkToolkit/n=10/cli/validate-10` | 5 | 9806000 ± 769743 | 15848 ± 40 | 40 ± 0 | 5 | 9462026 ± 99738 | 15848 ± 42 | 40 ± 0 | -3.5% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=10/graph/jsonld-10` | 5 | 947258 ± 10881 | 1086663 ± 658 | 14446 ± 0 | 5 | 1006971 ± 26494 | 1094469 ± 336 | 14446 ± 0 | +6.3% | +0.7% | +0.0% |
+| `BenchmarkToolkit/n=10/load-10` | 5 | 210415 ± 2073 | 237809 ± 1 | 2516 ± 0 | 5 | 209470 ± 1245 | 237809 ± 1 | 2516 ± 0 | -0.4% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=10/parse/document-10` | 5 | 12304 ± 296 | 14184 ± 0 | 143 ± 0 | 5 | 11988 ± 239 | 14184 ± 0 | 143 ± 0 | -2.6% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=10/validate/all-10` | 5 | 1074664 ± 20966 | 1146856 ± 698 | 11449 ± 0 | 5 | 1106253 ± 15796 | 1149020 ± 1155 | 11461 ± 0 | +2.9% | +0.2% | +0.1% |
+| `BenchmarkToolkit/n=10/validate/base-10` | 5 | 200601 ± 4861 | 237353 ± 0 | 2340 ± 0 | 5 | 206750 ± 1466 | 238026 ± 0 | 2352 ± 0 | +3.1% | +0.3% | +0.5% |
+| `BenchmarkToolkit/n=10/validate/links-10` | 5 | 432715 ± 1910 | 476764 ± 7 | 4819 ± 0 | 5 | 446674 ± 5419 | 477428 ± 1 | 4831 ± 0 | +3.2% | +0.1% | +0.2% |
+| `BenchmarkToolkit/n=10/validate/orphans-10` | 5 | 234030 ± 1784 | 263658 ± 0 | 2651 ± 0 | 5 | 240808 ± 6728 | 264331 ± 1 | 2663 ± 0 | +2.9% | +0.3% | +0.5% |
+| `BenchmarkToolkit/n=10/validate/strict-10` | 5 | 794515 ± 21593 | 878529 ± 1297 | 8658 ± 0 | 5 | 809475 ± 6219 | 878506 ± 789 | 8669 ± 0 | +1.9% | -0.0% | +0.1% |
+| `BenchmarkToolkit/n=100/cli/validate-10` | 5 | 28514364 ± 366593 | 15608 ± 0 | 40 ± 0 | 5 | 28845438 ± 730698 | 15608 ± 0 | 40 ± 0 | +1.2% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=100/graph/jsonld-10` | 5 | 11070388 ± 266721 | 11029163 ± 11313 | 139059 ± 2 | 5 | 11291944 ± 180714 | 11111121 ± 8948 | 139062 ± 3 | +2.0% | +0.7% | +0.0% |
+| `BenchmarkToolkit/n=100/load-10` | 5 | 2352377 ± 71466 | 2359583 ± 3 | 24536 ± 0 | 5 | 2262378 ± 46221 | 2359590 ± 11 | 24536 ± 0 | -3.8% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=100/parse/document-10` | 5 | 12199 ± 332 | 14184 ± 0 | 143 ± 0 | 5 | 12016 ± 88 | 14184 ± 0 | 143 ± 0 | -1.5% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=100/validate/all-10` | 5 | 10920854 ± 68475 | 10936046 ± 10929 | 108394 ± 3 | 5 | 11328883 ± 329237 | 10939834 ± 4911 | 108496 ± 2 | +3.7% | +0.0% | +0.1% |
+| `BenchmarkToolkit/n=100/validate/base-10` | 5 | 1950553 ± 28699 | 1972741 ± 6 | 19462 ± 0 | 5 | 1976104 ± 43931 | 1976375 ± 19 | 19564 ± 0 | +1.3% | +0.2% | +0.5% |
+| `BenchmarkToolkit/n=100/validate/links-10` | 5 | 4235231 ± 56899 | 4214601 ± 47 | 42569 ± 0 | 5 | 4233338 ± 72550 | 4218130 ± 46 | 42670 ± 0 | -0.0% | +0.1% | +0.2% |
+| `BenchmarkToolkit/n=100/validate/orphans-10` | 5 | 2277536 ± 44451 | 2220877 ± 3 | 22129 ± 0 | 5 | 2264251 ± 10560 | 2224433 ± 1 | 22231 ± 0 | -0.6% | +0.2% | +0.5% |
+| `BenchmarkToolkit/n=100/validate/strict-10` | 5 | 8477264 ± 102563 | 8449536 ± 6860 | 82626 ± 1 | 5 | 8490318 ± 182267 | 8437131 ± 12051 | 82725 ± 2 | +0.2% | -0.1% | +0.1% |
+| `BenchmarkToolkit/n=1000/graph/jsonld-10` | 5 | 160772166 ± 2372125 | 116700032 ± 111728 | 1384703 ± 19 | 5 | 150407708 ± 2024624 | 117430704 ± 112048 | 1384695 ± 21 | -6.4% | +0.6% | -0.0% |
+| `BenchmarkToolkit/n=1000/load-10` | 5 | 24052808 ± 1030658 | 24324588 ± 9 | 244276 ± 0 | 5 | 23370008 ± 487225 | 24324540 ± 24 | 244276 ± 0 | -2.8% | -0.0% | +0.0% |
+| `BenchmarkToolkit/n=1000/parse/document-10` | 5 | 12847 ± 435 | 14184 ± 0 | 143 ± 0 | 5 | 13076 ± 131 | 14184 ± 0 | 143 ± 0 | +1.8% | +0.0% | +0.0% |
+| `BenchmarkToolkit/n=1000/validate/all-10` | 5 | 122561459 ± 4200666 | 107666016 ± 39896 | 1078763 ± 5 | 5 | 118398375 ± 974875 | 107812384 ± 37120 | 1079797 ± 1 | -3.4% | +0.1% | +0.1% |
+| `BenchmarkToolkit/n=1000/validate/base-10` | 5 | 26801136 ± 1455812 | 19474200 ± 20 | 191138 ± 0 | 5 | 26245858 ± 754306 | 19509192 ± 24 | 192149 ± 0 | -2.1% | +0.2% | +0.5% |
+| `BenchmarkToolkit/n=1000/validate/links-10` | 5 | 48191611 ± 1642278 | 41773538 ± 30 | 420943 ± 1 | 5 | 47454014 ± 1664597 | 41808520 ± 176 | 421954 ± 2 | -1.5% | +0.1% | +0.2% |
+| `BenchmarkToolkit/n=1000/validate/orphans-10` | 5 | 28242740 ± 382542 | 21957588 ± 12 | 217799 ± 0 | 5 | 28711406 ± 527094 | 21992620 ± 4 | 218810 ± 0 | +1.7% | +0.2% | +0.5% |
+| `BenchmarkToolkit/n=1000/validate/strict-10` | 5 | 96407854 ± 1581833 | 82975284 ± 54780 | 822308 ± 13 | 5 | 97109292 ± 3785354 | 82934616 ± 56488 | 823308 ± 16 | +0.7% | -0.0% | +0.1% |
+| `BenchmarkToolkit/temporal/legacy-date/cli-validate-10` | N/A | N/A | N/A | N/A | 5 | 9719524 ± 254784 | 15787 ± 93 | 40 ± 0 | N/A | N/A | N/A |
+| `BenchmarkToolkit/temporal/legacy-date/parse-10` | N/A | N/A | N/A | N/A | 5 | 27535 ± 190 | 24512 ± 0 | 264 ± 0 | N/A | N/A | N/A |
+| `BenchmarkToolkit/temporal/offset-datetime/cli-validate-10` | N/A | N/A | N/A | N/A | 5 | 9808594 ± 186656 | 15992 ± 40 | 40 ± 0 | N/A | N/A | N/A |
+| `BenchmarkToolkit/temporal/offset-datetime/parse-10` | N/A | N/A | N/A | N/A | 5 | 27691 ± 91 | 23736 ± 0 | 240 ± 0 | N/A | N/A | N/A |

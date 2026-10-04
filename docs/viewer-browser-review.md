@@ -1,4 +1,19 @@
-# Viewer browser acceptance, 2026-09-26
+---
+title: Viewer browser acceptance, 2026-09-26
+description: Historical manual viewer acceptance observations and artifact digests.
+lang: en
+historical: true
+permalink: /viewer-browser-review/
+status: historical
+documentation_id: docs-viewer-browser-review
+source_revision: 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+---
+
+{% include nav.html %}
+
+> Historical record. This page describes the results and requirements recorded in [revision `61e75e9`](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/docs/viewer-browser-review.md). It is not a report of checks on the current revision.
+
+# Viewer browser acceptance, 2026-09-26 {#viewer-browser-acceptance-2026-09-26}
 
 Browser acceptance **passed by manual review on 2026-09-26**. The user opened both generated local HTML files and confirmed all four requested scenarios: responsive search, selection, scrolling, graph and `#c-0999` deep link on 1,000 concepts; search and type filters on the small bundle; long Russian title, text and Go block at a narrow width; and `#missing`/`#russian` navigation with absent metadata and graph. The user reported the large page responded instantly and attached four screenshots to the result message. The screenshots show selected states; the interactions and responsiveness are established by the user's explicit report, not inferred from static images.
 
@@ -22,7 +37,7 @@ go test ./viewer ./internal/okfcli -run 'Test(RenderEscapesScriptAndMarkdownHTML
 
 The first command covers a 1,001-concept projection, a 1,000-node rejection, Unicode IDs, and absent metadata. The second covers the small bundle, escaping, and CLI export. These Go-level checks complement the manual browser pass.
 
-## Prepared manual-review files
+## Prepared manual-review files {#manual-review-files}
 
 Two further exports are available without running a browser here:
 

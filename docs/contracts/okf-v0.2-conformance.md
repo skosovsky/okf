@@ -1,4 +1,14 @@
-# OKF v0.2 conformance matrix
+---
+layout: default
+title: OKF v0.2 conformance matrix
+lang: en
+document_id: docs-contracts-okf-v0-2-conformance
+permalink: /contracts/okf-v0.2-conformance/
+---
+
+<a id="okf-v02-conformance-matrix"></a>
+
+# OKF v0.2 conformance matrix {#doc-section-001}
 
 This matrix maps the pinned specification to implementation surfaces,
 diagnostic policy and canonical evidence. It intentionally distinguishes

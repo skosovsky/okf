@@ -1,31 +1,41 @@
-# Техническое задание: OKF v0.2 domain model в `bundle`
+---
+lang: en
+title: "OKF v0.2 domain model in bundle"
+permalink: /development/v0.2/tasks/task10/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Сделать `bundle` доменным read layer для provenance, trust, lifecycle,
-Attested Computation, keyed attribution и referenced assets. Сохранить
-permissive conformance, BYOT и lossless unknown-key round-trip.
+# OKF v0.2 domain model in bundle {#section001}
 
-Зависимость: [`task09.md`](task09.md).
+> Historical document. This plan is preserved from source revision `61e75e9`; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task10.md).
 
-## 2. Текущие gaps
+## 1. Objective {#section002}
+
+Make `bundle` the domain reading layer for provenance, trust, lifecycle,
+Attested Computation, keyed attribution, and referenced assets. Preserve
+permissive conformance, BYOT, and lossless round-tripping of unknown keys.
+
+Dependency: [`task09.md`]({{ '/development/v0.2/tasks/task09/' | relative_url }}).
+
+## 2. Current gaps {#section003}
 
 - `bundle.OKFVersion == "0.1"`.
-- Typed accessors покрывают legacy `timestamp`, но не v0.2 families.
-- Новые standard keys считаются extensions.
-- `Document.Citations()` понимает только positional `# Citations`.
-- `Bundle.Load` не сохраняет non-Markdown `.sql`/`.py` assets.
-- generic semantic subresource index считает `sources[].id` fragment'ом.
-- relations extension не исключает standard v0.2 families.
+- Typed accessors cover legacy `timestamp`, but not v0.2 field families.
+- New standard keys are treated as extensions.
+- `Document.Citations()` understands only positional `# Citations`.
+- `Bundle.Load` does not retain non-Markdown `.sql`/`.py` assets.
+- The generic semantic subresource index treats `sources[].id` as a fragment.
+- The relations extension does not exclude standard v0.2 field families.
 
-## 3. Public model
+## 3. Public model {#section004}
 
-Добавить небольшие открытые read models:
+Add small, open reading models:
 
 - `Generation`;
 - `Verification`;
 - `UsageWindow`;
-- `ProvenanceSource` (`Source` уже занят storage interface);
+- `ProvenanceSource` (`Source` is already used by a storage interface);
 - `TrustTier`;
 - lifecycle constants;
 - `ComputationParameter`;
@@ -33,110 +43,111 @@ permissive conformance, BYOT и lossless unknown-key round-trip.
 - `AttesterContract`;
 - `AttestedComputationContract`.
 
-Actor, runtime, parameter type и receipt field names остаются открытыми строками.
-Не вводить закрытые registry/enums.
+Actor, runtime, parameter type, and receipt field names remain open strings.
+Do not introduce closed registries/enums.
 
-Добавить accessors:
+Add accessors:
 
 - `Sources`, shared/effective `UsageWindow`;
 - `Generated`, `Verifications`;
 - derived `TrustTier`;
 - raw/effective `Status`;
-- `StaleAfter` и helper с explicit reference date;
+- `StaleAfter` and a helper with an explicit reference date;
 - `AttestedComputation`;
 - effective content-change time.
 
-Bare `verified` mapping нормализуется в one-element slice без изменения raw YAML.
+Normalize a bare `verified` mapping to a one-element slice without changing the
+raw YAML.
 
-## 4. BYOT и lossless contract
+## 4. BYOT and lossless contract {#section005}
 
-- `Get`, `Set`, `YAMLNode` остаются authoritative.
-- Добавить generic decode/encode helper для caller-owned structs.
-- Не вводить монолитную `FrontmatterSchema`.
-- Accessors возвращают copies и не разделяют mutable slices/maps с caller.
-- Typed read не меняет node style, comments, key order или nested extensions.
-- Standard keys v0.2 плюс legacy `timestamp` исключаются из `ExtensionKeys`;
-  `relations` остаётся project extension.
+- `Get`, `Set`, and `YAMLNode` remain authoritative.
+- Add a generic decode/encode helper for caller-owned structs.
+- Do not introduce a monolithic `FrontmatterSchema`.
+- Accessors return copies and do not share mutable slices/maps with callers.
+- Typed reads do not change node style, comments, key order, or nested extensions.
+- Exclude standard v0.2 keys and legacy `timestamp` from `ExtensionKeys`;
+  `relations` remains a project extension.
 
-## 5. Attribution
+## 5. Attribution {#section006}
 
-Добавить footnote references/definitions и `Document.Attributions()`:
+Add footnote references/definitions and `Document.Attributions()`:
 
-- join key — `sources[].id`;
-- source order не имеет значения;
-- markers/definitions в fenced и inline code игнорируются;
-- unknown/duplicate IDs остаются видимыми, не фильтруются молча;
-- prose footnote definition не заменяет structured source;
-- legacy `Citation` API сохраняется.
+- the join key is `sources[].id`;
+- source order does not matter;
+- ignore markers/definitions in fenced and inline code;
+- unknown/duplicate IDs remain visible and are not silently filtered;
+- a prose footnote definition does not replace a structured source;
+- preserve the legacy `Citation` API.
 
-## 6. Bundle assets и path values
+## 6. Bundle assets and path values {#section007}
 
-- `Load` сохраняет все revision-visible regular files.
-- `MarkdownFiles()` сохраняет прежнюю семантику.
-- Добавить `Files()`/`AssetFiles()` с defensive copies.
-- `ReadFile()` читает captured `.sql`, `.py`, `.json` без повторного I/O.
-- Сохранить no-follow/special-file/`.okf` security contract.
-- Добавить resolver для URL, bundle-relative и relative path values.
-- Scope descriptor не считать локальным path.
+- `Load` retains all revision-visible regular files.
+- `MarkdownFiles()` retains its existing semantics.
+- Add `Files()`/`AssetFiles()` with defensive copies.
+- `ReadFile()` reads captured `.sql`, `.py`, and `.json` files without further I/O.
+- Preserve the no-follow/special-file/`.okf` security contract.
+- Add a resolver for URLs, bundle-relative paths, and relative path values.
+- Do not treat a scope descriptor as a local path.
 
-## 7. Semantic extension collision
+## 7. Semantic extension collision {#section008}
 
-- `sources[].id` не является `concept#fragment`.
-- Standard family mappings не становятся implicit relation sources.
-- Duplicate source IDs не создают `duplicate_fragment`.
-- Настоящие producer extension subresources продолжают индексироваться.
+- `sources[].id` is not `concept#fragment`.
+- Standard family mappings do not become implicit relation sources.
+- Duplicate source IDs do not produce `duplicate_fragment`.
+- Continue indexing actual producer extension subresources.
 
-## 8. Conformance и compatibility
+## 8. Conformance and compatibility {#section009}
 
-`Document.ValidateConformance()` не расширять: hard requirement — только
-parseable frontmatter и непустой string `type`.
+Do not expand `Document.ValidateConformance()`: its hard requirement remains
+parseable frontmatter and a non-empty string `type`.
 
-- Optional family может отсутствовать.
-- Malformed optional family не ломает `Bundle.Load`.
-- `Timestamp()` сохранить как deprecated legacy accessor.
-- `generated.at` authoritative; malformed присутствующий `generated` не должен
-  тихо fallback'иться в `timestamp`.
-- Никакой миграции при чтении/serialization.
+- An optional field family may be absent.
+- A malformed optional family does not break `Bundle.Load`.
+- Keep `Timestamp()` as a deprecated legacy accessor.
+- `generated.at` is authoritative; a malformed present `generated` must not
+  silently fall back to `timestamp`.
+- No migration during reading/serialization.
 
-## 9. Файлы
+## 9. Files {#section010}
 
 - `bundle/doc.go`;
-- `bundle/frontmatter.go`, новый `frontmatter_v02.go`;
+- `bundle/frontmatter.go`, new `frontmatter_v02.go`;
 - `bundle/document.go`;
-- `bundle/links.go` или новый `attribution.go`;
+- `bundle/links.go` or new `attribution.go`;
 - `bundle/bundle.go`;
 - `bundle/semantic_index.go`;
 - `bundle/relations.go`;
-- package tests и canonical fixtures.
+- package tests and canonical fixtures.
 
-## 10. Tests
+## 10. Tests {#section011}
 
-Все tests — AAA.
+All tests use AAA.
 
-- Полный Appendix A.
-- Bare/list `verified`.
-- Все trust tiers.
+- Complete Appendix A.
+- Mapping/list forms of `verified`.
+- All trust tiers.
 - Missing status → stable.
-- Stale boundary `today == stale_after`.
-- Generated present without `at` не fallback'ится.
-- Shared/per-source usage window.
-- Unknown/malformed nested shapes не panic'ят и не исчезают.
+- Staleness boundary `today == stale_after`.
+- Present `generated` without `at` does not fall back.
+- Shared/per-source usage windows.
+- Unknown/malformed nested shapes neither panic nor disappear.
 - Footnote reorder/repeat/unknown/definition/code cases.
-- Parse → typed read → serialize сохраняет unknown bytes/semantics.
-- `sources[].id` не появляется в subresource/relation indexes.
-- `.sql/.py` captured и revision-visible.
-- Existing v0.1 tests не регрессируют.
+- Parse → typed read → serialize preserves unknown bytes/semantics.
+- `sources[].id` does not appear in subresource/relation indexes.
+- `.sql/.py` files are captured and revision-visible.
+- Existing v0.1 tests do not regress.
 
-## 11. Acceptance criteria
+## 11. Acceptance criteria {#section012}
 
 - `bundle.OKFVersion == "0.2"`.
-- SDK читает все поля §§5 и 10 без ручного YAML traversal.
-- BYOT и unknown extension round-trip доказаны.
-- Assets доступны из immutable loaded bundle.
-- Legacy API остаётся рабочим.
-- `go test ./bundle` и `go test ./...` проходят.
+- The SDK reads all fields from §§5 and 10 without manual YAML traversal.
+- BYOT and round-tripping of unknown extensions are demonstrated.
+- Assets are available from the immutable loaded bundle.
+- The legacy API remains operational.
+- `go test ./bundle` and `go test ./...` pass.
 
-## 12. Out of scope
+## 12. Out of scope {#section013}
 
 Execution, parameter binding, runtime receipts/verdicts, attester ABI/sandbox,
-caching и автоматическая миграция.
+caching, and automatic migration.

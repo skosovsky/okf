@@ -1,5 +1,5 @@
 title: Open Knowledge Format
-description: Markdown knowledge bundles for humans and AI agents.
+description: Keep project rules and decisions in Markdown with links to their sources.
 theme: jekyll-theme-minimal
 repository: skosovsky/okf
 url: https://skosovsky.github.io
@@ -24,3 +24,5 @@ defaults:
       path: "ru"
     values:
       lang: ru
+      title: OKF — знания проекта
+      description: Правила и решения проекта в Markdown со ссылками на источники.

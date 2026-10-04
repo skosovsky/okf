@@ -1,4 +1,18 @@
-# Parser-backed lossless mutations: overlay baseline vs result
+---
+title: "Parser-backed lossless mutations: overlay baseline vs result"
+description: "Historical verification and performance evidence."
+lang: en
+permalink: /parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/
+documentation_id: docs-parser-backed-lossless-mutations-profiles-overlay-baseline-vs-result-2026-07-20
+status: historical
+source_revision: 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+---
+
+{% include nav.html %}
+
+> Historical record. Measurements and status refer to the original report date. Read the [English original at revision `61e75e9`](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/docs/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md).
+
+# Parser-backed lossless mutations: overlay baseline vs result {#parser-backed-lossless-mutations-overlay-baseline-vs-result}
 
 Recorded 2026-07-20 on `darwin/arm64`, Apple M1 Max, Go 1.26.5. Both sides
 use `BenchmarkParserBackedOverlayComparison`, the same 10,000-file fixtures,
