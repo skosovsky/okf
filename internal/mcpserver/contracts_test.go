@@ -28,6 +28,9 @@ var advertisedContractRows = []advertisedContractRow{
 	{name: "list_concepts", readOnly: true, handler: handleListConcepts, input: func(_ *testing.T, root string) map[string]any {
 		return map[string]any{"bundle_path": root}
 	}},
+	{name: "search_sections", readOnly: true, handler: handleSearchSections, input: func(_ *testing.T, root string) map[string]any {
+		return map[string]any{"bundle_path": root, "query": "Alpha"}
+	}},
 	{name: "search_concepts", readOnly: true, handler: handleSearchConcepts, input: func(_ *testing.T, root string) map[string]any {
 		return map[string]any{"bundle_path": root, "query": "alpha"}
 	}},
@@ -97,8 +100,8 @@ var advertisedContractRows = []advertisedContractRow{
 
 func TestAdvertisedContractMatrix(t *testing.T) {
 	// Arrange.
-	if len(advertisedContractRows) != 13 {
-		t.Fatalf("advertised rows = %d, want 13", len(advertisedContractRows))
+	if len(advertisedContractRows) != 14 {
+		t.Fatalf("advertised rows = %d, want 14", len(advertisedContractRows))
 	}
 	tools := mustServerTools(t)
 	if len(tools) != len(advertisedContractRows) {
@@ -172,8 +175,8 @@ func TestCheckedInSchemaClosureMatrix(t *testing.T) {
 	for _, row := range advertisedContractRows {
 		contracts = append(contracts, row.name+".input", row.name+".output")
 	}
-	if len(contracts) != 30 {
-		t.Fatalf("schema descriptors = %d, want 30", len(contracts))
+	if len(contracts) != 32 {
+		t.Fatalf("schema descriptors = %d, want 32", len(contracts))
 	}
 	for _, name := range contracts {
 		t.Run(name, func(t *testing.T) {

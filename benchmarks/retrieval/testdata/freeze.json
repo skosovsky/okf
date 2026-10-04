@@ -1,0 +1,15 @@
+{
+  "baseline_commit": "8e822ea631caaac058fb40aa65c5821352048278",
+  "files": {
+    "benchmarks/retrieval/testdata/corpus/cache.md": "ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4",
+    "benchmarks/retrieval/testdata/corpus/index.md": "a8e4fcfb9f90d4c3ae671435313122f7d3ace9b6f8ad7e4307aaa7af3af7f7b7",
+    "benchmarks/retrieval/testdata/corpus/leases.md": "631f98d4c41281eaac4396139d07f4a982d8aa55776739cd0df055ddb32be929",
+    "benchmarks/retrieval/testdata/corpus/migrations.md": "30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a",
+    "benchmarks/retrieval/testdata/corpus/outbox.md": "c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7",
+    "benchmarks/retrieval/testdata/corpus/retries.md": "b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702",
+    "benchmarks/retrieval/testdata/corpus/secrets.md": "438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9",
+    "benchmarks/retrieval/testdata/queries.json": "bffe859ed90191aad7872cd22a795281a681d7075c5aca1172fb69c3cb489b54"
+  },
+  "corpus_digest": "ceb1375f8011b68797803066e3f4170652d9ab7ec5f0c694943099117e515e81",
+  "phase": "frozen before section-search implementation"
+}

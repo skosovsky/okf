@@ -1,0 +1,1094 @@
+{
+  "tool": "search_sections",
+  "server_sha256": "fd172246a53160ef901feb7730694600e62766c96a57f699e665621ba4ff3a7c",
+  "frozen_corpus_sha256": "ceb1375f8011b68797803066e3f4170652d9ab7ec5f0c694943099117e515e81",
+  "expected_snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+  "queries_sha256": "bffe859ed90191aad7872cd22a795281a681d7075c5aca1172fb69c3cb489b54",
+  "comparison_mapping": "Document-level: each arm returns at most five hits. Stable first occurrence deduplication projects these hits to a ranked list of at most five documents; reciprocal rank uses this projected document rank. This equal five-hit budget may return fewer distinct documents in the section arm. Section identity/ranges/locators/snippets and snapshot digest are verified against the frozen source. No-answer queries are excluded from Hit/MRR and reported separately.",
+  "answerable": 20,
+  "no_answer": 4,
+  "hit_at_5": 0.95,
+  "mrr_at_5": 0.95,
+  "no_answer_nonempty": 0,
+  "rows": [
+    {
+      "id": "q01",
+      "query": "orders duplicate delivery",
+      "answerable": true,
+      "document_ids": [
+        "outbox"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 5666166,
+      "response_bytes": 1672,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"orders duplicate delivery\",\"terms\":[\"orders\",\"duplicate\",\"delivery\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"outbox\",\"path\":\"outbox.md\",\"heading\":\"Atomic delivery\",\"locator\":\"outbox.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7\",\"snippet\":\"## Atomic delivery\\nOrders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key.\\n\",\"score\":8.297846095161802,\"matched_terms\":[\"orders\",\"duplicate\",\"delivery\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "orders duplicate delivery",
+          "terms": [
+            "orders",
+            "duplicate",
+            "delivery"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "outbox",
+              "path": "outbox.md",
+              "heading": "Atomic delivery",
+              "locator": "outbox.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7",
+              "snippet": "## Atomic delivery\nOrders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key.\n",
+              "score": 8.297846095161802,
+              "matched_terms": [
+                "orders",
+                "duplicate",
+                "delivery"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q02",
+      "query": "outbox Kafka transaction",
+      "answerable": true,
+      "document_ids": [
+        "outbox"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2684541,
+      "response_bytes": 1666,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"outbox Kafka transaction\",\"terms\":[\"outbox\",\"kafka\",\"transaction\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"outbox\",\"path\":\"outbox.md\",\"heading\":\"Atomic delivery\",\"locator\":\"outbox.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7\",\"snippet\":\"## Atomic delivery\\nOrders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key.\\n\",\"score\":6.089730492188622,\"matched_terms\":[\"outbox\",\"kafka\",\"transaction\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "outbox Kafka transaction",
+          "terms": [
+            "outbox",
+            "kafka",
+            "transaction"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "outbox",
+              "path": "outbox.md",
+              "heading": "Atomic delivery",
+              "locator": "outbox.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7",
+              "snippet": "## Atomic delivery\nOrders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key.\n",
+              "score": 6.089730492188622,
+              "matched_terms": [
+                "outbox",
+                "kafka",
+                "transaction"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q03",
+      "query": "заказ повторная доставка",
+      "answerable": true,
+      "document_ids": [
+        "outbox"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 3245375,
+      "response_bytes": 2031,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"заказ повторная доставка\",\"terms\":[\"заказ\",\"повторная\",\"доставка\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"outbox\",\"path\":\"outbox.md\",\"heading\":\"Решение об отправке\",\"locator\":\"outbox.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7\",\"snippet\":\"## Решение об отправке\\nЗаказ и запись outbox сохраняются в одной транзакции базы. Диспетчер отправляет запись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события.\",\"score\":6.996830664855725,\"matched_terms\":[\"заказ\",\"повторная\",\"доставка\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "заказ повторная доставка",
+          "terms": [
+            "заказ",
+            "повторная",
+            "доставка"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "outbox",
+              "path": "outbox.md",
+              "heading": "Решение об отправке",
+              "locator": "outbox.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7",
+              "snippet": "## Решение об отправке\nЗаказ и запись outbox сохраняются в одной транзакции базы. Диспетчер отправляет запись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события.",
+              "score": 6.996830664855725,
+              "matched_terms": [
+                "заказ",
+                "повторная",
+                "доставка"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q04",
+      "query": "идентификатор события",
+      "answerable": true,
+      "document_ids": [
+        "outbox"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2061000,
+      "response_bytes": 1618,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"идентификатор события\",\"terms\":[\"идентификатор\",\"события\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"outbox\",\"path\":\"outbox.md\",\"heading\":\"Решение об отправке\",\"locator\":\"outbox.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7\",\"snippet\":\"апись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события.\",\"score\":4.195314289770752,\"matched_terms\":[\"идентификатор\",\"события\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "идентификатор события",
+          "terms": [
+            "идентификатор",
+            "события"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "outbox",
+              "path": "outbox.md",
+              "heading": "Решение об отправке",
+              "locator": "outbox.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "c1a534a8fa3826a0690b7e6465b7d8fdd2e4af67a9c8b4c06d0dc4a549bf8cc7",
+              "snippet": "апись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события.",
+              "score": 4.195314289770752,
+              "matched_terms": [
+                "идентификатор",
+                "события"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q05",
+      "query": "retry deadline attempts",
+      "answerable": true,
+      "document_ids": [
+        "retries"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 4722041,
+      "response_bytes": 1648,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"retry deadline attempts\",\"terms\":[\"retry\",\"deadline\",\"attempts\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"retries\",\"path\":\"retries.md\",\"heading\":\"Retry budget\",\"locator\":\"retries.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702\",\"snippet\":\"## Retry budget\\nTransient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload.\\n\",\"score\":6.909426183664641,\"matched_terms\":[\"retry\",\"deadline\",\"attempts\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "retry deadline attempts",
+          "terms": [
+            "retry",
+            "deadline",
+            "attempts"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "retries",
+              "path": "retries.md",
+              "heading": "Retry budget",
+              "locator": "retries.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702",
+              "snippet": "## Retry budget\nTransient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload.\n",
+              "score": 6.909426183664641,
+              "matched_terms": [
+                "retry",
+                "deadline",
+                "attempts"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q06",
+      "query": "authentication failures",
+      "answerable": true,
+      "document_ids": [
+        "retries"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2156708,
+      "response_bytes": 1636,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"authentication failures\",\"terms\":[\"authentication\",\"failures\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"retries\",\"path\":\"retries.md\",\"heading\":\"Retry budget\",\"locator\":\"retries.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702\",\"snippet\":\"## Retry budget\\nTransient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload.\\n\",\"score\":5.265930399407482,\"matched_terms\":[\"authentication\",\"failures\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "authentication failures",
+          "terms": [
+            "authentication",
+            "failures"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "retries",
+              "path": "retries.md",
+              "heading": "Retry budget",
+              "locator": "retries.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702",
+              "snippet": "## Retry budget\nTransient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload.\n",
+              "score": 5.265930399407482,
+              "matched_terms": [
+                "authentication",
+                "failures"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q07",
+      "query": "повтор бюджет нагрузку",
+      "answerable": true,
+      "document_ids": [
+        "retries"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 3544750,
+      "response_bytes": 2057,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"повтор бюджет нагрузку\",\"terms\":[\"повтор\",\"бюджет\",\"нагрузку\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"retries\",\"path\":\"retries.md\",\"heading\":\"Повтор запросов\",\"locator\":\"retries.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702\",\"snippet\":\"## Повтор запросов\\nВременные HTTP ошибки допускают повтор с экспоненциальной задержкой и случайным разбросом. Максимум три попытки внутри deadline. Ошибки авторизации не повторяются; общий бюджет ограничивает нагрузку.\",\"score\":9.260161755440597,\"matched_terms\":[\"повтор\",\"бюджет\",\"нагрузку\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "повтор бюджет нагрузку",
+          "terms": [
+            "повтор",
+            "бюджет",
+            "нагрузку"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "retries",
+              "path": "retries.md",
+              "heading": "Повтор запросов",
+              "locator": "retries.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "b322662c4fd9756841210a1f8de2819d73a3e5a9bd3fd8d13a77457fe14da702",
+              "snippet": "## Повтор запросов\nВременные HTTP ошибки допускают повтор с экспоненциальной задержкой и случайным разбросом. Максимум три попытки внутри deadline. Ошибки авторизации не повторяются; общий бюджет ограничивает нагрузку.",
+              "score": 9.260161755440597,
+              "matched_terms": [
+                "повтор",
+                "бюджет",
+                "нагрузку"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q08",
+      "query": "cache product revision",
+      "answerable": true,
+      "document_ids": [
+        "cache"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2409250,
+      "response_bytes": 1592,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"cache product revision\",\"terms\":[\"cache\",\"product\",\"revision\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"cache\",\"path\":\"cache.md\",\"heading\":\"Revision keys\",\"locator\":\"cache.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4\",\"snippet\":\"## Revision keys\\nThe catalog cache includes the product revision in each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices.\\n\",\"score\":9.956934082138316,\"matched_terms\":[\"cache\",\"product\",\"revision\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "cache product revision",
+          "terms": [
+            "cache",
+            "product",
+            "revision"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "cache",
+              "path": "cache.md",
+              "heading": "Revision keys",
+              "locator": "cache.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4",
+              "snippet": "## Revision keys\nThe catalog cache includes the product revision in each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices.\n",
+              "score": 9.956934082138316,
+              "matched_terms": [
+                "cache",
+                "product",
+                "revision"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q09",
+      "query": "cached prices payment",
+      "answerable": true,
+      "document_ids": [
+        "cache"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 1879875,
+      "response_bytes": 1451,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"cached prices payment\",\"terms\":[\"cached\",\"prices\",\"payment\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"cache\",\"path\":\"cache.md\",\"heading\":\"Revision keys\",\"locator\":\"cache.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4\",\"snippet\":\"n each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices.\\n\",\"score\":7.421332948676108,\"matched_terms\":[\"cached\",\"prices\",\"payment\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "cached prices payment",
+          "terms": [
+            "cached",
+            "prices",
+            "payment"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "cache",
+              "path": "cache.md",
+              "heading": "Revision keys",
+              "locator": "cache.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4",
+              "snippet": "n each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices.\n",
+              "score": 7.421332948676108,
+              "matched_terms": [
+                "cached",
+                "prices",
+                "payment"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q10",
+      "query": "кэш ревизию товара",
+      "answerable": true,
+      "document_ids": [
+        "cache"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 3791375,
+      "response_bytes": 1899,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"кэш ревизию товара\",\"terms\":[\"кэш\",\"ревизию\",\"товара\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"cache\",\"path\":\"cache.md\",\"heading\":\"Ключи каталога\",\"locator\":\"cache.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4\",\"snippet\":\"## Ключи каталога\\nКэш каталога использует ревизию товара в ключе. Изменение товара создаёт новую ревизию. Записи истекают через десять минут. Авторизация платежа не использует цену из кэша.\",\"score\":9.16591309306727,\"matched_terms\":[\"кэш\",\"ревизию\",\"товара\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "кэш ревизию товара",
+          "terms": [
+            "кэш",
+            "ревизию",
+            "товара"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "cache",
+              "path": "cache.md",
+              "heading": "Ключи каталога",
+              "locator": "cache.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "ba96c54f63c877ae33981696292cc478a4c403bec066b685244fd6958ff3f8d4",
+              "snippet": "## Ключи каталога\nКэш каталога использует ревизию товара в ключе. Изменение товара создаёт новую ревизию. Записи истекают через десять минут. Авторизация платежа не использует цену из кэша.",
+              "score": 9.16591309306727,
+              "matched_terms": [
+                "кэш",
+                "ревизию",
+                "товара"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q11",
+      "query": "lease expired worker token",
+      "answerable": true,
+      "document_ids": [
+        "leases"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2431500,
+      "response_bytes": 1612,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"lease expired worker token\",\"terms\":[\"lease\",\"expired\",\"worker\",\"token\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"leases\",\"path\":\"leases.md\",\"heading\":\"Lease ownership\",\"locator\":\"leases.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"631f98d4c41281eaac4396139d07f4a982d8aa55776739cd0df055ddb32be929\",\"snippet\":\"## Lease ownership\\nA worker claims a job with a lease token and renews the lease every ten seconds. Finishing a job requires the current token. An expired worker cannot acknowledge a job after another worker acquires ownership.\\n\",\"score\":12.428282719644837,\"matched_terms\":[\"lease\",\"expired\",\"worker\",\"token\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "lease expired worker token",
+          "terms": [
+            "lease",
+            "expired",
+            "worker",
+            "token"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "leases",
+              "path": "leases.md",
+              "heading": "Lease ownership",
+              "locator": "leases.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "631f98d4c41281eaac4396139d07f4a982d8aa55776739cd0df055ddb32be929",
+              "snippet": "## Lease ownership\nA worker claims a job with a lease token and renews the lease every ten seconds. Finishing a job requires the current token. An expired worker cannot acknowledge a job after another worker acquires ownership.\n",
+              "score": 12.428282719644837,
+              "matched_terms": [
+                "lease",
+                "expired",
+                "worker",
+                "token"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q12",
+      "query": "renew lease seconds",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 3327542,
+      "response_bytes": 466,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"renew lease seconds\",\"terms\":[\"renew\",\"lease\",\"seconds\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "renew lease seconds",
+          "terms": [
+            "renew",
+            "lease",
+            "seconds"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q13",
+      "query": "воркер токен владельца",
+      "answerable": true,
+      "document_ids": [
+        "leases"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 4606459,
+      "response_bytes": 2007,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"воркер токен владельца\",\"terms\":[\"воркер\",\"токен\",\"владельца\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"leases\",\"path\":\"leases.md\",\"heading\":\"Владение задачей\",\"locator\":\"leases.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"631f98d4c41281eaac4396139d07f4a982d8aa55776739cd0df055ddb32be929\",\"snippet\":\"## Владение задачей\\nВоркер получает задачу с токеном аренды и продлевает аренду каждые десять секунд. Завершение требует текущий токен. Старый воркер не может подтвердить задачу после смены владельца.\",\"score\":8.122481147317245,\"matched_terms\":[\"воркер\",\"токен\",\"владельца\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "воркер токен владельца",
+          "terms": [
+            "воркер",
+            "токен",
+            "владельца"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "leases",
+              "path": "leases.md",
+              "heading": "Владение задачей",
+              "locator": "leases.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "631f98d4c41281eaac4396139d07f4a982d8aa55776739cd0df055ddb32be929",
+              "snippet": "## Владение задачей\nВоркер получает задачу с токеном аренды и продлевает аренду каждые десять секунд. Завершение требует текущий токен. Старый воркер не может подтвердить задачу после смены владельца.",
+              "score": 8.122481147317245,
+              "matched_terms": [
+                "воркер",
+                "токен",
+                "владельца"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q14",
+      "query": "column readers rollback",
+      "answerable": true,
+      "document_ids": [
+        "migrations"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2522667,
+      "response_bytes": 1682,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"column readers rollback\",\"terms\":[\"column\",\"readers\",\"rollback\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"migrations\",\"path\":\"migrations.md\",\"heading\":\"Expand and contract\",\"locator\":\"migrations.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a\",\"snippet\":\"## Expand and contract\\nDeploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed.\\n\",\"score\":6.8944282504857455,\"matched_terms\":[\"column\",\"readers\",\"rollback\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "column readers rollback",
+          "terms": [
+            "column",
+            "readers",
+            "rollback"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "migrations",
+              "path": "migrations.md",
+              "heading": "Expand and contract",
+              "locator": "migrations.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a",
+              "snippet": "## Expand and contract\nDeploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed.\n",
+              "score": 6.8944282504857455,
+              "matched_terms": [
+                "column",
+                "readers",
+                "rollback"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q15",
+      "query": "backfill bounded batches",
+      "answerable": true,
+      "document_ids": [
+        "migrations"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 5919666,
+      "response_bytes": 1674,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"backfill bounded batches\",\"terms\":[\"backfill\",\"bounded\",\"batches\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"migrations\",\"path\":\"migrations.md\",\"heading\":\"Expand and contract\",\"locator\":\"migrations.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a\",\"snippet\":\"pand and contract\\nDeploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed.\\n\",\"score\":5.95047098022286,\"matched_terms\":[\"backfill\",\"bounded\",\"batches\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "backfill bounded batches",
+          "terms": [
+            "backfill",
+            "bounded",
+            "batches"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "migrations",
+              "path": "migrations.md",
+              "heading": "Expand and contract",
+              "locator": "migrations.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a",
+              "snippet": "pand and contract\nDeploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed.\n",
+              "score": 5.95047098022286,
+              "matched_terms": [
+                "backfill",
+                "bounded",
+                "batches"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q16",
+      "query": "откате колонки читателей",
+      "answerable": true,
+      "document_ids": [
+        "migrations"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2390250,
+      "response_bytes": 1780,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"откате колонки читателей\",\"terms\":[\"откате\",\"колонки\",\"читателей\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"migrations\",\"path\":\"migrations.md\",\"heading\":\"Изменение схемы\",\"locator\":\"migrations.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a\",\"snippet\":\"и заполнить небольшими пакетами. Удалить старую колонку после переключения всех читателей. При откате обе колонки сохраняются.\",\"score\":7.164816817905985,\"matched_terms\":[\"откате\",\"колонки\",\"читателей\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "откате колонки читателей",
+          "terms": [
+            "откате",
+            "колонки",
+            "читателей"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "migrations",
+              "path": "migrations.md",
+              "heading": "Изменение схемы",
+              "locator": "migrations.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "30586cf635f631c26b8e1f0c6070acceafc4d7965b39443574409ea8e723ae1a",
+              "snippet": "и заполнить небольшими пакетами. Удалить старую колонку после переключения всех читателей. При откате обе колонки сохраняются.",
+              "score": 7.164816817905985,
+              "matched_terms": [
+                "откате",
+                "колонки",
+                "читателей"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q17",
+      "query": "credential rotation revoke",
+      "answerable": true,
+      "document_ids": [
+        "secrets"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2219167,
+      "response_bytes": 1618,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"credential rotation revoke\",\"terms\":[\"credential\",\"rotation\",\"revoke\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"secrets\",\"path\":\"secrets.md\",\"heading\":\"Rotation overlap\",\"locator\":\"secrets.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9\",\"snippet\":\"## Rotation overlap\\nService credentials rotate with an overlap period. Issue a second credential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value.\\n\",\"score\":8.160250980332874,\"matched_terms\":[\"credential\",\"rotation\",\"revoke\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "credential rotation revoke",
+          "terms": [
+            "credential",
+            "rotation",
+            "revoke"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "secrets",
+              "path": "secrets.md",
+              "heading": "Rotation overlap",
+              "locator": "secrets.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9",
+              "snippet": "## Rotation overlap\nService credentials rotate with an overlap period. Issue a second credential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value.\n",
+              "score": 8.160250980332874,
+              "matched_terms": [
+                "credential",
+                "rotation",
+                "revoke"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q18",
+      "query": "logs secret value",
+      "answerable": true,
+      "document_ids": [
+        "secrets"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2266500,
+      "response_bytes": 1381,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"logs secret value\",\"terms\":[\"logs\",\"secret\",\"value\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"secrets\",\"path\":\"secrets.md\",\"heading\":\"Rotation overlap\",\"locator\":\"secrets.md#L8-L10\",\"line_start\":8,\"line_end\":10,\"content_sha256\":\"438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9\",\"snippet\":\"ential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value.\\n\",\"score\":6.836541254163988,\"matched_terms\":[\"logs\",\"secret\",\"value\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "logs secret value",
+          "terms": [
+            "logs",
+            "secret",
+            "value"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "secrets",
+              "path": "secrets.md",
+              "heading": "Rotation overlap",
+              "locator": "secrets.md#L8-L10",
+              "line_start": 8,
+              "line_end": 10,
+              "content_sha256": "438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9",
+              "snippet": "ential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value.\n",
+              "score": 6.836541254163988,
+              "matched_terms": [
+                "logs",
+                "secret",
+                "value"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q19",
+      "query": "ротация идентификатор секретное",
+      "answerable": true,
+      "document_ids": [
+        "secrets"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 3242542,
+      "response_bytes": 2261,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"ротация идентификатор секретное\",\"terms\":[\"ротация\",\"идентификатор\",\"секретное\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"secrets\",\"path\":\"secrets.md\",\"heading\":\"Ротация доступа\",\"locator\":\"secrets.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9\",\"snippet\":\"## Ротация доступа\\nСервисные учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено.\",\"score\":8.55536251130905,\"matched_terms\":[\"ротация\",\"идентификатор\",\"секретное\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "ротация идентификатор секретное",
+          "terms": [
+            "ротация",
+            "идентификатор",
+            "секретное"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "secrets",
+              "path": "secrets.md",
+              "heading": "Ротация доступа",
+              "locator": "secrets.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9",
+              "snippet": "## Ротация доступа\nСервисные учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено.",
+              "score": 8.55536251130905,
+              "matched_terms": [
+                "ротация",
+                "идентификатор",
+                "секретное"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q20",
+      "query": "потребителей проверить отозвать",
+      "answerable": true,
+      "document_ids": [
+        "secrets"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 1988333,
+      "response_bytes": 2158,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"потребителей проверить отозвать\",\"terms\":[\"потребителей\",\"проверить\",\"отозвать\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":1,\"truncated\":false,\"hits\":[{\"concept_id\":\"secrets\",\"path\":\"secrets.md\",\"heading\":\"Ротация доступа\",\"locator\":\"secrets.md#L11-L12\",\"line_start\":11,\"line_end\":12,\"content_sha256\":\"438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9\",\"snippet\":\" учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено.\",\"score\":7.251871518611061,\"matched_terms\":[\"потребителей\",\"проверить\",\"отозвать\"]}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "потребителей проверить отозвать",
+          "terms": [
+            "потребителей",
+            "проверить",
+            "отозвать"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept_id": "secrets",
+              "path": "secrets.md",
+              "heading": "Ротация доступа",
+              "locator": "secrets.md#L11-L12",
+              "line_start": 11,
+              "line_end": 12,
+              "content_sha256": "438c277d8830d2861af7893cf49b68bbc8093fe40382b4416c1f2b7ec97922d9",
+              "snippet": " учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено.",
+              "score": 7.251871518611061,
+              "matched_terms": [
+                "потребителей",
+                "проверить",
+                "отозвать"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q21",
+      "query": "quantum qubits entanglement",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 5305875,
+      "response_bytes": 498,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"quantum qubits entanglement\",\"terms\":[\"quantum\",\"qubits\",\"entanglement\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "quantum qubits entanglement",
+          "terms": [
+            "quantum",
+            "qubits",
+            "entanglement"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q22",
+      "query": "рецепт борща свёкла",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2634291,
+      "response_bytes": 534,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"рецепт борща свёкла\",\"terms\":[\"рецепт\",\"борща\",\"свёкла\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "рецепт борща свёкла",
+          "terms": [
+            "рецепт",
+            "борща",
+            "свёкла"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q23",
+      "query": "satellite orbital telescope",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1705125,
+      "response_bytes": 498,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"satellite orbital telescope\",\"terms\":[\"satellite\",\"orbital\",\"telescope\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "satellite orbital telescope",
+          "terms": [
+            "satellite",
+            "orbital",
+            "telescope"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q24",
+      "query": "нейроны синапсы аксоны",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2839791,
+      "response_bytes": 558,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"нейроны синапсы аксоны\",\"terms\":[\"нейроны\",\"синапсы\",\"аксоны\"],\"snapshot_revision\":\"9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821\",\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "нейроны синапсы аксоны",
+          "terms": [
+            "нейроны",
+            "синапсы",
+            "аксоны"
+          ],
+          "snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    }
+  ]
+}

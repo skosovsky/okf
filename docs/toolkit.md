@@ -268,7 +268,7 @@ Compatibility tools retain their text fallbacks:
 
 Two additional read-only tools, `search_concepts` and `get_neighbors`, provide
 bounded literal search and concept neighborhoods with distinct navigation,
-relation, and provenance source results. The server exposes thirteen tools. Its
+relation, and provenance source results. The server exposes fourteen tools. Its
 six v0.2 mutation workflow tools are preview/apply pairs:
 
 - `preview_concept_patch` / `apply_concept_patch`
@@ -323,3 +323,5 @@ summarized in [MCP mutation and trust boundary]({{ '/contracts/mcp-mutation-trus
   and MUST NOT author or edit the sanctioned computation.
 - The toolkit does not define or invent parameter binding, receipt/verdict
   protocol, attester ABI, sandbox, or cache.
+
+`search_sections` adds multi-term section search with snippets, source lines, and file digests. `search_concepts` keeps its literal search. See the [section search contract]({{ '/contracts/section-search/' | relative_url }}).

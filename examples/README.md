@@ -1,21 +1,14 @@
-# OKF v0.2 examples
+# Examples
 
-Executable examples are stored in the shared
-[`fixtures/v02/corpus.yaml`](../fixtures/v02/corpus.yaml) instead of being
-copied here.
+Start with [the repository knowledge demo](https://skosovsky.github.io/okf/demo/knowledge.html#architecture). **Package boundaries** answers “Where should an implementation change go?” and links to sources and related notes. The source files are in [knowledge/](../knowledge/index.md).
 
-Start with:
+The [quickstart](../docs/quickstart.md) reproduces the viewer and creates a two-note fictional service example from supplied requirements. That exercise is explicitly synthetic; the repository knowledge instead cites actual repository files.
 
-- `positive/minimal` for the type-only base contract;
-- `positive/canonical` for human authoring, keyed sources, bare/list
-  verification, lifecycle states, and inline/file computation;
-- `positive/appendix-a` for the pinned end-to-end example;
-- `compat/*` for intentional v0.1, mixed, and future consumption;
-- `adversarial/optional-shapes` for malformed optional-family guidance.
+For implementation testing, [fixtures/v02/corpus.yaml](../fixtures/v02/corpus.yaml) covers:
 
-All repository-authored synthetic examples use reserved domains such as
-`example.invalid`. Computation, executor, and attester files are inert fixture
-data; they are not an executable runtime contract.
+- `positive/minimal`: required fields.
+- `positive/canonical` and `positive/appendix-a`: sources, verification, lifecycle, and computation metadata.
+- `compat/*`: v0.1, mixed provenance, and future version reading.
+- `adversarial/optional-shapes`: malformed optional fields.
 
-For migration, use [the migration guide](../docs/migration.md). Do not copy
-legacy fields into new v0.2 authoring.
+Synthetic fixture URLs use reserved domains such as `example.invalid`. Computation, executor, and attester files are inert test data. See the [migration guide](../docs/migration.md) before converting legacy documents.

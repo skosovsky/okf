@@ -79,7 +79,7 @@ send content to a server.
    or link the HTML artifact. Export success alone is not visual inspection and
    does not verify concept claims.
 
-**Fallback:** There is no MCP viewer export in the current 13-tool catalog.
+**Fallback:** There is no MCP viewer export in the current 14-tool catalog.
 If CLI/build/browser is missing or unsupported, report that limitation and
 provide selected Markdown/graph results if available. Do not fetch a remote
 viewer, upload bundle content, or pretend a local HTML was inspected. On

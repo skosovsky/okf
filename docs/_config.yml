@@ -19,3 +19,8 @@ defaults:
       path: ""
     values:
       layout: default
+
+  - scope:
+      path: "ru"
+    values:
+      lang: ru

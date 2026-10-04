@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "query",
+    "terms",
+    "snapshot_revision",
+    "total",
+    "truncated",
+    "hits"
+  ],
+  "properties": {
+    "query": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "terms": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "maxLength": 4096
+      }
+    },
+    "snapshot_revision": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "hits": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept_id",
+          "path",
+          "heading",
+          "locator",
+          "line_start",
+          "line_end",
+          "content_sha256",
+          "snippet",
+          "score",
+          "matched_terms"
+        ],
+        "properties": {
+          "concept_id": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "heading": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 12350
+          },
+          "line_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "line_end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "snippet": {
+            "type": "string",
+            "maxLength": 512
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0
+          },
+          "matched_terms": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -35,3 +35,23 @@ the embedded script by hash. External source links open only on a user click.
 
 Output is staged in a sibling temporary file and published atomically.
 Concept Markdown and `.okf/` store paths are never valid output targets.
+
+## Sources and deep-link contract
+
+The Sources panel follows the document's effective provenance rules. A YAML
+`sources` key replaces legacy `# Citations` by presence, including an empty,
+null, malformed, or duplicate replacement. Only valid structured entries are
+projected; invalid replacements never reactivate legacy citations. If `sources`
+is absent, parser-owned legacy citation entries appear in document order.
+Their available title and resource are preserved without inventing a source ID,
+URL, verification, or trust. Text-only entries have an empty resource and display
+their text. The original Citations section remains in the rendered body.
+
+An existing ConceptID always takes precedence when resolving the decoded hash,
+including IDs beginning with `fn:` or `fnref:`. Percent-encoded deep links and
+browser Back/Forward use the same route. Actual Goldmark footnote links and
+backlinks scroll within the current card without changing its concept route;
+an existing footnote anchor hash preserves that card. Unknown hashes retain the
+existing fallback to the first concept. Footnote labels are not source records.
+Repeated footnote references use Goldmark's numbered `fnref1:`, `fnref2:`, etc.
+backlink anchors and receive the same local scrolling behavior.

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/contracts/setup/request.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "options",
+    "apply"
+  ],
+  "properties": {
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "target",
+        "selection",
+        "type"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "selection": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "apply": {
+      "type": "boolean"
+    },
+    "plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "if": {
+    "properties": {
+      "apply": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "plan_digest"
+    ]
+  }
+}

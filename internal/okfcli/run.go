@@ -38,6 +38,8 @@ COMMANDS:
     migrate-prepare <bundle> Export fillable v0.1 migration inputs (--output-dir DIR)
     temporal-upgrade <bundle> Preview/apply explicit OKF v0.2 date-to-instant revision upgrade
     version              Show CLI and supported/default OKF versions
+    search  <bundle>    Search Markdown sections (--query TEXT, --limit N, --json)
+    setup                Preview/copy existing Markdown (--source DIR --target DIR --type TYPE)
 
 OPTIONS:
     --spec auto|0.1|0.2 Select/assert the OKF contract (default auto)
@@ -134,6 +136,10 @@ func runWithDependencies(
 		err  error
 	)
 	switch cmd {
+	case "search":
+		code, err = cmdSearch(rest, stdout)
+	case "setup":
+		code, err = cmdSetup(rest, stdout)
 	case "init":
 		code, err = cmdInit(rest, stdout)
 	case "validate":
