@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "description": "Frozen synthetic service decisions; 20 answerable and 4 no-answer EN/RU questions. Gold relevance authored before implementation.",
+  "cases": [
+    {
+      "id": "q01",
+      "query": "orders duplicate delivery",
+      "relevant": [
+        {
+          "concept_id": "outbox",
+          "heading": "Atomic delivery",
+          "line_start": 8,
+          "evidence": "Orders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key."
+        }
+      ]
+    },
+    {
+      "id": "q02",
+      "query": "outbox Kafka transaction",
+      "relevant": [
+        {
+          "concept_id": "outbox",
+          "heading": "Atomic delivery",
+          "line_start": 8,
+          "evidence": "Orders and the outbox record are written in one database transaction. The dispatcher publishes a pending record to Kafka after commit. A crash after publication can cause duplicate delivery; consumers use the event identifier as an idempotency key."
+        }
+      ]
+    },
+    {
+      "id": "q03",
+      "query": "заказ повторная доставка",
+      "relevant": [
+        {
+          "concept_id": "outbox",
+          "heading": "Решение об отправке",
+          "line_start": 11,
+          "evidence": "Заказ и запись outbox сохраняются в одной транзакции базы. Диспетчер отправляет запись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события."
+        }
+      ]
+    },
+    {
+      "id": "q04",
+      "query": "идентификатор события",
+      "relevant": [
+        {
+          "concept_id": "outbox",
+          "heading": "Решение об отправке",
+          "line_start": 11,
+          "evidence": "Заказ и запись outbox сохраняются в одной транзакции базы. Диспетчер отправляет запись в Kafka после commit. Повторная доставка допустима: потребитель проверяет идентификатор события."
+        }
+      ]
+    },
+    {
+      "id": "q05",
+      "query": "retry deadline attempts",
+      "relevant": [
+        {
+          "concept_id": "retries",
+          "heading": "Retry budget",
+          "line_start": 8,
+          "evidence": "Transient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload."
+        }
+      ]
+    },
+    {
+      "id": "q06",
+      "query": "authentication failures",
+      "relevant": [
+        {
+          "concept_id": "retries",
+          "heading": "Retry budget",
+          "line_start": 8,
+          "evidence": "Transient HTTP failures use exponential backoff with jitter. The client retries at most three attempts inside the request deadline. Authentication failures are never retried. The shared retry budget protects the downstream service from overload."
+        }
+      ]
+    },
+    {
+      "id": "q07",
+      "query": "повтор бюджет нагрузку",
+      "relevant": [
+        {
+          "concept_id": "retries",
+          "heading": "Повтор запросов",
+          "line_start": 11,
+          "evidence": "Временные HTTP ошибки допускают повтор с экспоненциальной задержкой и случайным разбросом. Максимум три попытки внутри deadline. Ошибки авторизации не повторяются; общий бюджет ограничивает нагрузку."
+        }
+      ]
+    },
+    {
+      "id": "q08",
+      "query": "cache product revision",
+      "relevant": [
+        {
+          "concept_id": "cache",
+          "heading": "Revision keys",
+          "line_start": 8,
+          "evidence": "The catalog cache includes the product revision in each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices."
+        }
+      ]
+    },
+    {
+      "id": "q09",
+      "query": "cached prices payment",
+      "relevant": [
+        {
+          "concept_id": "cache",
+          "heading": "Revision keys",
+          "line_start": 8,
+          "evidence": "The catalog cache includes the product revision in each key. A changed product obtains a new revision rather than deleting every cached entry. Entries expire after ten minutes; payment authorization never uses cached prices."
+        }
+      ]
+    },
+    {
+      "id": "q10",
+      "query": "кэш ревизию товара",
+      "relevant": [
+        {
+          "concept_id": "cache",
+          "heading": "Ключи каталога",
+          "line_start": 11,
+          "evidence": "Кэш каталога использует ревизию товара в ключе. Изменение товара создаёт новую ревизию. Записи истекают через десять минут. Авторизация платежа не использует цену из кэша."
+        }
+      ]
+    },
+    {
+      "id": "q11",
+      "query": "lease expired worker token",
+      "relevant": [
+        {
+          "concept_id": "leases",
+          "heading": "Lease ownership",
+          "line_start": 8,
+          "evidence": "A worker claims a job with a lease token and renews the lease every ten seconds. Finishing a job requires the current token. An expired worker cannot acknowledge a job after another worker acquires ownership."
+        }
+      ]
+    },
+    {
+      "id": "q12",
+      "query": "renew lease seconds",
+      "relevant": [
+        {
+          "concept_id": "leases",
+          "heading": "Lease ownership",
+          "line_start": 8,
+          "evidence": "A worker claims a job with a lease token and renews the lease every ten seconds. Finishing a job requires the current token. An expired worker cannot acknowledge a job after another worker acquires ownership."
+        }
+      ]
+    },
+    {
+      "id": "q13",
+      "query": "воркер токен владельца",
+      "relevant": [
+        {
+          "concept_id": "leases",
+          "heading": "Владение задачей",
+          "line_start": 11,
+          "evidence": "Воркер получает задачу с токеном аренды и продлевает аренду каждые десять секунд. Завершение требует текущий токен. Старый воркер не может подтвердить задачу после смены владельца."
+        }
+      ]
+    },
+    {
+      "id": "q14",
+      "query": "column readers rollback",
+      "relevant": [
+        {
+          "concept_id": "migrations",
+          "heading": "Expand and contract",
+          "line_start": 8,
+          "evidence": "Deploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed."
+        }
+      ]
+    },
+    {
+      "id": "q15",
+      "query": "backfill bounded batches",
+      "relevant": [
+        {
+          "concept_id": "migrations",
+          "heading": "Expand and contract",
+          "line_start": 8,
+          "evidence": "Deploy an additive nullable column before new writers use it. Backfill existing rows in bounded batches. Remove the old column only after all readers switch to the replacement. A rollback keeps both columns until the release is confirmed."
+        }
+      ]
+    },
+    {
+      "id": "q16",
+      "query": "откате колонки читателей",
+      "relevant": [
+        {
+          "concept_id": "migrations",
+          "heading": "Изменение схемы",
+          "line_start": 11,
+          "evidence": "Сначала добавить nullable колонку, затем обновить код записи. Старые строки заполнить небольшими пакетами. Удалить старую колонку после переключения всех читателей. При откате обе колонки сохраняются."
+        }
+      ]
+    },
+    {
+      "id": "q17",
+      "query": "credential rotation revoke",
+      "relevant": [
+        {
+          "concept_id": "secrets",
+          "heading": "Rotation overlap",
+          "line_start": 8,
+          "evidence": "Service credentials rotate with an overlap period. Issue a second credential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value."
+        }
+      ]
+    },
+    {
+      "id": "q18",
+      "query": "logs secret value",
+      "relevant": [
+        {
+          "concept_id": "secrets",
+          "heading": "Rotation overlap",
+          "line_start": 8,
+          "evidence": "Service credentials rotate with an overlap period. Issue a second credential, deploy consumers, verify adoption, then revoke the previous credential. Logs contain the credential identifier, never the secret value."
+        }
+      ]
+    },
+    {
+      "id": "q19",
+      "query": "ротация идентификатор секретное",
+      "relevant": [
+        {
+          "concept_id": "secrets",
+          "heading": "Ротация доступа",
+          "line_start": 11,
+          "evidence": "Сервисные учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено."
+        }
+      ]
+    },
+    {
+      "id": "q20",
+      "query": "потребителей проверить отозвать",
+      "relevant": [
+        {
+          "concept_id": "secrets",
+          "heading": "Ротация доступа",
+          "line_start": 11,
+          "evidence": "Сервисные учётные данные меняются с периодом перекрытия. Выпустить вторую пару, обновить потребителей, проверить использование, затем отозвать предыдущую. В логах сохраняется идентификатор, секретное значение запрещено."
+        }
+      ]
+    },
+    {
+      "id": "q21",
+      "query": "quantum qubits entanglement",
+      "relevant": []
+    },
+    {
+      "id": "q22",
+      "query": "рецепт борща свёкла",
+      "relevant": []
+    },
+    {
+      "id": "q23",
+      "query": "satellite orbital telescope",
+      "relevant": []
+    },
+    {
+      "id": "q24",
+      "query": "нейроны синапсы аксоны",
+      "relevant": []
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "product_digest": "4b41bb383a31c260213ab7cae10e69d972f89862ade3d7c9eb34470b8b080a11",
+  "checks": [
+    {
+      "command": "GOCACHE=/tmp/okf016-cache GOMODCACHE=/tmp/okf016-mod go test ./... -timeout=30m",
+      "exit_code": 0,
+      "session": 15606,
+      "log": "go-test-all.log",
+      "log_sha256": "96ecb87a39d3223ac90edfeed1186eca565bd42d77ee6d7e24c00c9839235542"
+    },
+    {
+      "command": "GOCACHE=/tmp/okf016-cache GOMODCACHE=/tmp/okf016-mod go vet ./...",
+      "exit_code": 0,
+      "session": 14542,
+      "log": "go-vet.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "node scripts/update-skills-lock.mjs --check",
+      "exit_code": 0,
+      "log": "skills-lock-check.log",
+      "log_sha256": "bd10ea24f82236665301f1a0b6d8a7351433985f1ba53cc149f1dc655195cc0d"
+    },
+    {
+      "command": "node scripts/check-skill-package.mjs",
+      "exit_code": 0,
+      "log": "skills-package-check.log",
+      "log_sha256": "73e812ecb85b1e96e378872c1b045e56058671685ecc2e741dcad3b15c2dcf96"
+    },
+    {
+      "command": "node --test scripts/check-skill-package.test.mjs",
+      "exit_code": 0,
+      "log": "skills-package-tests.log",
+      "log_sha256": "f2cd5b0026381bb76ed5adbb8148ca7c6a26738a05b533c51b7c948220777314"
+    }
+  ]
+}

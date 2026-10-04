@@ -1,0 +1,42 @@
+ok  	github.com/skosovsky/okf	0.408s
+ok  	github.com/skosovsky/okf/backfill	(cached)
+ok  	github.com/skosovsky/okf/benchmark/agent	7.019s
+ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter	(cached)
+ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter/cmd/okf-before-after	(cached)
+ok  	github.com/skosovsky/okf/benchmark/agent/cmd/codex-adapter	(cached)
+ok  	github.com/skosovsky/okf/benchmark/agent/cmd/okf-agent-eval	6.416s
+?   	github.com/skosovsky/okf/benchmark/agent/cmd/prepare-backfill	[no test files]
+ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive	9.973s
+ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/codex-upkeep-adapter	(cached)
+ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/upkeep-live	0.205s
+?   	github.com/skosovsky/okf/benchmark/agent/upkeepstudy	[no test files]
+ok  	github.com/skosovsky/okf/benchmarks/retrieval/cmd/okf-retrieval-eval	(cached)
+ok  	github.com/skosovsky/okf/benchmarks/toolkit	(cached)
+ok  	github.com/skosovsky/okf/benchmarks/toolkit/cmd/analyze	(cached)
+?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/corpusgen	[no test files]
+?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/paired	[no test files]
+ok  	github.com/skosovsky/okf/bundle	(cached)
+ok  	github.com/skosovsky/okf/cmd/okf	17.541s
+ok  	github.com/skosovsky/okf/cmd/okf-action	1.234s
+ok  	github.com/skosovsky/okf/cmd/okf-backfill	(cached)
+?   	github.com/skosovsky/okf/cmd/okf-mcp	[no test files]
+ok  	github.com/skosovsky/okf/cmd/okf-upkeep	(cached)
+ok  	github.com/skosovsky/okf/docs	1.837s
+ok  	github.com/skosovsky/okf/graph	10.924s
+ok  	github.com/skosovsky/okf/internal/documentlayout	(cached)
+?   	github.com/skosovsky/okf/internal/markdownlimit	[no test files]
+ok  	github.com/skosovsky/okf/internal/markdownowner	(cached)
+ok  	github.com/skosovsky/okf/internal/mcpserver	190.781s
+ok  	github.com/skosovsky/okf/internal/migrationpath	(cached)
+ok  	github.com/skosovsky/okf/internal/okfcli	99.549s
+ok  	github.com/skosovsky/okf/internal/receiptprojection	(cached)
+?   	github.com/skosovsky/okf/internal/temporalrequest	[no test files]
+ok  	github.com/skosovsky/okf/mutation	133.756s
+ok  	github.com/skosovsky/okf/retrieval	(cached)
+ok  	github.com/skosovsky/okf/scripts	8.537s
+ok  	github.com/skosovsky/okf/setup	(cached)
+ok  	github.com/skosovsky/okf/store	(cached)
+ok  	github.com/skosovsky/okf/store/fs	(cached)
+ok  	github.com/skosovsky/okf/upkeep	(cached)
+ok  	github.com/skosovsky/okf/validator	2.342s
+ok  	github.com/skosovsky/okf/viewer	7.891s

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_path",
+    "query"
+  ],
+  "properties": {
+    "bundle_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "description": "Accessible absolute OKF bundle root; no-follow loading."
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "\\S",
+      "description": "AND of Unicode letter/number terms, case folded and NFC; max 32 distinct terms."
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "Maximum sections, default 20; no cursor."
+    }
+  }
+}

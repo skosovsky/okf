@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/markdownowner"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
@@ -172,6 +173,26 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 		for _, s := range sourceStates {
 			if s.Valid && s.Source.Resource.Valid {
 				concept.Sources = append(concept.Sources, Source{ID: s.Value.ID, Title: s.Value.Title, Resource: s.Value.Resource})
+			}
+		}
+		fallback, err := c.Document.LegacyFallbackObservationContext(ctx)
+		if err != nil {
+			return Projection{}, err
+		}
+		if fallback.CitationsActive {
+			citations, err := markdownowner.CollectCitationSectionProjection(ctx, []byte(c.Document.Body))
+			if err != nil {
+				return Projection{}, err
+			}
+			for _, citation := range citations.Entries {
+				if err := ctx.Err(); err != nil {
+					return Projection{}, err
+				}
+				title := citation.Title
+				if title == "" {
+					title = citation.Raw
+				}
+				concept.Sources = append(concept.Sources, Source{Title: title, Resource: citation.Resource})
 			}
 		}
 		p.Concepts = append(p.Concepts, concept)

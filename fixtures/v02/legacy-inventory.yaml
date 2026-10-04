@@ -4,8 +4,8 @@ policy: >
   presence does not authorize implicit rewrite.
 occurrence_lock:
   algorithm: sha256
-  count: 370
-  sha256: c94868d1668cee0bf4cf1f740c869ad3a641ad42e59fd12bcb90f3bbde46eeec
+  count: 357
+  sha256: 6c135c863d6b4bfc49923403aef05d8dbeef3c347cc7fd5c166e1c19bf7dc292
   reason: locks exact path, byte offset, and matched legacy spelling so listed files are not blanket allowlists
 canonical_compatibility_cases:
   - compat/declared-v01/index.md
@@ -18,6 +18,8 @@ pinned_specification_history:
   - skills/open-knowledge-format/references/spec-v02.md
   - skills/open-knowledge-format/references/spec-v02-instant.md
 migration_guidance_paths:
+  - docs/reference.md
+  - docs/ru/reference.md
   - README.md
   - README.ru.md
   - docs/contracts/okf-v0.2.md

@@ -259,7 +259,7 @@ Compatibility tools сохраняют text fallbacks:
 
 Два дополнительных read-only tools, `search_concepts` и `get_neighbors`,
 возвращают ограниченные результаты поиска и соседних concepts. Server
-предоставляет тринадцать tools. Шесть v0.2 mutation workflow tools работают парами
+предоставляет 14 инструментов. Шесть v0.2 mutation workflow tools работают парами
 preview/apply:
 
 - `preview_concept_patch` / `apply_concept_patch`
@@ -313,3 +313,5 @@ exact anonymous matches отклоняются.
   MUST NOT создавать или редактировать sanctioned computation.
 - Toolkit не определяет и не выдумывает parameter binding, receipt/verdict
   protocol, attester ABI, sandbox или cache.
+
+`search_sections` добавляет поиск по нескольким словам в разделе с фрагментом, строками и digest исходника. `search_concepts` сохраняет буквальный поиск. См. [контракт поиска]({{ '/contracts/section-search/' | relative_url }}).

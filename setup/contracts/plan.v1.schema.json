@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/contracts/setup/plan.v1.schema.json",
+  "title": "Managed Markdown setup plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "options",
+    "files",
+    "diagnostics",
+    "applicable",
+    "digest",
+    "published"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "target",
+        "selection",
+        "type"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "selection": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "source_digest",
+          "output_digest"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "source_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "output_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "path",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "applicable": {
+      "type": "boolean"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{64})?$"
+    },
+    "published": {
+      "type": "boolean"
+    }
+  }
+}

@@ -66,13 +66,14 @@ conformance.
 Предпочитай подключённый сервер OKF для чтения и атомарных изменений. Проверь
 имена и schemas у реально доступного сервера: клиентский prefix задаёт host,
 поэтому вызывай инструмент `search_concepts` сервера OKF, а не угадывай
-универсальное квалифицированное имя. Сервер регистрирует 13 tools: поиск,
+универсальное квалифицированное имя. Сервер регистрирует 14 инструментов: `search_concepts` для одной подстроки,
+`search_sections` для нескольких слов в разделе;
 чтение, соседей и граф; validation; whole-document write; три пары
 preview/apply для patch, migration и temporal upgrade. Их актуальные входы
 задаются MCP schemas, а не этим текстом.
 
 Если MCP недоступен, проверь установленный Go CLI через `okf help`. Он
-поддерживает init, validate, view, migration и temporal upgrade, но не
+поддерживает init, validate, view, search, setup, migration и temporal upgrade, но не
 предоставляет MCP concept-patch CAS. Обычную правку concept выполняй как
 ручное изменение Markdown с последующей validation; не называй её атомарным
 patch. Для CLI migration/temporal upgrade используй их собственный dry-run,

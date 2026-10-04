@@ -1,413 +1,50 @@
 # okf
 
-`okf` — Go toolkit, CLI, MCP server и agent skills для
-[Open Knowledge Format (OKF) v0.2](skills/open-knowledge-format/references/spec-v02.md):
-переносимых knowledge bundles из Markdown concepts с YAML frontmatter.
+Знания о проекте рядом с кодом — для команды и AI-агентов.
 
-Репозиторий поддерживает три version mode:
+Храните архитектурные решения, ограничения и инструкции в Markdown со ссылками на источники. `okf` проверяет структуру документов, даёт агентам инструменты чтения и изменения знаний и собирает HTML, который можно открыть без сервера.
 
-- `0.2` — текущий default contract для чтения и записи;
-- `0.1` — intentional legacy для чтения, validation и migration source;
-- неизвестная future declaration — best-effort lossless consumption.
+Полезно, когда нужно:
 
-Version axes независимы (значения ниже поясняют разницу, а не показывают
-последний релиз):
+- Вспомнить, почему приняли архитектурное решение, и найти его основание.
+- Проверить ограничение перед изменением сервиса.
+- Пересмотреть знания после изменения кода.
 
-- plugin package: `0.2.0`;
-- release tag repo/Go module: `v0.2.1`;
-- OKF document spec: `okf_version: "0.2"`.
+[Посмотреть пример](https://skosovsky.github.io/okf/demo/knowledge.html#architecture) · [Попробовать локально](docs/ru/quickstart.md) · [English](README.md)
 
-Совпадающие числа не означают, что одна ось выбирает другую.
+## Что хранится на диске?
 
-English documentation: [README.md](README.md).
+Набор знаний — это папка с Markdown-заметками. В начале каждой заметки находятся метаданные YAML; `index.md` содержит список заметок. С файлами можно работать в редакторе, Git и привычном процессе ревью. По сравнению с обычной папкой Markdown, OKF добавляет общий контракт метаданных, проверку структуры, указание источников и инструменты для доступа агента и согласованных изменений.
 
-Первый локальный запуск показан в [быстром старте](docs/ru/quickstart.md).
-[Публичный viewer](https://skosovsky.github.io/okf/demo/knowledge.html) —
-воспроизводимый снимок открытого bundle `knowledge/` этого репозитория.
+[Open Knowledge Format](skills/open-knowledge-format/references/spec-v02.md) — исходный формат. Этот репозиторий — его реализация на Go: библиотеки, CLI `okf`, сервер `okf-mcp` и необязательные инструкции для агентов. Текущий контракт документов — `0.2`; чтение `0.1` и явная миграция поддерживаются. Версия релиза программы не выбирает версию документа.
 
-Собственный OKF bundle репозитория начинается в
-[knowledge/index.md](knowledge/index.md); порядок поддержки описан в
-[docs/knowledge.md](docs/knowledge.md).
+## Первый полезный вопрос
 
-## Поверхности
-
-1. `okf`: version-aware validation, inspection, formatting, indexing, graph
-   projection и explicit migration.
-2. Go packages: `bundle`, `validator`, `graph`, `store`, `store/fs` и
-   `mutation`.
-3. `okf-mcp`: schema-first stdio tools с legacy text fallbacks.
-4. [`open-knowledge-format`](skills/open-knowledge-format/SKILL.md): agent skill
-   для создания, чтения, проверки, viewer export и migration, pinned на
-   upstream v0.2 spec.
-5. [`okf-maintain`](skills/okf-maintain/SKILL.md): отдельный workflow для ревью
-   knowledge после изменений кода или контрактов репозитория.
-6. [`okf-backfill`](skills/okf-backfill/SKILL.md): восстановление knowledge по
-   истории Git через существующий Go backfill pipeline.
+Откройте **Package boundaries** в примере и задайте вопрос: «В каком пакете менять реализацию?» Заметка ссылается на руководство по библиотекам и объявление Go-модуля, а также на **Mutation boundary** и **Version resolution**. [Быстрый старт](docs/ru/quickstart.md) показывает сборку этой страницы и создание собственной заметки из предоставленного материала. [Подключение MCP](docs/ru/getting-started-mcp.md) объясняет, как подключить клиент и проверить его ответ.
 
 ## Установка
+
+Для примера из исходников нужны Git и Go **1.25.5 или новее**. Установка бинарников:
 
 ```sh
 go install github.com/skosovsky/okf/cmd/okf@latest
 go install github.com/skosovsky/okf/cmd/okf-mcp@latest
-```
-
-Проверяй binary version отдельно от поддерживаемых OKF specs:
-
-```sh
 okf version
-okf version --json
 ```
 
-Чтобы установить отдельный скил, скопируй выбранный каталог из `skills/` в
-каталог скилов своего host. Относительные Markdown-ссылки остаются внутри
-каталога скила. Для автоматических операций `open-knowledge-format` нужен
-установленный CLI `okf` либо подключённый сервер `okf-mcp`; `okf-maintain`
-дополнительно требует `okf-upkeep`, а `okf-backfill` — бинарник
-`okf-backfill` вместе с `backfill/PROTOCOL.md` и схемами toolkit. Пакет скила
-не устанавливает эти бинарники и не выдаёт разрешения инструментам. Отдельно
-проверь регистрацию скила и подключение MCP в выбранном host.
+Установка скила даёт агенту инструкции; подключение MCP даёт инструменты. Эти действия выполняются отдельно и сами по себе не гарантируют, что агент воспользуется инструментами.
 
-## Минимальный OKF v0.2 bundle
+## Что означает успешная проверка?
 
-Создать черновой bundle через Go CLI, затем заменить шаблонный concept
-сведениями из своих материалов:
+Проверка подтверждает структуру, а не истинность текста. `sources` хранит предоставленные источники, `generated` указывает известного автора, `verified` — выполненные проверки. Успешная проверка формата не подтверждает достоверность и свежесть знаний. Код внутри документов автоматически не исполняется.
 
-```sh
-okf init ./my-knowledge
-okf validate --path ./my-knowledge --spec 0.2
-```
+Демонстрация проверяет работу CLI и просмотрщика. Измерения поиска оценивают нахождение материала; они не доказывают улучшение ответов языковой модели.
 
-`init` требует новый каталог в существующем родительском каталоге. Существующие
-файл, каталог или symlink не перезаписываются. Точный контракт вывода и ошибок
-описан в [контракте CLI](docs/contracts/cli-init.md).
+## Дальше
 
-Эквивалентные минимальные файлы:
+- [Справочник](docs/ru/reference.md): версии, правила чтения, гарантии изменения и миграции, MCP и Go API.
+- [Примеры](examples/README.ru.md): знания о репозитории и тестовые случаи формата.
+- [Поддержка знаний после изменений](docs/knowledge-upkeep.md).
+- [Проверки для разработки](docs/ru/reference.md#разработка).
 
-`index.md`:
-
-```markdown
----
-okf_version: "0.2"
----
-
-# Concepts
-
-* [Minimal](minimal.md) - Minimal conformant v0.2 concept.
-```
-
-`minimal.md`:
-
-```markdown
----
-type: Unknown Producer Type
----
-
-Minimal conformant v0.2 concept.
-```
-
-`type` — единственное всегда обязательное поле concept. Optional provenance,
-trust, lifecycle и computation families не являются base conformance
-requirements.
-
-## Правила authoring
-
-- Записывай `okf_version` только в root `index.md`.
-- Добавляй `generated` только при известном producer actor.
-- Создавай `sources` только из actual materials.
-- Привязывай claims footnotes с labels из `sources[].id`.
-- Записывай `verified` только после реальной проверки.
-- Не выводи `status`, `stale_after`, credibility или verification из git,
-  timestamps, authorship, migration или successful validation.
-- Выноси sanctioned computation в отдельный concept с
-  `type: Attested Computation`.
-- Сохраняй unknown keys/types/content для forward compatibility.
-
-Canonical examples привязаны к fixtures через
-[`fixtures/v02/corpus.yaml`](fixtures/v02/corpus.yaml): minimal, Appendix A,
-bare/list verification, lifecycle, inline/file computation, legacy, mixed,
-future и adversarial cases. Синтетические примеры repo используют reserved
-domains вроде `example.invalid`.
-
-## Правила consumption
-
-До интерпретации fields определи declared и effective version:
-
-1. Supported declaration в root `index.md` выбирает contract.
-2. При отсутствии declaration default — v0.2 с §13 legacy fallbacks.
-3. Present malformed `okf_version` не является отсутствием: это hard
-   reserved-index error, и v0.2 traversal default не делает bundle conformant.
-4. Unknown future declaration сохраняется и читается best-effort.
-5. Explicit selector — assertion; конфликт с declaration завершается ошибкой.
-
-Для v0.2 consumption:
-
-- предпочитай `generated` и `sources`;
-- используй `timestamp` только если `generated` полностью отсутствует;
-- используй `# Citations` только если `sources` отсутствует;
-- нормализуй bare `verified` в one-item typed list;
-- выводи trust только из `verified`;
-- показывай trust, status и staleness отдельно.
-
-Когда legacy и v0.2 provenance присутствуют вместе, effective read использует
-v0.2: §13 fallback действует только при отсутствии replacement. Raw legacy data
-сохраняется. Migration всегда блокирует документ, содержащий одновременно
-`sources` и legacy Citations, с manual action
-`reconcile_sources_and_citations` и не выдумывает merge/dedup policy.
-
-## CLI
-
-Основные команды:
-
-```sh
-okf init <directory>
-okf validate --path <bundle> --spec auto
-okf validate --path <bundle> --spec auto --strict --as-of 2026-07-29
-okf validate --path <bundle> --spec 0.2 --strict --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z
-okf info <bundle> --spec auto --as-of 2026-07-29
-okf graph <bundle> --profile skosovsky/okf-v0.2-instant --format ntriples --as-of 2026-09-23T11:00:00Z
-okf parse <concept.md>
-okf parse <concept.md> --temporal-profile instant-0b87c52 --as-of 2026-09-23T11:00:00Z --format json
-okf fmt <concept.md>
-okf fmt <concept.md> -w
-okf index <bundle>
-okf graph <bundle>
-okf migrate <bundle> --to 0.2
-okf migrate <bundle> --to 0.2 --citation-mappings <json-file>
-```
-
-Два закреплённых upstream-документа называют себя OKF `0.2`, но задают
-разные типы полей времени. Исходный профиль
-[`date-3fcbb9f`](fixtures/v02/spec-lock.json) остаётся по умолчанию. Выбирайте
-[`instant-0b87c52`](fixtures/v02/spec-lock-instant.json), если `stale_after`,
-`sources[].last_modified` и `usage_window` содержат datetime с явным offset.
-Этот профиль сравнивает точные моменты времени. Дату без времени и timezone
-нельзя превратить в момент без заданной политики. Решение описано в
-[ADR 0003](docs/adr/0003-okf-v02-temporal-revisions.md).
-
-Migration по умолчанию dry-run. Apply требует explicit inputs для безопасного
-timestamp conversion. Unresolved legacy Citations остаются blockers, пока
-caller не передал bounded JSON file `--citation-mappings <json-file>`. Его
-точный top-level value — closed array
-`[{path,entries:[{legacy_number?,legacy_entry?,source_id,title?,resource?}]}]`,
-keyed по bundle-relative Markdown `path`, включая root `index.md`, logs и nested
-files. Каждая entry требует хотя бы один selector: nonzero `legacy_number` для
-`[1]` или exact nonblank `legacy_entry` для unnumbered bullet/raw URL. Если
-заданы оба, одна actual entry должна совпасть по обоим. CLI и MCP используют
-тот же DTO с canonical sort по path, number и exact raw entry.
-Duplicate nonzero numbers всегда запрещены. Один `legacy_entry` допустим только
-в distinct full number+entry pairs; entry-only selector пересекается с любым
-reuse того же raw text и отклоняется. Reuse source ID требует consistent
-metadata. `legacy_entry` — valid UTF-8, 1..4096 bytes,
-`TrimSpace`-nonblank и без NUL. TAB/LF/CR разрешены; остальные C0 controls и DEL
-запрещены. Exact bytes входят в authorization/digest, поэтому LF и CRLF
-различаются и не нормализуются. Root `index.md` migration публикует physical
-write/rename последним. Explicit citation/generated-at/computation path должен
-указывать на existing bundle document. Missing path блокируется с
-`migration_document_missing`, возвращает empty manual actions и не может быть
-создан mappings; новый action code не добавляется.
-Каждая non-publication ветка preview, noop, rejected, blocked, invalid или
-cancelled оставляет всё filesystem tree идентичным path-for-path и byte-for-byte
-и не создаёт `.okf` или staging artifacts. Filesystem changes может публиковать
-только authorized actual commit; identical successful replay возвращает
-записанный result без второй publication.
-Migration input validation выполняется до source resolution. Любое переданное
-structurally/domain-invalid individual actor, timestamp, citation, generated-at,
-computation или asset field отклоняется даже для `target-noop` или rootless
-bundle с той же zero-write гарантией.
-Source resolution вычисляется ровно один раз до Preview; Preview и Apply
-используют один и тот же полный frozen `expected_source`. Он содержит
-`requested_selector`, declaration state (`declaration_present`,
-`declaration_valid`, `declaration_raw`, `declared_version`),
-resolved/provenance и transition fields, а также ordered legacy candidates и
-blockers. Apply отклоняет изменённый resolution или его evidence.
-§13 fallback является presence-only и не зависит от version source: default,
-declared или explicit v0.1/v0.2 и future resolution используют один predicate.
-`GeneratedPresent`/`SourcesPresent` подавляют fallback даже при malformed value;
-`TimestampAllowed`/`CitationsAllowed` фиксируют отсутствие replacement, а
-`TimestampActive`/`CitationsActive` дополнительно требуют actual legacy form.
-`CitationsActive` требует parser-owned exact heading `# Citations`; одного
-numeric marker недостаточно.
-Для каждого citation mapping с nonzero `legacy_number` replay требует, чтобы
-выбранный parser-owned marker `[n]` исчез, а reference на normalized keyed
-`[^SourceID]` существовал. Entry-only mapping не требует claim reference.
-Leftover selected marker, missing keyed reference или wrong keyed reference
-блокируется с `migration_replay_mismatch` на exact parser-owned span.
-Inline/fenced code и raw HTML opaque: marker-like bytes внутри них не являются
-ни claim evidence, ни replay failure. Любой mismatch zero-write и не возвращает
-proof или plan authorization.
-Unrenderable individual migration field возвращает `invalid_request`.
-Normalized per-document SourceID collision вместо этого блокируется с
-`normalized_footnote_label_collision` и `disambiguate_citation_entry`, включая
-`target-noop`; existing-document collision возвращает тот же exact span. Ни
-одна ветка не публикуется, обе zero-write.
-Proof-bound apply `v0.1-to-v0.2` может вернуть transition-noop только после
-authentication и rebuild exact proof и plan digest; noop возвращается до
-открытия store и не создаёт `.okf`. Поведение live `target-noop` зависит от
-поверхности: MCP остаётся proofless и не открывает store; CLI dry-run строит
-proof без открытия store; CLI `--write` выполняет empty CAS и сохраняет либо
-replay'ит durable receipt в `.okf`. Во всех трёх случаях revision-visible
-bundle files остаются path-and-byte identical.
-CLI
-`--actor` — document producer, который записывается в `generated.by`, а не
-store transaction principal. Для dry preview его можно не передавать: если
-generation metadata нужна, preview вернёт manual action. Перед таким apply с
-`--write` actor обязателен. Version-only migration type-only legacy concepts не
-требует actor или time и не должна создавать `generated`.
-
-Validation остаётся слоистой:
-
-| Слой | Значение |
-| --- | --- |
-| Base | UTF-8/parseable concept frontmatter, непустой string `type`, структура reserved files. |
-| Strict | Advisory validation присутствующих v0.2 families, attribution, lifecycle и computation shapes. |
-| Links | Advisory diagnostics внутренних links. |
-| Orphans | Advisory diagnostics покрытия indexes. |
-
-Unknown types/keys/runtimes, отсутствующие optional fields, broken links и
-missing indexes не становятся base errors.
-В `index.md` перед группами ссылок допустимы заголовок документа и введение;
-неизвестные поля root frontmatter рядом с корректным `okf_version` сохраняются.
-Переносы строк внутри пункта плоского списка `log.md` остаются одной записью.
-Strict attribution игнорирует буквальные footnotes внутри code spans, а
-покрытие index проверяется только при запросе orphan policy.
-
-## Go library
-
-```go
-b, err := bundle.LoadBundle("./knowledge")
-if err != nil {
-	return err
-}
-
-report := validator.ValidateBundle(b, &validator.ValidatorConfig{
-	Strict:       true,
-	CheckLinks:   true,
-	CheckOrphans: true,
-})
-if !report.IsConformant() {
-	return errors.New("bundle is not conformant")
-}
-```
-
-Read model остаётся permissive и Bring Your Own Types friendly. Typed v0.2
-accessors — projections поверх lossless YAML; unknown fields доступны
-caller-owned models и сохраняются при round trip.
-
-Mutation использует desired-state, preview-first и transactional contract.
-Semantic migration отделена от parse, format, index и graph.
-
-## MCP server
-
-```json
-{
-  "mcpServers": {
-    "okf": {
-      "command": "okf-mcp",
-      "args": ["-root", "/absolute/path/to/bundle"]
-    }
-  }
-}
-```
-
-Compatibility tools:
-
-- `list_concepts`
-- `read_concept`
-- `validate_bundle`
-- `get_semantic_graph`
-- `write_concept`
-
-Два дополнительных read-only tools дают ограниченный поиск и соседние связи
-concepts; provenance sources возвращаются отдельно от Markdown/typed relations:
-
-- `search_concepts`
-- `get_neighbors`
-
-Контракт запросов, порядок и лимиты описаны в
-[MCP concept queries](docs/contracts/concept-queries.md).
-
-Server также предоставляет шесть v0.2 tools для mutation workflow; всего tools тринадцать:
-
-- `preview_concept_patch` / `apply_concept_patch`
-- `preview_v02_migration` / `apply_v02_migration`
-- `preview_temporal_upgrade` / `apply_temporal_upgrade`
-
-Patch apply использует `expected_revision` и preview plan digest. Migration
-apply discriminated по transition: `v0.1-to-v0.2` требует preview proof
-`format_version: 2` с обязательным non-empty `resolution_digest`, non-empty
-`expected_plan_digest` и тем же frozen `expected_source`; более ранний proof
-format не принимается. Live `target-noop` требует только этот frozen `expected_source`,
-остаётся proofless и всё равно валидирует переданное migration target state.
-Отдельного migration `expected_revision` нет; если proof присутствует,
-`proof.base_revision` authoritative. Actor metadata не является
-authentication. Identical migration apply replay-safe.
-MCP actor-bearing fields имеют отдельный 256-byte transport/resource cap:
-257+ bytes возвращает `resource_limit`, а не invalid-actor verdict. Внутри cap
-semantic validity определяет shared `ValidActor`. Adapter cap не является actor
-grammar и не задаёт bundle/store domain length ceiling.
-
-Во всём MCP structured JSON present `usage_count` — canonical decimal string по
-`^(0|[1-9][0-9]*)$` или `null` для nullable output field. Patch input отклоняет
-semantic uint64 overflow. Decimal string исключает `float64` precision loss в
-decoded MCP Arguments, включая `MaxUint64`. Legacy text fallbacks не меняются.
-Selector `set_usage_window` — closed union: shared (нет `source_id` и `source`),
-identified (`source_id` non-empty) или exact anonymous (`source` присутствует,
-а его `id` отсутствует). Empty `source_id`, mixed/unknown selector forms и
-ambiguous exact anonymous matches отклоняются.
-Selector `remove_source` — closed union из identified (`source_id` non-empty)
-или exact anonymous (`source` присутствует, а его `id` отсутствует); shared
-form отсутствует. Empty `source_id`, mixed/unknown selector forms и ambiguous
-exact anonymous matches отклоняются.
-
-## Safety boundary Attested Computation
-
-OKF записывает computation/attestation contracts; сам факт наличия field или
-resource не запускает content.
-
-`computation`, `executor.resource` и `attester.resource` — inert data.
-По pinned spec agent MAY передавать только значения declared parameters и MUST
-NOT создавать или редактировать sanctioned computation.
-Execution требует отдельной trusted runtime и authorization. OKF v0.2 не
-определяет runtime discovery, parameter binding implementation,
-receipt/verdict wire format, attester ABI, portability, sandboxing или cache.
-`store.CommitReceipt` не связан с `executor.receipt`.
-
-## Extension `skosovsky/okf`: relations
-
-YAML `relations` — extension/tooling policy этого repo, а не часть upstream OKF
-v0.2. Она добавляет typed semantic edges и optional relation validation.
-Markdown links остаются стандартным OKF navigation/relationship mechanism.
-Legacy graph profiles и wire formats остаются compatibility surfaces; их
-версия не выбирает OKF document contract.
-
-## Migration
-
-Смотри:
-
-- [Migration guide](docs/ru/migration.md)
-- [Pinned v0.2 spec](skills/open-knowledge-format/references/spec-v02.md)
-- [Agent workflow](skills/open-knowledge-format/SKILL.md)
-
-Migration не выдумывает producer actors, source mappings, verification,
-lifecycle, freshness, credibility signals, receipt или attestation.
-
-## Разработка
-
-```sh
-go test ./...
-go vet ./...
-git diff --check
-```
-
-`skills.sh.json`, оба plugin manifests и `skills-lock.json` регистрируют три
-скила. Команда `node scripts/update-skills-lock.mjs --check` сверяет lock с
-содержимым `skills/open-knowledge-format`, `skills/okf-maintain` и
-`skills/okf-backfill`. Пересчитывай lock после стабилизации изменений любого
-из этих каталогов и его references.
-
-`skill-dependencies.json` фиксирует зависимости workflows по именам и путям,
-не дублируя схемы инструментов. CI сверяет их с каталогом MCP и командами CLI,
-проверяет ссылки и файлы скилов и пробную установку из одного каталога
-`skills/`. После правок запускай `node scripts/check-skill-package.mjs`.
-Эта проверка подтверждает состав пакета, но не активацию скила в Codex,
-Claude Code или skills.sh; её проверяют отдельно в конкретном host.
+- [Поиск и подготовка существующих Markdown](docs/ru/quickstart.md): продолжение быстрого старта.

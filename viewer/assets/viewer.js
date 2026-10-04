@@ -31,7 +31,8 @@
   const render = () => {
     let id = '';
     try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { id = ''; }
-    if (/^fn(?:ref)?:/i.test(id)) return;
+    // A valid concept route wins over Goldmark's footnote anchor namespace.
+    if (!concepts.has(id) && /^fn(?:ref\d*)?:/i.test(id) && Array.from(byId.querySelectorAll('[id]')).some(anchor => anchor.id === id)) return;
     const c = concepts.get(id) || data.concepts[0];
     byId.replaceChildren();
     if (!c) { byId.append(el('p', 'empty', 'This bundle contains no concepts.')); return; }
@@ -56,7 +57,7 @@
         a.href = '#' + encodeURIComponent(edge.to_concept);
       } else if (edge) {
         a.removeAttribute('href'); a.title = 'Missing concept';
-      } else if (/^#fn(?:ref)?:/i.test(raw)) {
+      } else if (/^#fn(?:ref\d*)?:/i.test(raw)) {
         // Goldmark footnotes link to anchors in the current detail card.
         a.addEventListener('click', event => {
           const target = document.getElementById(raw.slice(1));
@@ -71,7 +72,7 @@
     byId.append(el('h3', '', 'Sources'));
     if (!c.sources.length) byId.append(el('p', 'empty', 'No sources recorded.'));
     c.sources.forEach(s => {
-      const row = el('div', 'source', (s.title || s.id || 'Source') + ' · ');
+      const row = el('div', 'source', (s.title || s.id || 'Source') + (s.resource ? ' · ' : ''));
       if (/^(https?:\/\/|mailto:)/i.test(s.resource) && !/[\u0000-\u001f\u007f]/.test(s.resource)) {
         const a = el('a', '', s.resource); a.href = s.resource; a.rel = 'noopener noreferrer'; a.referrerPolicy = 'no-referrer'; row.append(a);
       } else row.append(el('span', '', s.resource));

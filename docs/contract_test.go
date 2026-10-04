@@ -30,13 +30,14 @@ import (
 var bilingualPages = [][2]string{
 	{"README.md", "README.ru.md"},
 	{"docs/index.md", "docs/ru/index.md"},
+	{"docs/reference.md", "docs/ru/reference.md"},
 	{"docs/skill.md", "docs/ru/skill.md"},
 	{"docs/toolkit.md", "docs/ru/toolkit.md"},
 	{"docs/migration.md", "docs/ru/migration.md"},
 }
 
 var englishMigrationPages = []string{
-	"README.md",
+	"docs/reference.md",
 	"docs/migration.md",
 	"docs/toolkit.md",
 	"docs/skill.md",
@@ -44,7 +45,6 @@ var englishMigrationPages = []string{
 }
 
 var russianMigrationPages = []string{
-	"README.ru.md",
 	"docs/ru/migration.md",
 	"docs/ru/toolkit.md",
 	"docs/ru/skill.md",
@@ -65,22 +65,22 @@ func TestPublishedEnglishRussianSemanticParity(t *testing.T) {
 	}
 
 	english := compactWhitespace(joinedDocumentation(t, root, []string{
-		"README.md", "docs/index.md", "docs/skill.md", "docs/toolkit.md", "docs/migration.md",
+		"README.md", "docs/index.md", "docs/reference.md", "docs/skill.md", "docs/toolkit.md", "docs/migration.md",
 	}))
 	russian := compactWhitespace(joinedDocumentation(t, root, []string{
-		"README.ru.md", "docs/ru/index.md", "docs/ru/skill.md", "docs/ru/toolkit.md", "docs/ru/migration.md",
+		"README.ru.md", "docs/ru/index.md", "docs/ru/reference.md", "docs/ru/skill.md", "docs/ru/toolkit.md", "docs/ru/migration.md",
 	}))
 	contracts := []struct {
 		id      string
 		english string
 		russian string
 	}{
-		{"fallback.generated", "fall back to `timestamp` only if `generated` is wholly absent", "используй `timestamp` только если `generated` полностью отсутствует"},
-		{"fallback.sources", "fall back to `# Citations` only if `sources` is absent", "используй `# Citations` только если `sources` отсутствует"},
-		{"read.precedence", "v0.2 is the effective read", "effective read использует v0.2"},
-		{"trust.axes", "surface trust, status, and staleness separately", "показывай trust, status и staleness отдельно"},
+		{"fallback.generated", "fall back to `timestamp` only if `generated` is wholly absent", "`timestamp` используется только при полном отсутствии `generated`"},
+		{"fallback.sources", "fall back to `# Citations` only if `sources` is absent", "`# Citations` используется только при отсутствии `sources`"},
+		{"read.precedence", "v0.2 is the effective read", "чтение предпочитает v0.2"},
+		{"trust.axes", "surface trust, status, and staleness separately", "Проверенность, `status` и устаревание — разные сведения"},
 		{"migration.non-invention", "Migration never invents", "Migration не выдумывает"},
-		{"runtime.inert", "are inert data", "inert data"},
+		{"runtime.inert", "are inert data", "— данные; toolkit не запускает"},
 		{"migration.root-last", "root `index.md` physical write/rename last", "physical write/rename root `index.md` последним"},
 		{"migration.input-first", "Migration input validation runs before source resolution", "Migration input validation выполняется до source resolution"},
 		{"migration.missing-document", "migration_document_missing", "migration_document_missing"},
@@ -102,6 +102,22 @@ func TestPublishedEnglishRussianSemanticParity(t *testing.T) {
 		}
 		if !strings.Contains(russian, contract.russian) {
 			t.Errorf("Russian docs omit contract %s", contract.id)
+		}
+	}
+}
+
+func TestOnboardingRoutesToCanonicalReferences(t *testing.T) {
+	t.Parallel()
+	root := repositoryRoot(t)
+	for _, route := range [][2]string{{"README.md", "docs/reference.md"}, {"README.ru.md", "docs/ru/reference.md"}} {
+		if !strings.Contains(readText(t, filepath.Join(root, route[0])), "("+route[1]+")") {
+			t.Errorf("%s omits reference route", route[0])
+		}
+	}
+	russian := readText(t, filepath.Join(root, "docs/ru/reference.md"))
+	for _, token := range []string{"'/reference/'", "`expected_revision`", "`expected_plan_digest`", "`resolution_digest`", "`expected_source`", "`proof.base_revision`", "`migration_document_missing`", "вход", "последним", "не выдумывает", "полном отсутствии `generated`", "отсутствии `sources`"} {
+		if !strings.Contains(russian, token) {
+			t.Errorf("Russian reference omits semantic contract %q", token)
 		}
 	}
 }
@@ -479,8 +495,9 @@ func TestPublishedDocumentationLinksResolve(t *testing.T) {
 		for _, match := range linkPattern.FindAllStringSubmatch(markdownWithoutCode(readText(t, path)), -1) {
 			target := strings.Trim(strings.TrimSpace(match[1]), "<>")
 			if liquid := liquidPattern.FindStringSubmatch(target); len(liquid) == 2 {
-				staticDemo := liquid[1] == "/demo/knowledge.html" && fileExists(filepath.Join(docsRoot, "demo", "knowledge.html"))
-				if !strings.HasPrefix(relative, "docs/") || (!permalinks[liquid[1]] && !staticDemo) {
+				liquidPath := strings.Split(liquid[1], "#")[0]
+				staticDemo := liquidPath == "/demo/knowledge.html" && fileExists(filepath.Join(docsRoot, "demo", "knowledge.html"))
+				if !strings.HasPrefix(relative, "docs/") || (!permalinks[liquidPath] && !staticDemo) {
 					t.Errorf("%s has unknown Jekyll target %q", relative, target)
 				}
 				continue

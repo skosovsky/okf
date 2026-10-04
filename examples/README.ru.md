@@ -1,21 +1,14 @@
-# Примеры OKF v0.2
+# Примеры
 
-Executable examples хранятся в общем
-[`fixtures/v02/corpus.yaml`](../fixtures/v02/corpus.yaml), а не копируются
-сюда.
+Начните с [демонстрации знаний о репозитории](https://skosovsky.github.io/okf/demo/knowledge.html#architecture). **Package boundaries** отвечает на вопрос «В каком пакете менять реализацию?» и ссылается на источники и связанные заметки. Исходные файлы — в [knowledge/](../knowledge/index.md).
 
-Начинай с:
+[Быстрый старт](../docs/ru/quickstart.md) показывает сборку HTML и создание двух заметок о вымышленном сервисе из предоставленного материала. Этот учебный пример явно обозначен как вымышленный; знания о репозитории ссылаются на его реальные файлы.
 
-- `positive/minimal` для type-only base contract;
-- `positive/canonical` для human authoring, keyed sources, bare/list
-  verification, lifecycle states и inline/file computation;
-- `positive/appendix-a` для pinned end-to-end example;
-- `compat/*` для intentional v0.1, mixed и future consumption;
-- `adversarial/optional-shapes` для malformed optional-family guidance.
+Для проверки реализаций [fixtures/v02/corpus.yaml](../fixtures/v02/corpus.yaml) содержит:
 
-Все синтетические примеры repo используют reserved domains вроде
-`example.invalid`. Computation, executor и attester files — inert fixture data,
-а не executable runtime contract.
+- `positive/minimal`: обязательные поля.
+- `positive/canonical` и `positive/appendix-a`: источники, проверки, состояние и метаданные вычислений.
+- `compat/*`: чтение v0.1, смешанных источников и будущих версий.
+- `adversarial/optional-shapes`: повреждённые необязательные поля.
 
-Для migration используй [migration guide](../docs/ru/migration.md). Не копируй
-legacy fields в новый v0.2 authoring.
+Вымышленные адреса тестов используют зарезервированные домены, например `example.invalid`. Файлы computation, executor и attester — тестовые данные, они не исполняются. Перед преобразованием старых документов прочтите [руководство по миграции](../docs/ru/migration.md).

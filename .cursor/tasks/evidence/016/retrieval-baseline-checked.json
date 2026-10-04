@@ -1,0 +1,687 @@
+{
+  "tool": "search_concepts",
+  "server_sha256": "99ca1f52042a124f4c61abb1fb1fe26b05ac8f4ad58d698d6e0474113a7a052b",
+  "frozen_corpus_sha256": "ceb1375f8011b68797803066e3f4170652d9ab7ec5f0c694943099117e515e81",
+  "expected_snapshot_revision": "9f659200c0b82ba8d35a10b747afe88cbae3978bd27165534058e0f24204a821",
+  "queries_sha256": "bffe859ed90191aad7872cd22a795281a681d7075c5aca1172fb69c3cb489b54",
+  "comparison_mapping": "Document-level: each arm returns at most five hits. Stable first occurrence deduplication projects these hits to a ranked list of at most five documents; reciprocal rank uses this projected document rank. This equal five-hit budget may return fewer distinct documents in the section arm. Section identity/ranges/locators/snippets and snapshot digest are verified against the frozen source. No-answer queries are excluded from Hit/MRR and reported separately.",
+  "answerable": 20,
+  "no_answer": 4,
+  "hit_at_5": 0.1,
+  "mrr_at_5": 0.1,
+  "no_answer_nonempty": 0,
+  "rows": [
+    {
+      "id": "q01",
+      "query": "orders duplicate delivery",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 5136541,
+      "response_bytes": 320,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"orders duplicate delivery\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "orders duplicate delivery",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q02",
+      "query": "outbox Kafka transaction",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2087084,
+      "response_bytes": 318,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"outbox Kafka transaction\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "outbox Kafka transaction",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q03",
+      "query": "заказ повторная доставка",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2039875,
+      "response_bytes": 362,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"заказ повторная доставка\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "заказ повторная доставка",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q04",
+      "query": "идентификатор события",
+      "answerable": true,
+      "document_ids": [
+        "outbox"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 2578875,
+      "response_bytes": 966,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"идентификатор события\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":1,\"truncated\":false,\"hits\":[{\"concept\":{\"id\":\"outbox\",\"path\":\"outbox.md\",\"type\":\"Decision\",\"title\":\"Outbox decision\",\"description\":\"\",\"tags\":[],\"status\":\"stable\",\"status_state\":{\"present\":false,\"valid\":true,\"raw\":null,\"effective\":\"stable\"},\"trust\":\"unverified\",\"stale\":null,\"stale_after\":null},\"match\":\"body\"}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "идентификатор события",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept": {
+                "id": "outbox",
+                "path": "outbox.md",
+                "type": "Decision",
+                "title": "Outbox decision",
+                "description": "",
+                "tags": [],
+                "status": "stable",
+                "status_state": {
+                  "present": false,
+                  "valid": true,
+                  "raw": null,
+                  "effective": "stable"
+                },
+                "trust": "unverified",
+                "stale": null,
+                "stale_after": null
+              },
+              "match": "body"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q05",
+      "query": "retry deadline attempts",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2299500,
+      "response_bytes": 316,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"retry deadline attempts\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "retry deadline attempts",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q06",
+      "query": "authentication failures",
+      "answerable": true,
+      "document_ids": [
+        "retries"
+      ],
+      "hit_at_5": true,
+      "reciprocal_rank_at_5": 1,
+      "latency_ns": 1748209,
+      "response_bytes": 928,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"authentication failures\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":1,\"truncated\":false,\"hits\":[{\"concept\":{\"id\":\"retries\",\"path\":\"retries.md\",\"type\":\"Decision\",\"title\":\"Retry policy\",\"description\":\"\",\"tags\":[],\"status\":\"stable\",\"status_state\":{\"present\":false,\"valid\":true,\"raw\":null,\"effective\":\"stable\"},\"trust\":\"unverified\",\"stale\":null,\"stale_after\":null},\"match\":\"body\"}]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "authentication failures",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 1,
+          "truncated": false,
+          "hits": [
+            {
+              "concept": {
+                "id": "retries",
+                "path": "retries.md",
+                "type": "Decision",
+                "title": "Retry policy",
+                "description": "",
+                "tags": [],
+                "status": "stable",
+                "status_state": {
+                  "present": false,
+                  "valid": true,
+                  "raw": null,
+                  "effective": "stable"
+                },
+                "trust": "unverified",
+                "stale": null,
+                "stale_after": null
+              },
+              "match": "body"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "q07",
+      "query": "повтор бюджет нагрузку",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2139250,
+      "response_bytes": 354,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"повтор бюджет нагрузку\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "повтор бюджет нагрузку",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q08",
+      "query": "cache product revision",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2417041,
+      "response_bytes": 314,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"cache product revision\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "cache product revision",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q09",
+      "query": "cached prices payment",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2049542,
+      "response_bytes": 312,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"cached prices payment\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "cached prices payment",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q10",
+      "query": "кэш ревизию товара",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1988334,
+      "response_bytes": 338,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"кэш ревизию товара\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "кэш ревизию товара",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q11",
+      "query": "lease expired worker token",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1440292,
+      "response_bytes": 322,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"lease expired worker token\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "lease expired worker token",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q12",
+      "query": "renew lease seconds",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2086459,
+      "response_bytes": 308,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"renew lease seconds\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "renew lease seconds",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q13",
+      "query": "воркер токен владельца",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1981000,
+      "response_bytes": 354,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"воркер токен владельца\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "воркер токен владельца",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q14",
+      "query": "column readers rollback",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2775500,
+      "response_bytes": 316,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"column readers rollback\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "column readers rollback",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q15",
+      "query": "backfill bounded batches",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 6142625,
+      "response_bytes": 318,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"backfill bounded batches\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "backfill bounded batches",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q16",
+      "query": "откате колонки читателей",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 8761708,
+      "response_bytes": 362,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"откате колонки читателей\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "откате колонки читателей",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q17",
+      "query": "credential rotation revoke",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1996833,
+      "response_bytes": 322,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"credential rotation revoke\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "credential rotation revoke",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q18",
+      "query": "logs secret value",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 4073166,
+      "response_bytes": 304,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"logs secret value\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "logs secret value",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q19",
+      "query": "ротация идентификатор секретное",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 2218333,
+      "response_bytes": 390,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"ротация идентификатор секретное\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "ротация идентификатор секретное",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q20",
+      "query": "потребителей проверить отозвать",
+      "answerable": true,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1439167,
+      "response_bytes": 390,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"потребителей проверить отозвать\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "потребителей проверить отозвать",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q21",
+      "query": "quantum qubits entanglement",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 4682125,
+      "response_bytes": 324,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"quantum qubits entanglement\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "quantum qubits entanglement",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q22",
+      "query": "рецепт борща свёкла",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 7667708,
+      "response_bytes": 342,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"рецепт борща свёкла\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "рецепт борща свёкла",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q23",
+      "query": "satellite orbital telescope",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 4614042,
+      "response_bytes": 324,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"satellite orbital telescope\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "satellite orbital telescope",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    },
+    {
+      "id": "q24",
+      "query": "нейроны синапсы аксоны",
+      "answerable": false,
+      "document_ids": [],
+      "hit_at_5": false,
+      "reciprocal_rank_at_5": 0,
+      "latency_ns": 1829167,
+      "response_bytes": 354,
+      "raw": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"query\":\"нейроны синапсы аксоны\",\"temporal_profile\":\"date-3fcbb9f\",\"as_of\":null,\"total\":0,\"truncated\":false,\"hits\":[]}"
+          }
+        ],
+        "structuredContent": {
+          "query": "нейроны синапсы аксоны",
+          "temporal_profile": "date-3fcbb9f",
+          "as_of": null,
+          "total": 0,
+          "truncated": false,
+          "hits": []
+        }
+      }
+    }
+  ]
+}

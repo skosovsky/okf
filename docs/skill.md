@@ -121,7 +121,7 @@ The five compatibility tools remain:
 Two additional read-only tools, `search_concepts` and `get_neighbors`, return
 bounded results. Search ranks ID and metadata matches ahead of body matches;
 neighbors separate Markdown links, typed relations, and provenance sources.
-The server exposes thirteen tools. For its three safe v0.2 mutation workflows, use preview before
+The server exposes fourteen tools. For its three safe v0.2 mutation workflows, use preview before
 apply:
 
 - `preview_concept_patch` → `apply_concept_patch`: bind with
@@ -216,3 +216,5 @@ and MUST NOT author or edit the sanctioned computation.
 
 YAML `relations` guidance in the skill is explicitly a `skosovsky/okf`
 extension/tooling policy, not upstream v0.2 conformance.
+
+`search_sections` adds multi-term section search with snippets, source lines, and file digests. `search_concepts` keeps its literal search. See the [section search contract]({{ '/contracts/section-search/' | relative_url }}).

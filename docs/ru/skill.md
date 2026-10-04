@@ -119,7 +119,7 @@ code не добавляется.
 
 Два дополнительных read-only tools, `search_concepts` и `get_neighbors`,
 возвращают ограниченные результаты поиска и соседних concepts. Server
-предоставляет тринадцать tools. Для трёх v0.2 mutation workflows используй
+предоставляет 14 инструментов. Для трёх v0.2 mutation workflows используй
 preview перед apply:
 
 - `preview_concept_patch` → `apply_concept_patch`: привязка через
@@ -213,3 +213,5 @@ NOT создавать или редактировать sanctioned computation.
 
 Guidance по YAML `relations` явно маркируется как `skosovsky/okf`
 extension/tooling policy, а не upstream v0.2 conformance.
+
+`search_sections` добавляет поиск по нескольким словам в разделе с фрагментом, строками и digest исходника. `search_concepts` сохраняет буквальный поиск. См. [контракт поиска]({{ '/contracts/section-search/' | relative_url }}).
