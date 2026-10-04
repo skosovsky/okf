@@ -99,22 +99,22 @@ Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4287717Z [command
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4332431Z ##[group]Checking out the ref
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4337211Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5536373Z Note: switching to 'refs/remotes/pull/12/merge'.
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5537801Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5537801Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5538910Z You are in 'detached HEAD' state. You can look around, make experimental
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5541332Z changes and commit them, and you can discard any commits you make in this
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5543436Z state without impacting any branches by switching back to a branch.
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5544389Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5544389Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5544987Z If you want to create a new branch to retain commits you create, you may
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5546339Z do so (now or later) by using -c with the switch command. Example:
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5547241Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5547241Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5547827Z   git switch -c <new-branch-name>
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5549165Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5549165Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5549861Z Or undo this operation with:
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5550398Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5550398Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5550701Z   git switch -
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5551119Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5551119Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5551809Z Turn off this advice by setting config variable advice.detachedHead to false
-Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5552841Z 
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5552841Z
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5553939Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5557426Z ##[endgroup]
 Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5594967Z [command]/usr/bin/git log -1 --format=%H
@@ -148,7 +148,7 @@ Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8974973Z Successfully cached
 Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8977578Z Added go to the path
 Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8980010Z Successfully set up Go version 1.25.5
 Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9207471Z go version go1.25.5 linux/amd64
-Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9207957Z 
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9207957Z
 Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9208821Z ##[group]go env
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3804234Z AR='ar'
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3804922Z CC='gcc'
@@ -196,7 +196,7 @@ Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3826774Z GOVCS=''
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827098Z GOVERSION='go1.25.5'
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827449Z GOWORK=''
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827799Z PKG_CONFIG='pkg-config'
-Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3828042Z 
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3828042Z
 Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3828512Z ##[endgroup]
 Race detector (Linux)	Test packages with race detector	﻿2026-10-04T16:46:46.4038878Z ##[group]Run go test -race ./...
 Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4039685Z ^[[36;1mgo test -race ./...^[[0m
@@ -363,22 +363,22 @@ Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.3603495Z ##[group]Checking out the ref
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.3614651Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/12/merge
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0381624Z Note: switching to 'refs/remotes/pull/12/merge'.
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0382484Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0382484Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0382876Z You are in 'detached HEAD' state. You can look around, make experimental
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0384651Z changes and commit them, and you can discard any commits you make in this
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386016Z state without impacting any branches by switching back to a branch.
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386614Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386614Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386942Z If you want to create a new branch to retain commits you create, you may
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0387708Z do so (now or later) by using -c with the switch command. Example:
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0387994Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0387994Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388123Z   git switch -c <new-branch-name>
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388299Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388299Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388399Z Or undo this operation with:
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388574Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388574Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388679Z   git switch -
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388792Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388792Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0389053Z Turn off this advice by setting config variable advice.detachedHead to false
-Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0389600Z 
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0389600Z
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0390172Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0548827Z ##[endgroup]
 Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.2228493Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
@@ -416,7 +416,7 @@ Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1136530Z S
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1143183Z Added go to the path
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1146112Z Successfully set up Go version 1.25.5
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4268931Z go version go1.25.5 windows/amd64
-Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4269170Z 
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4269170Z
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4269556Z ##[group]go env
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9234438Z set AR=ar
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9236839Z set CC=gcc
@@ -464,7 +464,7 @@ Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250379Z s
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250547Z set GOVERSION=go1.25.5
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250735Z set GOWORK=
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250915Z set PKG_CONFIG=pkg-config
-Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9251050Z 
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9251050Z
 Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9251393Z ##[endgroup]
 Unsupported platform contract (Windows)	Build all packages for Windows	﻿2026-10-04T16:47:14.9544910Z ##[group]Run go build ./...
 Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9545269Z ^[[36;1mgo build ./...^[[0m
@@ -606,22 +606,22 @@ Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2264557Z ##[group]Checking out the ref
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2270204Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3465322Z Note: switching to 'refs/remotes/pull/12/merge'.
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3466912Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3466912Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3468105Z You are in 'detached HEAD' state. You can look around, make experimental
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3470275Z changes and commit them, and you can discard any commits you make in this
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3472416Z state without impacting any branches by switching back to a branch.
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3473326Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3473326Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3473940Z If you want to create a new branch to retain commits you create, you may
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3475148Z do so (now or later) by using -c with the switch command. Example:
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3475877Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3475877Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3476503Z   git switch -c <new-branch-name>
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3477975Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3477975Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3478381Z Or undo this operation with:
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3478916Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3478916Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3479225Z   git switch -
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3479660Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3479660Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3480305Z Turn off this advice by setting config variable advice.detachedHead to false
-Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3481240Z 
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3481240Z
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3482342Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3485915Z ##[endgroup]
 Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3526470Z [command]/usr/bin/git log -1 --format=%H
@@ -655,7 +655,7 @@ Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5839847Z S
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5841203Z Added go to the path
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5843377Z Successfully set up Go version 1.25.5
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6049863Z go version go1.25.5 linux/amd64
-Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6050147Z 
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6050147Z
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6050548Z ##[group]go env
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7305906Z AR='ar'
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7306449Z CC='gcc'
@@ -703,7 +703,7 @@ Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7324751Z G
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325043Z GOVERSION='go1.25.5'
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325371Z GOWORK=''
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325689Z PKG_CONFIG='pkg-config'
-Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325912Z 
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325912Z
 Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7326357Z ##[endgroup]
 Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	﻿2026-10-04T16:46:46.7523021Z ##[group]Run go build ./...
 Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7523373Z ^[[36;1mgo build ./...^[[0m
@@ -894,7 +894,7 @@ Darwin durable backend	Set up Go	2026-10-04T16:46:52.9929910Z Successfully cache
 Darwin durable backend	Set up Go	2026-10-04T16:46:52.9930800Z Added go to the path
 Darwin durable backend	Set up Go	2026-10-04T16:46:52.9932450Z Successfully set up Go version 1.25.5
 Darwin durable backend	Set up Go	2026-10-04T16:46:53.1195180Z go version go1.25.5 darwin/arm64
-Darwin durable backend	Set up Go	2026-10-04T16:46:53.1195430Z 
+Darwin durable backend	Set up Go	2026-10-04T16:46:53.1195430Z
 Darwin durable backend	Set up Go	2026-10-04T16:46:53.1196250Z ##[group]go env
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6449400Z AR='ar'
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6450150Z CC='clang'
@@ -942,7 +942,7 @@ Darwin durable backend	Set up Go	2026-10-04T16:46:54.6562320Z GOVCS=''
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6562610Z GOVERSION='go1.25.5'
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6564320Z GOWORK=''
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565160Z PKG_CONFIG='pkg-config'
-Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565400Z 
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565400Z
 Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565930Z ##[endgroup]
 Darwin durable backend	Test platform-specific filesystem behavior	﻿2026-10-04T16:46:54.6625070Z ##[group]Run go test ./store/fs
 Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6625370Z ^[[36;1mgo test ./store/fs^[[0m
@@ -1098,22 +1098,22 @@ Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0847851
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0896434Z ##[group]Checking out the ref
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0898192Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2138111Z Note: switching to 'refs/remotes/pull/12/merge'.
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2139151Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2139151Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2139798Z You are in 'detached HEAD' state. You can look around, make experimental
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2141148Z changes and commit them, and you can discard any commits you make in this
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2142518Z state without impacting any branches by switching back to a branch.
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2143633Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2143633Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2144228Z If you want to create a new branch to retain commits you create, you may
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2145559Z do so (now or later) by using -c with the switch command. Example:
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2146316Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2146316Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2146698Z   git switch -c <new-branch-name>
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2147332Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2147332Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2147708Z Or undo this operation with:
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2148241Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2148241Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2148806Z   git switch -
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2149518Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2149518Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2150450Z Turn off this advice by setting config variable advice.detachedHead to false
-Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2151417Z 
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2151417Z
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2152566Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2156512Z ##[endgroup]
 Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2198796Z [command]/usr/bin/git log -1 --format=%H
@@ -1147,7 +1147,7 @@ Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4904646Z Successfu
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4908074Z Added go to the path
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4910951Z Successfully set up Go version 1.25.5
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5116975Z go version go1.25.5 linux/amd64
-Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5117227Z 
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5117227Z
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5117504Z ##[group]go env
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6574287Z AR='ar'
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6574911Z CC='gcc'
@@ -1195,7 +1195,7 @@ Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6595585Z GOVCS=''
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6595929Z GOVERSION='go1.25.5'
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596299Z GOWORK=''
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596680Z PKG_CONFIG='pkg-config'
-Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596944Z 
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596944Z
 Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6597434Z ##[endgroup]
 Test, vet, and module integrity	Verify downloaded modules	﻿2026-10-04T16:46:46.6818877Z ##[group]Run go mod verify
 Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.6819218Z ^[[36;1mgo mod verify^[[0m
@@ -1367,8 +1367,8 @@ Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0651584Z ##[endgroup]
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1416892Z Validating bundle: knowledge
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418187Z OKF version: declared=0.2 effective=0.2 resolution=declared compatibility=native
-Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418663Z 
-Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418710Z 
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418663Z
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418710Z
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418946Z ---
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1419285Z Scanned 12 files.
 Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1419710Z Result: PASS (0 errors, 0 warnings, 0 info)
@@ -1390,8 +1390,8 @@ Test, vet, and module integrity	Verify localized project viewer snapshots and re
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2356596Z ##[endgroup]
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3256410Z Validating bundle: examples/project-knowledge/en
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257343Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257933Z 
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257945Z 
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257933Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257945Z
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258077Z ---
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258384Z Scanned 3 files.
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258643Z Result: PASS (0 errors, 0 warnings, 0 info)
@@ -1400,8 +1400,8 @@ Test, vet, and module integrity	Verify localized project viewer snapshots and re
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3954478Z prepared en project demo: /tmp/tmp.6ZPWEBQraj/project-en-first.html
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4643507Z Validating bundle: examples/project-knowledge/en
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4644472Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645250Z 
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645516Z 
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645250Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645516Z
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645708Z ---
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4646018Z Scanned 3 files.
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4646478Z Result: PASS (0 errors, 0 warnings, 0 info)
@@ -1410,8 +1410,8 @@ Test, vet, and module integrity	Verify localized project viewer snapshots and re
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5261473Z prepared en project demo: /tmp/tmp.6ZPWEBQraj/project-en-second.html
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5884457Z Validating bundle: examples/project-knowledge/ru
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5886118Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887275Z 
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887651Z 
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887275Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887651Z
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887815Z ---
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5888052Z Scanned 3 files.
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5888334Z Result: PASS (0 errors, 0 warnings, 0 info)
@@ -1420,8 +1420,8 @@ Test, vet, and module integrity	Verify localized project viewer snapshots and re
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.6603825Z prepared ru project demo: /tmp/tmp.6ZPWEBQraj/project-ru-first.html
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7411625Z Validating bundle: examples/project-knowledge/ru
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7413375Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414304Z 
-Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414449Z 
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414304Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414449Z
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414644Z ---
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7415284Z Scanned 3 files.
 Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7415702Z Result: PASS (0 errors, 0 warnings, 0 info)
