@@ -1,5 +1,5 @@
 {
-  "review_phase": "full pass and all confirmed corrections re-read; final shared freeze pending",
+  "review_phase": "final frozen-product revalidation",
   "registry_count": 99,
   "pairs": [
     {
@@ -9,8 +9,8 @@
       "en_sha256": "0b5cb7fc7f805c0ba9564817946874836ece13d882e972faab753e2615219e66",
       "ru_sha256": "54ee6628938f203053da92d5826636be36258e6f49e319eb32af3f8672a95873",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -22,8 +22,8 @@
       "en_sha256": "979861b2edfa87642031eeb3302e2534db24428edd47526a267e157c887b33c8",
       "ru_sha256": "0faf0459c2ff05cb040bf67ecf44cec614a9c53de5217071716b795488ddf4a6",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-before-after",
@@ -32,8 +32,8 @@
       "en_sha256": "b016d6766e31bd676638f06b911c718bc1c1e10f069f4af647da363b3469210a",
       "ru_sha256": "8d1cfc15a88be7dfa6d76b6461ee64eebec279d1c228f41dfaca54010eb4eca7",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-beforeafter-live",
@@ -42,8 +42,8 @@
       "en_sha256": "a3a6dad19ec9c8551fa1b813b6de08056d7d1a55de10404d115c9ee16015a3b3",
       "ru_sha256": "35892d4165064ff4308c7c514ff70d9f5d4526a5ce79b39e9f87620114557357",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-beforeafter-readme",
@@ -52,8 +52,8 @@
       "en_sha256": "1ab947a19bcdea54432962d2f409a0a8613b92e4298d7bea5ba613d9287e26a6",
       "ru_sha256": "bda81d6ad87cd3e1c94356e4cd06be518b2b0269c09dd27fe92116d79a25a3f5",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-metadata-contrast",
@@ -62,8 +62,8 @@
       "en_sha256": "16848807be2ce7001d94dcbe2b8ae5f7581b0f9132dc09b93305cfb2c23b22b1",
       "ru_sha256": "90af200ae2261320b94372c74625659e20d09ed83115f6e9fc0de866f06a32bb",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-pilot",
@@ -72,8 +72,8 @@
       "en_sha256": "75b5c18dc9f7dbe054c451ba710a6560754a7eca90318b51c8f2afb9d0c900c2",
       "ru_sha256": "904bb8a724602aa8ad3bb478175d5da186cc772b98c01148d876fc662f2bbe90",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-pilot-diagnostic",
@@ -82,8 +82,8 @@
       "en_sha256": "6f94dc2ffecbab7beef97e9952e8d22ca38353b1139881a70b60dcc25182b9f6",
       "ru_sha256": "ab101b6cf14179807f858524e08547d85ad3cfd7d54e75d2e91fa7c1b6c0d21f",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-pilot-precomputed",
@@ -92,8 +92,8 @@
       "en_sha256": "5ee5573076d00c43a8e7bde94777bb2fa3d07399212858fff5199c1f072c697b",
       "ru_sha256": "369f1a6721b5d3e0e671069f2b8012eb1e2fd302e81759b8b718680028f54e81",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-readme",
@@ -102,8 +102,8 @@
       "en_sha256": "fb9d077fce5d07086708aae64d693dbe5eb6f3c561d2d3db024095627fddf8a2",
       "ru_sha256": "7b88ea48843f67d98a095a2366cdade254d9ee8f185f26ae79c42013ef7e50ba",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-backfill-consumer-v2-readme",
@@ -112,8 +112,8 @@
       "en_sha256": "d6ea6b128f27d3574ef741e7b1fb32d3d2b9e4e09b0af1d751c888fea1bf4dd5",
       "ru_sha256": "d1f9d09df5d6334171ae554ff4a43a5ed46c60e3547e7b624c369861e0c6d14b",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-beforeafter-v1-readme",
@@ -122,8 +122,8 @@
       "en_sha256": "6a100beec774b6072bcf43767116b1e383308984640c701e98e7fbb433acdf4b",
       "ru_sha256": "c037ede1f6073cfdb22e6eb1a62eb975d3eeb570b8948ae0fd69308867477526",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-diagnostic-read-v1-readme",
@@ -132,8 +132,8 @@
       "en_sha256": "8cfc2be24d47f02b781a7b3fd803b53555287f8a4036553e74cc1e6237def1fa",
       "ru_sha256": "e2c051baa9924e43beaecbeacc2b47d88bcb9d1b566d8e2dfc86fa1ea834891b",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-diagnostic-read-v2-readme",
@@ -142,8 +142,8 @@
       "en_sha256": "c8fcd207132e10e9b2ef18abb971d497927de33955439e33a0830d752014185d",
       "ru_sha256": "a7af045cbb49dd25ce728ce7d07af683b6595c5ac5c403b826160263ae20ca66",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-exploratory-readme",
@@ -152,8 +152,8 @@
       "en_sha256": "5942aa9e28251075ba59a698d610fe2c06dcd11b042fb5717e4e82ce3babd8c8",
       "ru_sha256": "796d09ea63ee611490f96e3933a3cb34332ef110c18440c3e778abc8d94bc91f",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-manual-writer-consumer-v3-readme",
@@ -162,8 +162,8 @@
       "en_sha256": "48d28cf9b3d62fcc14a18758ddcfd16c97400264993a6a84623db46c331f5e3d",
       "ru_sha256": "086417271fa1bcf176d58edeae5d434794c9b4957b839e26346668bc315e1595",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-metadata-only-v2-readme",
@@ -172,8 +172,8 @@
       "en_sha256": "67672885db4a947f32c9e9b27965a91bd51e76bcf01e38cd50c9f100a5fc5a9f",
       "ru_sha256": "61e16c0a0890809361be72576187da9c057c7d9b9ef84ffd07303e0055e6c2d2",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-primary-blocked-readme",
@@ -182,8 +182,8 @@
       "en_sha256": "ced955222d93b91db6038739d10ec32269c40d6bb6c34900a05616749eea385b",
       "ru_sha256": "87659f7cf747b2469bf36f3f6f38922c4067bf76f4435e3d6660c88e7a9b3aa8",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-primary-bundled-v2-readme",
@@ -192,8 +192,8 @@
       "en_sha256": "60a29233a2df97c4ae333f3f8ed14e51ce9119c0e4894ed284b65a1e873c7619",
       "ru_sha256": "7d81a46b7c9588ef3ccaf8fb709774d64bf7c1857dbb76c74eda283db077c175",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-primary-live-readme",
@@ -202,8 +202,8 @@
       "en_sha256": "9b5f36de5f65d71dfc9c63958026ea21eb553851f43e5f2691593a362aff3b65",
       "ru_sha256": "41990bd5c43e4ccef162aa6cd28dc87779b91a07c6f1105bbbdd5deaac69bcdc",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-primary-precomputed-v1-readme",
@@ -212,8 +212,8 @@
       "en_sha256": "361bfcd7fbc9bcff53b52a4af2cb4a6013ae2af213d6cd8ba651eb3217f8615e",
       "ru_sha256": "d9716ccda6da4abcd400ff26709fd36dee8c0161943550282ad43210a38706e1",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-upkeep-live-v1-readme",
@@ -222,8 +222,8 @@
       "en_sha256": "d89ea5d71c9050fd84bb708c2bed4cfa12869f0031d064a60b04561ed5d7b30d",
       "ru_sha256": "3373fa67c4f9fde87cc4e7ffe7183703cdefae7bfd11699197bd89c273a9e999",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-runs-20260926-upkeep-live-v2-readme",
@@ -232,8 +232,8 @@
       "en_sha256": "882672c3f7205baf709fbd8622f50fce3ab5572c5e8680ba4904c5a33e7bf162",
       "ru_sha256": "255be35689b17d4a1e551618f6ccf3a781b9be7008ac491b56c26e890f8fe965",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-upkeep-study",
@@ -242,8 +242,8 @@
       "en_sha256": "a74e69e8fc459559c093863f568489fc64bc40dea94bf91c6b636907b5fbe557",
       "ru_sha256": "12c04e4dba0f7448b3e2b2e01d35f5b752746f1a899a41fde96c34bfd1eb4356",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-upkeeplive-live",
@@ -252,8 +252,8 @@
       "en_sha256": "0915c064121eadf1223da54abe57d10dab29e1b8c9d8f17a43e818fb3c2b985b",
       "ru_sha256": "5104ad4ace9f6deb51e38e9496f87b6e1a0128391de70fa144cf3e8d1115ba42",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-upkeeplive-live-v2",
@@ -262,8 +262,8 @@
       "en_sha256": "f8ca77311d7d56a6937a4106f02fbc2b397cb20859b6c6bb29a62adc9a7b97ae",
       "ru_sha256": "56f9a0a12171b46648d013dd725a5ceeabaf7909052014022a30032198cb7898",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-upkeeplive-readme",
@@ -272,8 +272,8 @@
       "en_sha256": "c8c17b3e893ce6e3d7d993353c0d182aa36ff744226e156ac9cdd2e1f1f9a1c4",
       "ru_sha256": "5ca45d438f3f940135b64226e3d8662246f13fc1222ffe195f6ad2a3aad22ab3",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmark-agent-writer-consumer-baseline",
@@ -282,16 +282,16 @@
       "en_sha256": "c31ed2e6ae687c4b2fc9b01a977ece5a94233775f4fb78456f9905276241f1f3",
       "ru_sha256": "05c16e429d4d1f5924374404f57d69c1f2ca8652cfb5df3fd2d5beadffddfd72",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "benchmarks-retrieval-readme",
       "en_path": "docs/readings/benchmarks/retrieval/README.md",
       "ru_path": "docs/ru/readings/benchmarks/retrieval/README.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "7f3a2737c631b82c243bdb67b6fba2dc148e0817311d7d38de5f569df35edffc",
       "ru_sha256": "7f359623a6b26713c0400c8b4403a0ca31ae2e756a76839f65197977aa8b11eb"
     },
@@ -300,8 +300,8 @@
       "en_path": "docs/readings/benchmarks/toolkit/README.md",
       "ru_path": "docs/ru/readings/benchmarks/toolkit/README.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "cafa53a098a26bc44a4d9e2532186b0e2ac6c1d920c1d054e17747f5958ea45a",
       "ru_sha256": "da44b62d9e1e8c16c979c4e24b4689bb3b59ae9a3b2f0116573e90366e579708"
     },
@@ -312,16 +312,16 @@
       "en_sha256": "120f5b33dbdf84cf8544d5d736d3019d7533b37829710aa69c444e3f848b07b7",
       "ru_sha256": "c077ca988103832643d4d0816a0f2b637b3e4b9ea36a2399f89c5050a52cace6",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-adr-0001-okf-v02-graph-projection",
       "en_path": "docs/adr/0001-okf-v02-graph-projection.md",
       "ru_path": "docs/ru/adr/0001-okf-v02-graph-projection.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "859a8ac5d4fda2fffb18ead69b46356e96c904f14b34751d556d90e73c502f25",
       "ru_sha256": "7a5f949cd2e4fcd550a3983e03276070887e955f1d9a1e504a18d0bf7b85d44b"
     },
@@ -330,8 +330,8 @@
       "en_path": "docs/adr/0002-changeset-v1-additive-operation-tags.md",
       "ru_path": "docs/ru/adr/0002-changeset-v1-additive-operation-tags.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "ce27527861e0eb8c7a2003d86462cbd3a0d7d5e00453d6cc5d7b2d573572d054",
       "ru_sha256": "f556e5768ff63137cb798531597f48ad421395d8773b4d6fe5ab48f216ecd370"
     },
@@ -340,8 +340,8 @@
       "en_path": "docs/adr/0003-okf-v02-temporal-revisions.md",
       "ru_path": "docs/ru/adr/0003-okf-v02-temporal-revisions.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "5d63d621fa32c70360a47d02f039971738f020134aa36ff619a159a0cbfd3c7e",
       "ru_sha256": "0b73c2981487a59f38d8dc296b1dfd4c024d5e73c9371f94d4e6afd4c580253a"
     },
@@ -352,8 +352,8 @@
       "en_sha256": "9519c337e1de0c4ead37764be0d15d5399387f451bf9c77fe8a6b5ba7a5fdc11",
       "ru_sha256": "685cd86441c173d98a4d3bb2a75ae10a18ab73267dc2fab04becd71d82608373",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -365,8 +365,8 @@
       "en_sha256": "888172cb8b62dfd848ee2e4cae25c98dde568a1821408dfd48019954fb470794",
       "ru_sha256": "75a891899df549d02886b0b911a838ff048a8488cc865a94bfdce54ee90a2775",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -378,8 +378,8 @@
       "en_sha256": "cae652af516fcde83190d9153030a0199cd9e732fb07804efc4599843a2c6423",
       "ru_sha256": "f9019d9068e0023a15800f460109707b6e43e2c522e4e21e4eee3b2765167a02",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -391,8 +391,8 @@
       "en_sha256": "4d54cfd700833d849c8b0038e1c955d9ee4406695368b4c9c6a524420a5467e4",
       "ru_sha256": "aea3a0fc3d720ae6da47ba5ea9ad3e5cf3a28331950a4083ed4d5c3e7a3f7ef6",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -404,8 +404,8 @@
       "en_sha256": "2615e8f8c8506255f111907e5dcd9b7fd0e506c04e342f8167390a5bab8325d7",
       "ru_sha256": "4dbcbe4bd3ff581927c88509c2ea9c2a25c8f3ffbbff8cfb7a34984b31685c9e",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -417,8 +417,8 @@
       "en_sha256": "3e109816e05fbe8ee67692633a093e0b8bff4cba6cc0c6275c43e039264016d8",
       "ru_sha256": "2ab1b7dd32f21ec6aae1da4fd5b91c8e2d7bc7138add25dc07d264ae41b7bb0e",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -430,8 +430,8 @@
       "en_sha256": "96f294dad53099c3b83e895f52ff089d7e7705507db0682346feb9c8261f87b8",
       "ru_sha256": "12b650dce69f3ccce4677a4593ba2c709963d3d5e1de4af2c04d2f5afa80a445",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -443,8 +443,8 @@
       "en_sha256": "58645f43b9e1cfb95ca70c1b9c0b132bc5219509c9d33fa633de8ce824489a7e",
       "ru_sha256": "afe7a19c785ff26af14f6181149ec53f49a7bace5322629134aff49318e44c7e",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -456,8 +456,8 @@
       "en_sha256": "abd9ccbfd68ed31e8b1d8f20989c68882f76570620d555cff9ef3d41d2e1e9fa",
       "ru_sha256": "d648c8f88f07f49a840621fc6ab844d1866a72596c97eb14714456a2e702ca36",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task09",
@@ -466,8 +466,8 @@
       "en_sha256": "71cc9dc18f51b6de1530f4677452544e6962f9c51946db9a7e1d725a6d4fc5f2",
       "ru_sha256": "41c6d1605cb1b0ddcedeb940af71f4597a1e91b5046a26b4538b8699da0a8494",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task10",
@@ -476,8 +476,8 @@
       "en_sha256": "f497541260dbf4b3eca46dcc5921cdcaca87e3ab29654a05113f22174b55c1e0",
       "ru_sha256": "1a9ef63a5088ca4db7f7bb3e0ae24d7fa1ccfca34a45c70d261d59b1743a235f",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task11",
@@ -486,8 +486,8 @@
       "en_sha256": "5a000cb64820ac1db60b84886899d99d275e73d3998fd2092840a6fcfe249a27",
       "ru_sha256": "660349611178073dad881be1430e0a86ba65df12d5ac53faa3fead514b7ef656",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task12",
@@ -496,8 +496,8 @@
       "en_sha256": "15e7737cc7f19f918fe6b495c2438cd904520a559ecd18c1efe91c381debb04a",
       "ru_sha256": "31e80b81e50dfc3159456018dccef7c028cbc5f8f3ffe5b4a3778d49118c8634",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task13",
@@ -506,8 +506,8 @@
       "en_sha256": "fdcc80ea1dca7b95b633bf96948da0ff72579bb3000362e04b5c6a328b3039ef",
       "ru_sha256": "b1d01265ba3813f1995cde10e1cdbc6650f1e13cda5ac36215f81cbba926abab",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task14",
@@ -516,8 +516,8 @@
       "en_sha256": "603b0a5e828308c90fa90544c2720cd8b9726345ab593f82ae9d3ba45594d84e",
       "ru_sha256": "aa755dbd203d12b5e33ae67f4395e9c1c2217f479c7422ecaa478b190f73c40f",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task15",
@@ -526,8 +526,8 @@
       "en_sha256": "1f80dccadafaf40a4cb757588e90e85825b75ca4a699550f59f89069cf56e802",
       "ru_sha256": "9cd6be37d5c7ff6bb93f7cf0541708ff378e0bf59629757d5ebd6c3dc8768591",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task16",
@@ -536,8 +536,8 @@
       "en_sha256": "aba6888f285ff785b24fbd17613a9d7424b55b9e30b2f8788a5f99d8a25318bf",
       "ru_sha256": "4e6e2500348d1fc91f535f83a45c5bb63707a38b0003b448a89cfd475981c56b",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task17",
@@ -546,8 +546,8 @@
       "en_sha256": "3fc58c45be6d86aa7dad1bbdae964f68b03825a7ecefc61cff94a8b00422d507",
       "ru_sha256": "2aca10c9b929139f95ad9db13861cb2df0714ac424fb66ed975c6a1b03d2e572",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task18",
@@ -556,8 +556,8 @@
       "en_sha256": "67756b38d3f3b844e01fe1e869790767df2cf5f09568a9ddaf6c2bbfe4abf3d3",
       "ru_sha256": "a9ec2263aa6c080615aa6973e0b705d277f873a27159c73d93460017e1243f51",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task19",
@@ -566,8 +566,8 @@
       "en_sha256": "ea4dc0abbba747fd813650d2accbdbb693ebd5ac1a79333ed3adf55049717755",
       "ru_sha256": "f14a02b5ce2b05eae2f586a455be6b541065d6515906fe02bad4bd4c424a4a4d",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task20",
@@ -576,8 +576,8 @@
       "en_sha256": "2cdbf7c3bf934e3bea52f4a7ea7fee32d48f6f659c3321d27ff65a17b6aa46a5",
       "ru_sha256": "6b7e67eb4b02718cfd6557d13587ac3ce0d47b6b620e511cd99ce12b21e1afb6",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-development-v0-2-tasks-task21",
@@ -586,16 +586,16 @@
       "en_sha256": "a42a7ff8fe1943cf2492a1f5a09453a1a0ed5faa6b9d0a1b1024e00ef4333ad2",
       "ru_sha256": "b989351ffaea7eef4ff8e3b1cabfec67728cdba62e1c2259362b8965cd1b32ea",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-getting-started-mcp",
       "en_path": "docs/getting-started-mcp.md",
       "ru_path": "docs/ru/getting-started-mcp.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "1de93e6a99e00a02116a11d198a8fd771338de8a92363aad44383f670b4e1fe8",
       "ru_sha256": "6b9e97e7727fec16dd59bfa757ccd3b907cee890a7222d54061483abbcbbf576"
     },
@@ -604,8 +604,8 @@
       "en_path": "docs/github-action.md",
       "ru_path": "docs/ru/github-action.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "2a341e19a894ea544e0381e149a2548e7892ceaf38be7bb0935c7a06a6aa525c",
       "ru_sha256": "3f5d075518c8459bb5f581db1203179388e85f1c3fbfb2b101af4881874da2e5"
     },
@@ -614,8 +614,8 @@
       "en_path": "docs/index.md",
       "ru_path": "docs/ru/index.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "94099fc9d06a7c2eb6029ecd207d73a442c14d112203c3cb7572ff03f3603e73",
       "ru_sha256": "ed5c1aa6953dd5642a673befa9ece4ce7da420ffdfa8cfaf524b4eeedb6cfc11"
     },
@@ -626,16 +626,16 @@
       "en_sha256": "8b8482242fec7d782787349e74a0ff5674ff8647010e808a9741f691520bb046",
       "ru_sha256": "02bb2ed43fcd6ef28a0656b3a2272c4723259cad63b98507939102fbe92a061f",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-knowledge",
       "en_path": "docs/knowledge.md",
       "ru_path": "docs/ru/knowledge.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "ec991d896db69616a34de92c4e4f26d1d4ea6a7af87f86b9c7c8b3bd28c5f2af",
       "ru_sha256": "f3f8079d2a79ee19af5e0daad706351403b767bb80a19f9ee24762bc356aac86"
     },
@@ -644,8 +644,8 @@
       "en_path": "docs/knowledge-manual-review.md",
       "ru_path": "docs/ru/knowledge-manual-review.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "eff58d33af9ad30a29965a8b89fc176d76e399f1e21dc42350f3a39bb380d82d",
       "ru_sha256": "84ac5742cd6b56f4993608c3c6a45493b52d22db834f0a789c5fcf977840084b"
     },
@@ -654,8 +654,8 @@
       "en_path": "docs/knowledge-upkeep.md",
       "ru_path": "docs/ru/knowledge-upkeep.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "bf51d84532c285ab9a282c7b3ff18b581f9f1efca90558506abd4476caa913d4",
       "ru_sha256": "3825ceddff2c0f343d9213ed11bd0e0d7352cde01c5dbcb25f1eb277b3568d41"
     },
@@ -664,8 +664,8 @@
       "en_path": "docs/migration.md",
       "ru_path": "docs/ru/migration.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "e57991a8273f1363b4c66f8932e8f7f6b254cc30f82fad5b289fd4310179a92f",
       "ru_sha256": "bc181e1cb1a589dff201271556847732fcff26e18e27b0640ca2a1067f31c21b"
     },
@@ -676,8 +676,8 @@
       "en_sha256": "ff0d660837f3fe61f0b40fe878aff839ecef38e34978cec439afe60425b88459",
       "ru_sha256": "0d7050b8715e175d0821cc154eb92697080fbad09540018e7deeca80174e64d6",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-parser-backed-lossless-mutations-profiles-overlay-baseline-vs-result-2026-07-20",
@@ -686,8 +686,8 @@
       "en_sha256": "033583583b20841c2327f794aaf800728804dafae285aba7ea3635656a5f3d70",
       "ru_sha256": "d2d9462135fcd8d06f994626c4020ed6367fe5f29f1d3d31a7bc4584bad99ec1",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-parser-backed-lossless-mutations-profiles-planner-10000-2026-07-20",
@@ -696,16 +696,16 @@
       "en_sha256": "76a8c6cf89a04167d58b294a311e69cca0ed885808b5cadec82cd37bf952aeb7",
       "ru_sha256": "97932d81165201932760dfdd0506ea121f8baa17b32abbdb7ab34d92d9896f01",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-quickstart",
       "en_path": "docs/quickstart.md",
       "ru_path": "docs/ru/quickstart.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "fffda3b6a00a0ab2e8bdbff06477c47873b26559bc6e6bd2e48058f9c9a1b0a6",
       "ru_sha256": "73bf279f0efcaf297dbe600edf16e92e187636a53aee8fff474021d9ba21025c"
     },
@@ -714,8 +714,8 @@
       "en_path": "docs/reference.md",
       "ru_path": "docs/ru/reference.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "66a70b231d59bc3326a81c7e951bd3c0d637dc5cb22c9d041884d491d40225e8",
       "ru_sha256": "7870e979151375d785409f40afa34ccbbd6382c9f2f0c39d7f43b44bed6cff1b"
     },
@@ -724,8 +724,8 @@
       "en_path": "docs/release-engineering.md",
       "ru_path": "docs/ru/release-engineering.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "41e24053561a259cf11e1c449adb34000d23b7080eb2ab0fd94f45669f34d84b",
       "ru_sha256": "9b1eba6b5a406f55c5499ba1f58659110a5ebaa46d270bf81d0e6e78e8d1a36f"
     },
@@ -736,8 +736,8 @@
       "en_sha256": "8029857eb4bcb316aa367660c24bd5db49a63fd6534305e8fd95de82b55f32d5",
       "ru_sha256": "391ebfc237e42ccb824509b772faaa2e767fab762c55bc180d89f6a5df49b8c3",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-releases-v0-2-2",
@@ -746,16 +746,16 @@
       "en_sha256": "1d3b7a7cc2bb55573c88bbc6a3f4473c594a9d4e629756fbe7b0a6824019f622",
       "ru_sha256": "0cf6d081cb5bff3db780901f1cbdeacda5025108e61a8e232a906ddf863d7527",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "docs-skill",
       "en_path": "docs/skill.md",
       "ru_path": "docs/ru/skill.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "79bf9f1d6ac3183652f3be0342abaf5fb6c4f22e1579ab4d3c451bc0db48972d",
       "ru_sha256": "16e6f52e35adc660aa38c2c59f93761fde542d85d06fe8b8b6585dd3b243eb7b"
     },
@@ -766,8 +766,8 @@
       "en_sha256": "e23bb645aa7e88b1f45399fa6a7b94c962e09a04e2e8598c35695baf448ffc30",
       "ru_sha256": "22754cf8949b49b29c148a9192073c6c0842d89dcd9afc2d5da61d309346cd94",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -779,8 +779,8 @@
       "en_sha256": "c5c20ee3ebaac0b5d2661c74221e075ee4c12bc8ebe48bd101749540538a50b5",
       "ru_sha256": "1cbd273bac9853e208cc75c4764ff3397dc9846d9d33e315d04666ba8bb62cb0",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -790,8 +790,8 @@
       "en_path": "docs/toolkit.md",
       "ru_path": "docs/ru/toolkit.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "2bf35b089bf1c671f50466242cc8d31bc593d8e538b9d0d41cf70b04909fb7eb",
       "ru_sha256": "a0252e086ac2c12d1f7caf78790c91b56c88e64165a00c66da81b08720479221"
     },
@@ -802,16 +802,16 @@
       "en_sha256": "2aa637d8a0408febba6b141fae3b4ea669fdf9b2f482050631db7f301145688f",
       "ru_sha256": "a710b4c6a9e8017262f6835bae181ba67cde10c59b80ca7ed8c486db7ba3ba67",
       "coverage": "full manual historical EN/RU reading by independent editorial subset reviewer",
-      "facts_actions_examples_limits_parity": "pass after confirmed corrections",
-      "russian_prose": "pass after confirmed corrections"
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation"
     },
     {
       "id": "documentation-index",
       "en_path": "docs/documentation.md",
       "ru_path": "docs/ru/documentation.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "1e539fb13d2ffebba5c4da03b44542aef94a80e78b6ca7530644c8a6483a5aea",
       "ru_sha256": "e9e3dcc222901edb86ae0b3c59ff9bb8d2c3a98dfe495973235d9d9058496df9"
     },
@@ -820,8 +820,8 @@
       "en_path": "examples/README.md",
       "ru_path": "examples/README.ru.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "4e3d5a5f1958c0e879aefc042e83f7f44c615e401fa5fbad3126595ceac41b86",
       "ru_sha256": "1ba05c49b3dc133f2d259b9aaba37071cb3ab4af2abc5d60066ffd92ccd59060"
     },
@@ -830,8 +830,8 @@
       "en_path": "docs/readings/fixtures/interoperability/README.md",
       "ru_path": "docs/ru/readings/fixtures/interoperability/README.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer; compared pinned original README",
-      "facts_actions_examples_limits_parity": "pass; no confirmed mismatch",
-      "russian_prose": "pass; no confirmed issue",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "7194546ceb64225d456330790b43e86d3141fd84d90f9ebc8c4d07301b14b495",
       "ru_sha256": "9dd722fc6c0342bbad768a124036c2180b4c222ed7bd0ef426ea131f8fd49555"
     },
@@ -842,8 +842,8 @@
       "en_sha256": "9ccabbcf466ca2bc443c7afd3c8946da45bd9a032955702010d47b5ad4a46e51",
       "ru_sha256": "082144b11ac49877ee1440250e83f9724c219216598e0b8a39f275a157a6b9e9",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -855,8 +855,8 @@
       "en_sha256": "8f7e4b6b17055583dc100ce3d430db5700666b0f820eea4ee2e1d6099fdf9fb3",
       "ru_sha256": "021060f14fa7e0815778011c2f948a8a1625c7a65bdf6bd8960cca55c467ae7b",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -866,8 +866,8 @@
       "en_path": "docs/history.md",
       "ru_path": "docs/ru/history.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "57c10580d84acc340e437ec2a481179fc2daa3634e4c3df025bf0a52d50c3b18",
       "ru_sha256": "3f1f4b0e12bf1a9d90488cdcf915ed788c0e6fdef14cbfc3c9dee713a7751711"
     },
@@ -876,8 +876,8 @@
       "en_path": "README.md",
       "ru_path": "README.ru.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "c897c6401d6a40faf612c38f3990f0c0d460a160725d72911ec3cea6d3ad7d5f",
       "ru_sha256": "27e5d588ab816c572ade4dfc1b62aefbdbe9de3e96ae84254229461679d6158a"
     },
@@ -888,8 +888,8 @@
       "en_sha256": "4e3b6316431858e3738abe813af1b061ac57bc7409a624b53d431501070187c4",
       "ru_sha256": "18cf286dc694838974375cf3adffbf804b3d2d949207747675e562615633de06",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -901,8 +901,8 @@
       "en_sha256": "1a1e5ae257d32d77708f11062ac8d696ecf096d8842075cadc76a8f782221bad",
       "ru_sha256": "822def86b15767d618aa9dce468c5390de0c095dca242af821f16ef8aedbfb00",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -914,8 +914,8 @@
       "en_sha256": "321d37dbce2d9f91d34db5209554b5d5a9318f0e7805be62e3e271f01cfb2c3d",
       "ru_sha256": "3fe8c60ba56639b8e4c42766e3cbee46228f0ef7b629305b46924c105a113e2b",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -924,11 +924,11 @@
       "id": "skills-open-knowledge-format-references-adversarial-v02",
       "en_path": "docs/readings/skills/open-knowledge-format/references/adversarial-v02.md",
       "ru_path": "docs/ru/readings/skills/open-knowledge-format/references/adversarial-v02.md",
-      "en_sha256": "53016aa1a3130ef77fff11509b631c4ee182cb4d8d537f5322108b91fc83e89e",
-      "ru_sha256": "a287febb64e1423f1383e946ce8d0c05deddc48493dadebe9ad15c82fae49b2c",
+      "en_sha256": "211aa48cbec34098c55d315dae4aa65ee94cf70c302569e1b24225deccb93757",
+      "ru_sha256": "3ef420a3d902524238751cfe36ff3a7b208c9b2880d91605f18cf276570dbe8f",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -940,8 +940,8 @@
       "en_sha256": "b5283176d1b2ae67c9594bf22bf2ae53d18374c5f97ef09a2cc16a218b44f691",
       "ru_sha256": "937afbf4e03e104beda443c98b4c9f2619a95fc0187b8374f9a566afaf804952",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -953,8 +953,8 @@
       "en_sha256": "8d0a186408ef4684cb08e5673e9c192b77f0f996e45ae8965d28258b5fb8d500",
       "ru_sha256": "91ce2b1dac8bf2410edc124814d4a46c7f2f59d18922c70811ea4e0cc77a93f5",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -966,8 +966,8 @@
       "en_sha256": "0413525b0ae42972ef5e68ed6f74fc6b5367cb280337734ee9b560b14c75c1df",
       "ru_sha256": "29b2a8f09921092f3387f0462699bce08cd95db56ab8e9849a6b03a7916ef201",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass after independent rereading of corrected paragraphs",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [
         "CONTRACTS-RU-02"
@@ -981,8 +981,8 @@
       "en_sha256": "a504cf5f21ee216ff69daf9be9fbe34afbadd6c9776407a42c7a0078cbe18cb4",
       "ru_sha256": "74354e2ec4edaf41a56ea52da6b94e57bcff8b1122c6afc357e7358e1f2b137d",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -994,8 +994,8 @@
       "en_sha256": "cec8a222cdee4aa8682ce0469a7ad078b2f66c4408a6529b8a6b395e51d6c8c4",
       "ru_sha256": "3145257712ff3d4dbc69fdec0cf78f1cb7ff55b4de3fad86e5ba0beddad296e9",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass after independent rereading of corrected paragraphs",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [
         "CONTRACTS-RU-01"
@@ -1006,11 +1006,11 @@
       "id": "skills-open-knowledge-format-references-operational-workflows",
       "en_path": "docs/readings/skills/open-knowledge-format/references/operational-workflows.md",
       "ru_path": "docs/ru/readings/skills/open-knowledge-format/references/operational-workflows.md",
-      "en_sha256": "641aaae1ebd81b60627af3caa282f3ad2d5b75af2ba981bc884f7b8076f0ab67",
-      "ru_sha256": "1a415a35a2f0380fa9ba4362a307e166b5adc354893a10e0b180d4365ef5234a",
+      "en_sha256": "a8745ccfc99707731dc3f3cb0f942a056736fe419976d7a9149302acda9a7e09",
+      "ru_sha256": "93486d99e5aada1f63b592e66c374e363c1711c1a099dd3937bace24e9154438",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -1019,11 +1019,11 @@
       "id": "skills-open-knowledge-format-references-spec-v02",
       "en_path": "docs/readings/skills/open-knowledge-format/references/spec-v02.md",
       "ru_path": "docs/ru/readings/skills/open-knowledge-format/references/spec-v02.md",
-      "en_sha256": "fbb1c364915e5ab4a2be9c6c3fb3b99ca97f3cd176d0248ce0b748313a7f93e7",
+      "en_sha256": "6171bd055f29721d9c26990e257199ad13506d7c44567586f9ab1d5116105049",
       "ru_sha256": "8a20fa47fee0ca291d3d1b33c584cfccbc9fcf2f9ce2bdf804aca2f19664a7ac",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass after independent rereading of corrected paragraphs",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [
         "SPECS-RU-01",
@@ -1038,8 +1038,8 @@
       "en_sha256": "f3a3a0b891d934ebbbfd0fdcb6b3f112dec34f361a9fe81ea32b1657cec383c4",
       "ru_sha256": "5357ac9252d704ecc5a120bf7876aa563c87c0a153d05605b274b8482a6a8261",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass after independent rereading of corrected paragraphs",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [
         "SPECS-RU-01",
@@ -1054,8 +1054,8 @@
       "en_sha256": "2018849f5110567f9f186b6f6f387fde268e29213c359496e9ec069caefff411",
       "ru_sha256": "6cbfed04e3f1ae60039330f82f997f1a10578ffdbd7bcb907588fcc8dd6e98dd",
       "coverage": "full manual EN/RU pair reading; specifications reviewed by independent editorial subset worker",
-      "facts_actions_examples_limits_parity": "no confirmed material mismatch",
-      "russian_prose": "pass",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "source_authority": "original/revision disclosed; preserved runtime originals match baseline hash where applicable",
       "resolved_findings": [],
       "findings": []
@@ -1065,8 +1065,8 @@
       "en_path": "docs/readings/viewer/README.md",
       "ru_path": "docs/ru/readings/viewer/README.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer",
-      "facts_actions_examples_limits_parity": "reviewed",
-      "russian_prose": "reviewed",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "aa754de8403949b02142f1dab4dda44125d659af3dee6a345ffd6d0ee685bc6a",
       "ru_sha256": "4f133db688a187d73c7fab4f9cb4fe30a6192395370851b2c75358fd99a3bde6"
     },
@@ -1075,10 +1075,28 @@
       "en_path": "docs/readings/viewer/testdata/regression-016/README.md",
       "ru_path": "docs/ru/readings/viewer/testdata/regression-016/README.md",
       "coverage": "full manual EN/RU reading by primary editorial reviewer; compared pinned original README",
-      "facts_actions_examples_limits_parity": "pass; no confirmed mismatch",
-      "russian_prose": "pass; no confirmed issue",
+      "facts_actions_examples_limits_parity": "pass after full reading and correction revalidation",
+      "russian_prose": "pass after full reading and correction revalidation",
       "en_sha256": "48c0be95ac63ab7a6be3067e95516ecd282bc660b2a1cd3dd13930fc255e4148",
       "ru_sha256": "3a91bc99d5fe63dd7b359ec1b3ff1da066fd8799451e1a3d685a834f4ae666f4"
     }
-  ]
+  ],
+  "product_digest": "7883e48018b83027860e2eec99a590ebb8c2ef11ea6d6ac744e8da4c1b551115",
+  "open_confirmed_findings": [],
+  "acceptance_percent": 100,
+  "acceptance_criteria": {
+    "AC01": "PASS",
+    "AC02": "PASS",
+    "AC03": "PASS",
+    "AC04": "PASS",
+    "AC05": "PASS",
+    "AC06": "PASS",
+    "AC07": "PASS",
+    "AC08": "PASS",
+    "AC09": "PASS",
+    "AC10": "PASS"
+  },
+  "mandatory_ci_verified_commit": "e7062ef",
+  "mandatory_ci_checks_success": 12,
+  "final_review_date": "2026-10-05"
 }

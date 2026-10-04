@@ -1,7 +1,7 @@
 {
   "algorithm": "SHA256(sorted path+NUL+fileSHA256+LF)",
   "excluded": "Task and evidence records under .cursor/ only; product, code, source docs, fixtures, scripts and CI are included.",
-  "digest": "4f56532dad1606b65fedef9c7c9b9f9a12dbb644c6072e408c993f4de83ec4ef",
+  "digest": "7883e48018b83027860e2eec99a590ebb8c2ef11ea6d6ac744e8da4c1b551115",
   "files": [
     {
       "path": ".agents/plugins/marketplace.json",
@@ -1809,7 +1809,7 @@
     },
     {
       "path": "docs/readings/skills/open-knowledge-format/references/adversarial-v02.md",
-      "sha256": "53016aa1a3130ef77fff11509b631c4ee182cb4d8d537f5322108b91fc83e89e"
+      "sha256": "211aa48cbec34098c55d315dae4aa65ee94cf70c302569e1b24225deccb93757"
     },
     {
       "path": "docs/readings/skills/open-knowledge-format/references/authoring-and-reading.md",
@@ -1833,7 +1833,7 @@
     },
     {
       "path": "docs/readings/skills/open-knowledge-format/references/operational-workflows.md",
-      "sha256": "641aaae1ebd81b60627af3caa282f3ad2d5b75af2ba981bc884f7b8076f0ab67"
+      "sha256": "a8745ccfc99707731dc3f3cb0f942a056736fe419976d7a9149302acda9a7e09"
     },
     {
       "path": "docs/readings/skills/open-knowledge-format/references/spec-v02-instant.md",
@@ -1841,7 +1841,7 @@
     },
     {
       "path": "docs/readings/skills/open-knowledge-format/references/spec-v02.md",
-      "sha256": "fbb1c364915e5ab4a2be9c6c3fb3b99ca97f3cd176d0248ce0b748313a7f93e7"
+      "sha256": "6171bd055f29721d9c26990e257199ad13506d7c44567586f9ab1d5116105049"
     },
     {
       "path": "docs/readings/viewer/README.md",
@@ -2185,7 +2185,7 @@
     },
     {
       "path": "docs/ru/readings/skills/open-knowledge-format/references/adversarial-v02.md",
-      "sha256": "a287febb64e1423f1383e946ce8d0c05deddc48493dadebe9ad15c82fae49b2c"
+      "sha256": "3ef420a3d902524238751cfe36ff3a7b208c9b2880d91605f18cf276570dbe8f"
     },
     {
       "path": "docs/ru/readings/skills/open-knowledge-format/references/authoring-and-reading.md",
@@ -2209,7 +2209,7 @@
     },
     {
       "path": "docs/ru/readings/skills/open-knowledge-format/references/operational-workflows.md",
-      "sha256": "1a415a35a2f0380fa9ba4362a307e166b5adc354893a10e0b180d4365ef5234a"
+      "sha256": "93486d99e5aada1f63b592e66c374e363c1711c1a099dd3937bace24e9154438"
     },
     {
       "path": "docs/ru/readings/skills/open-knowledge-format/references/spec-v02-instant.md",

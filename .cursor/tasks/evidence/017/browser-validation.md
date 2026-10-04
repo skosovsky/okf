@@ -12,3 +12,5 @@ Root used the CUA browser interface against the built site served on localhost (
 - An actual empty bundle export displays both localized empty-list and empty-bundle messages. Switching RU→EN translates both.
 
 The Go tests additionally verify invalid-language no-publication, unchanged semantic projection, CSP digest, safe escaping and deterministic bytes. The production JS suite covers every footnote collision namespace, direct hashes, Back/Forward behavior, unknown custom values, preserved filter state and Russian plural rules. Native UI evidence does not replace these safety/regression checks.
+
+Final in-app Chromium desktop EN/RU exports both inspected at1280×720; each document scrollWidth=1280. No browser console errors were reported for the final English teaching export.

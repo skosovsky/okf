@@ -1,0 +1,7 @@
+Configuration file: docs/_config.yml
+            Source: docs
+       Destination: /tmp/okf017-site
+ Incremental build: disabled. Enable with --incremental
+      Generating... 
+                    done in 9.497 seconds.
+ Auto-regeneration: disabled. Use --watch to enable.
