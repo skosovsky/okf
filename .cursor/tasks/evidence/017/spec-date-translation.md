@@ -37,3 +37,5 @@
 Заменены «редакция upstream» на «исходная редакция» и «именованные типизированные места» на «именованные параметры с типами». Выяснено, что настроенный Kramdown GFM игнорирует короткую форму `{: #slug }` для заголовков. Все 41 атрибут заголовка обеих страниц заменены поддерживаемой формой `{:id="slug"}`. Рендеринг обеих страниц реальным Kramdown GFM подтвердил 41 совпадающий уникальный ID заголовка, равный указанному в исходном Markdown. Отдельных дублирующих `<a>` нет. Нормативный оригинал сохранён.
 
 После повторной редакторской сверки обычный учебный заголовок `# Schema` в русском примере заменён на `# Схема`. Имена полей, значения типов и SQL не изменены. Технические имена заголовков в таблице соглашений сохранены для точной ссылки на оригинал.
+
+Final staging whitespace gate: removed four nonsemantic trailing spaces from EN explanatory prose; canonical original remains byte-identical. EN reading body preservation is exact except authored heading markup and these prose whitespace changes.

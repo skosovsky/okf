@@ -125,4 +125,3 @@ are in the repository's `docs/knowledge-upkeep.md` or the installed checker's
 contracts. A log edit, validator pass, or old fingerprint is not evidence of
 review. If baseline was missed, say so and review the intervening diff
 manually; do not claim a fingerprint-bound completion.
-

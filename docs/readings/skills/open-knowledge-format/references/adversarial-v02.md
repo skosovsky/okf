@@ -57,4 +57,3 @@ package/docs outcome tests. Agent-only rows use an adversarial agent harness:
 Fixture paths and expected diagnostics are owned by the repository's canonical
 `fixtures/v02/corpus.yaml`; examples must point to named corpus keys rather than
 copying canonical snippets.
-
