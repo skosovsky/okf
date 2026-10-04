@@ -1,0 +1,126 @@
+[
+  {
+    "mode": "skill",
+    "language": "en",
+    "result": "PASS",
+    "client": "codex-cli 0.160.0",
+    "commands": [
+      {
+        "command": "/bin/zsh -lc \"pwd; rg --files -g 'index.md' -g 'retry-policy.md' -g 'source-material.md' -g 'AGENTS.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'cat .agents/skills/open-knowledge-format/SKILL.md; cat .agents/skills/open-knowledge-format/references/operational-workflows.md; cat .agents/skills/open-knowledge-format/references/authoring-and-reading.md'",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'cat knowledge/index.md; nl -ba knowledge/retry-policy.md; nl -ba knowledge/source-material.md'",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'okf help; okf validate --path knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0'",
+        "exit_code": 0
+      }
+    ],
+    "tools": [],
+    "answer": "In this fictional training bundle, involve an operator **after 24 hours of unsuccessful delivery retries**. The operator must **check the cause before another attempt**. Both documents agree: [retry-policy.md](/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-skill-en-qez652d8/knowledge/retry-policy.md:11), [source-material.md](/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-skill-en-qez652d8/knowledge/source-material.md:9).\n\nRan exactly:\n\n```sh\nokf validate --path knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0\n```\n\n**PASS**, exit code `0`: 3 files scanned; declared and effective version `0.2`; 0 errors, 0 warnings, 0 info, and 0 policy failures. Base conformance and the additional checks passed, including the zero-warning budget.\n\nValidation checks format, not factual accuracy. Neither document has `verified` metadata, so both are unverified. No files were changed."
+  },
+  {
+    "mode": "skill",
+    "language": "ru",
+    "result": "PASS",
+    "client": "codex-cli 0.160.0",
+    "commands": [
+      {
+        "command": "/bin/zsh -lc \"pwd; rg --files -g 'index.md' -g 'retry-policy.md' -g 'source-material.md' -g 'AGENTS.md'\"",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'cat .agents/skills/open-knowledge-format/SKILL.md .agents/skills/open-knowledge-format/references/operational-workflows.md .agents/skills/open-knowledge-format/references/authoring-and-reading.md'",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'cat knowledge/index.md; nl -ba knowledge/retry-policy.md; nl -ba knowledge/source-material.md'",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'okf help'",
+        "exit_code": 0
+      },
+      {
+        "command": "/bin/zsh -lc 'okf validate --path knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0'",
+        "exit_code": 0
+      }
+    ],
+    "tools": [],
+    "answer": "An operator should get involved **after 24 hours of unsuccessful delivery retries**, if delivery still fails. The operator checks the cause of the failure before the next attempt. See [retry-policy.md](/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-skill-ru-aade0yqg/knowledge/retry-policy.md:11) and [source-material.md](/private/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-skill-ru-aade0yqg/knowledge/source-material.md:9). These are explicitly fictional training requirements; neither document declares `verified` metadata.\n\nRan exactly:\n\n```sh\nokf validate --path knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0\n```\n\n**PASS**, exit code `0`: 3 files scanned, 0 errors, 0 warnings, 0 informational diagnostics, and 0 policy failures. Declared and effective versions are both `0.2`. Base conformance and the additional strict, link, orphan, and zero-warning checks passed. Validation checks format, not factual accuracy.\n\nNo files were changed."
+  },
+  {
+    "mode": "mcp",
+    "language": "en",
+    "result": "PASS",
+    "client": "codex-cli 0.160.0",
+    "commands": [],
+    "tools": [
+      {
+        "tool": "search_sections",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge",
+          "query": "delivery operator"
+        },
+        "status": "completed"
+      },
+      {
+        "tool": "read_concept",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge",
+          "concept_id": "retry-policy"
+        },
+        "status": "completed"
+      },
+      {
+        "tool": "read_concept",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge",
+          "concept_id": "source-material"
+        },
+        "status": "completed"
+      }
+    ],
+    "answer": "An operator should get involved **after 24 hours of retries if delivery still fails**. The operator must check the cause before another attempt. See the [retry-policy note](/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge/retry-policy.md:11) and its [supplied requirements source](/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge/source-material.md:9).\n\nOKF calls made, in order, all using `bundle_path = \"/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-en-ahytlpcg/knowledge\"`:\n\n1. `search_sections(bundle_path, query=\"delivery operator\")`\n2. `read_concept(bundle_path, concept_id=\"retry-policy\")`\n3. `read_concept(bundle_path, concept_id=\"source-material\")`\n\nNothing was changed."
+  },
+  {
+    "mode": "mcp",
+    "language": "ru",
+    "result": "PASS",
+    "client": "codex-cli 0.160.0",
+    "commands": [],
+    "tools": [
+      {
+        "tool": "search_sections",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge",
+          "query": "доставка оператор"
+        },
+        "status": "completed"
+      },
+      {
+        "tool": "read_concept",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge",
+          "concept_id": "retry-policy"
+        },
+        "status": "completed"
+      },
+      {
+        "tool": "read_concept",
+        "arguments": {
+          "bundle_path": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge",
+          "concept_id": "source-material"
+        },
+        "status": "completed"
+      }
+    ],
+    "answer": "Оператор подключается, **если после 24 часов повторных попыток доставка задания всё ещё не удалась**. Перед следующей попыткой оператор проверяет причину ошибки. Это следует из [заметки retry-policy](/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge/retry-policy.md) и её [источника — требований к доставке](/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge/source-material.md:9).\n\nФактически выполненные вызовы okf MCP, по порядку:\n\n```json\nmcp__okf__search_sections({\n  \"bundle_path\": \"/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge\",\n  \"query\": \"доставка оператор\"\n})\n\nmcp__okf__read_concept({\n  \"bundle_path\": \"/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge\",\n  \"concept_id\": \"retry-policy\"\n})\n\nmcp__okf__read_concept({\n  \"bundle_path\": \"/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-mcp-ru-n1k8s2mj/knowledge\",\n  \"concept_id\": \"source-material\"\n})\n```\n\nПоиск вернул один раздел: `source-material.md#L5-L9`. Ничего не изменено."
+  }
+]

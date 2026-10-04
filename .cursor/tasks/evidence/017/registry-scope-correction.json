@@ -1,0 +1,41 @@
+{
+  "reason": "Independent review found documenting README adjacent to excluded fixtures/testdata belongs to requested scope. Two original docs added; original95baseline remains unchanged, supplement retains pinnedsourcehashes.",
+  "documents": [
+    {
+      "id": "fixtures-interoperability-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "fixtures/interoperability/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "2e6f38f80115b0ead5102cb15c7b60402c6594a1e1e4dbde7558c585569dd204",
+      "preserve_source": true,
+      "normative_source": "fixtures/interoperability/README.md",
+      "en": {
+        "path": "docs/readings/fixtures/interoperability/README.md",
+        "url": "/readings/fixtures/interoperability/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/fixtures/interoperability/README.md",
+        "url": "/ru/readings/fixtures/interoperability/README/"
+      }
+    },
+    {
+      "id": "viewer-testdata-regression-016-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "viewer/testdata/regression-016/README.txt",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "1c3ca97cf6def1a0d4a12807ea023ffa877f8cd6610370a559adb88fd9157068",
+      "preserve_source": true,
+      "normative_source": "viewer/testdata/regression-016/README.txt",
+      "en": {
+        "path": "docs/readings/viewer/testdata/regression-016/README.md",
+        "url": "/readings/viewer/testdata/regression-016/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/viewer/testdata/regression-016/README.md",
+        "url": "/ru/readings/viewer/testdata/regression-016/README/"
+      }
+    }
+  ]
+}

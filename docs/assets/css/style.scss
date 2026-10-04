@@ -149,3 +149,17 @@ footer p {
     width: 100%;
   }
 }
+
+.documentation-index li {
+  margin-bottom: 0.55rem;
+  overflow-wrap: anywhere;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+section {
+  overflow-wrap: anywhere;
+}

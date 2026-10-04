@@ -1,39 +1,38 @@
 ---
-title: Repository knowledge bundle
-description: How to read and maintain the architecture concepts in knowledge/.
+title: "Repository knowledge"
+description: "Repository knowledge"
 permalink: /knowledge/
 ---
 
 {% include nav.html %}
 
-# Repository knowledge bundle
+<span id="repository-knowledge-bundle"></span>
 
-[`knowledge/index.md`](https://github.com/skosovsky/okf/blob/main/knowledge/index.md) is a small OKF v0.2 bundle about this repository's architecture. Start there when locating the owner of a change, the write boundary, supported platforms, or the relationship between document and package versions. Open the linked source contract or Go file before relying on a detail in a concept. The concepts are navigation aids, not replacement specifications.
+# Architecture knowledge for this repository {#page-top}
 
-Every initial concept has `status: draft`. Its `sources[].resource` values pin the original architecture evidence to repository commit `ed7ddc28cd127682023bd150ee377906b817e099`; the later MCP update also pins its new sources to implementation commit `0f15ab4091203f11caa7fb0b9e02da47d719a051`. These URLs remain followable outside the bundle without pretending they are bundle-internal links. A pinned URL identifies evidence at that revision; it does not mean the current implementation still matches it, and the validator does not fetch it. Footnote IDs in the body identify which source supports a claim. A later editor should change a concept only after checking the current canonical source, update the source URL to the revision actually used, and add a dated entry to [`knowledge/log.md`](https://github.com/skosovsky/okf/blob/main/knowledge/log.md).
+`knowledge/` contains notes about OKF: change owners, write boundaries, platforms, and versions. These are working pointers to code and contracts. The source notes remain in English; translating this guide does not change their content.
 
-Keep producer identity and verification honest. Do not add `generated`, `verified`, `stale_after`, usage counts, or source modification times by inference from Git history or a successful validation run. Record a verification event only when its actor and check actually happened. Record the current rule in the concept body; use the log for the change history. When code and concept disagree, fix the concept or mark its uncertainty explicitly, then confirm against the source contract.
+## Find the document {#read}
 
-## Validate
+Open the [root index](https://github.com/skosovsky/okf/blob/main/knowledge/index.md). For the write boundary, read `mutation` and `store`; for platforms, `platforms`; for versions, `versions`. Inspect the linked contract or Go file before making a change.
 
-Run the Go CLI with an explicit reference time:
+Initial notes have `status: draft`. Their sources pin revision `ed7ddc28cd127682023bd150ee377906b817e099`; a later MCP update also uses `0f15ab4091203f11caa7fb0b9e02da47d719a051`. A revision link identifies the material used when writing; check current code for present accuracy.
+
+## Validate and view {#validate}
+
+From the repository root:
 
 ```sh
 go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0 --json
+go run ./cmd/okf view knowledge --output /tmp/okf-knowledge-view.html --spec auto --as-of 2026-09-26 --lang en
 ```
 
-The required CI policy is zero errors and zero warnings in this checked-in bundle. `--max-warnings=0` makes the warning limit an exit-code gate; `--strict` enables guidance checks for present v0.2 metadata; `--check-links` and `--check-orphans` check local navigation. The `--as-of` value is fixed for deterministic CI until the date contract is revised; update it deliberately with the associated test and task. A separate audit should still read claims against their external sources because this command does not fetch URLs or prove factual accuracy.
+Expect zero errors and warnings, then HTML with an English interface and the original English notes. `2026-09-26` is fixed for reproducible CI; change it together with the validation policy. The command does not fetch external sources. Store HTML outside `knowledge/`; for another export choose a new path or explicitly add `--overwrite`.
 
-## View
+## After a change {#update}
 
-Generate the offline HTML viewer from the authored bundle. Choose an output path outside `knowledge/`, so the exported page is never read back as an OKF concept:
+Compare affected claims with current sources. Update the note body and the URL for the revision actually used, then add a dated entry to the [log](https://github.com/skosovsky/okf/blob/main/knowledge/log.md). Record verification, authorship, and expiry from actual actions and decisions rather than successful validator execution.
 
-```sh
-go run ./cmd/okf view knowledge --output /tmp/okf-knowledge-view.html --spec auto --as-of 2026-09-26
-```
+CI publishes derived HTML as the `knowledge-viewer` artifact. Markdown is the source; `<bundle>/.okf` contains internal store journals, rather than concepts or files to commit.
 
-Open the generated file in a browser. It is a derived snapshot: regenerate it after changing the concepts. The CI artifact `knowledge-viewer` carries the same generated HTML for review; the HTML is not an editable source file and should not be committed.
-
-For an opt-in check of whether a work session should update this bundle, see the [knowledge upkeep guide](https://github.com/skosovsky/okf/blob/main/docs/knowledge-upkeep.md). Its checker reports review evidence; it does not assign verification or change a concept automatically.
-
-`knowledge/` is the authored bundle. The filesystem store's `<bundle>/.okf` directory contains private journals, staging files, and receipts; do not commit it or use it to store knowledge concepts.
+Use the [knowledge upkeep check]({{ '/knowledge-upkeep/' | relative_url }}) for a repeatable process. If a link or rule is uncertain, open the contract and record the discrepancy before changing it.

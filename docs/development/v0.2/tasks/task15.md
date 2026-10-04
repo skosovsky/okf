@@ -1,116 +1,120 @@
-# Техническое задание: transactional migration OKF v0.1 → v0.2
+---
+lang: en
+title: "Transactional migration from OKF v0.1 to v0.2"
+permalink: /development/v0.2/tasks/task15/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Добавить детерминированный preview/apply migration plan для двух breaking
-changes v0.2:
+# Technical specification: Transactional migration from OKF v0.1 to v0.2 {#section001}
+
+> Historical document from source revision `61e75e9`. This plan records the work proposed at that revision; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task15.md).
+
+## 1. Goal {#section002}
+
+Add a deterministic preview/apply migration plan for the two breaking changes in v0.2:
 
 - `timestamp` → `generated`;
 - `# Citations` → `sources` + keyed footnotes.
 
-Зависимости: [`task10.md`](task10.md), [`task11.md`](task11.md),
-[`task13.md`](task13.md), [`task14.md`](task14.md), [`task17.md`](task17.md).
+Dependencies: [`task10.md`]({{ '/development/v0.2/tasks/task10/' | relative_url }}), [`task11.md`]({{ '/development/v0.2/tasks/task11/' | relative_url }}), [`task13.md`]({{ '/development/v0.2/tasks/task13/' | relative_url }}), [`task14.md`]({{ '/development/v0.2/tasks/task14/' | relative_url }}), [`task17.md`]({{ '/development/v0.2/tasks/task17/' | relative_url }}).
 
-## 2. Общий contract
+## 2. General contract {#section003}
 
-- Preview read-only по умолчанию.
-- Apply требует exact base revision и plan digest.
-- Весь bundle меняется одной transaction; partial migration запрещена.
-- Unknown frontmatter/body/assets сохраняются.
-- Root `okf_version` меняется последним после target-v0.2 validation.
-- Повторный identical run — noop/idempotent replay.
+- Preview is read-only by default.
+- Apply requires the exact base revision and plan digest.
+- The entire bundle changes in one transaction; partial migration is prohibited.
+- Unknown frontmatter, body content, and assets are preserved.
+- Root `okf_version` changes last, after validation against target v0.2.
+- An identical rerun is a no-op or idempotent replay.
 
-## 3. Timestamp migration
+## 3. Timestamp migration {#section004}
 
-Создавать `generated` только с explicit `generated.by`.
-`ChangeSet.Actor` не использовать как неявный producer.
+Create `generated` only with explicit `generated.by`. Do not use `ChangeSet.Actor` as an implicit producer.
 
 Cases:
 
 - generated absent + timestamp present → copy to `generated.at`;
-- both absent → нужны explicit values, no `time.Now()`;
-- equivalent generated exists → noop;
-- conflict `timestamp`/`generated.at` → blocker без explicit policy;
-- legacy removal policy: `preserve` или `remove_after_copy`;
-- duplicate/merge/comment-ambiguous nodes → fail closed.
+- both absent → explicit values are required; no `time.Now()`;
+- equivalent generated exists → no-op;
+- conflicting `timestamp`/`generated.at` → blocker without an explicit policy;
+- legacy removal policy: `preserve` or `remove_after_copy`;
+- duplicate nodes, merge nodes, or nodes with ambiguous comment ownership → fail closed.
 
-## 4. Citation migration
+## 4. Citation migration {#section005}
 
-Нельзя угадывать provenance или claim attribution по смыслу.
+Do not infer provenance or claim attribution from meaning.
 
-Input должен содержать explicit legacy entry → stable source ID mapping.
+Input must contain an explicit mapping from legacy entries to stable source IDs.
 
-Поддержать:
+Support:
 
-- `[1] [Title](URL)`;
-- upstream bullet URL form;
+- `[1] [Title](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/URL)`;
+- the upstream bulleted URL form;
 - explicit ID/title/resource;
-- replacement только доказанных numeric markers;
-- creation keyed footnote definitions;
-- removal `# Citations` только после полного successful mapping.
+- replacement of proven numeric markers only;
+- creation of keyed footnote definitions;
+- removal of `# Citations` only after the entire mapping succeeds.
 
-Fail closed:
+Fail closed on:
 
 - multiple Citations sections;
-- duplicate numbers/labels;
-- unresolved entry/claim marker;
-- conflicting footnote definition;
+- duplicate numbers or labels;
+- unresolved entries or claim markers;
+- conflicting footnote definitions;
 - ambiguous Markdown ownership.
 
-Не генерировать title/author/usage/last_modified/verified/status/stale_after.
+Do not generate title/author/usage/last_modified/verified/status/stale_after.
 
-## 5. Markdown collector
+## 5. Markdown collector {#section006}
 
-Добавить parser-backed ownership для:
+Add parser-backed ownership for:
 
 - section spans;
 - citation entries;
-- footnote references/definitions;
+- footnote references and definitions;
 - normalized label collisions;
-- `# Computation` heading/fence.
+- the `# Computation` heading and fence.
 
-Fenced/inline code и raw HTML остаются opaque. Existing MoveConcept parser
-configuration не менять глобально.
+Fenced code, inline code, and raw HTML remain opaque. Do not change the existing MoveConcept parser configuration globally.
 
-## 6. Attested Computation migration boundary
+## 6. Attested Computation migration boundary {#section007}
 
-Автоматически не дробить narrative document и не превращать prose SQL в
-Attested Computation.
+Do not automatically split narrative documents or convert SQL in prose into Attested Computation.
 
-Разрешить только explicit creation/move plan:
+Allow only an explicit creation/move plan:
 
-- caller задаёт target concepts и sanctioned computation;
-- inline mode владеет одним fence под одним heading;
-- file mode создаёт referenced asset через transactional store support;
-- multiple headings/fences → Ambiguous.
+- the caller specifies target concepts and sanctioned computation;
+- inline mode owns one fence under one heading;
+- file mode creates a referenced asset through transactional store support;
+- multiple headings or fences → `Ambiguous`.
 
-## 7. Tests
+## 7. Tests {#section008}
 
-Все tests — AAA.
+All tests follow AAA.
 
 - Canonical Appendix v0.1 → v0.2.
 - Dry-run leaves bytes unchanged.
-- Timestamp policies/conflicts/actor validation.
-- Citation URL/path/explicit mapping.
-- Multiple sections, duplicate IDs, code/raw HTML markers.
-- CRLF/LF, comments, flow YAML.
-- One bad file yields zero writes.
-- Revision conflict/plan mismatch/concurrent writer.
-- Crash/recovery leaves pre- or post-state only.
-- Second migration is noop.
-- Source/body/unknown extension byte-preservation.
-- Target v0.2 validation passes.
+- Timestamp policies, conflicts, and actor validation.
+- Citation URLs, paths, and explicit mapping.
+- Multiple sections, duplicate IDs, and markers in code/raw HTML.
+- CRLF/LF, comments, and flow YAML.
+- One bad file results in no writes.
+- Revision conflict, plan mismatch, and concurrent writer.
+- Crash/recovery leaves only the pre-state or post-state.
+- A second migration is a no-op.
+- Byte preservation for sources, body content, and unknown extensions.
+- Validation against target v0.2 passes.
 
-## 8. Acceptance criteria
+## 8. Acceptance criteria {#section009}
 
 - Safe cases migrate transactionally and losslessly.
-- Ambiguous cases return blockers/manual actions.
-- No inferred verification/trust/freshness/actor.
-- Root version never changes before full preflight.
+- Ambiguous cases return blockers or manual actions.
+- No inferred verification, trust, freshness, or actor.
+- The root version never changes before full preflight.
 - CLI/MCP use the same planner.
-- Race, recovery и full suite зелёные.
+- Race tests, recovery tests, and the full suite pass.
 
-## 9. Out of scope
+## 9. Out of scope {#section010}
 
-LLM rewrite, semantic claim matching, automatic SQL splitting, executor runtime,
-attestation ABI и network fetching.
+LLM rewriting, semantic claim matching, automatic SQL splitting, executor runtime, attestation ABI, and network fetching.

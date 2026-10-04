@@ -1,8 +1,24 @@
-# Optional knowledge upkeep check
+---
+title: "Knowledge upkeep"
+description: "Knowledge upkeep"
+permalink: /knowledge-upkeep/
+---
 
-The portable instructions for [AGENTS.md](snippets/AGENTS-okf.md) and [CLAUDE.md](snippets/CLAUDE-okf.md) ask an agent to read only relevant concepts and review them after a code change. They need no Python, Node, or host plugin. The separate [okf-maintain skill](https://github.com/skosovsky/okf/blob/main/skills/okf-maintain/SKILL.md) guides the baseline → concept review → decision → final fingerprint check workflow; this page describes the checker's exact options. The Go checker provides session evidence for that review. It does not decide whether a concept is factually correct or set `status`, `trust`, or `verified`.
+{% include nav.html %}
 
-The policy belongs in a separate JSON file outside the OKF root index. For this repository, an example at the repository root is:
+<span id="optional-knowledge-upkeep-check"></span>
+
+# Review knowledge after a change {#page-top}
+
+When code or requirements change, review related notes. For example, changing delivery from 24 to 48 hours requires updating the source and rule, as in the quickstart. `okf-upkeep` helps record that this review happened.
+
+## Prerequisites {#prerequisites}
+
+You need a Git repository, Go, and a `knowledge/` bundle. An agent can use the separate `okf-maintain` skill; portable AGENTS.md and CLAUDE.md instructions are in the document library. Run the checker explicitly; it does not install client hooks.
+
+## Set the policy {#policy}
+
+Create `upkeep.json` at the repository root, outside the OKF root index:
 
 ```json
 {
@@ -17,23 +33,50 @@ The policy belongs in a separate JSON file outside the OKF root index. For this 
 }
 ```
 
-Paths in `relevant_paths` and `exclude_paths` are clean repository-relative paths. An exclusion wins for that path. `repo_root` is resolved relative to the config file and must be the Git worktree root. Git status and committed diffs use NUL-delimited records, so spaces and newlines in names are supported. The checker compares tracked and untracked working-copy entries with a baseline and also compares commits made since that baseline. Committing already dirty content without changing its bytes or tracked executable mode does not count as a new edit; newly committed content is checked against the baseline even if the working copy later reverts. Deleted and renamed files are included. The baseline is bound to the repository, starting HEAD, state, session ID, and capture time; it expires after `max_session_minutes`. Place tooling output paths in `exclude_paths` when a relevant directory also contains generated files.
+This example fits this repository; replace the directories for your project. `repo_root` resolves relative to the configuration file and must be the Git root. Paths in both lists are relative; exclusions take precedence. Exclude generated outputs from relevant paths.
 
-Capture the baseline before the work, then check afterward:
+## Capture a baseline and do the work {#baseline}
+
+Before editing:
 
 ```sh
 session_id=$(go run ./cmd/okf-upkeep baseline --config upkeep.json --out /tmp/okf-upkeep-baseline.json)
+```
+
+After changing code or requirements:
+
+```sh
 go run ./cmd/okf-upkeep check --config upkeep.json --baseline /tmp/okf-upkeep-baseline.json --session "$session_id"
 ```
 
-The check returns `no_relevant_change`, `needs_review`, `reviewed_updated`, or `explicit_unaffected` in JSON. For a relevant change without a decision it returns `needs_review` plus a `fingerprint`. After reviewing current code and concepts, either edit at least one affected concept and record the decision as `updated`, or record a concrete reason why the bundle is unaffected:
+The checker examines working-copy changes and commits since the baseline, including new, deleted, and renamed files. Spaces and newlines in filenames are supported. Committing initially dirty files without changing bytes or executable mode is not itself a new edit; new commits are compared with the baseline even after a working-copy revert. The baseline is bound to the repository, HEAD, session, and capture time; `max_session_minutes` limits its lifetime.
+
+## Record the decision {#decision}
+
+With no relevant changes the result is `no_relevant_change`. When review is needed, `needs_review` includes a `fingerprint`. Read the current requirement, code, and affected notes, then update a note or explain why it is unaffected. Example `decision.json` for the latter:
 
 ```json
-{"fingerprint":"<fingerprint from check>","kind":"unaffected","reason":"Only test fixture names changed; the documented API and behavior are unchanged."}
+{"fingerprint":"<fingerprint from check>","kind":"unaffected","reason":"Only test fixture names changed; the documented APIs and behavior are unchanged."}
 ```
 
-For an update, use `{"fingerprint":"...","kind":"updated","updated_concepts":["knowledge/architecture.md"]}`. The named concept must have changed since the baseline. An old `knowledge/log.md` edit or a fresh log edit alone is insufficient. Re-run `check --session "$session_id" --decision /path/to/decision.json` after the final code edit: a stale fingerprint returns `needs_review`. Keep the decision file outside the repository or exclude it from relevant paths. The result records a review action; it does not prove that the action was correct.
+If a note was updated:
 
-The default `advisory` mode always exits zero for `needs_review`. Explicit `blocking` mode exits 2 for that state. Configuration and usage errors exit 1. A Git or input failure returns `unavailable`; `failure_policy: open` allows it, while `closed` blocks only in blocking mode. A per-invocation `--override "reason"` allows an otherwise blocked result. `--attempt 2` allows a second host invocation to avoid a stop loop. These controls are visible in result JSON. The Git command and content scan have the configured timeout, bounded to 60 seconds; choose a timeout appropriate to the repository size.
+```json
+{"fingerprint":"<fingerprint from check>","kind":"updated","updated_concepts":["knowledge/architecture.md"]}
+```
 
-The optional `--adapter claude-stop` reads a JSON object from stdin with optional boolean `stop_hook_active`; other host fields are ignored. A blocking result emits `{"decision":"block","reason":"..."}` and exits zero, as expected by the Stop adapter. An allowed result emits `{}` and exits zero. A repeated Stop hook call (`stop_hook_active: true`) is allowed. The host-neutral adapter emits the [result schema](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/result.schema.json) and uses exit code 2 for a blocked result. The [config](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/config.schema.json) and [decision](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/decision.schema.json) schemas define the other inputs. Configure the adapter only in a host that supports Stop hooks; Codex and CI can invoke the host-neutral JSON command directly. The checker does not install hooks or alter host settings.
+The named note must actually change since the baseline; a `knowledge/log.md` edit alone is insufficient. Store the decision outside the repository or exclude its path. After the final edit run:
+
+```sh
+go run ./cmd/okf-upkeep check --config upkeep.json --baseline /tmp/okf-upkeep-baseline.json --session "$session_id" --decision /tmp/decision.json
+```
+
+Expect `reviewed_updated` or `explicit_unaffected`. If code changes after the decision, its `fingerprint` becomes stale and the result returns to `needs_review`. This records a review action; check the correctness of the decision separately.
+
+## Modes and failures {#troubleshooting}
+
+In `advisory`, `needs_review` exits 0; explicit `blocking` exits 2. Configuration and usage errors exit 1. A Git or input failure returns `unavailable`: `open` permits continuation; `closed` blocks only in `blocking` mode. `--override "reason"` and `--attempt 2` provide explicit per-call exceptions recorded in JSON. Git and content-reading timeouts are configured, up to 60 seconds.
+
+For clients supporting Stop hooks, `--adapter claude-stop` reads JSON from stdin, uses boolean `stop_hook_active`, ignores other fields, and returns `{}` when allowed or `{"decision":"block","reason":"..."}` when blocked, exiting 0. An already active Stop hook is allowed. Codex and CI can call the ordinary JSON command directly.
+
+Exact inputs and outputs: [config](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/config.schema.json), [decision](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/decision.schema.json), [result](https://github.com/skosovsky/okf/blob/main/upkeep/contracts/result.schema.json). [okf-maintain skill]({{ '/readings/skills/okf-maintain/SKILL/' | relative_url }}).

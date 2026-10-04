@@ -1,51 +1,56 @@
-# Техническое задание: `store` compatibility guardrails для OKF v0.2
+---
+lang: en
+title: "Store compatibility guardrails for OKF v0.2"
+permalink: /development/v0.2/tasks/task16/
+---
 
-## 1. Verdict
+{% include nav.html %}
 
-Backend-neutral `store` уже spec-agnostic. Production API migration не нужна.
-Task является verification/no-op guardrail и закрывается после integration.
+# Technical specification: Store compatibility guardrails for OKF v0.2 {#section001}
 
-## 2. Не менять
+> Historical document from source revision `61e75e9`. This plan records the work proposed at that revision; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task16.md).
+
+## 1. Verdict {#section002}
+
+The backend-neutral `store` is already specification-agnostic. No production API migration is needed. This task is a verification/no-op guardrail and is closed after integration.
+
+## 2. Preserve unchanged {#section003}
 
 - `Store`, `Snapshot`, `ChangeSet`;
 - `ChangeSetFormatVersion`;
 - `Preview`, `CommitReceipt`, `CommitReceiptFormatVersion`;
-- diagnostic wire shape;
+- the diagnostic wire shape;
 - `store.Actor` validation.
 
-Новые frontmatter families принадлежат `bundle`/`validator`/`mutation`.
+New frontmatter families belong to `bundle`/`validator`/`mutation`.
 
-## 3. Receipt boundary
+## 3. Receipt boundary {#section004}
 
-`store.CommitReceipt` — transaction durability evidence.
-`executor.receipt` — runtime artifact Attested Computation.
+`store.CommitReceipt` is evidence of transaction durability. `executor.receipt` is an Attested Computation runtime artifact.
 
-Запрещено:
+Do not:
 
-- добавлять executor receipt/verdict в CommitReceipt;
-- bump'ать format version из-за OKF v0.2;
-- делать store execution/attestation cache;
-- ограничивать store.Actor actor convention'ом document metadata.
+- add executor receipts or verdicts to CommitReceipt;
+- bump the format version because of OKF v0.2;
+- turn store into an execution or attestation cache;
+- restrict store.Actor to the actor convention for document metadata.
 
-## 4. Guardrail tests
+## 4. Guardrail tests {#section005}
 
-Все tests — AAA.
+All tests follow AAA.
 
-- New validator codes проходят через `Preview.Diagnostics` без потери
-  code/file/severity/message.
-- v0.1 и v0.2 bundles используют один transaction protocol.
-- Document actors и legacy store actors принимаются; whitespace/control/UTF-8
-  policy не меняется.
-- Executor-like JSON не принимается как canonical transaction receipt.
-- Existing ChangeSet/Receipt canonical bytes неизменны.
+- New validator codes pass through `Preview.Diagnostics` without losing code/file/severity/message.
+- v0.1 and v0.2 bundles use the same transaction protocol.
+- Document actors and legacy store actors are accepted; the whitespace/control/UTF-8 policy remains unchanged.
+- Executor-like JSON is not accepted as a canonical transaction receipt.
+- Existing ChangeSet/Receipt canonical bytes remain unchanged.
 
-## 5. Acceptance criteria
+## 5. Acceptance criteria {#section006}
 
-- Public interfaces и format versions не изменились.
-- Integration `go test ./store ./mutation ./store/fs` проходит.
-- Docs явно различают два receipt.
+- Public interfaces and format versions remain unchanged.
+- Integration `go test ./store ./mutation ./store/fs` passes.
+- Documentation explicitly distinguishes the two receipts.
 
-## 6. Out of scope
+## 6. Out of scope {#section007}
 
-Execution, attestation storage/cache и generic raw asset operation, если она не
-потребуется отдельному migration contract.
+Execution, attestation storage/cache, and a generic raw asset operation unless a separate migration contract requires one.

@@ -1,139 +1,80 @@
 ---
-title: Try OKF locally
-description: Open a useful example and create a sourced note from supplied material.
+title: "Quickstart"
+description: "Quickstart"
 permalink: /quickstart/
 ---
 
 {% include nav.html %}
 
-# Try OKF
+<span id="try-okf"></span>
 
-## 1. Explore existing knowledge
+# Your first sourced rule {#page-top}
 
-[Open the example without installing anything]({{ '/demo/knowledge.html#architecture' | relative_url }}). This is a snapshot of knowledge about this repository. In **Package boundaries**, answer “Where should an implementation change go?”:
+In a few commands, create two Markdown documents, find the delivery rule, open its source, and update the deadline. All requirements in this example are fictional.
 
-- CLI and MCP expose package contracts rather than inventing different OKF rules.
-- **Sources** lists Toolkit guide and Go module declaration.
-- **Mutation boundary** and **Version resolution** link to related notes.
+## Prerequisites {#prerequisites}
 
-Verification, status, and staleness appear separately. The note is `draft`; missing `verified` means no check is recorded. Missing `stale_after` prevents a staleness calculation.
-
-## 2. Reproduce it locally
-
-Requires Git, Go **1.25.5 or newer**, a network connection to download dependencies, and a browser. These commands use a POSIX shell (macOS/Linux). Start in a directory that does not already contain `okf`. After `cd okf`, run all commands from the clone root.
+You need Git, Go 1.25.5 or newer, a browser, and a shell with `mktemp` and `cp`. Run all commands in one shell. Keep the repository example as a template and work on a temporary copy.
 
 ```sh
 git clone https://github.com/skosovsky/okf.git
 cd okf
-go version
+repo_root=$(pwd)
 demo_dir=$(mktemp -d)
-./scripts/build-viewer-demo.sh "$demo_dir/knowledge-demo.html"
-printf '%s\n' "$demo_dir/knowledge-demo.html"
+go build -o "$demo_dir/okf" ./cmd/okf
+cp -R examples/project-knowledge/en "$demo_dir/my-knowledge"
 ```
 
-The script validates `knowledge/`, then prints the HTML path. Open that file with your browser's Open File command or file manager. Find `Package boundaries`, inspect its sources, and follow **Mutation boundary**. These are meaningful notes linked to repository files.
+## Inspect the rule {#create}
 
-`mktemp` creates a separate directory; the HTML goes into a new file outside the bundle. Use a new `demo_dir` when repeating: existing output is not overwritten. The script fixes `2026-09-26` as the staleness reference date for reproducibility; that is not a factual verification date. The HTML embeds its data and works offline. External sources need a connection when opened.
+Open `retry-policy.md` in your editor. Its metadata gives the note type and source; the footnote connects the claim to the requirements:
 
-## 3. Write a note of your own
-
-Continue in the same shell at the clone root with `demo_dir` still set. The supplied material is fictional and only for this exercise: “The service retries failed job delivery for 24 hours. After that, an operator must review the job before another attempt.”
-
-Create both the supplied material and a note that cites it. `init` requires a new directory under an existing parent. The `rm` command removes only the placeholder it just created in our temporary directory.
-
-```sh
-go run ./cmd/okf init "$demo_dir/my-knowledge"
-cat > "$demo_dir/my-knowledge/source-material.md" <<'EOF'
----
-type: Source Material
-title: Training service requirements
----
-# Supplied material
-This fictional service retries failed job delivery for 24 hours.
-After that, an operator must review the job before another attempt.
-EOF
-cat > "$demo_dir/my-knowledge/retry-policy.md" <<'EOF'
----
-type: Operational Note
-title: Retry limit
+```yaml
+type: Guide
+title: When to involve an operator
 sources:
   - id: requirements
+    title: Training delivery requirements
     resource: source-material.md
-    title: Training service requirements
----
-# How long should delivery retry?
-Retry failed job delivery for 24 hours. Then request operator review.[^requirements]
-
-See the [supplied requirements](source-material.md).
-
-[^requirements]: Training service requirements, Supplied material.
-EOF
-rm "$demo_dir/my-knowledge/getting-started.md"
-cat > "$demo_dir/my-knowledge/index.md" <<'EOF'
----
-okf_version: "0.2"
----
-# Concepts
-* [Training service requirements](source-material.md) - Supplied fictional material.
-* [Retry limit](retry-policy.md) - A note derived from the supplied requirements.
-EOF
-go run ./cmd/okf validate --path "$demo_dir/my-knowledge" --spec 0.2 --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0
-go run ./cmd/okf view "$demo_dir/my-knowledge" --output "$demo_dir/my-knowledge.html" --spec 0.2 --as-of 2026-09-26
 ```
 
-Expected result: validation without errors or warnings, then a new HTML page with two notes. Open `my-knowledge.html`, find **Retry limit**, and inspect **Training service requirements**. “When is operator review needed?” has the answer: after 24 hours of failed attempts. No producer, verification, or freshness is invented. Successful validation confirms the file structure.
+The body states a **24-hour** deadline followed by operator review, with `[^requirements]`. `source-material.md` is the supplied training source. The root `index.md` declares `okf_version: "0.2"` and lists both documents.
 
-## 4. Read from an agent
-
-[Connect MCP]({{ '/getting-started-mcp/' | relative_url }}) and ask the agent for an answer with its source. Installing a skill and connecting the server are separate steps.
-
-After your first run: [review after changes](https://github.com/skosovsky/okf/blob/main/docs/knowledge-upkeep.md), [reconstruct from Git](https://github.com/skosovsky/okf/blob/main/backfill/PROTOCOL.md), [full reference]({{ '/reference/' | relative_url }}).
-
-This example checks CLI and viewer behavior. It does not establish improved model answers or automatic tool use by an agent.
-
-## 5. Find a section with several words
-
-From the clone root:
+## Validate and open {#validate}
 
 ```sh
-go run ./cmd/okf search knowledge --query "implementation change" --limit 5
-go run ./cmd/okf search knowledge --query "implementation change" --limit 5 --json
+"$demo_dir/okf" validate --path "$demo_dir/my-knowledge" --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+"$demo_dir/okf" view "$demo_dir/my-knowledge" --output "$demo_dir/my-knowledge.html" --spec 0.2 --lang en
 ```
 
-Results include a section of `architecture.md`, a source snippet, and line numbers. A `locator` identifies the source path and line range; not every Markdown viewer opens line anchors. JSON also includes file and snapshot digests. Repeat search after an edit: old line numbers no longer identify the same evidence.
+Expected result: no validation errors or warnings, and a `my-knowledge.html` file. Open it in a browser, choose **When to involve an operator**, and follow the **supplied requirements** link in the note body. Alternatively, choose **Training delivery requirements** in the list on the left. The sources section displays material details; use the body link or note list to open the local document. Validation checks structure and local links; compare the deadline with the requirements text.
 
-Every query word must occur in the same section, its heading, or the note title. Search normalizes Unicode and case; it does not translate words or find synonyms. Its score measures lexical relevance, not trust or freshness. If `truncated` is true, refine the query or raise `--limit` up to 100. See the [full search contract]({{ '/contracts/section-search/' | relative_url }}).
-
-MCP exposes the same operation as `search_sections`. Existing `search_concepts` still searches one literal substring.
-
-## 6. Prepare existing Markdown
-
-This fictional exercise copies ordinary notes into a separate new bundle, leaving the source unchanged. Continue in the same shell with `demo_dir` set:
+## Find the answer {#search}
 
 ```sh
-mkdir "$demo_dir/team-notes"
-cat > "$demo_dir/team-notes/retries.md" <<'EOF'
-# Retry policy
-Retry failed delivery for 24 hours, then request operator review.
-See [operator steps](operator.md).
-EOF
-cat > "$demo_dir/team-notes/operator.md" <<'EOF'
-# Operator steps
-Review the failed job before another delivery attempt.
-EOF
-go run ./cmd/okf setup --source "$demo_dir/team-notes" --target "$demo_dir/imported-knowledge" --type Guide
+"$demo_dir/okf" search "$demo_dir/my-knowledge" --query "delivery operator" --limit 5
+"$demo_dir/okf" search "$demo_dir/my-knowledge" --query "delivery operator" --limit 5 --json
 ```
 
-This is a preview: no target is created yet. Expect two documents, `applicable=true`, `published=false`, and a `Plan digest`. Review the plan and diagnostics. `Guide` is an explicit choice because these notes have no metadata. No producer, source, or verification is invented.
+Expect results from the training documents, snippets, and line numbers. Read the matched file: operator review is needed after 24 hours of failed delivery. Search requires every query word in one section, its heading, or the note title. It normalizes case and Unicode but does not translate queries or expand synonyms.
 
-Copy the value after `Plan digest:`. The following commands ask for it and apply that exact plan:
+## Change the requirement and note {#update}
+
+Training change: the deadline becomes **48 hours**. In your editor, first replace `24` with `48` in `source-material.md`, then review the rule and make the same change in `retry-policy.md`. Keep the source link. Do not automatically add `verified` or dates: those are separate decisions requiring actual checks.
 
 ```sh
-printf 'Paste the reviewed plan digest: '
-read -r plan_digest
-go run ./cmd/okf setup --source "$demo_dir/team-notes" --target "$demo_dir/imported-knowledge" --type Guide --apply --plan-digest "$plan_digest"
-go run ./cmd/okf validate --path "$demo_dir/imported-knowledge" --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
-go run ./cmd/okf view "$demo_dir/imported-knowledge" --output "$demo_dir/imported-knowledge.html" --spec 0.2
+"$demo_dir/okf" validate --path "$demo_dir/my-knowledge" --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+"$demo_dir/okf" search "$demo_dir/my-knowledge" --query "delivery operator" --limit 5
+"$demo_dir/okf" view "$demo_dir/my-knowledge" --output "$demo_dir/my-knowledge.html" --spec 0.2 --lang en --overwrite
 ```
 
-Expect `published=true`, successful validation, and HTML with two linked notes. Changed source material or options require a new preview. Existing targets are never replaced; repeating a successful apply requires a new target. Local links must resolve to selected Markdown files or anchors. Assets, unsupported links, malformed metadata, and symlinks block setup rather than disappearing silently. Failure before publication leaves no partial target. See the [Markdown setup contract]({{ '/contracts/markdown-setup/' | relative_url }}).
+Both documents should now state 48 hours. Export replaces the HTML because you explicitly passed `--overwrite`; an already opened page does not update itself. Old line numbers refer to the previous file state.
+
+## If something fails {#troubleshooting}
+
+- `go` is missing: install the required Go version and rebuild.
+- The output HTML exists: choose a new name or explicitly use `--overwrite`.
+- Search found nothing: use words present in the same language; the English and Russian folders are separate translations.
+- The source link fails: check `resource: source-material.md`, the filename, and the root index.
+
+Next: [prepare your Markdown]({{ '/toolkit/' | relative_url }}#setup), [install the skill]({{ '/skill/' | relative_url }}) or [connect MCP]({{ '/getting-started-mcp/' | relative_url }}).

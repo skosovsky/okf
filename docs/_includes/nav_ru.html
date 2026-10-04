@@ -1,23 +1,25 @@
+{% assign paired_document = nil %}
+{% for document in site.data.documentation.documents %}
+  {% if document.en.url == page.url or document.ru.url == page.url %}
+    {% assign paired_document = document %}
+    {% break %}
+  {% endif %}
+{% endfor %}
 <nav class="site-nav" aria-label="Основная навигация">
-  <details class="site-nav__docs">
-    <summary>Документация</summary>
-    <a href="{{ '/ru/' | relative_url }}">Обзор</a>
-    <a href="{{ '/ru/#spec' | relative_url }}">Формат</a>
-    <a href="{{ '/ru/#quickstart' | relative_url }}">Быстрый старт</a>
-    <a href="{{ '/ru/quickstart/' | relative_url }}">Команды и демо</a>
-    <a href="{{ '/demo/knowledge.html' | relative_url }}">Демо знаний</a>
-    <a href="{{ '/ru/#examples' | relative_url }}">Примеры</a>
-    <a href="{{ '/ru/#tools' | relative_url }}">Инструменты</a>
-    <a href="{{ '/ru/#faq' | relative_url }}">FAQ</a>
-    <a href="{{ '/contracts/section-search/' | relative_url }}">Поиск разделов</a>
-    <a href="{{ '/contracts/markdown-setup/' | relative_url }}">Подготовка Markdown</a>
-  </details>
+  <a href="{{ '/ru/' | relative_url }}">Обзор</a>
+  <a href="{{ '/ru/quickstart/' | relative_url }}">Первый запуск</a>
+  <a href="{{ '/ru/toolkit/#setup' | relative_url }}">Существующие документы</a>
+  <a href="{{ '/ru/skill/' | relative_url }}">Агент</a>
   <a href="{{ '/ru/reference/' | relative_url }}">Справочник</a>
-  <a href="{{ '/ru/getting-started-mcp/' | relative_url }}">Подключить MCP</a>
-  <a href="{{ '/ru/toolkit/' | relative_url }}">Библиотеки</a>
-  <a href="{{ '/ru/skill/' | relative_url }}">Инструкции агента</a>
-  <a href="{{ '/ru/migration/' | relative_url }}">Миграция</a>
-  <a href="{{ '/releases/v0.2.2/' | relative_url }}">Релиз v0.2.2</a>
-  <a class="site-nav__meta-start" href="{{ '/' | relative_url }}">EN</a>
+  <a href="{{ '/ru/history/' | relative_url }}">История</a>
+  <details class="site-nav__docs"><summary>Все материалы</summary>
+    <a href="{{ '/ru/documentation/' | relative_url }}">Каталог документации</a>
+    <a href="{{ '/ru/getting-started-mcp/' | relative_url }}">Подключение MCP</a>
+    <a href="{{ '/ru/migration/' | relative_url }}">Переход на OKF 0.2</a>
+  </details>
+  {% if paired_document %}
+    <a class="site-nav__meta-start" data-locale-switch href="{{ paired_document.en.url | relative_url }}" hreflang="en" lang="en" aria-label="Прочитать эту страницу на английском">EN</a>
+  {% endif %}
+  <a href="https://github.com/skosovsky/okf/releases">Релизы</a>
   <a href="https://github.com/skosovsky/okf">GitHub</a>
 </nav>

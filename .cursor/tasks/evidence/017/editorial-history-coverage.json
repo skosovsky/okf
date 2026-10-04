@@ -1,0 +1,896 @@
+{
+  "scope": "All 49 historical EN/RU pairs from documentation registry, independently read and semantically compared by editorial team. Product changes not made.",
+  "review_stage": "All confirmed findings corrected and reread; pending root final freeze confirmation",
+  "registry_sha256": "db89f1189d3a76eb0e535739461d23ec8732841181661d87610ad50b01431389",
+  "coverage_count": 49,
+  "coverage": [
+    {
+      "id": "benchmark-agent-backfill-consumer",
+      "en": {
+        "path": "docs/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+        "sha256": "979861b2edfa87642031eeb3302e2534db24428edd47526a267e157c887b33c8"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+        "sha256": "0faf0459c2ff05cb040bf67ecf44cec614a9c53de5217071716b795488ddf4a6"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-before-after",
+      "en": {
+        "path": "docs/readings/benchmark/agent/BEFORE-AFTER.md",
+        "sha256": "b016d6766e31bd676638f06b911c718bc1c1e10f069f4af647da363b3469210a"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/BEFORE-AFTER.md",
+        "sha256": "8d1cfc15a88be7dfa6d76b6461ee64eebec279d1c228f41dfaca54010eb4eca7"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-metadata-contrast",
+      "en": {
+        "path": "docs/readings/benchmark/agent/METADATA-CONTRAST.md",
+        "sha256": "16848807be2ce7001d94dcbe2b8ae5f7581b0f9132dc09b93305cfb2c23b22b1"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/METADATA-CONTRAST.md",
+        "sha256": "90af200ae2261320b94372c74625659e20d09ed83115f6e9fc0de866f06a32bb",
+        "previous_inspected_sha256": "ad00bd22881136169dfd01c621908243b81819c64b6e7c9a52c0434dcaec43db"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-pilot-diagnostic",
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+        "sha256": "6f94dc2ffecbab7beef97e9952e8d22ca38353b1139881a70b60dcc25182b9f6"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+        "sha256": "ab101b6cf14179807f858524e08547d85ad3cfd7d54e75d2e91fa7c1b6c0d21f"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-pilot-precomputed",
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+        "sha256": "5ee5573076d00c43a8e7bde94777bb2fa3d07399212858fff5199c1f072c697b"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+        "sha256": "369f1a6721b5d3e0e671069f2b8012eb1e2fd302e81759b8b718680028f54e81"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-pilot",
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT.md",
+        "sha256": "75b5c18dc9f7dbe054c451ba710a6560754a7eca90318b51c8f2afb9d0c900c2"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT.md",
+        "sha256": "904bb8a724602aa8ad3bb478175d5da186cc772b98c01148d876fc662f2bbe90"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/README.md",
+        "sha256": "fb9d077fce5d07086708aae64d693dbe5eb6f3c561d2d3db024095627fddf8a2"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/README.md",
+        "sha256": "7b88ea48843f67d98a095a2366cdade254d9ee8f185f26ae79c42013ef7e50ba"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-upkeep-study",
+      "en": {
+        "path": "docs/readings/benchmark/agent/UPKEEP-STUDY.md",
+        "sha256": "a74e69e8fc459559c093863f568489fc64bc40dea94bf91c6b636907b5fbe557"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/UPKEEP-STUDY.md",
+        "sha256": "12c04e4dba0f7448b3e2b2e01d35f5b752746f1a899a41fde96c34bfd1eb4356"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-writer-consumer-baseline",
+      "en": {
+        "path": "docs/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+        "sha256": "c31ed2e6ae687c4b2fc9b01a977ece5a94233775f4fb78456f9905276241f1f3"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+        "sha256": "05c16e429d4d1f5924374404f57d69c1f2ca8652cfb5df3fd2d5beadffddfd72"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-beforeafter-live",
+      "en": {
+        "path": "docs/readings/benchmark/agent/beforeafter/LIVE.md",
+        "sha256": "a3a6dad19ec9c8551fa1b813b6de08056d7d1a55de10404d115c9ee16015a3b3"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/beforeafter/LIVE.md",
+        "sha256": "35892d4165064ff4308c7c514ff70d9f5d4526a5ce79b39e9f87620114557357"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-beforeafter-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/beforeafter/README.md",
+        "sha256": "1ab947a19bcdea54432962d2f409a0a8613b92e4298d7bea5ba613d9287e26a6"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/beforeafter/README.md",
+        "sha256": "bda81d6ad87cd3e1c94356e4cd06be518b2b0269c09dd27fe92116d79a25a3f5"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-live-v2",
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+        "sha256": "f8ca77311d7d56a6937a4106f02fbc2b397cb20859b6c6bb29a62adc9a7b97ae"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+        "sha256": "56f9a0a12171b46648d013dd725a5ceeabaf7909052014022a30032198cb7898"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-live",
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/LIVE.md",
+        "sha256": "0915c064121eadf1223da54abe57d10dab29e1b8c9d8f17a43e818fb3c2b985b"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE.md",
+        "sha256": "5104ad4ace9f6deb51e38e9496f87b6e1a0128391de70fa144cf3e8d1115ba42"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/README.md",
+        "sha256": "c8c17b3e893ce6e3d7d993353c0d182aa36ff744226e156ac9cdd2e1f1f9a1c4"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/README.md",
+        "sha256": "5ca45d438f3f940135b64226e3d8662246f13fc1222ffe195f6ad2a3aad22ab3"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "protocols",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-readme",
+      "en": {
+        "path": "docs/development/v0.2/tasks/README.md",
+        "sha256": "abd9ccbfd68ed31e8b1d8f20989c68882f76570620d555cff9ef3d41d2e1e9fa"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/README.md",
+        "sha256": "d648c8f88f07f49a840621fc6ab844d1866a72596c97eb14714456a2e702ca36"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task09",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task09.md",
+        "sha256": "71cc9dc18f51b6de1530f4677452544e6962f9c51946db9a7e1d725a6d4fc5f2"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task09.md",
+        "sha256": "41c6d1605cb1b0ddcedeb940af71f4597a1e91b5046a26b4538b8699da0a8494",
+        "previous_inspected_sha256": "9934a90a66f40e2599b43fdf488344486e2cd9c25e0ae6d669788fc30c3fbce0"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task10",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task10.md",
+        "sha256": "f497541260dbf4b3eca46dcc5921cdcaca87e3ab29654a05113f22174b55c1e0"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task10.md",
+        "sha256": "1a9ef63a5088ca4db7f7bb3e0ae24d7fa1ccfca34a45c70d261d59b1743a235f"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task11",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task11.md",
+        "sha256": "5a000cb64820ac1db60b84886899d99d275e73d3998fd2092840a6fcfe249a27"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task11.md",
+        "sha256": "660349611178073dad881be1430e0a86ba65df12d5ac53faa3fead514b7ef656"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task12",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task12.md",
+        "sha256": "15e7737cc7f19f918fe6b495c2438cd904520a559ecd18c1efe91c381debb04a"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task12.md",
+        "sha256": "31e80b81e50dfc3159456018dccef7c028cbc5f8f3ffe5b4a3778d49118c8634"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task13",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task13.md",
+        "sha256": "fdcc80ea1dca7b95b633bf96948da0ff72579bb3000362e04b5c6a328b3039ef"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task13.md",
+        "sha256": "b1d01265ba3813f1995cde10e1cdbc6650f1e13cda5ac36215f81cbba926abab"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task14",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task14.md",
+        "sha256": "603b0a5e828308c90fa90544c2720cd8b9726345ab593f82ae9d3ba45594d84e"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task14.md",
+        "sha256": "aa755dbd203d12b5e33ae67f4395e9c1c2217f479c7422ecaa478b190f73c40f"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task15",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task15.md",
+        "sha256": "1f80dccadafaf40a4cb757588e90e85825b75ca4a699550f59f89069cf56e802"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task15.md",
+        "sha256": "9cd6be37d5c7ff6bb93f7cf0541708ff378e0bf59629757d5ebd6c3dc8768591"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task16",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task16.md",
+        "sha256": "aba6888f285ff785b24fbd17613a9d7424b55b9e30b2f8788a5f99d8a25318bf"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task16.md",
+        "sha256": "4e6e2500348d1fc91f535f83a45c5bb63707a38b0003b448a89cfd475981c56b"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task17",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task17.md",
+        "sha256": "3fc58c45be6d86aa7dad1bbdae964f68b03825a7ecefc61cff94a8b00422d507"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task17.md",
+        "sha256": "2aca10c9b929139f95ad9db13861cb2df0714ac424fb66ed975c6a1b03d2e572"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task18",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task18.md",
+        "sha256": "67756b38d3f3b844e01fe1e869790767df2cf5f09568a9ddaf6c2bbfe4abf3d3"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task18.md",
+        "sha256": "a9ec2263aa6c080615aa6973e0b705d277f873a27159c73d93460017e1243f51"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task19",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task19.md",
+        "sha256": "ea4dc0abbba747fd813650d2accbdbb693ebd5ac1a79333ed3adf55049717755"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task19.md",
+        "sha256": "f14a02b5ce2b05eae2f586a455be6b541065d6515906fe02bad4bd4c424a4a4d"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task20",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task20.md",
+        "sha256": "2cdbf7c3bf934e3bea52f4a7ea7fee32d48f6f659c3321d27ff65a17b6aa46a5"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task20.md",
+        "sha256": "6b7e67eb4b02718cfd6557d13587ac3ce0d47b6b620e511cd99ce12b21e1afb6"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task21",
+      "en": {
+        "path": "docs/development/v0.2/tasks/task21.md",
+        "sha256": "a42a7ff8fe1943cf2492a1f5a09453a1a0ed5faa6b9d0a1b1024e00ef4333ad2"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task21.md",
+        "sha256": "b989351ffaea7eef4ff8e3b1cabfec67728cdba62e1c2259362b8965cd1b32ea",
+        "previous_inspected_sha256": "bbb6745e36910200564b39d10c0c7981acfad4117bfb9feac25c03e8e9cb3b26"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "tasks",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-backfill-consumer-v2-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+        "sha256": "d6ea6b128f27d3574ef741e7b1fb32d3d2b9e4e09b0af1d751c888fea1bf4dd5"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+        "sha256": "d1f9d09df5d6334171ae554ff4a43a5ed46c60e3547e7b624c369861e0c6d14b"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-beforeafter-v1-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+        "sha256": "6a100beec774b6072bcf43767116b1e383308984640c701e98e7fbb433acdf4b"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+        "sha256": "c037ede1f6073cfdb22e6eb1a62eb975d3eeb570b8948ae0fd69308867477526",
+        "previous_inspected_sha256": "992ba5448ba35572ee4d8c77ca104d35290ba22bcfcf2950fb6e2cf645d52c03"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-diagnostic-read-v1-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+        "sha256": "8cfc2be24d47f02b781a7b3fd803b53555287f8a4036553e74cc1e6237def1fa"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+        "sha256": "e2c051baa9924e43beaecbeacc2b47d88bcb9d1b566d8e2dfc86fa1ea834891b"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-diagnostic-read-v2-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+        "sha256": "c8fcd207132e10e9b2ef18abb971d497927de33955439e33a0830d752014185d"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+        "sha256": "a7af045cbb49dd25ce728ce7d07af683b6595c5ac5c403b826160263ae20ca66"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-exploratory-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+        "sha256": "5942aa9e28251075ba59a698d610fe2c06dcd11b042fb5717e4e82ce3babd8c8"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+        "sha256": "796d09ea63ee611490f96e3933a3cb34332ef110c18440c3e778abc8d94bc91f"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-manual-writer-consumer-v3-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+        "sha256": "48d28cf9b3d62fcc14a18758ddcfd16c97400264993a6a84623db46c331f5e3d"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+        "sha256": "086417271fa1bcf176d58edeae5d434794c9b4957b839e26346668bc315e1595"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-metadata-only-v2-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+        "sha256": "67672885db4a947f32c9e9b27965a91bd51e76bcf01e38cd50c9f100a5fc5a9f"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+        "sha256": "61e16c0a0890809361be72576187da9c057c7d9b9ef84ffd07303e0055e6c2d2"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-blocked-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+        "sha256": "ced955222d93b91db6038739d10ec32269c40d6bb6c34900a05616749eea385b"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+        "sha256": "87659f7cf747b2469bf36f3f6f38922c4067bf76f4435e3d6660c88e7a9b3aa8"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-bundled-v2-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+        "sha256": "60a29233a2df97c4ae333f3f8ed14e51ce9119c0e4894ed284b65a1e873c7619"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+        "sha256": "7d81a46b7c9588ef3ccaf8fb709774d64bf7c1857dbb76c74eda283db077c175"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-live-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+        "sha256": "9b5f36de5f65d71dfc9c63958026ea21eb553851f43e5f2691593a362aff3b65"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+        "sha256": "41990bd5c43e4ccef162aa6cd28dc87779b91a07c6f1105bbbdd5deaac69bcdc"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-precomputed-v1-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+        "sha256": "361bfcd7fbc9bcff53b52a4af2cb4a6013ae2af213d6cd8ba651eb3217f8615e"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+        "sha256": "d9716ccda6da4abcd400ff26709fd36dee8c0161943550282ad43210a38706e1",
+        "previous_inspected_sha256": "f17b935d5ef704949f4ec4f52f3579f459ba66dcf69abb1fc54757bf0a8fc231"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-upkeep-live-v1-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+        "sha256": "d89ea5d71c9050fd84bb708c2bed4cfa12869f0031d064a60b04561ed5d7b30d"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+        "sha256": "3373fa67c4f9fde87cc4e7ffe7183703cdefae7bfd11699197bd89c273a9e999",
+        "previous_inspected_sha256": "714bc013cfa995e5ffd049f225b13d5cbb0710e127beee9c3b18c259150edc59"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-upkeep-live-v2-readme",
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+        "sha256": "882672c3f7205baf709fbd8622f50fce3ab5572c5e8680ba4904c5a33e7bf162"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+        "sha256": "255be35689b17d4a1e551618f6ccf3a781b9be7008ac491b56c26e890f8fe965",
+        "previous_inspected_sha256": "bbd7c0531ed10fab7dd377d0202585b63281b0deeeb333d77e0b50e3841b5b00"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "results",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-issue-2-release-engineering-evidence",
+      "en": {
+        "path": "docs/issue-2-release-engineering-evidence.md",
+        "sha256": "8b8482242fec7d782787349e74a0ff5674ff8647010e808a9741f691520bb046",
+        "previous_inspected_sha256": "f85a83ac862e4d3816051608a7c0873a98637b3c560bbc07725c0db3a55148e6"
+      },
+      "ru": {
+        "path": "docs/ru/issue-2-release-engineering-evidence.md",
+        "sha256": "02bb2ed43fcd6ef28a0656b3a2272c4723259cad63b98507939102fbe92a061f",
+        "previous_inspected_sha256": "676510d603f397e59f84e258cd59c53eff611310be7bc76dda3b56deae587945"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-evidence",
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-evidence.md",
+        "sha256": "ff0d660837f3fe61f0b40fe878aff839ecef38e34978cec439afe60425b88459"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-evidence.md",
+        "sha256": "0d7050b8715e175d0821cc154eb92697080fbad09540018e7deeca80174e64d6"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-profiles-overlay-baseline-vs-result-2026-07-20",
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md",
+        "sha256": "033583583b20841c2327f794aaf800728804dafae285aba7ea3635656a5f3d70"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md",
+        "sha256": "d2d9462135fcd8d06f994626c4020ed6367fe5f29f1d3d31a7bc4584bad99ec1"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-profiles-planner-10000-2026-07-20",
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md",
+        "sha256": "76a8c6cf89a04167d58b294a311e69cca0ed885808b5cadec82cd37bf952aeb7"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md",
+        "sha256": "97932d81165201932760dfdd0506ea121f8baa17b32abbdb7ab34d92d9896f01"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-releases-v0-2-0",
+      "en": {
+        "path": "docs/releases/v0.2.0.md",
+        "sha256": "8029857eb4bcb316aa367660c24bd5db49a63fd6534305e8fd95de82b55f32d5",
+        "previous_inspected_sha256": "fa118ec72b5d11197afbc0452cd7f76aefcaa0424c1827cd881af29fdf80362d"
+      },
+      "ru": {
+        "path": "docs/ru/releases/v0.2.0.md",
+        "sha256": "391ebfc237e42ccb824509b772faaa2e767fab762c55bc180d89f6a5df49b8c3",
+        "previous_inspected_sha256": "a26ee7fb8c88636a76eb1cdf4b1b83acc5fba0111bf5402e37b74b32e413e7ca"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-releases-v0-2-2",
+      "en": {
+        "path": "docs/releases/v0.2.2.md",
+        "sha256": "1d3b7a7cc2bb55573c88bbc6a3f4473c594a9d4e629756fbe7b0a6824019f622",
+        "previous_inspected_sha256": "e6aa4db13c66d3c2c004229eb75a6edf9f70ef16a2304027258d63776b128c0d"
+      },
+      "ru": {
+        "path": "docs/ru/releases/v0.2.2.md",
+        "sha256": "0cf6d081cb5bff3db780901f1cbdeacda5025108e61a8e232a906ddf863d7527",
+        "previous_inspected_sha256": "e272dfb0e4c8aa4fb8d9aca4e6860095ec53e18d107877d92dac883b0cd17f6e"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "docs-viewer-browser-review",
+      "en": {
+        "path": "docs/viewer-browser-review.md",
+        "sha256": "2aa637d8a0408febba6b141fae3b4ea669fdf9b2f482050631db7f301145688f",
+        "previous_inspected_sha256": "a572ce48c292c471e0adf13adc2890b802fd6ab409f48089308cc63ae891883c"
+      },
+      "ru": {
+        "path": "docs/ru/viewer-browser-review.md",
+        "sha256": "a710b4c6a9e8017262f6835bae181ba67cde10c59b80ca7ed8c486db7ba3ba67",
+        "previous_inspected_sha256": "bb299583a57522f47806600ba0f3d812af0c20adc208ee5dcce88c0355fbf5aa"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    },
+    {
+      "id": "benchmarks-toolkit-results-paired-ed7ddc28-0f15ab4-summary",
+      "en": {
+        "path": "docs/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+        "sha256": "120f5b33dbdf84cf8544d5d736d3019d7533b37829710aa69c444e3f848b07b7"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+        "sha256": "c077ca988103832643d4d0816a0f2b637b3e4b9ea36a2399f89c5050a52cace6"
+      },
+      "full_prose_reviewed": true,
+      "facts_actions_examples_limits_numbers_dates_status_compared": true,
+      "review_source": "evidence",
+      "review_status": "pass"
+    }
+  ],
+  "findings": [
+    {
+      "id": "HIST-01",
+      "priority": "P2",
+      "path": "docs/ru/readings/benchmark/agent/METADATA-CONTRAST.md",
+      "line": 23,
+      "message": "Сломана русская грамматика: «Сообщайте результаты точный оценщик v1 ...». Требуется «Для каждой группы сообщайте результаты точного оценщика v1: ...».",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P2",
+      "path": "docs/ru/development/v0.2/tasks/task21.md",
+      "line": 54,
+      "additional_lines": [
+        123
+      ],
+      "title": "Preserve lowercase legacy field identifier timestamp",
+      "detail": "EN migration guidance and acceptance criteria refer to the legacy YAML field timestamp. RU substitutes `Timestamp`, a distinct case-sensitive identifier; retain `timestamp` in both places.",
+      "en_path": "docs/development/v0.2/tasks/task21.md",
+      "en_lines": [
+        54,
+        123
+      ],
+      "id": "HIST-02",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "path": "docs/ru/development/v0.2/tasks/task09.md",
+      "line": 21,
+      "title": "Repair grammar in source-of-truth list",
+      "detail": "After «Источники истины» the bullet starts «исходной спецификации ...», leaving an unmatched genitive. Use «исходная спецификация ...».",
+      "id": "HIST-03",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "path": "docs/ru/development/v0.2/tasks/task09.md",
+      "line": 107,
+      "title": "Repair subject agreement in ambiguity ledger",
+      "detail": "«... исходной спецификации не задаёт» is grammatically malformed. Use «... исходная спецификация не задаёт».",
+      "id": "HIST-04",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "category": "russian_punctuation",
+      "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+      "line": 32,
+      "confirmed": true,
+      "excerpt": "(«его типизированное представление в JSON») Это",
+      "description": "Нет точки между завершённой репликой с переводом в скобках и следующим предложением. Точка внутри английской цитаты не завершает русский текст после переводных скобок.",
+      "suggested_change": "(«его типизированное представление в JSON»). Это",
+      "blocking": false,
+      "id": "HIST-05",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "category": "russian_punctuation",
+      "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+      "line": 35,
+      "confirmed": true,
+      "excerpt": "(«недостаточно данных») Ответ",
+      "description": "Нет точки между завершённой репликой с переводом в скобках и следующим предложением. Точка внутри английской цитаты не завершает русский текст после переводных скобок.",
+      "suggested_change": "(«недостаточно данных»). Ответ",
+      "blocking": false,
+      "id": "HIST-06",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "category": "russian_punctuation",
+      "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+      "line": 32,
+      "confirmed": true,
+      "excerpt": "(«недостаточно данных») При",
+      "description": "Нет точки между завершённой репликой с переводом в скобках и следующим предложением. Точка внутри английской цитаты не завершает русский текст после переводных скобок.",
+      "suggested_change": "(«недостаточно данных»). При",
+      "blocking": false,
+      "id": "HIST-07",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P3",
+      "category": "russian_wording",
+      "path": "docs/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+      "line": 22,
+      "confirmed": true,
+      "excerpt": "постоянные часы",
+      "en_path": "docs/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+      "en_excerpt": "fixed clock",
+      "description": "Буквальный перевод звучит как описание физических часов и плохо передаёт фиксацию времени в среде оценки.",
+      "suggested_change": "фиксированное время",
+      "blocking": false,
+      "id": "HIST-08",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    },
+    {
+      "priority": "P2",
+      "path": "docs/ru/releases/v0.2.0.md",
+      "line": 26,
+      "en_path": "docs/releases/v0.2.0.md",
+      "en_line": 29,
+      "title": "Do not narrow bounded receipts to individual receipt size",
+      "detail": "English bounded idempotency receipts does not specify individual receipt size. Russian с ограниченным размером introduces that unsupported narrower claim. Use нейтральное ограниченное хранение квитанций идемпотентности / ограниченный набор квитанций идемпотентности, consistent with established terminology.",
+      "id": "HIST-09",
+      "status": "closed",
+      "resolution": "Actual corrected text reread against paired EN context; preserved historical facts and requirements."
+    }
+  ],
+  "open_confirmed_findings": 0,
+  "review_verdict": "pass_on_inspected_hashes",
+  "changed_paths_reread": [
+    "docs/ru/readings/benchmark/agent/METADATA-CONTRAST.md",
+    "docs/ru/development/v0.2/tasks/task09.md",
+    "docs/ru/development/v0.2/tasks/task21.md",
+    "docs/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+    "docs/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+    "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+    "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+    "docs/issue-2-release-engineering-evidence.md",
+    "docs/ru/issue-2-release-engineering-evidence.md",
+    "docs/releases/v0.2.0.md",
+    "docs/ru/releases/v0.2.0.md",
+    "docs/releases/v0.2.2.md",
+    "docs/ru/releases/v0.2.2.md",
+    "docs/viewer-browser-review.md",
+    "docs/ru/viewer-browser-review.md"
+  ]
+}

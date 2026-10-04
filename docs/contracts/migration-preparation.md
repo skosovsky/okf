@@ -1,4 +1,14 @@
-# Preparing a v0.1 migration
+---
+layout: default
+title: "Preparing a v0.1 migration"
+lang: en
+document_id: docs-contracts-migration-preparation
+permalink: /contracts/migration-preparation/
+---
+
+<a id="preparing-a-v01-migration"></a>
+
+# Preparing a v0.1 migration {#doc-section-001}
 
 `migrate-prepare` reads the bundle and creates a new directory outside it. The directory must not exist. The command never opens the private store and never changes source documents.
 

@@ -1,0 +1,2808 @@
+{
+  "schema_version": 1,
+  "baseline_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+  "locales": [
+    "en",
+    "ru"
+  ],
+  "documents": [
+    {
+      "id": "readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "c05fbdb6ab3f5c517ce15c63248b91bd6c83f456f2acbebf99a532cf222be3f6",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "README.md",
+        "url": "https://github.com/skosovsky/okf/blob/main/README.md"
+      },
+      "ru": {
+        "path": "README.ru.md",
+        "url": "https://github.com/skosovsky/okf/blob/main/README.ru.md"
+      }
+    },
+    {
+      "id": "backfill-protocol",
+      "purpose": "contract",
+      "status": "current",
+      "source": "backfill/PROTOCOL.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "4acd63b867030a309999f10c27d7b66f18313e5720b8ea16ce4bbae3af16d2d6",
+      "preserve_source": true,
+      "normative_source": "backfill/PROTOCOL.md",
+      "en": {
+        "path": "docs/readings/backfill/PROTOCOL.md",
+        "url": "/readings/backfill/PROTOCOL/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/backfill/PROTOCOL.md",
+        "url": "/ru/readings/backfill/PROTOCOL/"
+      }
+    },
+    {
+      "id": "benchmark-agent-backfill-consumer",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/BACKFILL-CONSUMER.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "2b9b735bd3f8fe0c45f6bba5359d598bdec1e88d9b193f783d4ae573965e7f71",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+        "url": "/readings/benchmark/agent/BACKFILL-CONSUMER/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+        "url": "/ru/readings/benchmark/agent/BACKFILL-CONSUMER/"
+      }
+    },
+    {
+      "id": "benchmark-agent-before-after",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/BEFORE-AFTER.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "44acd6284cecc58d0862fb61b1df2a04fb76c6698822d9f54128ba80cd31e5fe",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/BEFORE-AFTER.md",
+        "url": "/readings/benchmark/agent/BEFORE-AFTER/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/BEFORE-AFTER.md",
+        "url": "/ru/readings/benchmark/agent/BEFORE-AFTER/"
+      }
+    },
+    {
+      "id": "benchmark-agent-metadata-contrast",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/METADATA-CONTRAST.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "0a0a31f2c50aa07a924eb39c154d03425d7e17c4e92c265de3fe400f1867cd1b",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/METADATA-CONTRAST.md",
+        "url": "/readings/benchmark/agent/METADATA-CONTRAST/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/METADATA-CONTRAST.md",
+        "url": "/ru/readings/benchmark/agent/METADATA-CONTRAST/"
+      }
+    },
+    {
+      "id": "benchmark-agent-pilot-diagnostic",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/PILOT-DIAGNOSTIC.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "1d30eb47edb76410bafdf1fc7ca7b3f6b095d5bbe16d66ca62232da40d4de988",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+        "url": "/readings/benchmark/agent/PILOT-DIAGNOSTIC/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+        "url": "/ru/readings/benchmark/agent/PILOT-DIAGNOSTIC/"
+      }
+    },
+    {
+      "id": "benchmark-agent-pilot-precomputed",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/PILOT-PRECOMPUTED.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "69d6ef3844f90062c4a151d17b7e3a9665e2ad63d6d75fdf386b325dd9939173",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+        "url": "/readings/benchmark/agent/PILOT-PRECOMPUTED/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+        "url": "/ru/readings/benchmark/agent/PILOT-PRECOMPUTED/"
+      }
+    },
+    {
+      "id": "benchmark-agent-pilot",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/PILOT.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "593a7c459f1ddfa899a3f69d97f0265d9e241157b0a9ff018240eac7ae136afe",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/PILOT.md",
+        "url": "/readings/benchmark/agent/PILOT/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/PILOT.md",
+        "url": "/ru/readings/benchmark/agent/PILOT/"
+      }
+    },
+    {
+      "id": "benchmark-agent-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "a6df84a468b42ebf3b6179c0bd40043e2ece9689a9616fa7566d0173bb849bcf",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/README.md",
+        "url": "/readings/benchmark/agent/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/README.md",
+        "url": "/ru/readings/benchmark/agent/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-upkeep-study",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/UPKEEP-STUDY.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "772de7eacd4750dbdb6c0056ba986bfb545033fad200f0fb6441ab200c60f6d9",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/UPKEEP-STUDY.md",
+        "url": "/readings/benchmark/agent/UPKEEP-STUDY/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/UPKEEP-STUDY.md",
+        "url": "/ru/readings/benchmark/agent/UPKEEP-STUDY/"
+      }
+    },
+    {
+      "id": "benchmark-agent-writer-consumer-baseline",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "bfe8af34bf3498a1af56b4126ba2d4f1fae2c3a7b1a23378fad357c1683c1a50",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+        "url": "/readings/benchmark/agent/WRITER-CONSUMER-BASELINE/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+        "url": "/ru/readings/benchmark/agent/WRITER-CONSUMER-BASELINE/"
+      }
+    },
+    {
+      "id": "benchmark-agent-beforeafter-live",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/beforeafter/LIVE.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "63524be8139bf6dc1bf7631d773087ef7ad51c9ba72337cb1e0363e441607a47",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/beforeafter/LIVE.md",
+        "url": "/readings/benchmark/agent/beforeafter/LIVE/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/beforeafter/LIVE.md",
+        "url": "/ru/readings/benchmark/agent/beforeafter/LIVE/"
+      }
+    },
+    {
+      "id": "benchmark-agent-beforeafter-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/beforeafter/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ea49c9b126cbb5ecd9ee54a4a5fbc23c3dd81324f96f318995879a07e3d70ff3",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/beforeafter/README.md",
+        "url": "/readings/benchmark/agent/beforeafter/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/beforeafter/README.md",
+        "url": "/ru/readings/benchmark/agent/beforeafter/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-backfill-consumer-v2-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "22cca846194e28603a358d5878e0ea8fb145f44956d03fdfcdcd05aa1fbd7286",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-beforeafter-v1-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "6f0ac9d7d8e43bfc08ed3ec710c17d9c0419a7185aa3814a4e4708907f0d6177",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-beforeafter-v1/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-diagnostic-read-v1-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "85eba939a041f248d6e9b26f27a9f1f3d4ebef0bd054699443713f879bffd7f7",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-diagnostic-read-v2-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "36fcd5c327ae38d61fdd63c72f931a50282b5ffa99a2e5f9b6336e198c626405",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-exploratory-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-exploratory/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "2767ef51b1c0de21c425506eb69480f632308f4910d757253d8acc8c0f81fe12",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-exploratory/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-exploratory/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-manual-writer-consumer-v3-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "315bd0e919f69b8c946efb989a7b4b9b87f6142dddbc85f88fdaffdcc7e98917",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-metadata-only-v2-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "c92fe4fa05b95f8ba6df6619e8ad69085e69a5e208a33bebad85b38e81ae5cb7",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-metadata-only-v2/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-metadata-only-v2/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-blocked-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-primary-blocked/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "dab0172e4e77b958aed8b0ac771eb985c40ff3ca78366d641b92d77579c93ba3",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-primary-blocked/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-primary-blocked/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-bundled-v2-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "fa69a6f4483515518fc2e773a20683458068af0c2311bd4f40c96aae9a7b8dcd",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-live-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-primary-live/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "0f6626ccad7834b9ba3bd2e96cda966ab6590161618681bdb30ee86e0178b5fa",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-primary-live/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-primary-live/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-primary-precomputed-v1-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "7b183376dcb2ca6b85a5e310ed16abdffa17e97894dedc352a2458b3912cc388",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-upkeep-live-v1-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "04925d2b3c7922524a25290bf8f76ecdc74e9c9b3696d8f7d165c2ec43ad4d12",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-runs-20260926-upkeep-live-v2-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "120c71200eb8aa2f912b5c2c52e6b76e9df2285a68ec00e0d95922b38f38b06b",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+        "url": "/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+        "url": "/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README/"
+      }
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-live-v2",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/upkeeplive/LIVE-V2.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "316ba11a5f1f3ba8bbafddceb0c36b56c3babb84d1bb74db04da85cf8fac451e",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+        "url": "/readings/benchmark/agent/upkeeplive/LIVE-V2/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+        "url": "/ru/readings/benchmark/agent/upkeeplive/LIVE-V2/"
+      }
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-live",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/upkeeplive/LIVE.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "cce57e78c56d548b9235867d4767dcb789163789a43a591862a29d5d5e28b747",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/LIVE.md",
+        "url": "/readings/benchmark/agent/upkeeplive/LIVE/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE.md",
+        "url": "/ru/readings/benchmark/agent/upkeeplive/LIVE/"
+      }
+    },
+    {
+      "id": "benchmark-agent-upkeeplive-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmark/agent/upkeeplive/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "3f3bac7a3ac9c2f170a9fff027b8669391867ac19f6113afde3618833c2f5617",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmark/agent/upkeeplive/README.md",
+        "url": "/readings/benchmark/agent/upkeeplive/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmark/agent/upkeeplive/README.md",
+        "url": "/ru/readings/benchmark/agent/upkeeplive/README/"
+      }
+    },
+    {
+      "id": "benchmarks-retrieval-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "benchmarks/retrieval/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "29b66bdb636e17c7facb0e4447bfbbc7c9d19471c50503b6164a687be033ec0d",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmarks/retrieval/README.md",
+        "url": "/readings/benchmarks/retrieval/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmarks/retrieval/README.md",
+        "url": "/ru/readings/benchmarks/retrieval/README/"
+      }
+    },
+    {
+      "id": "benchmarks-toolkit-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "benchmarks/toolkit/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "afdc58b3937aae0264d2b9a1d1e5fd513b9040ff85ce1a3ee6d05aa6260d8d1d",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmarks/toolkit/README.md",
+        "url": "/readings/benchmarks/toolkit/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmarks/toolkit/README.md",
+        "url": "/ru/readings/benchmarks/toolkit/README/"
+      }
+    },
+    {
+      "id": "benchmarks-toolkit-results-paired-ed7ddc28-0f15ab4-summary",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "6b0e7026d99ffb473c0e7884508b5043aaab9724763f24ca8bc6ca8f77ada5a7",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+        "url": "/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+        "url": "/ru/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary/"
+      }
+    },
+    {
+      "id": "docs-adr-0001-okf-v02-graph-projection",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/adr/0001-okf-v02-graph-projection.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "49cc059756848b78b062483aa1eea4d6f1ef7ecdc8e27c8989b8ad3ac3889b0a",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/adr/0001-okf-v02-graph-projection.md",
+        "url": "/adr/0001-okf-v02-graph-projection/"
+      },
+      "ru": {
+        "path": "docs/ru/adr/0001-okf-v02-graph-projection.md",
+        "url": "/ru/adr/0001-okf-v02-graph-projection/"
+      }
+    },
+    {
+      "id": "docs-adr-0002-changeset-v1-additive-operation-tags",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/adr/0002-changeset-v1-additive-operation-tags.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "9d477c88241ec6f2f86a7d9a5b08b393b0a0d74da9c8d45534ae6e1461e67b4c",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/adr/0002-changeset-v1-additive-operation-tags.md",
+        "url": "/adr/0002-changeset-v1-additive-operation-tags/"
+      },
+      "ru": {
+        "path": "docs/ru/adr/0002-changeset-v1-additive-operation-tags.md",
+        "url": "/ru/adr/0002-changeset-v1-additive-operation-tags/"
+      }
+    },
+    {
+      "id": "docs-adr-0003-okf-v02-temporal-revisions",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/adr/0003-okf-v02-temporal-revisions.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "90044909e42d8777be2c565635fd6d748d0cae224b32c60662b5eb0b2af0d7d6",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/adr/0003-okf-v02-temporal-revisions.md",
+        "url": "/adr/0003-okf-v02-temporal-revisions/"
+      },
+      "ru": {
+        "path": "docs/ru/adr/0003-okf-v02-temporal-revisions.md",
+        "url": "/ru/adr/0003-okf-v02-temporal-revisions/"
+      }
+    },
+    {
+      "id": "docs-contracts-cli-init",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/cli-init.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ab4fbbf1b881a809d3bdc38fc6956c91e3ba171c4fbf4f0f16befc29f189700c",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/cli-init.md",
+      "en": {
+        "path": "docs/contracts/cli-init.md",
+        "url": "/contracts/cli-init/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/cli-init.md",
+        "url": "/ru/contracts/cli-init/"
+      }
+    },
+    {
+      "id": "docs-contracts-concept-queries",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/concept-queries.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "19b3c65c1128bfd600b901578e26a027bf995e2c9c51d7d85a23a532fa1a93c7",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/concept-queries.md",
+      "en": {
+        "path": "docs/contracts/concept-queries.md",
+        "url": "/contracts/concept-queries/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/concept-queries.md",
+        "url": "/ru/contracts/concept-queries/"
+      }
+    },
+    {
+      "id": "docs-contracts-markdown-setup",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/markdown-setup.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "672f8dbd8aa59380d525c3b439e56ba40d98b7ad3999364d900ed47c240ff1c6",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/markdown-setup.md",
+      "en": {
+        "path": "docs/contracts/markdown-setup.md",
+        "url": "/contracts/markdown-setup/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/markdown-setup.md",
+        "url": "/ru/contracts/markdown-setup/"
+      }
+    },
+    {
+      "id": "docs-contracts-mcp-mutation-trust-boundaries",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/mcp-mutation-trust-boundaries.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "032f429a373e05b7bd9e4e6bb693d41899dd43414f49fef6b138790a56b45f65",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/mcp-mutation-trust-boundaries.md",
+      "en": {
+        "path": "docs/contracts/mcp-mutation-trust-boundaries.md",
+        "url": "/contracts/mcp-mutation-trust-boundaries/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/mcp-mutation-trust-boundaries.md",
+        "url": "/ru/contracts/mcp-mutation-trust-boundaries/"
+      }
+    },
+    {
+      "id": "docs-contracts-migration-preparation",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/migration-preparation.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "0fbdcc1aeb8f569277592f6fe84b3757a18db84567daeabb181478608b3f0d74",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/migration-preparation.md",
+      "en": {
+        "path": "docs/contracts/migration-preparation.md",
+        "url": "/contracts/migration-preparation/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/migration-preparation.md",
+        "url": "/ru/contracts/migration-preparation/"
+      }
+    },
+    {
+      "id": "docs-contracts-okf-v0-2-conformance",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/okf-v0.2-conformance.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "5e44e9b318e57200e8c4f38f0c63e743ba0ab107f9cc93c957813e9bd1d1769f",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/okf-v0.2-conformance.md",
+      "en": {
+        "path": "docs/contracts/okf-v0.2-conformance.md",
+        "url": "/contracts/okf-v0.2-conformance/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/okf-v0.2-conformance.md",
+        "url": "/ru/contracts/okf-v0.2-conformance/"
+      }
+    },
+    {
+      "id": "docs-contracts-okf-v0-2",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/okf-v0.2.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "217887a5487da4b3d01fbfae78423dc28d52317b2628c36ef496b1e053ff3bfb",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/okf-v0.2.md",
+      "en": {
+        "path": "docs/contracts/okf-v0.2.md",
+        "url": "/contracts/okf-v0.2/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/okf-v0.2.md",
+        "url": "/ru/contracts/okf-v0.2/"
+      }
+    },
+    {
+      "id": "docs-contracts-section-search",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/contracts/section-search.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "06abe42eb41c0bf684202d620d3820b3f90ffcc0fc8a979b62968f205a8a02d4",
+      "preserve_source": false,
+      "normative_source": "docs/contracts/section-search.md",
+      "en": {
+        "path": "docs/contracts/section-search.md",
+        "url": "/contracts/section-search/"
+      },
+      "ru": {
+        "path": "docs/ru/contracts/section-search.md",
+        "url": "/ru/contracts/section-search/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "e33e9e2b68b2c9f39bcbf3faac72c4b083ff99e093ee6762a149622154380e78",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/README.md",
+        "url": "/development/v0.2/tasks/README/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/README.md",
+        "url": "/ru/development/v0.2/tasks/README/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task09",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task09.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "99be7e1a55297e8f068624b71bc00e8fceec2e50a93fb5d52d94a000e14a36ea",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task09.md",
+        "url": "/development/v0.2/tasks/task09/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task09.md",
+        "url": "/ru/development/v0.2/tasks/task09/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task10",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task10.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "b2875bb1b6c9d2b1a56829d04a9571672528cbf6bc138b24a9f36990631e0464",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task10.md",
+        "url": "/development/v0.2/tasks/task10/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task10.md",
+        "url": "/ru/development/v0.2/tasks/task10/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task11",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task11.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "4a198da664afaa93d8dd39853176e0cd1769929b5b0e899496f64f6a5dd45393",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task11.md",
+        "url": "/development/v0.2/tasks/task11/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task11.md",
+        "url": "/ru/development/v0.2/tasks/task11/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task12",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task12.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "9ff1fe5ecbcf509137cb67587ee4979df1465548968e7d9e85f92de200306720",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task12.md",
+        "url": "/development/v0.2/tasks/task12/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task12.md",
+        "url": "/ru/development/v0.2/tasks/task12/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task13",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task13.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "61969b3575d888793ba5b94259b64f166b8e410e19291680f268c6ab0c81d920",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task13.md",
+        "url": "/development/v0.2/tasks/task13/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task13.md",
+        "url": "/ru/development/v0.2/tasks/task13/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task14",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task14.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "8a35adac91b2edee92e70289353d9d469d23eab74737bf602e1ddf61e6c02b97",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task14.md",
+        "url": "/development/v0.2/tasks/task14/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task14.md",
+        "url": "/ru/development/v0.2/tasks/task14/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task15",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task15.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "acd265045cac13d535281819093618dce543a85ea93afbefa9e2003820d4c660",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task15.md",
+        "url": "/development/v0.2/tasks/task15/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task15.md",
+        "url": "/ru/development/v0.2/tasks/task15/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task16",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task16.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "e9805dab407199ba1c2799399a9eff37355614103a846313b49ea40befe8331f",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task16.md",
+        "url": "/development/v0.2/tasks/task16/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task16.md",
+        "url": "/ru/development/v0.2/tasks/task16/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task17",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task17.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "105d2ec6769513925b095e8a750bd2b5d103967f2dea1e15db258e4899f22a84",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task17.md",
+        "url": "/development/v0.2/tasks/task17/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task17.md",
+        "url": "/ru/development/v0.2/tasks/task17/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task18",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task18.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "bb663984f57abe417557962e9335ac61467769b0852131d9fd74153a13407c65",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task18.md",
+        "url": "/development/v0.2/tasks/task18/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task18.md",
+        "url": "/ru/development/v0.2/tasks/task18/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task19",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task19.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "cae0cc5635249710fe84e088dc3f5eec7189d31f1de35cde8ed45190598d23f1",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task19.md",
+        "url": "/development/v0.2/tasks/task19/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task19.md",
+        "url": "/ru/development/v0.2/tasks/task19/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task20",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task20.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "532f51359cfb45823c376212c282353feb0c74906dd7532b50f3b8a148fd65a8",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task20.md",
+        "url": "/development/v0.2/tasks/task20/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task20.md",
+        "url": "/ru/development/v0.2/tasks/task20/"
+      }
+    },
+    {
+      "id": "docs-development-v0-2-tasks-task21",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/development/v0.2/tasks/task21.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "4b358550d7c609500ddf04cf4a84b28f8601f15b4e8701c8c6f9e1546c46d650",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/development/v0.2/tasks/task21.md",
+        "url": "/development/v0.2/tasks/task21/"
+      },
+      "ru": {
+        "path": "docs/ru/development/v0.2/tasks/task21.md",
+        "url": "/ru/development/v0.2/tasks/task21/"
+      }
+    },
+    {
+      "id": "docs-getting-started-mcp",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/getting-started-mcp.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "da32e71dbe4116c10e0fb65f3bdce94706b71ef484ad4a1ed7cd901a61facfbe",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/getting-started-mcp.md",
+        "url": "/getting-started-mcp/"
+      },
+      "ru": {
+        "path": "docs/ru/getting-started-mcp.md",
+        "url": "/ru/getting-started-mcp/"
+      }
+    },
+    {
+      "id": "docs-github-action",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/github-action.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "7577009eb693f772fccde2b4d3377d64670d704f5a2e078ca34374f978e95581",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/github-action.md",
+        "url": "/github-action/"
+      },
+      "ru": {
+        "path": "docs/ru/github-action.md",
+        "url": "/ru/github-action/"
+      }
+    },
+    {
+      "id": "docs-index",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/index.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "c1fbb89261bc74365a4509d374a40df9f49585d6be455ee09475cbc01e3e3620",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/index.md",
+        "url": "/"
+      },
+      "ru": {
+        "path": "docs/ru/index.md",
+        "url": "/ru/"
+      }
+    },
+    {
+      "id": "docs-issue-2-release-engineering-evidence",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/issue-2-release-engineering-evidence.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "91fe527a3bbca3153b4d4ef622839812f3a52fe5cabe8d2f8ce2e69bfdedd8ce",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/issue-2-release-engineering-evidence.md",
+        "url": "/issue-2-release-engineering-evidence/"
+      },
+      "ru": {
+        "path": "docs/ru/issue-2-release-engineering-evidence.md",
+        "url": "/ru/issue-2-release-engineering-evidence/"
+      }
+    },
+    {
+      "id": "docs-knowledge-manual-review",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/knowledge-manual-review.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "a251d77cdb93602bf28f84de3f209887a2eb5c7f9b3e9b63eb2f45ddf83943db",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/knowledge-manual-review.md",
+        "url": "/knowledge-manual-review/"
+      },
+      "ru": {
+        "path": "docs/ru/knowledge-manual-review.md",
+        "url": "/ru/knowledge-manual-review/"
+      }
+    },
+    {
+      "id": "docs-knowledge-upkeep",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/knowledge-upkeep.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "2420892d5c8641a86f812c5fadaf255768f6b49293e7b6f311c5fa5e1d87eb6a",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/knowledge-upkeep.md",
+        "url": "/knowledge-upkeep/"
+      },
+      "ru": {
+        "path": "docs/ru/knowledge-upkeep.md",
+        "url": "/ru/knowledge-upkeep/"
+      }
+    },
+    {
+      "id": "docs-knowledge",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/knowledge.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ac07e195f081da5e7e2c9761443c2f4bd365d35d69aed1fdb1d0ed77ecd8de48",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/knowledge.md",
+        "url": "/knowledge/"
+      },
+      "ru": {
+        "path": "docs/ru/knowledge.md",
+        "url": "/ru/knowledge/"
+      }
+    },
+    {
+      "id": "docs-migration",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/migration.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "8a92aee9491a119b60d676a72fa5b8866bbb0ef3566948ab443fb6de7c2b30f0",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/migration.md",
+        "url": "/migration/"
+      },
+      "ru": {
+        "path": "docs/ru/migration.md",
+        "url": "/ru/migration/"
+      }
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-evidence",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/parser-backed-lossless-mutations-evidence.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "9ef307f2cbca71ca4df52a605b627cdc6f86c14d33ac676fb9f2c0fcf5a5c6eb",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-evidence.md",
+        "url": "/parser-backed-lossless-mutations-evidence/"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-evidence.md",
+        "url": "/ru/parser-backed-lossless-mutations-evidence/"
+      }
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-profiles-overlay-baseline-vs-result-2026-07-20",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "a2fc25994298ecb47cdbff316179cc13c9b7dcfb4800f5f9f362b957a52d151f",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md",
+        "url": "/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20.md",
+        "url": "/ru/parser-backed-lossless-mutations-profiles/overlay-baseline-vs-result-2026-07-20/"
+      }
+    },
+    {
+      "id": "docs-parser-backed-lossless-mutations-profiles-planner-10000-2026-07-20",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "6383859bfa4907120dbffcdd857e25a57d4603a6b715d366084e52641e8fb21c",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md",
+        "url": "/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/"
+      },
+      "ru": {
+        "path": "docs/ru/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20.md",
+        "url": "/ru/parser-backed-lossless-mutations-profiles/planner-10000-2026-07-20/"
+      }
+    },
+    {
+      "id": "docs-quickstart",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/quickstart.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "4230f14da47dadc2ecf72ca75e57429782ef5b2cd5e84f0d358f840f1d743a19",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/quickstart.md",
+        "url": "/quickstart/"
+      },
+      "ru": {
+        "path": "docs/ru/quickstart.md",
+        "url": "/ru/quickstart/"
+      }
+    },
+    {
+      "id": "docs-reference",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/reference.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "aee9be6306d63efd6cf3c3c99bfcb3c853fd681b82b4bcc1cc29d8c0e8926d44",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/reference.md",
+        "url": "/reference/"
+      },
+      "ru": {
+        "path": "docs/ru/reference.md",
+        "url": "/ru/reference/"
+      }
+    },
+    {
+      "id": "docs-release-engineering",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/release-engineering.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "967d41cf557754e3f1d1b6e52a708cd8c5aceb62180c086440968dad3eaaead5",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/release-engineering.md",
+        "url": "/release-engineering/"
+      },
+      "ru": {
+        "path": "docs/ru/release-engineering.md",
+        "url": "/ru/release-engineering/"
+      }
+    },
+    {
+      "id": "docs-releases-v0-2-0",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/releases/v0.2.0.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "1325676d37462b06b6049a3ac731e2fa18de5ba641b39658ab0fd4752c9cfdd1",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/releases/v0.2.0.md",
+        "url": "/releases/v0.2.0/"
+      },
+      "ru": {
+        "path": "docs/ru/releases/v0.2.0.md",
+        "url": "/ru/releases/v0.2.0/"
+      }
+    },
+    {
+      "id": "docs-releases-v0-2-2",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/releases/v0.2.2.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "371dc97302f19ad2ef9a5af2562ea25cfd326532f748a9eba7a117fad5a2d913",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/releases/v0.2.2.md",
+        "url": "/releases/v0.2.2/"
+      },
+      "ru": {
+        "path": "docs/ru/releases/v0.2.2.md",
+        "url": "/ru/releases/v0.2.2/"
+      }
+    },
+    {
+      "id": "docs-skill",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/skill.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "0ef55f81c3cf668062316b3b7aac39d007b84c4333e2cfb334d72eb64d72b392",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/skill.md",
+        "url": "/skill/"
+      },
+      "ru": {
+        "path": "docs/ru/skill.md",
+        "url": "/ru/skill/"
+      }
+    },
+    {
+      "id": "docs-snippets-agents-okf",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/snippets/AGENTS-okf.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "7633beeaf371622fbc526f6e86f451f0d1f3d96bc2bcd0431e18ebc4871d4867",
+      "preserve_source": true,
+      "normative_source": "docs/snippets/AGENTS-okf.md",
+      "en": {
+        "path": "docs/readings/docs/snippets/AGENTS-okf.md",
+        "url": "/readings/docs/snippets/AGENTS-okf/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/docs/snippets/AGENTS-okf.md",
+        "url": "/ru/readings/docs/snippets/AGENTS-okf/"
+      }
+    },
+    {
+      "id": "docs-snippets-claude-okf",
+      "purpose": "contract",
+      "status": "current",
+      "source": "docs/snippets/CLAUDE-okf.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "1f0f1b998a9b6529f52c563451933b2e58d7e2d79f4e6a9673775659a508915f",
+      "preserve_source": true,
+      "normative_source": "docs/snippets/CLAUDE-okf.md",
+      "en": {
+        "path": "docs/readings/docs/snippets/CLAUDE-okf.md",
+        "url": "/readings/docs/snippets/CLAUDE-okf/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/docs/snippets/CLAUDE-okf.md",
+        "url": "/ru/readings/docs/snippets/CLAUDE-okf/"
+      }
+    },
+    {
+      "id": "docs-toolkit",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/toolkit.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ff79e615584bc3e4e40a0238b5bbd87c5cdc47a968ce07b692d32c5082c2243a",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/toolkit.md",
+        "url": "/toolkit/"
+      },
+      "ru": {
+        "path": "docs/ru/toolkit.md",
+        "url": "/ru/toolkit/"
+      }
+    },
+    {
+      "id": "docs-viewer-browser-review",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "docs/viewer-browser-review.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "bd67720c9fc305cfccf6217a1a2477218f974513b3d335b8c09b982551431f49",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/viewer-browser-review.md",
+        "url": "/viewer-browser-review/"
+      },
+      "ru": {
+        "path": "docs/ru/viewer-browser-review.md",
+        "url": "/ru/viewer-browser-review/"
+      }
+    },
+    {
+      "id": "examples-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "examples/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "6c84480b0cbfa90ac80eda1556ea312056165fd2d292f784e1717ea262f3efb4",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "examples/README.md",
+        "url": "https://github.com/skosovsky/okf/blob/main/examples/README.md"
+      },
+      "ru": {
+        "path": "examples/README.ru.md",
+        "url": "https://github.com/skosovsky/okf/blob/main/examples/README.ru.md"
+      }
+    },
+    {
+      "id": "graph-contracts-v0-2-instant",
+      "purpose": "contract",
+      "status": "current",
+      "source": "graph/contracts/v0.2-instant.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "c22f0d6bd4218dcac3812bb6f7a4135765b051d6786fc63e2a9d1d6eef2eb80e",
+      "preserve_source": true,
+      "normative_source": "graph/contracts/v0.2-instant.md",
+      "en": {
+        "path": "docs/readings/graph/contracts/v0.2-instant.md",
+        "url": "/readings/graph/contracts/v0.2-instant/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/graph/contracts/v0.2-instant.md",
+        "url": "/ru/readings/graph/contracts/v0.2-instant/"
+      }
+    },
+    {
+      "id": "graph-contracts-v0-2",
+      "purpose": "contract",
+      "status": "current",
+      "source": "graph/contracts/v0.2.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "56bace0608dba951b4037dd6b3d0570f060fd923c195ba500767835386b19055",
+      "preserve_source": true,
+      "normative_source": "graph/contracts/v0.2.md",
+      "en": {
+        "path": "docs/readings/graph/contracts/v0.2.md",
+        "url": "/readings/graph/contracts/v0.2/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/graph/contracts/v0.2.md",
+        "url": "/ru/readings/graph/contracts/v0.2/"
+      }
+    },
+    {
+      "id": "skills-okf-backfill-skill",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/okf-backfill/SKILL.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "32e05a1a705902e4485e1b9181f680a8c560bdef3c0fa79aa084f3d046d85148",
+      "preserve_source": true,
+      "normative_source": "skills/okf-backfill/SKILL.md",
+      "en": {
+        "path": "docs/readings/skills/okf-backfill/SKILL.md",
+        "url": "/readings/skills/okf-backfill/SKILL/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/okf-backfill/SKILL.md",
+        "url": "/ru/readings/skills/okf-backfill/SKILL/"
+      }
+    },
+    {
+      "id": "skills-okf-backfill-references-analyst",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/okf-backfill/references/analyst.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "aab732039c0d51d91d6d0cbdc6ea1b96020e7d998d5fccdf6eb698c2ee206630",
+      "preserve_source": true,
+      "normative_source": "skills/okf-backfill/references/analyst.md",
+      "en": {
+        "path": "docs/readings/skills/okf-backfill/references/analyst.md",
+        "url": "/readings/skills/okf-backfill/references/analyst/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/okf-backfill/references/analyst.md",
+        "url": "/ru/readings/skills/okf-backfill/references/analyst/"
+      }
+    },
+    {
+      "id": "skills-okf-maintain-skill",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/okf-maintain/SKILL.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "eac8c5f792984be5aad90eb6ce7cf6dcb593e1c781743dc180acb3c256e64d8b",
+      "preserve_source": true,
+      "normative_source": "skills/okf-maintain/SKILL.md",
+      "en": {
+        "path": "docs/readings/skills/okf-maintain/SKILL.md",
+        "url": "/readings/skills/okf-maintain/SKILL/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/okf-maintain/SKILL.md",
+        "url": "/ru/readings/skills/okf-maintain/SKILL/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-skill",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/SKILL.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "15bc7a088362ccf85cd519704465f02eb6a5d934c8527bdfa803510feaecfbcf",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/SKILL.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/SKILL.md",
+        "url": "/readings/skills/open-knowledge-format/SKILL/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/SKILL.md",
+        "url": "/ru/readings/skills/open-knowledge-format/SKILL/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-adversarial-v02",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/adversarial-v02.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "7d6a0a9b41bdc55ec8c22d06d73d4dfd78e98f2715041ecf86c2c3b874506e0c",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/adversarial-v02.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/adversarial-v02.md",
+        "url": "/readings/skills/open-knowledge-format/references/adversarial-v02/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/adversarial-v02.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/adversarial-v02/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-authoring-and-reading",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/authoring-and-reading.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ee5aa80e01dfeba67e57e4dc22deebfed16eb717961bf2430ae5b0ff385611c0",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/authoring-and-reading.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/authoring-and-reading.md",
+        "url": "/readings/skills/open-knowledge-format/references/authoring-and-reading/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/authoring-and-reading.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/authoring-and-reading/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-conversion",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/conversion.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "52235bdeab1c70a79aac14f473d05e84e3d4729008a16797239181be92650dec",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/conversion.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/conversion.md",
+        "url": "/readings/skills/open-knowledge-format/references/conversion/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/conversion.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/conversion/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-examples",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/examples.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "78d18f9fa19238472c74d42d046dde390ef8482c9ad146cb093cb9a6e2d43e97",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/examples.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/examples.md",
+        "url": "/readings/skills/open-knowledge-format/references/examples/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/examples.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/examples/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-mcp-operations",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/mcp-operations.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "a04a399ab1f4cb5441312e3cc6ac2545b8bc182aca44cf6b4ecbbd6b380043ec",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/mcp-operations.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/mcp-operations.md",
+        "url": "/readings/skills/open-knowledge-format/references/mcp-operations/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/mcp-operations.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/mcp-operations/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-migration-v01-v02",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/migration-v01-v02.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "ac22afd23f3c8dcf89be152be7a2aa1dda70a011cc645a278396c1be03ca31aa",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/migration-v01-v02.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/migration-v01-v02.md",
+        "url": "/readings/skills/open-knowledge-format/references/migration-v01-v02/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/migration-v01-v02.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/migration-v01-v02/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-operational-workflows",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/operational-workflows.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "3ba9c8f3d148231bd9c727c0345f68e3b428950235c35c93b96e8c3388587607",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/operational-workflows.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/operational-workflows.md",
+        "url": "/readings/skills/open-knowledge-format/references/operational-workflows/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/operational-workflows.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/operational-workflows/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-spec-v02-instant",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/spec-v02-instant.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "26aa5da029278939f914e578107242d9607d4f2dc5fe153272b82f9ed1030101",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/spec-v02-instant.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/spec-v02-instant.md",
+        "url": "/readings/skills/open-knowledge-format/references/spec-v02-instant/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/spec-v02-instant.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/spec-v02-instant/"
+      }
+    },
+    {
+      "id": "skills-open-knowledge-format-references-spec-v02",
+      "purpose": "contract",
+      "status": "current",
+      "source": "skills/open-knowledge-format/references/spec-v02.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "5a3311d270bebb16d558010e75064f5b75323f284992641732b1c8097511f948",
+      "preserve_source": true,
+      "normative_source": "skills/open-knowledge-format/references/spec-v02.md",
+      "en": {
+        "path": "docs/readings/skills/open-knowledge-format/references/spec-v02.md",
+        "url": "/readings/skills/open-knowledge-format/references/spec-v02/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/skills/open-knowledge-format/references/spec-v02.md",
+        "url": "/ru/readings/skills/open-knowledge-format/references/spec-v02/"
+      }
+    },
+    {
+      "id": "viewer-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "viewer/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "c4f7d95f37d2f1d2d627a61a655be8ae3ad6d42cdcdfc25c5d8c65ffb13f4ca7",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/viewer/README.md",
+        "url": "/readings/viewer/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/viewer/README.md",
+        "url": "/ru/readings/viewer/README/"
+      }
+    },
+    {
+      "id": "documentation-index",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/documentation.md",
+      "source_revision": "",
+      "baseline_sha256": "",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/documentation.md",
+        "url": "/documentation/"
+      },
+      "ru": {
+        "path": "docs/ru/documentation.md",
+        "url": "/ru/documentation/"
+      }
+    },
+    {
+      "id": "history-index",
+      "purpose": "guide",
+      "status": "current",
+      "source": "docs/history.md",
+      "source_revision": "",
+      "baseline_sha256": "",
+      "preserve_source": false,
+      "normative_source": null,
+      "en": {
+        "path": "docs/history.md",
+        "url": "/history/"
+      },
+      "ru": {
+        "path": "docs/ru/history.md",
+        "url": "/ru/history/"
+      }
+    },
+    {
+      "id": "fixtures-interoperability-readme",
+      "purpose": "historical",
+      "status": "historical",
+      "source": "fixtures/interoperability/README.md",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "2e6f38f80115b0ead5102cb15c7b60402c6594a1e1e4dbde7558c585569dd204",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/fixtures/interoperability/README.md",
+        "url": "/readings/fixtures/interoperability/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/fixtures/interoperability/README.md",
+        "url": "/ru/readings/fixtures/interoperability/README/"
+      }
+    },
+    {
+      "id": "viewer-testdata-regression-016-readme",
+      "purpose": "guide",
+      "status": "current",
+      "source": "viewer/testdata/regression-016/README.txt",
+      "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+      "baseline_sha256": "1c3ca97cf6def1a0d4a12807ea023ffa877f8cd6610370a559adb88fd9157068",
+      "preserve_source": true,
+      "normative_source": null,
+      "en": {
+        "path": "docs/readings/viewer/testdata/regression-016/README.md",
+        "url": "/readings/viewer/testdata/regression-016/README/"
+      },
+      "ru": {
+        "path": "docs/ru/readings/viewer/testdata/regression-016/README.md",
+        "url": "/ru/readings/viewer/testdata/regression-016/README/"
+      }
+    }
+  ],
+  "exclusions": [
+    {
+      "path": ".cursor/tasks/README.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/acceptance-matrix.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/completeness-review.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/correctness-review.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/findings-journal.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/retrieval-results.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/evidence/016/verification.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-001-transactional-mutation-api.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-002-parser-backed-lossless-mutations.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-003-harden-v0-2-x-release-engineering.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-004-align-upstream-v02-temporal-contract.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-005-okf-interoperability-corpus.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-006-go-bundle-init.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-007-repository-knowledge-bundle.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-008-mcp-search-and-neighbors.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-009-go-html-knowledge-viewer.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-010-go-history-backfill.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-011-go-validator-github-action.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-012-go-agent-behavior-evals.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-013-go-knowledge-upkeep.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-014-go-migration-assisted-inputs.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-015-go-toolkit-benchmarks-after-fixes.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".cursor/tasks/issue-016-product-onboarding-retrieval-and-viewer.md",
+      "reason": "acceptance-record"
+    },
+    {
+      "path": ".github/fixtures/okf-action/legacy/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/legacy/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/malformed/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/malformed/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/strict-warning/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/strict-warning/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/valid/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": ".github/fixtures/okf-action/valid/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/cache.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/leases.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/migrations.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/outbox.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/retries.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "benchmarks/retrieval/testdata/corpus/secrets.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/forward-compat/mystery.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/interoperability/foreign-68ce7a0/components/backfill-events.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/interoperability/foreign-68ce7a0/components/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/interoperability/foreign-68ce7a0/components/validator.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/interoperability/foreign-68ce7a0/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/interoperability/foreign-68ce7a0/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/broken-directory/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/broken-file/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/code-heading-anchor/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/code-heading-anchor/b.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/cyclic-directory/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/cyclic-directory/subdir/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/cyclic/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/cyclic/b.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/deep-nesting/a/b/c/d/e/source.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/deep-nesting/root.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/deep-sibling-absolute/a/b/c/d/e/source.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/deep-sibling-absolute/sibling/target.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/duplicate-heading-anchor/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/duplicate-heading-anchor/b.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/external-ignored/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/fragment-only/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/missing-anchor/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/missing-anchor/b.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/self-reference/self.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/symlink-ignored/alias.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/link/symlink-ignored/real.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/empty-file/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/empty-frontmatter/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/empty-type/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/frontmatter-after-blank/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/frontmatter-delimiter-inline/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-empty/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-empty/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-nested-okf-version/sub/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-nested-okf-version/sub/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-no-headings/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-no-headings/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-no-links/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/index-no-links/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/invalid-utf8/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/invalid-yaml/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-date-format/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-date-format/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-date-heading-level/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-date-heading-level/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-frontmatter/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-frontmatter/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-invalid-calendar-date/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-invalid-calendar-date/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-nested-bullet/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-nested-bullet/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-nested-heading/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-nested-heading/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-out-of-order/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-out-of-order/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-plain-paragraph/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/log-plain-paragraph/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/missing-frontmatter/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/missing-type/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/root-index-empty-frontmatter/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/root-index-empty-frontmatter/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/root-index-non-string-version/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/negative/root-index-non-string-version/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c01.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c02.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c03.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c04.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c05.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c06.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c07.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c08.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c09.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/c10.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/empty-index-ten-orphans/sub/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/missing-index/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/orphan-file/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/orphan-file/b.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/orphan-file/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/reserved-files-excluded/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/reserved-files-excluded/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/reserved-files-excluded/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c01.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c02.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c03.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c04.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c05.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c06.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c07.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c08.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c09.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/c10.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/orphan/ten-orphans/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/parsing/body-delimiter-ignored/good.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/parsing/empty-body/good.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/parsing/mixed-line-endings/unix.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/parsing/mixed-line-endings/windows.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/positive/root-index-extension/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/positive/root-index-extension/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-abstract-concept/playbook.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/datasets/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/datasets/sales.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/tables/customers.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/tables/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-minimal/tables/orders.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/spec-resource-concept/orders.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-heading-level/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-invalid-target/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-marker-in-code/good.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-missing-section/claim.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-not-bottom/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/citation-numbering/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/claims-without-citations/claim.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/examples-concrete-prose/good.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/examples-empty/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/examples-prose/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/index-description-mismatch/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/index-description-mismatch/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/invalid-resource/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/invalid-timestamp/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/missing-recommended-fields/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/resource-bool/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/resource-non-scalar/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/schema-heading-level/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/tags-non-string-item/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/tags-string/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/strict/timestamp-non-scalar/bad.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/inert-executor/computations/inert-policy-probe.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/inert-executor/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/inert-executor/policy-boundary.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/inert-executor/references/executors/policy-bypass.txt",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/lifecycle-self-promotion/body-only-claims.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/lifecycle-self-promotion/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/lifecycle-self-promotion/structured-deprecated-stale.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/optional-shapes/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/optional-shapes/malformed.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/trust-signals/untrusted-signals.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/unknown-extension/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/adversarial/unknown-extension/unknown-extension.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/declared-v01/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/declared-v01/legacy.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/future-version/future.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/future-version/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/mixed-provenance/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/mixed-provenance/mixed.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/compat/undeclared-v01/legacy.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/computations/profit.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/computations/revenue.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/metrics/income-statement.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/references/skills/run-dbt.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/appendix-a/references/skills/run-on-bq.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/computations/file.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/computations/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/computations/inline.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/deprecated.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/draft.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/human-authored.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/metric.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/multiple-sources.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/references/runbook.txt",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/stable.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/verified-bare.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/canonical/verified-list.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/durability/computations/revenue.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/durability/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/durability/metrics/income-statement.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/durability/references/executors/run-postgres.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/minimal/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/positive/minimal/minimal.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/declaration-malformed-string/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/declaration-malformed-string/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/declaration-malformed-type/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/declaration-malformed-type/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/families/actor.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/families/computation.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/families/sources.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/families/tags-and-time.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/selector-invalid/concept.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-boundaries/selector-invalid/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict-footnote-integrity/footnotes.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/strict/malformed-families.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/temporal-profiles/date/example.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/temporal-profiles/date/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/temporal-profiles/instant/example.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/v02/temporal-profiles/instant/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/versioning/root-0.1/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/versioning/root-0.1/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/versioning/root-0.2/a.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "fixtures/versioning/root-0.2/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/architecture.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/computations.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/graph.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/log.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/mcp.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/mutation.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/platforms.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/release.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/store.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/validation.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "knowledge/versions.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "viewer/testdata/regression-016/index.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "viewer/testdata/regression-016/ordinary.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "viewer/testdata/regression-016/тест.md",
+      "reason": "fixed-data-or-authored-bundle"
+    },
+    {
+      "path": "examples/project-knowledge/ru/retry-policy.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "examples/project-knowledge/ru/index.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "examples/project-knowledge/ru/source-material.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "examples/project-knowledge/en/retry-policy.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "examples/project-knowledge/en/index.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "examples/project-knowledge/en/source-material.md",
+      "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    }
+  ],
+  "exclusion_rules": [
+    "fixtures and testdata are fixed test inputs",
+    "knowledge/ is the authored repository bundle",
+    "raw benchmark outputs and machine-readable data are not translated",
+    "runtime skill packages and normative originals remain unchanged; reading editions are paired"
+  ]
+}

@@ -1,15 +1,25 @@
-# Техническое задание: OKF v0.2 в `okf-mcp`
+---
+lang: en
+title: "Technical specification: OKF v0.2 in okf-mcp"
+permalink: /development/v0.2/tasks/task20/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Сделать MCP schema-first v0.2 adapter с rich structured outputs и безопасными
-preview/apply edits, сохранив legacy 5-tool text contract.
+> Historical document from source revision `61e75e9`. This implementation plan is archived for reference and is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task20.md).
 
-Зависимости: [`task09.md`](task09.md)–[`task18.md`](task18.md).
+# Technical specification: OKF v0.2 in `okf-mcp` {#section001}
 
-## 2. Checked-in schemas
+## 1. Goal {#section002}
 
-Добавить `internal/mcpserver/contracts/*.schema.json` для:
+Make MCP a schema-first v0.2 adapter with rich structured outputs and safe
+preview/apply edits while preserving the legacy five-tool text contract.
+
+Dependencies: [`task09.md`]({{ '/development/v0.2/tasks/task09/' | relative_url }})–[`task18.md`]({{ '/development/v0.2/tasks/task18/' | relative_url }}).
+
+## 2. Checked-in schemas {#section003}
+
+Add `internal/mcpserver/contracts/*.schema.json` for:
 
 - common/version/error envelopes;
 - list/read/validate/graph;
@@ -17,40 +27,40 @@ preview/apply edits, сохранив legacy 5-tool text contract.
 - concept patch preview/apply;
 - migration preview/apply.
 
-JSON Schema — source of truth:
+JSON Schema is the source of truth:
 
-- raw input/output schema регистрируется tool'ом;
-- server output validation включена;
-- objects closed через `additionalProperties: false`, кроме explicit extension;
-- dates/timestamps/enums/limits зафиксированы;
-- arrays не сериализуются как `null`;
-- success возвращает structuredContent и legacy text fallback.
+- tools register raw input/output schemas;
+- server output validation is enabled;
+- objects are closed with `additionalProperties: false`, except explicit extensions;
+- dates/timestamps/enums/limits are fixed;
+- arrays are not serialized as `null`;
+- success returns structuredContent and a legacy text fallback.
 
-Stable error envelope содержит `code`, `message`, `retryable`, diagnostics.
+The stable error envelope contains `code`, `message`, `retryable`, and diagnostics.
 
-## 3. Existing tools compatibility
+## 3. Existing tools compatibility {#section004}
 
-### `list_concepts`
+### `list_concepts` {#section005}
 
-Additive input `as_of`. Structured result включает:
+Add input `as_of`. The structured result includes:
 
-- declared/effective version и compatibility;
+- declared/effective version and compatibility;
 - status/trust/staleness/generated time/source count;
 - Attested Computation/runtime marker;
 - explicit legacy-derived marker.
 
-### `read_concept`
+### `read_concept` {#section006}
 
-Сохранить raw Markdown text. Structured result содержит:
+Preserve raw Markdown text. The structured result contains:
 
 - lossless `frontmatter_yaml`;
 - body;
-- typed known v0.2 projection;
+- typed projection of known v0.2 fields;
 - legacy fallback flags.
 
-Не переводить unknown YAML в lossy closed JSON model.
+Do not convert unknown YAML into a lossy closed JSON model.
 
-### `validate_bundle`
+### `validate_bundle` {#section007}
 
 Inputs:
 
@@ -60,28 +70,28 @@ Inputs:
 Output:
 
 - declared/effective/resolution/compatibility;
-- conformance отдельно от guidance;
-- counts и stable diagnostic code/field/spec ref.
+- conformance separate from guidance;
+- counts and stable diagnostic code/field/specification reference.
 
-### `get_semantic_graph`
+### `get_semantic_graph` {#section008}
 
-Text fallback остаётся graph package output; structured content — parsed
-document согласно task12 profile. MCP не строит собственную graph model.
+The text fallback remains graph package output; structured content is a parsed
+document according to the task12 profile. MCP does not build its own graph model.
 
-### `write_concept`
+### `write_concept` {#section009}
 
-Сохранить whole-document escape hatch, но сделать validation version-aware.
-Canonical request identity включает domain/version policy. Caller-controlled
-idempotency key не добавлять.
+Preserve the whole-document escape hatch, but make validation version-aware.
+Canonical request identity includes domain/version policy. Do not add a caller-controlled
+idempotency key.
 
-## 4. Safe edit tools
+## 4. Safe edit tools {#section010}
 
-Добавить:
+Add:
 
 - `preview_concept_patch`;
 - `apply_concept_patch`.
 
-Операции мапятся только в task14 domain operations. Preview возвращает:
+Operations map only to task14 domain operations. Preview returns:
 
 - applicable/noop/rejected;
 - base/result revision;
@@ -89,74 +99,74 @@ idempotency key не добавлять.
 - bounded diff;
 - affected paths;
 - diagnostics;
-- confirmation unknown preservation.
+- confirmation of unknown content preservation.
 
-Apply требует `expected_revision` и `expected_plan_digest`, пересобирает plan и
-publishes через store CAS/journal. Raw filesystem writes запрещены.
+Apply requires `expected_revision` and `expected_plan_digest`, rebuilds the plan, and
+publishes through store CAS/journal. Raw filesystem writes are prohibited.
 
-## 5. Migration tools
+## 5. Migration tools {#section011}
 
-Добавить:
+Add:
 
 - `preview_v02_migration`;
 - `apply_v02_migration`.
 
-Они являются adapters task15 planner:
+They are adapters for the task15 planner:
 
-- explicit actor при generated creation;
+- explicit actor when creating generated;
 - safe legacy timestamp policy;
-- citation extraction только с explicit mapping;
-- manual actions/blockers для ambiguity;
+- citation extraction only with explicit mapping;
+- manual actions/blockers for ambiguity;
 - one transactional multi-file apply;
 - idempotent replay.
 
-## 6. Security
+## 6. Security {#section012}
 
-- resource/computation/executor/attester values — inert data.
-- MCP не fetch'ит сеть и не исполняет code.
-- Actor metadata не является authentication.
-- Сохранить absolute-root/no-follow/path containment/CAS boundaries.
-- Добавить bounded input bytes/items/nesting/diff.
-- Errors не раскрывают paths outside root.
-- Cancellation между parse/validate/preview/commit leaves zero changes.
+- resource/computation/executor/attester values are inert data.
+- MCP does not fetch from the network or execute code.
+- Actor metadata is not authentication.
+- Preserve absolute-root/no-follow/path containment/CAS boundaries.
+- Add bounds on input bytes/items/nesting/diff.
+- Errors do not reveal paths outside the root.
+- Cancellation between parse/validate/preview/commit leaves zero changes.
 
-## 7. Файлы
+## 7. Files {#section013}
 
 - `internal/mcpserver/server.go`;
 - `tools.go`, `write.go`;
-- новые `patch.go`, `migration.go`;
+- new `patch.go`, `migration.go`;
 - checked-in schemas;
 - protocol/tools/contracts/migration/adversarial tests;
-- docs после стабилизации contract.
+- docs after the contract stabilizes.
 
-## 8. Tests
+## 8. Tests {#section014}
 
-Все tests — AAA.
+All tests follow AAA.
 
 - Advertised schemas/output validation/additionalProperties.
-- Old args/text payload byte-compatible.
-- Structured outputs schema-valid.
+- Old arguments/text payloads remain byte-compatible.
+- Structured outputs are schema-valid.
 - All trust tiers, bare/list verified, stable/stale boundary.
 - v0.1/v0.2/absent/future/override.
 - Deterministic arrays/diagnostics.
 - Unknown YAML/comments/body preserved.
-- Flow/alias/duplicate/ambiguous edit fail closed.
+- Flow/alias/duplicate/ambiguous edits fail closed.
 - Revision conflict/plan mismatch/replay/concurrent writers.
 - Migration all-or-nothing/recovery.
 - Symlink/path traversal/special/UTF-8/resource limits.
 - Malicious executor/attester values remain inert.
-- Cancellation leaves bundle unchanged.
+- Cancellation leaves the bundle unchanged.
 
-## 9. Acceptance criteria
+## 9. Acceptance criteria {#section015}
 
-- Existing 5 tools and text contract remain compatible.
-- Каждый success имеет validated structuredContent.
-- v0.2 signals доступны list/read/graph.
-- Validation сообщает version/compatibility/as_of.
-- Patch/migration доступны только preview → digest/revision-bound apply.
+- Existing five tools and text contract remain compatible.
+- Every success has validated structuredContent.
+- v0.2 signals are available in list/read/graph.
+- Validation reports version/compatibility/as_of.
+- Patch/migration are available only as preview → digest/revision-bound apply.
 - No tool executes/fetches computation resources.
-- MCP package/full suite проходят.
+- The MCP package tests and full suite pass.
 
-## 10. Out of scope
+## 10. Out of scope {#section016}
 
 Execute/attest tools, receipt/verdict protocol, attester ABI/sandbox/cache.

@@ -14,6 +14,8 @@ deterministic radial layout; it never runs a force simulation.
 
 Flags:
 
+- `--lang en|ru` selects the initial interface language (default `en`).
+  Unsupported languages fail before creating or replacing output.
 - `--output FILE` is required. Existing files require `--overwrite`.
 - `--max-nodes N` limits the bundle to N concepts (default 10,000). Export
   fails before publication when the limit is exceeded.
@@ -55,3 +57,18 @@ an existing footnote anchor hash preserves that card. Unknown hashes retain the
 existing fallback to the first concept. Footnote labels are not source records.
 Repeated footnote references use Goldmark's numbered `fnref1:`, `fnref2:`, etc.
 backlink anchors and receive the same local scrolling behavior.
+
+## Interface language contract
+
+`Options.Language` selects the export language; its empty value means `en`.
+`Render(ctx, projection)` remains the English default.
+`RenderWithOptions(ctx, projection, RenderOptions{Language: "ru"})` selects
+Russian. Only `en`, `ru`, and the empty default are accepted. Language is a
+presentation option and does not change the semantic projection JSON.
+
+The embedded EN/RU selector changes all interface labels, known state values
+and relationship labels while retaining the current concept, search, type
+filter and graph toggle. Reload uses the language selected at export; no
+storage or network is used. Authored Markdown, identifiers, source text and
+unknown custom values are preserved. `html lang` and the document title follow
+the active language.

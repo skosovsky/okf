@@ -1,14 +1,28 @@
-# ADR 0001: toolkit graph projection for OKF v0.2
+---
+layout: default
+title: "ADR 0001: toolkit graph projection for OKF v0.2"
+lang: en
+document_id: docs-adr-0001-okf-v02-graph-projection
+permalink: /adr/0001-okf-v02-graph-projection/
+---
+
+<a id="adr-0001-toolkit-graph-projection-for-okf-v02"></a>
+
+# ADR 0001: toolkit graph projection for OKF v0.2 {#doc-section-001}
 
 Status: accepted.
 
-## Context
+<a id="context"></a>
+
+## Context {#doc-section-002}
 
 The upstream OKF v0.2 specification does not define an RDF ontology, JSON-LD
 context or graph ABI. The existing `https://okf.io/ontology/v0.1#` namespace is
 a toolkit contract and cannot be presented as an upstream standard.
 
-## Decision
+<a id="decision"></a>
+
+## Decision {#doc-section-003}
 
 The graph package keeps the legacy profile byte-compatible and introduces an
 explicit `skosovsky/okf` v0.2 projection profile. OKF declared/effective
@@ -26,7 +40,9 @@ Legacy `Render*` wrappers retain legacy output. Metadata projection requires an
 explicit profile/options API. No renderer performs network access or executes
 bundle content.
 
-## Consequences
+<a id="consequences"></a>
+
+## Consequences {#doc-section-004}
 
 Consumers can opt into richer deterministic JSON-LD or N-Triples without
 mistaking the vocabulary for upstream OKF. Legacy snapshots remain stable.

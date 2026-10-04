@@ -1,0 +1,1481 @@
+Race detector (Linux)	Set up job	﻿2026-10-04T16:46:35.7989703Z Current runner version: '2.337.0'
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8016367Z ##[group]Runner Image Provisioner
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8017315Z Hosted Compute Agent
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8018009Z Version: 20260901.588
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8018669Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8019819Z Build Date: 2026-09-01T19:56:44Z
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8020561Z Worker ID: {1e0779ea-7ec4-422b-9993-ff5b9a4ccde4}
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8021289Z Azure Region: eastus2
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8021995Z ##[endgroup]
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8024240Z ##[group]Operating System
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8025426Z Ubuntu
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8026259Z 24.04.5
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8027023Z LTS
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8027955Z ##[endgroup]
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8028709Z ##[group]Runner Image
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8029573Z Image: ubuntu-24.04
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8030199Z Version: 20260927.320.1
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8031292Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8033232Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8034274Z ##[endgroup]
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8035422Z ##[group]GITHUB_TOKEN Permissions
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8037748Z Contents: read
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8038450Z Metadata: read
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8039056Z ##[endgroup]
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8041734Z Secret source: Actions
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8042845Z Cache mode: write
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8043925Z Prepare workflow directory
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8372579Z Prepare all required actions
+Race detector (Linux)	Set up job	2026-10-04T16:46:35.8420996Z Getting action download info
+Race detector (Linux)	Set up job	2026-10-04T16:46:36.0877150Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+Race detector (Linux)	Set up job	2026-10-04T16:46:36.1892443Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+Race detector (Linux)	Set up job	2026-10-04T16:46:36.4928305Z Complete job name: Race detector (Linux)
+Race detector (Linux)	Check out repository	﻿2026-10-04T16:46:36.5696892Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5697991Z with:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5698448Z   persist-credentials: false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5698985Z   repository: skosovsky/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5703024Z   token: ***
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5703478Z   ssh-strict: true
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5703915Z   ssh-user: git
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5704331Z   clean: true
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5704839Z   sparse-checkout-cone-mode: true
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5705424Z   fetch-depth: 1
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5705920Z   fetch-tags: false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5706357Z   show-progress: true
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5706799Z   lfs: false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5707207Z   submodules: false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5707654Z   set-safe-directory: true
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5708155Z   allow-unsafe-pr-checkout: false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.5708990Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6715196Z Syncing repository: skosovsky/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6717811Z ##[group]Getting Git version info
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6718900Z Working directory is '/home/runner/work/okf/okf'
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6720787Z [command]/usr/bin/git version
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6782365Z git version 2.55.0
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6806089Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6821682Z Temporarily overriding HOME='/home/runner/work/_temp/d30785fe-2609-45e2-ba98-ffa52f61fec0' before making global git config changes
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6824125Z Adding repository directory to the temporary git global config as a safe directory
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6828131Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6879294Z Deleting the contents of '/home/runner/work/okf/okf'
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6884473Z ##[group]Initializing the repository
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6888346Z [command]/usr/bin/git init /home/runner/work/okf/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6997299Z hint: Using 'master' as the name for the initial branch. This default branch name
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.6998953Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7000866Z hint: to use in all of your new repositories, which will suppress this warning,
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7002046Z hint: call:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7002918Z hint:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7003867Z hint: 	git config --global init.defaultBranch <name>
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7004992Z hint:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7006082Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7007765Z hint: 'development'. The just-created branch can be renamed via this command:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7009123Z hint:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7010132Z hint: 	git branch -m <name>
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7010996Z hint:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7012049Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7013782Z Initialized empty Git repository in /home/runner/work/okf/okf/.git/
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7016663Z [command]/usr/bin/git remote add origin https://github.com/skosovsky/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7062437Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7063657Z ##[group]Disabling automatic garbage collection
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7066031Z [command]/usr/bin/git config --local gc.auto 0
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7097601Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7098956Z ##[group]Setting up auth
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7105849Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7144129Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7523756Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7576444Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7830091Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.7867117Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.8105216Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.8149813Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.8151256Z ##[group]Fetching the repository
+Race detector (Linux)	Check out repository	2026-10-04T16:46:36.8160311Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6faa311b60f6db042ac8fa85a1ae6b7616b7c025:refs/remotes/pull/12/merge
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4216599Z From https://github.com/skosovsky/okf
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4218620Z  * [new ref]         6faa311b60f6db042ac8fa85a1ae6b7616b7c025 -> pull/12/merge
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4223051Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4224772Z ##[group]Determining the checkout info
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4226779Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4241030Z [command]/usr/bin/git sparse-checkout disable
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4287717Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4332431Z ##[group]Checking out the ref
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.4337211Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5536373Z Note: switching to 'refs/remotes/pull/12/merge'.
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5537801Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5538910Z You are in 'detached HEAD' state. You can look around, make experimental
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5541332Z changes and commit them, and you can discard any commits you make in this
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5543436Z state without impacting any branches by switching back to a branch.
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5544389Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5544987Z If you want to create a new branch to retain commits you create, you may
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5546339Z do so (now or later) by using -c with the switch command. Example:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5547241Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5547827Z   git switch -c <new-branch-name>
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5549165Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5549861Z Or undo this operation with:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5550398Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5550701Z   git switch -
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5551119Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5551809Z Turn off this advice by setting config variable advice.detachedHead to false
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5552841Z
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5553939Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5557426Z ##[endgroup]
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5594967Z [command]/usr/bin/git log -1 --format=%H
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5621833Z 6faa311b60f6db042ac8fa85a1ae6b7616b7c025
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5632938Z ##[group]Removing auth
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5637516Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5671627Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5897282Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5925561Z http.https://github.com/.extraheader
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5933402Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.5980026Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.6206712Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.6240703Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Race detector (Linux)	Check out repository	2026-10-04T16:46:37.6464828Z ##[endgroup]
+Race detector (Linux)	Set up Go	﻿2026-10-04T16:46:37.6795337Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6796863Z with:
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6797731Z   go-version-file: go.mod
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6798704Z   cache: false
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6799743Z   check-latest: false
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6807768Z   token: ***
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.6808628Z ##[endgroup]
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.8112217Z Setup go version spec 1.25.5
+Race detector (Linux)	Set up Go	2026-10-04T16:46:37.8125917Z Attempting to download 1.25.5...
+Race detector (Linux)	Set up Go	2026-10-04T16:46:38.2383246Z matching 1.25.5...
+Race detector (Linux)	Set up Go	2026-10-04T16:46:38.2433604Z Acquiring 1.25.5 from https://github.com/actions/go-versions/releases/download/1.25.5-19880500865/go-1.25.5-linux-x64.tar.gz
+Race detector (Linux)	Set up Go	2026-10-04T16:46:38.7101317Z Extracting Go...
+Race detector (Linux)	Set up Go	2026-10-04T16:46:38.7238962Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/ab5d0c02-c45d-4950-b1e8-dad6c4010639 -f /home/runner/work/_temp/ff6755cd-d06a-455e-b87e-452c35642101
+Race detector (Linux)	Set up Go	2026-10-04T16:46:40.2029660Z Successfully extracted go to /home/runner/work/_temp/ab5d0c02-c45d-4950-b1e8-dad6c4010639
+Race detector (Linux)	Set up Go	2026-10-04T16:46:40.2030723Z Adding to the cache ...
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8974973Z Successfully cached go to /opt/hostedtoolcache/go/1.25.5/x64
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8977578Z Added go to the path
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.8980010Z Successfully set up Go version 1.25.5
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9207471Z go version go1.25.5 linux/amd64
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9207957Z
+Race detector (Linux)	Set up Go	2026-10-04T16:46:45.9208821Z ##[group]go env
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3804234Z AR='ar'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3804922Z CC='gcc'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3805602Z CGO_CFLAGS='-O2 -g'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3806468Z CGO_CPPFLAGS=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3807031Z CGO_CXXFLAGS='-O2 -g'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3807597Z CGO_ENABLED='1'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3808126Z CGO_FFLAGS='-O2 -g'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3808684Z CGO_LDFLAGS='-O2 -g'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3809478Z CXX='g++'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3810023Z GCCGO='gccgo'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3810595Z GO111MODULE=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3811634Z GOAMD64='v1'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3811976Z GOARCH='amd64'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3812374Z GOAUTH='netrc'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3812696Z GOBIN=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3813079Z GOCACHE='/home/runner/.cache/go-build'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3813927Z GOCACHEPROG=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3814298Z GODEBUG=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3814695Z GOENV='/home/runner/.config/go/env'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3815167Z GOEXE=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3815502Z GOEXPERIMENT=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3815849Z GOFIPS140='off'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3816178Z GOFLAGS=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3817387Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build931860290=/tmp/go-build -gno-record-gcc-switches'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3818619Z GOHOSTARCH='amd64'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3818981Z GOHOSTOS='linux'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3819542Z GOINSECURE=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3819969Z GOMOD='/home/runner/work/okf/okf/go.mod'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3820506Z GOMODCACHE='/home/runner/go/pkg/mod'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3820962Z GONOPROXY=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3821298Z GONOSUMDB=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3821617Z GOOS='linux'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3821981Z GOPATH='/home/runner/go'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3822364Z GOPRIVATE=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3822800Z GOPROXY='https://proxy.golang.org,direct'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3823381Z GOROOT='/opt/hostedtoolcache/go/1.25.5/x64'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3823893Z GOSUMDB='sum.golang.org'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3824288Z GOTELEMETRY='local'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3824743Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3825266Z GOTMPDIR=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3825599Z GOTOOLCHAIN='local'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3826160Z GOTOOLDIR='/opt/hostedtoolcache/go/1.25.5/x64/pkg/tool/linux_amd64'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3826774Z GOVCS=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827098Z GOVERSION='go1.25.5'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827449Z GOWORK=''
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3827799Z PKG_CONFIG='pkg-config'
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3828042Z
+Race detector (Linux)	Set up Go	2026-10-04T16:46:46.3828512Z ##[endgroup]
+Race detector (Linux)	Test packages with race detector	﻿2026-10-04T16:46:46.4038878Z ##[group]Run go test -race ./...
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4039685Z ^[[36;1mgo test -race ./...^[[0m
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4297876Z shell: /usr/bin/bash -e {0}
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4298202Z env:
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4298426Z   GOTOOLCHAIN: local
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.4298677Z ##[endgroup]
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.5301271Z go: downloading gopkg.in/yaml.v3 v3.0.1
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.5440398Z go: downloading github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.5552707Z go: downloading github.com/mark3labs/mcp-go v0.55.1
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.5821902Z go: downloading github.com/piprate/json-gold v0.8.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.6244730Z go: downloading github.com/yuin/goldmark v1.8.2
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.8097574Z go: downloading golang.org/x/sys v0.41.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:46.9084895Z go: downloading golang.org/x/text v0.14.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.5900380Z go: downloading github.com/google/uuid v1.6.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.5901129Z go: downloading github.com/google/jsonschema-go v0.4.2
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.5901741Z go: downloading github.com/spf13/cast v1.7.1
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.5902437Z go: downloading github.com/yosida95/uritemplate/v3 v3.0.2
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.6218055Z go: downloading github.com/cayleygraph/quad v1.3.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:46:47.6219086Z go: downloading github.com/pquerna/cachecontrol v0.2.0
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:10.6985004Z ok  	github.com/skosovsky/okf	1.166s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:14.2260451Z ok  	github.com/skosovsky/okf/backfill	2.375s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:16.5998263Z ok  	github.com/skosovsky/okf/benchmark/agent	1.462s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:18.3198109Z ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter	1.092s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:19.7167844Z ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter/cmd/okf-before-after	1.039s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:21.1696081Z ok  	github.com/skosovsky/okf/benchmark/agent/cmd/codex-adapter	1.036s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:22.9877692Z ok  	github.com/skosovsky/okf/benchmark/agent/cmd/okf-agent-eval	1.289s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:23.0159660Z ?   	github.com/skosovsky/okf/benchmark/agent/cmd/prepare-backfill	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:25.4923683Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive	1.749s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:26.9129491Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/codex-upkeep-adapter	1.030s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:28.3544238Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/upkeep-live	1.031s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:28.3974164Z ?   	github.com/skosovsky/okf/benchmark/agent/upkeepstudy	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:29.4167412Z ok  	github.com/skosovsky/okf/benchmarks/retrieval/cmd/okf-retrieval-eval	1.016s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:32.0761917Z ok  	github.com/skosovsky/okf/benchmarks/toolkit	3.339s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:32.0762720Z ok  	github.com/skosovsky/okf/benchmarks/toolkit/cmd/analyze	1.012s
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:32.0763323Z ?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/corpusgen	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T16:47:32.0763973Z ?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/paired	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9147203Z ok  	github.com/skosovsky/okf/bundle	569.635s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9147768Z ok  	github.com/skosovsky/okf/cmd/okf	22.871s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9148218Z ok  	github.com/skosovsky/okf/cmd/okf-action	1.073s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9148689Z ok  	github.com/skosovsky/okf/cmd/okf-backfill	1.019s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9149153Z ?   	github.com/skosovsky/okf/cmd/okf-mcp	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9149860Z ok  	github.com/skosovsky/okf/cmd/okf-upkeep	1.084s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9150257Z ok  	github.com/skosovsky/okf/docs	3.589s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9150621Z ok  	github.com/skosovsky/okf/graph	20.829s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9151064Z ok  	github.com/skosovsky/okf/internal/documentlayout	1.020s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9151593Z ?   	github.com/skosovsky/okf/internal/markdownlimit	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9152118Z ok  	github.com/skosovsky/okf/internal/markdownowner	44.638s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9152618Z ok  	github.com/skosovsky/okf/internal/mcpserver	533.004s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9153090Z ok  	github.com/skosovsky/okf/internal/migrationpath	1.018s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9153676Z ok  	github.com/skosovsky/okf/internal/okfcli	14.151s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9155028Z ok  	github.com/skosovsky/okf/internal/receiptprojection	14.480s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9155614Z ?   	github.com/skosovsky/okf/internal/temporalrequest	[no test files]
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9156253Z ok  	github.com/skosovsky/okf/mutation	51.338s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9156673Z ok  	github.com/skosovsky/okf/retrieval	9.298s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9157064Z ok  	github.com/skosovsky/okf/scripts	4.712s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9157570Z ok  	github.com/skosovsky/okf/setup	5.494s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9157938Z ok  	github.com/skosovsky/okf/store	1.150s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9158377Z ok  	github.com/skosovsky/okf/store/fs	108.819s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9158837Z ok  	github.com/skosovsky/okf/upkeep	3.814s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9159470Z ok  	github.com/skosovsky/okf/validator	18.321s
+Race detector (Linux)	Test packages with race detector	2026-10-04T17:01:14.9160062Z ok  	github.com/skosovsky/okf/viewer	2.201s
+Race detector (Linux)	Post Set up Go	﻿2026-10-04T17:01:15.1418458Z Post job cleanup.
+Race detector (Linux)	Post Check out repository	﻿2026-10-04T17:01:15.2786680Z Post job cleanup.
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3740755Z [command]/usr/bin/git version
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3769783Z git version 2.55.0
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3833196Z Temporarily overriding HOME='/home/runner/work/_temp/207fd155-7926-4d3b-bea7-13ae51254c7e' before making global git config changes
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3834642Z Adding repository directory to the temporary git global config as a safe directory
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3835709Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3839095Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.3882250Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.4212289Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.4276416Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.4587428Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Race detector (Linux)	Post Check out repository	2026-10-04T17:01:15.4642027Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Race detector (Linux)	Complete job	﻿2026-10-04T17:01:15.5147479Z Cleaning up orphan processes
+Unsupported platform contract (Windows)	Set up job	﻿2026-10-04T16:46:37.6912391Z Current runner version: '2.337.0'
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7134432Z ##[group]Runner Image Provisioner
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7135342Z Hosted Compute Agent
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7135936Z Version: 20260901.588
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7136586Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7137339Z Build Date: 2026-09-01T19:56:44Z
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7138035Z Worker ID: {5af8001c-d36c-4eb7-98dc-60342328c80d}
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7140205Z Azure Region: northcentralus
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7142640Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7146348Z ##[group]Operating System
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7148092Z Microsoft Windows Server 2025
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7149918Z 10.0.26100
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7151289Z Datacenter
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7153789Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7156820Z ##[group]Runner Image
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7159791Z Image: windows-2025-vs2026
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7162731Z Version: 20260925.250.1
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7167204Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7174467Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7180440Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7183416Z ##[group]GITHUB_TOKEN Permissions
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7189096Z Contents: read
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7189932Z Metadata: read
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7192669Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7197305Z Secret source: Actions
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7199519Z Cache mode: write
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.7201346Z Prepare workflow directory
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.8141839Z Prepare all required actions
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:37.8194858Z Getting action download info
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:38.0139419Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:38.1838460Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+Unsupported platform contract (Windows)	Set up job	2026-10-04T16:46:38.8396185Z Complete job name: Unsupported platform contract (Windows)
+Unsupported platform contract (Windows)	Check out repository	﻿2026-10-04T16:46:39.3839878Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3841163Z with:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3841606Z   persist-credentials: false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3842101Z   repository: skosovsky/okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3846172Z   token: ***
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3846592Z   ssh-strict: true
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3846997Z   ssh-user: git
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3847381Z   clean: true
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3847803Z   sparse-checkout-cone-mode: true
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3848291Z   fetch-depth: 1
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3848679Z   fetch-tags: false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3849084Z   show-progress: true
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3849498Z   lfs: false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3849871Z   submodules: false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3850300Z   set-safe-directory: true
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3850763Z   allow-unsafe-pr-checkout: false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3851476Z env:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3851877Z   CGO_ENABLED: 0
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.3852263Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.5619375Z Syncing repository: skosovsky/okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.5621278Z ##[group]Getting Git version info
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.5621976Z Working directory is 'D:\a\okf\okf'
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.6663906Z [command]"C:\Program Files\Git\bin\git.exe" version
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.9799863Z git version 2.55.0.windows.5
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.9852695Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.9887369Z Temporarily overriding HOME='D:\a\_temp\76e523b8-f1cf-40c4-bd5f-f0a005e1ed86' before making global git config changes
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.9888687Z Adding repository directory to the temporary git global config as a safe directory
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:39.9889759Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\okf\okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.0481725Z Deleting the contents of 'D:\a\okf\okf'
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.0488398Z ##[group]Initializing the repository
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.0496755Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\okf\okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.1418359Z Initialized empty Git repository in D:/a/okf/okf/.git/
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.1465453Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/skosovsky/okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2022251Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2023624Z ##[group]Disabling automatic garbage collection
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2032896Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2412153Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2414114Z ##[group]Setting up auth
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2424580Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:40.2812924Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:42.4212688Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:42.4646180Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:43.5817289Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:43.7669117Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:45.5477357Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:45.7442515Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:45.7443996Z ##[group]Fetching the repository
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:45.7459283Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6faa311b60f6db042ac8fa85a1ae6b7616b7c025:refs/remotes/pull/12/merge
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1241327Z From https://github.com/skosovsky/okf
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1242471Z  * [new ref]         6faa311b60f6db042ac8fa85a1ae6b7616b7c025 -> pull/12/merge
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1314094Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1314952Z ##[group]Determining the checkout info
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1317175Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.1331455Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.2770918Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.3603495Z ##[group]Checking out the ref
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:47.3614651Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/12/merge
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0381624Z Note: switching to 'refs/remotes/pull/12/merge'.
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0382484Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0382876Z You are in 'detached HEAD' state. You can look around, make experimental
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0384651Z changes and commit them, and you can discard any commits you make in this
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386016Z state without impacting any branches by switching back to a branch.
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386614Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0386942Z If you want to create a new branch to retain commits you create, you may
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0387708Z do so (now or later) by using -c with the switch command. Example:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0387994Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388123Z   git switch -c <new-branch-name>
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388299Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388399Z Or undo this operation with:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388574Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388679Z   git switch -
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0388792Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0389053Z Turn off this advice by setting config variable advice.detachedHead to false
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0389600Z
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0390172Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.0548827Z ##[endgroup]
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.2228493Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.3271682Z 6faa311b60f6db042ac8fa85a1ae6b7616b7c025
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.3347300Z ##[group]Removing auth
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.3362871Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:48.4601975Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:49.9898182Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:50.1747025Z http.https://github.com/.extraheader
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:50.1815420Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:50.3312357Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:52.0398131Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:52.2313535Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Unsupported platform contract (Windows)	Check out repository	2026-10-04T16:46:54.0219653Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up Go	﻿2026-10-04T16:46:54.0830991Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0831669Z with:
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0831985Z   go-version-file: go.mod
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0832352Z   cache: false
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0832656Z   check-latest: false
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0837159Z   token: ***
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0837458Z env:
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0837742Z   CGO_ENABLED: 0
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.0838551Z ##[endgroup]
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.4775548Z Setup go version spec 1.25.5
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:54.4811923Z Attempting to download 1.25.5...
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:55.1167356Z matching 1.25.5...
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:55.1250408Z Acquiring 1.25.5 from https://github.com/actions/go-versions/releases/download/1.25.5-19880500865/go-1.25.5-win32-x64.zip
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:55.8550987Z Extracting Go...
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:46:55.9865993Z [command]"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command "$ErrorActionPreference = 'Stop' ; try { Add-Type -AssemblyName System.IO.Compression.ZipFile } catch { } ; try { [System.IO.Compression.ZipFile]::ExtractToDirectory('D:\a\_temp\go-1.25.5-win32-x64.zip', 'D:\a\_temp\6cf7daad-f114-4b98-acb6-8ddc0f22caaa', $true) } catch { if (($_.Exception.GetType().FullName -eq 'System.Management.Automation.MethodException') -or ($_.Exception.GetType().FullName -eq 'System.Management.Automation.RuntimeException') ){ Expand-Archive -LiteralPath 'D:\a\_temp\go-1.25.5-win32-x64.zip' -DestinationPath 'D:\a\_temp\6cf7daad-f114-4b98-acb6-8ddc0f22caaa' -Force } else { throw $_ } } ;"
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:01.2458253Z Successfully extracted go to D:\a\_temp\6cf7daad-f114-4b98-acb6-8ddc0f22caaa
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:01.2458998Z Adding to the cache ...
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1130256Z Created link C:\hostedtoolcache\windows\go\1.25.5\x64 => D:\hostedtoolcache\windows\go\1.25.5\x64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1135496Z Created link C:\hostedtoolcache\windows\go\1.25.5\x64.complete => D:\hostedtoolcache\windows\go\1.25.5\x64.complete
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1136530Z Successfully cached go to C:\hostedtoolcache\windows\go\1.25.5\x64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1143183Z Added go to the path
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.1146112Z Successfully set up Go version 1.25.5
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4268931Z go version go1.25.5 windows/amd64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4269170Z
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:12.4269556Z ##[group]go env
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9234438Z set AR=ar
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9236839Z set CC=gcc
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9237479Z set CGO_CFLAGS=-O2 -g
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9237959Z set CGO_CPPFLAGS=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9238570Z set CGO_CXXFLAGS=-O2 -g
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9238791Z set CGO_ENABLED=0
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9238984Z set CGO_FFLAGS=-O2 -g
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9239186Z set CGO_LDFLAGS=-O2 -g
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9239370Z set CXX=g++
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9239544Z set GCCGO=gccgo
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9239717Z set GO111MODULE=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9239896Z set GOAMD64=v1
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9240072Z set GOARCH=amd64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9240243Z set GOAUTH=netrc
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9240414Z set GOBIN=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9240678Z set GOCACHE=C:\Users\runneradmin\AppData\Local\go-build
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9240985Z set GOCACHEPROG=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9241196Z set GODEBUG=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9241425Z set GOENV=C:\Users\runneradmin\AppData\Roaming\go\env
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9241703Z set GOEXE=.exe
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9241873Z set GOEXPERIMENT=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9242065Z set GOFIPS140=off
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9242239Z set GOFLAGS=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9242940Z set GOGCCFLAGS=-m64 -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=C:\Users\RUNNER~1\AppData\Local\Temp\go-build3460094606=/tmp/go-build -gno-record-gcc-switches
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9243653Z set GOHOSTARCH=amd64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9243846Z set GOHOSTOS=windows
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9244023Z set GOINSECURE=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9244207Z set GOMOD=D:\a\okf\okf\go.mod
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9244461Z set GOMODCACHE=C:\Users\runneradmin\go\pkg\mod
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9244730Z set GONOPROXY=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9244897Z set GONOSUMDB=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9247228Z set GOOS=windows
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9247441Z set GOPATH=C:\Users\runneradmin\go
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9247696Z set GOPRIVATE=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9248005Z set GOPROXY=https://proxy.golang.org,direct
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9248343Z set GOROOT=C:\hostedtoolcache\windows\go\1.25.5\x64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9248651Z set GOSUMDB=sum.golang.org
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9248860Z set GOTELEMETRY=local
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9249161Z set GOTELEMETRYDIR=C:\Users\runneradmin\AppData\Roaming\go\telemetry
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9249506Z set GOTMPDIR=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9249686Z set GOTOOLCHAIN=local
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250015Z set GOTOOLDIR=C:\hostedtoolcache\windows\go\1.25.5\x64\pkg\tool\windows_amd64
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250379Z set GOVCS=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250547Z set GOVERSION=go1.25.5
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250735Z set GOWORK=
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9250915Z set PKG_CONFIG=pkg-config
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9251050Z
+Unsupported platform contract (Windows)	Set up Go	2026-10-04T16:47:14.9251393Z ##[endgroup]
+Unsupported platform contract (Windows)	Build all packages for Windows	﻿2026-10-04T16:47:14.9544910Z ##[group]Run go build ./...
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9545269Z ^[[36;1mgo build ./...^[[0m
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9906562Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9906943Z env:
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9907122Z   CGO_ENABLED: 0
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9907318Z   GOTOOLCHAIN: local
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:14.9907529Z ##[endgroup]
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.1370765Z go: downloading gopkg.in/yaml.v3 v3.0.1
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.1531686Z go: downloading github.com/mark3labs/mcp-go v0.55.1
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.1669413Z go: downloading github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.4369171Z go: downloading github.com/yuin/goldmark v1.8.2
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.8875780Z go: downloading golang.org/x/sys v0.41.0
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:16.9660281Z go: downloading golang.org/x/text v0.14.0
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:19.5724058Z go: downloading github.com/google/uuid v1.6.0
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:19.5813550Z go: downloading github.com/google/jsonschema-go v0.4.2
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:19.5840925Z go: downloading github.com/spf13/cast v1.7.1
+Unsupported platform contract (Windows)	Build all packages for Windows	2026-10-04T16:47:19.5909770Z go: downloading github.com/yosida95/uritemplate/v3 v3.0.2
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	﻿2026-10-04T16:47:47.9899768Z ##[group]Run go test ./store/fs -run "UnsupportedPlatform|CancellationPrecedesPlatform" -count=1
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9900581Z ^[[36;1mgo test ./store/fs -run "UnsupportedPlatform|CancellationPrecedesPlatform" -count=1^[[0m
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9972720Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9973066Z env:
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9973234Z   CGO_ENABLED: 0
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9973423Z   GOTOOLCHAIN: local
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:47.9973613Z ##[endgroup]
+Unsupported platform contract (Windows)	Test typed unsupported-platform contract	2026-10-04T16:47:54.6761739Z ok  	github.com/skosovsky/okf/store/fs	0.028s
+Unsupported platform contract (Windows)	Post Set up Go	﻿2026-10-04T16:47:54.9290631Z Post job cleanup.
+Unsupported platform contract (Windows)	Post Check out repository	﻿2026-10-04T16:47:55.1187609Z Post job cleanup.
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.3556000Z [command]"C:\Program Files\Git\bin\git.exe" version
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.3845236Z git version 2.55.0.windows.5
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.3921437Z Temporarily overriding HOME='D:\a\_temp\6bae2c38-0f25-4fef-82b9-9e9a5e391e76' before making global git config changes
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.3922710Z Adding repository directory to the temporary git global config as a safe directory
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.3933379Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\okf\okf
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.4346661Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:55.4663580Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:56.0045077Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:56.0341148Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:56.5635366Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Unsupported platform contract (Windows)	Post Check out repository	2026-10-04T16:47:56.5942804Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Unsupported platform contract (Windows)	Complete job	﻿2026-10-04T16:47:57.1558535Z Cleaning up orphan processes
+Compile-safe derived platform (Android)	Set up job	﻿2026-10-04T16:46:36.3107006Z Current runner version: '2.337.0'
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3142936Z ##[group]Runner Image Provisioner
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3144165Z Hosted Compute Agent
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3145416Z Version: 20260901.588
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3146396Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3147759Z Build Date: 2026-09-01T19:56:44Z
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3149156Z Worker ID: {1a39ceb9-6254-47bc-8e34-97bfe5ae3ec0}
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3152198Z Azure Region: eastus
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3154586Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3156257Z ##[group]Operating System
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3157081Z Ubuntu
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3158180Z 24.04.5
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3159014Z LTS
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3159637Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3160291Z ##[group]Runner Image
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3160973Z Image: ubuntu-24.04
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3161585Z Version: 20260927.320.1
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3162659Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3164557Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3165618Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3166770Z ##[group]GITHUB_TOKEN Permissions
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3169866Z Contents: read
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3170767Z Metadata: read
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3171694Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3174401Z Secret source: Actions
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3175819Z Cache mode: write
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3176887Z Prepare workflow directory
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3547962Z Prepare all required actions
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.3598544Z Getting action download info
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.6982538Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:36.8304217Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+Compile-safe derived platform (Android)	Set up job	2026-10-04T16:46:37.1177693Z Complete job name: Compile-safe derived platform (Android)
+Compile-safe derived platform (Android)	Check out repository	﻿2026-10-04T16:46:37.1965020Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1966412Z with:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1967091Z   persist-credentials: false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1968068Z   repository: skosovsky/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1972274Z   token: ***
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1972949Z   ssh-strict: true
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1973612Z   ssh-user: git
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1974258Z   clean: true
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1974932Z   sparse-checkout-cone-mode: true
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1975671Z   fetch-depth: 1
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1976365Z   fetch-tags: false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1977061Z   show-progress: true
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1977921Z   lfs: false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1978580Z   submodules: false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1979258Z   set-safe-directory: true
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1980011Z   allow-unsafe-pr-checkout: false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.1981046Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3050711Z Syncing repository: skosovsky/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3053228Z ##[group]Getting Git version info
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3054290Z Working directory is '/home/runner/work/okf/okf'
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3055849Z [command]/usr/bin/git version
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3098473Z git version 2.55.0
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3160625Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3172538Z Temporarily overriding HOME='/home/runner/work/_temp/ede641ae-60c4-4166-adff-9a4bddc6fdfb' before making global git config changes
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3175327Z Adding repository directory to the temporary git global config as a safe directory
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3180227Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3245753Z Deleting the contents of '/home/runner/work/okf/okf'
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3252704Z ##[group]Initializing the repository
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3257823Z [command]/usr/bin/git init /home/runner/work/okf/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3406181Z hint: Using 'master' as the name for the initial branch. This default branch name
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3408432Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3419499Z hint: to use in all of your new repositories, which will suppress this warning,
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3422026Z hint: call:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3423280Z hint:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3424891Z hint: 	git config --global init.defaultBranch <name>
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3426367Z hint:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3428236Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3430708Z hint: 'development'. The just-created branch can be renamed via this command:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3432489Z hint:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3433607Z hint: 	git branch -m <name>
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3434540Z hint:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3435703Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3437729Z Initialized empty Git repository in /home/runner/work/okf/okf/.git/
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3441436Z [command]/usr/bin/git remote add origin https://github.com/skosovsky/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3492812Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3499225Z ##[group]Disabling automatic garbage collection
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3500851Z [command]/usr/bin/git config --local gc.auto 0
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3531696Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3533341Z ##[group]Setting up auth
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3546304Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3600016Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.3989389Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4050123Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4261473Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4302357Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4529836Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4572410Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4573856Z ##[group]Fetching the repository
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:37.4583944Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6faa311b60f6db042ac8fa85a1ae6b7616b7c025:refs/remotes/pull/12/merge
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2151873Z From https://github.com/skosovsky/okf
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2159787Z  * [new ref]         6faa311b60f6db042ac8fa85a1ae6b7616b7c025 -> pull/12/merge
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2164083Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2165746Z ##[group]Determining the checkout info
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2168071Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2169516Z [command]/usr/bin/git sparse-checkout disable
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2226371Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2264557Z ##[group]Checking out the ref
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.2270204Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3465322Z Note: switching to 'refs/remotes/pull/12/merge'.
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3466912Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3468105Z You are in 'detached HEAD' state. You can look around, make experimental
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3470275Z changes and commit them, and you can discard any commits you make in this
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3472416Z state without impacting any branches by switching back to a branch.
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3473326Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3473940Z If you want to create a new branch to retain commits you create, you may
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3475148Z do so (now or later) by using -c with the switch command. Example:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3475877Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3476503Z   git switch -c <new-branch-name>
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3477975Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3478381Z Or undo this operation with:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3478916Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3479225Z   git switch -
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3479660Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3480305Z Turn off this advice by setting config variable advice.detachedHead to false
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3481240Z
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3482342Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3485915Z ##[endgroup]
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3526470Z [command]/usr/bin/git log -1 --format=%H
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3555022Z 6faa311b60f6db042ac8fa85a1ae6b7616b7c025
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3564580Z ##[group]Removing auth
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3568574Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3605906Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3830627Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3858331Z http.https://github.com/.extraheader
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3865942Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.3902964Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.4125674Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.4161146Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Compile-safe derived platform (Android)	Check out repository	2026-10-04T16:46:38.4380899Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up Go	﻿2026-10-04T16:46:38.4719535Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4721085Z with:
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4721985Z   go-version-file: go.mod
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4722975Z   cache: false
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4723869Z   check-latest: false
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4733553Z   token: ***
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.4803524Z ##[endgroup]
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.6068648Z Setup go version spec 1.25.5
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:38.6083005Z Attempting to download 1.25.5...
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:39.0674076Z matching 1.25.5...
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:39.0735331Z Acquiring 1.25.5 from https://github.com/actions/go-versions/releases/download/1.25.5-19880500865/go-1.25.5-linux-x64.tar.gz
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:39.5253371Z Extracting Go...
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:39.5368775Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/41720a3a-99d1-4865-876a-9bff9b0caf6c -f /home/runner/work/_temp/ede34034-b6e4-419e-9621-28fdb4846a6a
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:41.0214529Z Successfully extracted go to /home/runner/work/_temp/41720a3a-99d1-4865-876a-9bff9b0caf6c
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:41.0215639Z Adding to the cache ...
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5839847Z Successfully cached go to /opt/hostedtoolcache/go/1.25.5/x64
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5841203Z Added go to the path
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.5843377Z Successfully set up Go version 1.25.5
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6049863Z go version go1.25.5 linux/amd64
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6050147Z
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.6050548Z ##[group]go env
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7305906Z AR='ar'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7306449Z CC='gcc'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7306795Z CGO_CFLAGS='-O2 -g'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7307235Z CGO_CPPFLAGS=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7307880Z CGO_CXXFLAGS='-O2 -g'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7308271Z CGO_ENABLED='1'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7308612Z CGO_FFLAGS='-O2 -g'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7308983Z CGO_LDFLAGS='-O2 -g'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7309331Z CXX='g++'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7309689Z GCCGO='gccgo'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7310029Z GO111MODULE=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7310408Z GOAMD64='v1'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7310742Z GOARCH='amd64'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7311137Z GOAUTH='netrc'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7311450Z GOBIN=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7311803Z GOCACHE='/home/runner/.cache/go-build'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7312748Z GOCACHEPROG=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7313119Z GODEBUG=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7313484Z GOENV='/home/runner/.config/go/env'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7313934Z GOEXE=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7314247Z GOEXPERIMENT=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7314591Z GOFIPS140='off'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7314902Z GOFLAGS=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7316016Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build1118411344=/tmp/go-build -gno-record-gcc-switches'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7317133Z GOHOSTARCH='amd64'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7317689Z GOHOSTOS='linux'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7318021Z GOINSECURE=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7318412Z GOMOD='/home/runner/work/okf/okf/go.mod'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7318892Z GOMODCACHE='/home/runner/go/pkg/mod'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7319313Z GONOPROXY=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7319618Z GONOSUMDB=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7319915Z GOOS='linux'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7320246Z GOPATH='/home/runner/go'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7320596Z GOPRIVATE=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7321025Z GOPROXY='https://proxy.golang.org,direct'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7321563Z GOROOT='/opt/hostedtoolcache/go/1.25.5/x64'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7322025Z GOSUMDB='sum.golang.org'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7322381Z GOTELEMETRY='local'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7322784Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7323289Z GOTMPDIR=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7323639Z GOTOOLCHAIN='local'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7324170Z GOTOOLDIR='/opt/hostedtoolcache/go/1.25.5/x64/pkg/tool/linux_amd64'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7324751Z GOVCS=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325043Z GOVERSION='go1.25.5'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325371Z GOWORK=''
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325689Z PKG_CONFIG='pkg-config'
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7325912Z
+Compile-safe derived platform (Android)	Set up Go	2026-10-04T16:46:46.7326357Z ##[endgroup]
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	﻿2026-10-04T16:46:46.7523021Z ##[group]Run go build ./...
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7523373Z ^[[36;1mgo build ./...^[[0m
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7782510Z shell: /usr/bin/bash -e {0}
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7782850Z env:
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7783085Z   GOTOOLCHAIN: local
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7783364Z   GOOS: android
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7783600Z   GOARCH: arm64
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7783830Z   CGO_ENABLED: 0
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.7784074Z ##[endgroup]
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.8765995Z go: downloading gopkg.in/yaml.v3 v3.0.1
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.8804744Z go: downloading github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.8845706Z go: downloading github.com/mark3labs/mcp-go v0.55.1
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.8938908Z go: downloading github.com/yuin/goldmark v1.8.2
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.9629959Z go: downloading golang.org/x/sys v0.41.0
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:46.9654770Z go: downloading golang.org/x/text v0.14.0
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:47.5742810Z go: downloading github.com/google/uuid v1.6.0
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:47.5759414Z go: downloading github.com/google/jsonschema-go v0.4.2
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:47.5760785Z go: downloading github.com/spf13/cast v1.7.1
+Compile-safe derived platform (Android)	Build all packages without selecting the Linux backend	2026-10-04T16:46:47.5825428Z go: downloading github.com/yosida95/uritemplate/v3 v3.0.2
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	﻿2026-10-04T16:47:08.1920460Z ##[group]Run files="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1921014Z ^[[36;1mfiles="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"^[[0m
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1921408Z ^[[36;1m[[ " $files " == *" fd_unsupported.go "* ]]^[[0m
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1921738Z ^[[36;1m[[ " $files " != *" fd_unix.go "* ]]^[[0m
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1987289Z shell: /usr/bin/bash -e {0}
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1987689Z env:
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1987882Z   GOTOOLCHAIN: local
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1988099Z   GOOS: android
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1988293Z   GOARCH: arm64
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1988480Z   CGO_ENABLED: 0
+Compile-safe derived platform (Android)	Assert Android selects the unsupported backend	2026-10-04T16:47:08.1988672Z ##[endgroup]
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	﻿2026-10-04T16:47:08.2639999Z ##[group]Run files="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2640509Z ^[[36;1mfiles="$(go list -f '{{join .GoFiles " "}}' ./store/fs)"^[[0m
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2640889Z ^[[36;1m[[ " $files " == *" fd_unsupported.go "* ]]^[[0m
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2641210Z ^[[36;1m[[ " $files " != *" fd_unix.go "* ]]^[[0m
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2707975Z shell: /usr/bin/bash -e {0}
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2708434Z env:
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2708631Z   GOTOOLCHAIN: local
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2708837Z   GOOS: ios
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2709016Z   GOARCH: arm64
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2709206Z   CGO_ENABLED: 1
+Compile-safe derived platform (Android)	Assert iOS selects the unsupported backend	2026-10-04T16:47:08.2709397Z ##[endgroup]
+Compile-safe derived platform (Android)	Post Set up Go	﻿2026-10-04T16:47:08.3187720Z Post job cleanup.
+Compile-safe derived platform (Android)	Post Check out repository	﻿2026-10-04T16:47:08.4541196Z Post job cleanup.
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5465336Z [command]/usr/bin/git version
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5512533Z git version 2.55.0
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5555898Z Temporarily overriding HOME='/home/runner/work/_temp/e2370d6e-5f78-47a3-92bd-71ee70e62a32' before making global git config changes
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5626919Z Adding repository directory to the temporary git global config as a safe directory
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5628273Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5629827Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5662125Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5920807Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.5966372Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.6231522Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Compile-safe derived platform (Android)	Post Check out repository	2026-10-04T16:47:08.6275696Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Compile-safe derived platform (Android)	Complete job	﻿2026-10-04T16:47:08.6675952Z Cleaning up orphan processes
+Darwin durable backend	Set up job	﻿2026-10-04T16:46:38.1544050Z Current runner version: '2.337.0'
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1578730Z ##[group]Runner Image Provisioner
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1579580Z Hosted Compute Agent
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1579970Z Version: 20260828.587
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1580540Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1581190Z Build Date: 2026-08-28T16:44:25Z
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1581840Z Worker ID: {eefbe9e3-51f9-4879-a08a-49db3e8f07f6}
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1582360Z Azure Region: westus
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1582950Z ##[endgroup]
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1584040Z ##[group]Operating System
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1584540Z macOS
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1584950Z 26.6.2
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1585350Z 25G83
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1585900Z ##[endgroup]
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1586270Z ##[group]Runner Image
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1586660Z Image: macos-26-arm64
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1587090Z Version: 20260907.0351.1
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1587970Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20260907.0351/images/macos/macos-26-arm64-Readme.md
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1589380Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20260907.0351
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1590230Z ##[endgroup]
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1591560Z ##[group]GITHUB_TOKEN Permissions
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1593470Z Contents: read
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1593890Z Metadata: read
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1594360Z ##[endgroup]
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1596040Z Secret source: Actions
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1596840Z Cache mode: write
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1597500Z Prepare workflow directory
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1866110Z Prepare all required actions
+Darwin durable backend	Set up job	2026-10-04T16:46:38.1907850Z Getting action download info
+Darwin durable backend	Set up job	2026-10-04T16:46:38.3233260Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+Darwin durable backend	Set up job	2026-10-04T16:46:38.5817730Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+Darwin durable backend	Set up job	2026-10-04T16:46:39.5642810Z Complete job name: Darwin durable backend
+Darwin durable backend	Check out repository	﻿2026-10-04T16:46:39.6030860Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6031560Z with:
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6031900Z   persist-credentials: false
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6032280Z   repository: skosovsky/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6034780Z   token: ***
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6035100Z   ssh-strict: true
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6035430Z   ssh-user: git
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6035740Z   clean: true
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6036080Z   sparse-checkout-cone-mode: true
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6036480Z   fetch-depth: 1
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6036810Z   fetch-tags: false
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6037140Z   show-progress: true
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6037480Z   lfs: false
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6037800Z   submodules: false
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6038150Z   set-safe-directory: true
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6038530Z   allow-unsafe-pr-checkout: false
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.6039010Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.9972070Z Syncing repository: skosovsky/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.9973570Z ##[group]Getting Git version info
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.9974690Z Working directory is '/Users/runner/work/okf/okf'
+Darwin durable backend	Check out repository	2026-10-04T16:46:39.9975510Z [command]/opt/homebrew/bin/git version
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1252600Z git version 2.55.0
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1263140Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1269700Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/5573e366-a764-490c-b456-fb75e2921971/.gitconfig'
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1275540Z Temporarily overriding HOME='/Users/runner/work/_temp/5573e366-a764-490c-b456-fb75e2921971' before making global git config changes
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1276940Z Adding repository directory to the temporary git global config as a safe directory
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1279340Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/okf/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1414710Z Deleting the contents of '/Users/runner/work/okf/okf'
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1421240Z ##[group]Initializing the repository
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1459060Z [command]/opt/homebrew/bin/git init /Users/runner/work/okf/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1608560Z hint: Using 'master' as the name for the initial branch. This default branch name
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1613380Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1615280Z hint: to use in all of your new repositories, which will suppress this warning,
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1616180Z hint: call:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1616610Z hint:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1617070Z hint: 	git config --global init.defaultBranch <name>
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1618080Z hint:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1618690Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1620230Z hint: 'development'. The just-created branch can be renamed via this command:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1621220Z hint:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1621850Z hint: 	git branch -m <name>
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1622720Z hint:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1623810Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1624870Z Initialized empty Git repository in /Users/runner/work/okf/okf/.git/
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1627000Z [command]/opt/homebrew/bin/git remote add origin https://github.com/skosovsky/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1724950Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1731760Z ##[group]Disabling automatic garbage collection
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1752160Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1830360Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1831420Z ##[group]Setting up auth
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1836660Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.1932330Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.3180500Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.3293030Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.4026900Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.4076680Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.5392610Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.5546250Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.5547210Z ##[group]Fetching the repository
+Darwin durable backend	Check out repository	2026-10-04T16:46:40.5549510Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6faa311b60f6db042ac8fa85a1ae6b7616b7c025:refs/remotes/pull/12/merge
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4496280Z From https://github.com/skosovsky/okf
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4598500Z  * [new ref]         6faa311b60f6db042ac8fa85a1ae6b7616b7c025 -> pull/12/merge
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4697420Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4728180Z ##[group]Determining the checkout info
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4735490Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4736240Z [command]/opt/homebrew/bin/git sparse-checkout disable
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4738330Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4740830Z ##[group]Checking out the ref
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.4742240Z [command]/opt/homebrew/bin/git checkout --progress --force refs/remotes/pull/12/merge
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6301830Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6314170Z ##[endgroup]
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6389760Z [command]/opt/homebrew/bin/git log -1 --format=%H
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6455190Z 6faa311b60f6db042ac8fa85a1ae6b7616b7c025
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6460820Z ##[group]Removing auth
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6463690Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.6525150Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.7252420Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.7308700Z http.https://github.com/.extraheader
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.7313720Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.7372670Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.8058860Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.8114560Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Darwin durable backend	Check out repository	2026-10-04T16:46:41.9230270Z ##[endgroup]
+Darwin durable backend	Set up Go	﻿2026-10-04T16:46:41.9698840Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9700020Z with:
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9700610Z   go-version-file: go.mod
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9701280Z   cache: false
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9701890Z   check-latest: false
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9708430Z   token: ***
+Darwin durable backend	Set up Go	2026-10-04T16:46:41.9709010Z ##[endgroup]
+Darwin durable backend	Set up Go	2026-10-04T16:46:42.0801640Z Setup go version spec 1.25.5
+Darwin durable backend	Set up Go	2026-10-04T16:46:42.0819730Z Attempting to download 1.25.5...
+Darwin durable backend	Set up Go	2026-10-04T16:46:43.1036110Z matching 1.25.5...
+Darwin durable backend	Set up Go	2026-10-04T16:46:43.1301800Z Acquiring 1.25.5 from https://github.com/actions/go-versions/releases/download/1.25.5-19880500865/go-1.25.5-darwin-arm64.tar.gz
+Darwin durable backend	Set up Go	2026-10-04T16:46:43.7305520Z Extracting Go...
+Darwin durable backend	Set up Go	2026-10-04T16:46:43.7406850Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/3286c07e-cc5d-4a29-8f61-97e9f20729d7 -f /Users/runner/work/_temp/6dca9b5b-d3e8-4bc0-ba92-d6184676fa0a
+Darwin durable backend	Set up Go	2026-10-04T16:46:46.5526440Z Successfully extracted go to /Users/runner/work/_temp/3286c07e-cc5d-4a29-8f61-97e9f20729d7
+Darwin durable backend	Set up Go	2026-10-04T16:46:46.5526990Z Adding to the cache ...
+Darwin durable backend	Set up Go	2026-10-04T16:46:52.9929910Z Successfully cached go to /Users/runner/hostedtoolcache/go/1.25.5/arm64
+Darwin durable backend	Set up Go	2026-10-04T16:46:52.9930800Z Added go to the path
+Darwin durable backend	Set up Go	2026-10-04T16:46:52.9932450Z Successfully set up Go version 1.25.5
+Darwin durable backend	Set up Go	2026-10-04T16:46:53.1195180Z go version go1.25.5 darwin/arm64
+Darwin durable backend	Set up Go	2026-10-04T16:46:53.1195430Z
+Darwin durable backend	Set up Go	2026-10-04T16:46:53.1196250Z ##[group]go env
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6449400Z AR='ar'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6450150Z CC='clang'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6450640Z CGO_CFLAGS='-O2 -g'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6451160Z CGO_CPPFLAGS=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6451680Z CGO_CXXFLAGS='-O2 -g'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6452080Z CGO_ENABLED='1'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6452450Z CGO_FFLAGS='-O2 -g'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6452790Z CGO_LDFLAGS='-O2 -g'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6453150Z CXX='clang++'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6453430Z GCCGO='gccgo'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6453690Z GO111MODULE=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6453980Z GOARCH='arm64'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6454230Z GOARM64='v8.0'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6455840Z GOAUTH='netrc'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6472060Z GOBIN=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6472720Z GOCACHE='/Users/runner/Library/Caches/go-build'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6473640Z GOCACHEPROG=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6474120Z GODEBUG=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6475520Z GOENV='/Users/runner/Library/Application Support/go/env'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6482400Z GOEXE=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6484040Z GOEXPERIMENT=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6484890Z GOFIPS140='off'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6488290Z GOFLAGS=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6490150Z GOGCCFLAGS='-fPIC -arch arm64 -pthread -fno-caret-diagnostics -Qunused-arguments -fmessage-length=0 -ffile-prefix-map=/var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/go-build572193485=/tmp/go-build -gno-record-gcc-switches -fno-common'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6522780Z GOHOSTARCH='arm64'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6526100Z GOHOSTOS='darwin'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6533750Z GOINSECURE=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6534220Z GOMOD='/Users/runner/work/okf/okf/go.mod'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6535110Z GOMODCACHE='/Users/runner/go/pkg/mod'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6535860Z GONOPROXY=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6537440Z GONOSUMDB=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6538690Z GOOS='darwin'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6539090Z GOPATH='/Users/runner/go'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6539830Z GOPRIVATE=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6540300Z GOPROXY='https://proxy.golang.org,direct'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6546290Z GOROOT='/Users/runner/hostedtoolcache/go/1.25.5/arm64'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6547360Z GOSUMDB='sum.golang.org'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6558670Z GOTELEMETRY='local'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6560530Z GOTELEMETRYDIR='/Users/runner/Library/Application Support/go/telemetry'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6561020Z GOTMPDIR=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6561310Z GOTOOLCHAIN='local'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6561870Z GOTOOLDIR='/Users/runner/hostedtoolcache/go/1.25.5/arm64/pkg/tool/darwin_arm64'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6562320Z GOVCS=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6562610Z GOVERSION='go1.25.5'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6564320Z GOWORK=''
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565160Z PKG_CONFIG='pkg-config'
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565400Z
+Darwin durable backend	Set up Go	2026-10-04T16:46:54.6565930Z ##[endgroup]
+Darwin durable backend	Test platform-specific filesystem behavior	﻿2026-10-04T16:46:54.6625070Z ##[group]Run go test ./store/fs
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6625370Z ^[[36;1mgo test ./store/fs^[[0m
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6678870Z shell: /bin/bash -e {0}
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6679250Z env:
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6679420Z   GOTOOLCHAIN: local
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.6679600Z ##[endgroup]
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.8097940Z go: downloading golang.org/x/sys v0.41.0
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:54.8189730Z go: downloading golang.org/x/text v0.14.0
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:55.9843920Z go: downloading gopkg.in/yaml.v3 v3.0.1
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:46:56.1468400Z go: downloading github.com/yuin/goldmark v1.8.2
+Darwin durable backend	Test platform-specific filesystem behavior	2026-10-04T16:48:08.0571270Z ok  	github.com/skosovsky/okf/store/fs	41.223s
+Darwin durable backend	Build Darwin packages	﻿2026-10-04T16:48:08.2053230Z ##[group]Run go build ./...
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.2053620Z ^[[36;1mgo build ./...^[[0m
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.2220390Z shell: /bin/bash -e {0}
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.2220940Z env:
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.2221200Z   GOTOOLCHAIN: local
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.2221490Z ##[endgroup]
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.5331520Z go: downloading github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:08.5442760Z go: downloading github.com/mark3labs/mcp-go v0.55.1
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:09.2871250Z go: downloading github.com/google/uuid v1.6.0
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:09.2959150Z go: downloading github.com/google/jsonschema-go v0.4.2
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:09.3087010Z go: downloading github.com/spf13/cast v1.7.1
+Darwin durable backend	Build Darwin packages	2026-10-04T16:48:09.4224900Z go: downloading github.com/yosida95/uritemplate/v3 v3.0.2
+Darwin durable backend	Post Set up Go	﻿2026-10-04T16:48:18.8859150Z Post job cleanup.
+Darwin durable backend	Post Check out repository	﻿2026-10-04T16:48:19.2344890Z Post job cleanup.
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3375920Z [command]/opt/homebrew/bin/git version
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3475090Z git version 2.55.0
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3493300Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/31481b8a-3f31-4c63-8b60-568b210220f9/.gitconfig'
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3501460Z Temporarily overriding HOME='/Users/runner/work/_temp/31481b8a-3f31-4c63-8b60-568b210220f9' before making global git config changes
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3502280Z Adding repository directory to the temporary git global config as a safe directory
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3503940Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/okf/okf
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3577870Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.3648420Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.4686980Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.4714620Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.5508870Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Darwin durable backend	Post Check out repository	2026-10-04T16:48:19.5652580Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Darwin durable backend	Complete job	﻿2026-10-04T16:48:19.6484000Z Cleaning up orphan processes
+Test, vet, and module integrity	Set up job	﻿2026-10-04T16:46:36.3614873Z Current runner version: '2.337.0'
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3640682Z ##[group]Runner Image Provisioner
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3641561Z Hosted Compute Agent
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3642173Z Version: 20260901.588
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3643279Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3644095Z Build Date: 2026-09-01T19:56:44Z
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3644842Z Worker ID: {87561c44-af33-42aa-b83c-9b8f3f46e344}
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3645594Z Azure Region: eastus
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3646165Z ##[endgroup]
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3647777Z ##[group]Operating System
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3648436Z Ubuntu
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3649026Z 24.04.5
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3649560Z LTS
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3650084Z ##[endgroup]
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3650744Z ##[group]Runner Image
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3651354Z Image: ubuntu-24.04
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3651909Z Version: 20260927.320.1
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3653360Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260927.320/images/ubuntu/Ubuntu2404-Readme.md
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3655353Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260927.320
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3656350Z ##[endgroup]
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3657509Z ##[group]GITHUB_TOKEN Permissions
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3659351Z Contents: read
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3660139Z Metadata: read
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3660712Z ##[endgroup]
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3662754Z Secret source: Actions
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3664081Z Cache mode: write
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3664781Z Prepare workflow directory
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.3995177Z Prepare all required actions
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.4043932Z Getting action download info
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.6553724Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.7567523Z Download action repository 'actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16' (SHA:924ae3a1cded613372ab5595356fb5720e22ba16)
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:36.9195029Z Download action repository 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+Test, vet, and module integrity	Set up job	2026-10-04T16:46:37.0914551Z Complete job name: Test, vet, and module integrity
+Test, vet, and module integrity	Check out repository	﻿2026-10-04T16:46:37.1758687Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1759937Z with:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1760377Z   fetch-depth: 0
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1760849Z   persist-credentials: false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1761373Z   repository: skosovsky/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1765331Z   token: ***
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1765763Z   ssh-strict: true
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1766204Z   ssh-user: git
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1766622Z   clean: true
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1767066Z   sparse-checkout-cone-mode: true
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1767583Z   fetch-tags: false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1768028Z   show-progress: true
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1768470Z   lfs: false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1768889Z   submodules: false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1769343Z   set-safe-directory: true
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1769849Z   allow-unsafe-pr-checkout: false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.1770663Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2815361Z Syncing repository: skosovsky/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2818260Z ##[group]Getting Git version info
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2819325Z Working directory is '/home/runner/work/okf/okf'
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2820948Z [command]/usr/bin/git version
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2899857Z git version 2.55.0
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2936780Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2944803Z Temporarily overriding HOME='/home/runner/work/_temp/0927d71f-24b5-475c-812c-ab9c32dbc4df' before making global git config changes
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2946640Z Adding repository directory to the temporary git global config as a safe directory
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.2952355Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3022221Z Deleting the contents of '/home/runner/work/okf/okf'
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3031739Z ##[group]Initializing the repository
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3039418Z [command]/usr/bin/git init /home/runner/work/okf/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3166713Z hint: Using 'master' as the name for the initial branch. This default branch name
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3168416Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3170030Z hint: to use in all of your new repositories, which will suppress this warning,
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3171592Z hint: call:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3172412Z hint:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3173390Z hint: 	git config --global init.defaultBranch <name>
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3174409Z hint:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3175399Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3176977Z hint: 'development'. The just-created branch can be renamed via this command:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3178240Z hint:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3178892Z hint: 	git branch -m <name>
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3179687Z hint:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3180762Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3182335Z Initialized empty Git repository in /home/runner/work/okf/okf/.git/
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3186594Z [command]/usr/bin/git remote add origin https://github.com/skosovsky/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3239260Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3240551Z ##[group]Disabling automatic garbage collection
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3243047Z [command]/usr/bin/git config --local gc.auto 0
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3281536Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3282299Z ##[group]Setting up auth
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3315455Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3358491Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3829518Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.3869787Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4128462Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4169530Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4445803Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4489067Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4490182Z ##[group]Fetching the repository
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:37.4505600Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +6faa311b60f6db042ac8fa85a1ae6b7616b7c025:refs/remotes/pull/12/merge
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0759059Z From https://github.com/skosovsky/okf
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0764966Z  * [new branch]      codex/docs-viewer-localization-017       -> origin/codex/docs-viewer-localization-017
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0768628Z  * [new branch]      codex/okf-docs-pages                     -> origin/codex/okf-docs-pages
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0770478Z  * [new branch]      codex/okf-skills-rollout                 -> origin/codex/okf-skills-rollout
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0772417Z  * [new branch]      codex/okf-v0.2.6                         -> origin/codex/okf-v0.2.6
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0774361Z  * [new branch]      main                                     -> origin/main
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0775703Z  * [new tag]         v0.1.0                                   -> v0.1.0
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0776577Z  * [new tag]         v0.1.1                                   -> v0.1.1
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0777573Z  * [new tag]         v0.2.0                                   -> v0.2.0
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0778655Z  * [new tag]         v0.2.1                                   -> v0.2.1
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0780047Z  * [new tag]         v0.2.2                                   -> v0.2.2
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0781911Z  * [new tag]         v0.2.3                                   -> v0.2.3
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0783479Z  * [new tag]         v0.2.4                                   -> v0.2.4
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0784355Z  * [new tag]         v0.2.5                                   -> v0.2.5
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0785282Z  * [new tag]         v0.2.6                                   -> v0.2.6
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0786477Z  * [new ref]         6faa311b60f6db042ac8fa85a1ae6b7616b7c025 -> pull/12/merge
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0788691Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0789518Z ##[group]Determining the checkout info
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0790474Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0791222Z [command]/usr/bin/git sparse-checkout disable
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0847851Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0896434Z ##[group]Checking out the ref
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.0898192Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/12/merge
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2138111Z Note: switching to 'refs/remotes/pull/12/merge'.
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2139151Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2139798Z You are in 'detached HEAD' state. You can look around, make experimental
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2141148Z changes and commit them, and you can discard any commits you make in this
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2142518Z state without impacting any branches by switching back to a branch.
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2143633Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2144228Z If you want to create a new branch to retain commits you create, you may
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2145559Z do so (now or later) by using -c with the switch command. Example:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2146316Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2146698Z   git switch -c <new-branch-name>
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2147332Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2147708Z Or undo this operation with:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2148241Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2148806Z   git switch -
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2149518Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2150450Z Turn off this advice by setting config variable advice.detachedHead to false
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2151417Z
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2152566Z HEAD is now at 6faa311 Merge e7062ef88efc2f0deaa99b3295df1c7a63b841cd into 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2156512Z ##[endgroup]
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2198796Z [command]/usr/bin/git log -1 --format=%H
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2227947Z 6faa311b60f6db042ac8fa85a1ae6b7616b7c025
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2237536Z ##[group]Removing auth
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2242057Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2278424Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2503379Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2531895Z http.https://github.com/.extraheader
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2540057Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2576455Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2798409Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.2834569Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Test, vet, and module integrity	Check out repository	2026-10-04T16:46:38.3055987Z ##[endgroup]
+Test, vet, and module integrity	Set up Go	﻿2026-10-04T16:46:38.3393645Z ##[group]Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3395182Z with:
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3396056Z   go-version-file: go.mod
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3397064Z   cache: false
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3397966Z   check-latest: false
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3406678Z   token: ***
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.3407588Z ##[endgroup]
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.4739663Z Setup go version spec 1.25.5
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.4754275Z Attempting to download 1.25.5...
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.9120233Z matching 1.25.5...
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:38.9180561Z Acquiring 1.25.5 from https://github.com/actions/go-versions/releases/download/1.25.5-19880500865/go-1.25.5-linux-x64.tar.gz
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:39.4182593Z Extracting Go...
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:39.4299954Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/92416f1c-91a9-4052-ae9d-2e1e59e5eb36 -f /home/runner/work/_temp/16d40c67-97b2-48b1-963b-c3b32dea99d2
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:40.9173263Z Successfully extracted go to /home/runner/work/_temp/92416f1c-91a9-4052-ae9d-2e1e59e5eb36
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:40.9174064Z Adding to the cache ...
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4904646Z Successfully cached go to /opt/hostedtoolcache/go/1.25.5/x64
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4908074Z Added go to the path
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.4910951Z Successfully set up Go version 1.25.5
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5116975Z go version go1.25.5 linux/amd64
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5117227Z
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.5117504Z ##[group]go env
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6574287Z AR='ar'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6574911Z CC='gcc'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6575322Z CGO_CFLAGS='-O2 -g'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6575776Z CGO_CPPFLAGS=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6576186Z CGO_CXXFLAGS='-O2 -g'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6576631Z CGO_ENABLED='1'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6577023Z CGO_FFLAGS='-O2 -g'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6577414Z CGO_LDFLAGS='-O2 -g'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6577807Z CXX='g++'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6578179Z GCCGO='gccgo'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6578890Z GO111MODULE=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6579280Z GOAMD64='v1'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6579678Z GOARCH='amd64'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6580113Z GOAUTH='netrc'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6580465Z GOBIN=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6580880Z GOCACHE='/home/runner/.cache/go-build'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6581406Z GOCACHEPROG=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6581830Z GODEBUG=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6582315Z GOENV='/home/runner/.config/go/env'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6582848Z GOEXE=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6583531Z GOEXPERIMENT=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6583931Z GOFIPS140='off'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6584316Z GOFLAGS=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6585597Z GOGCCFLAGS='-fPIC -m64 -pthread -Wl,--no-gc-sections -fmessage-length=0 -ffile-prefix-map=/tmp/go-build1471679662=/tmp/go-build -gno-record-gcc-switches'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6586855Z GOHOSTARCH='amd64'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6587269Z GOHOSTOS='linux'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6587627Z GOINSECURE=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6588076Z GOMOD='/home/runner/work/okf/okf/go.mod'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6588641Z GOMODCACHE='/home/runner/go/pkg/mod'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6589136Z GONOPROXY=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6589492Z GONOSUMDB=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6589827Z GOOS='linux'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6590231Z GOPATH='/home/runner/go'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6590633Z GOPRIVATE=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6591090Z GOPROXY='https://proxy.golang.org,direct'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6591677Z GOROOT='/opt/hostedtoolcache/go/1.25.5/x64'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6592206Z GOSUMDB='sum.golang.org'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6592653Z GOTELEMETRY='local'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6593444Z GOTELEMETRYDIR='/home/runner/.config/go/telemetry'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6594038Z GOTMPDIR=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6594391Z GOTOOLCHAIN='local'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6594956Z GOTOOLDIR='/opt/hostedtoolcache/go/1.25.5/x64/pkg/tool/linux_amd64'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6595585Z GOVCS=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6595929Z GOVERSION='go1.25.5'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596299Z GOWORK=''
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596680Z PKG_CONFIG='pkg-config'
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6596944Z
+Test, vet, and module integrity	Set up Go	2026-10-04T16:46:46.6597434Z ##[endgroup]
+Test, vet, and module integrity	Verify downloaded modules	﻿2026-10-04T16:46:46.6818877Z ##[group]Run go mod verify
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.6819218Z ^[[36;1mgo mod verify^[[0m
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.7131158Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.7131456Z env:
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.7131679Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.7131939Z ##[endgroup]
+Test, vet, and module integrity	Verify downloaded modules	2026-10-04T16:46:46.8354454Z all modules verified
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	﻿2026-10-04T16:46:46.8406799Z ##[group]Run go mod tidy -diff
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.8407132Z ^[[36;1mgo mod tidy -diff^[[0m
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.8472541Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.8472805Z env:
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.8473251Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.8473767Z ##[endgroup]
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9065147Z go: downloading gopkg.in/yaml.v3 v3.0.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9065854Z go: downloading github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9233711Z go: downloading github.com/mark3labs/mcp-go v0.55.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9416757Z go: downloading github.com/piprate/json-gold v0.8.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9553567Z go: downloading github.com/yuin/goldmark v1.8.2
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:46.9952177Z go: downloading golang.org/x/sys v0.41.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.1567539Z go: downloading golang.org/x/text v0.14.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.3274779Z go: downloading gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.6883686Z go: downloading github.com/dlclark/regexp2 v1.11.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.6897063Z go: downloading github.com/google/uuid v1.6.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.6917488Z go: downloading github.com/stretchr/testify v1.11.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7034194Z go: downloading github.com/google/jsonschema-go v0.4.2
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7230811Z go: downloading github.com/spf13/cast v1.7.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7233698Z go: downloading github.com/yosida95/uritemplate/v3 v3.0.2
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7586113Z go: downloading github.com/cayleygraph/quad v1.3.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7589016Z go: downloading github.com/pquerna/cachecontrol v0.2.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.7769527Z go: downloading github.com/kr/pretty v0.3.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8004135Z go: downloading github.com/davecgh/go-spew v1.1.1
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8005718Z go: downloading github.com/pmezard/go-difflib v1.0.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8025902Z go: downloading github.com/frankban/quicktest v1.14.6
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8274234Z go: downloading github.com/google/go-cmp v0.7.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8305658Z go: downloading github.com/kr/text v0.2.0
+Test, vet, and module integrity	Verify go.mod and go.sum are tidy	2026-10-04T16:46:47.8493617Z go: downloading github.com/rogpeppe/go-internal v1.14.1
+Test, vet, and module integrity	Test viewer routes and interface languages	﻿2026-10-04T16:46:47.9349989Z ##[group]Run node viewer/testdata/regression-016/routes.cjs
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:47.9350487Z ^[[36;1mnode viewer/testdata/regression-016/routes.cjs^[[0m
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:47.9416926Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:47.9417195Z env:
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:47.9417392Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:47.9417617Z ##[endgroup]
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:48.1640824Z Viewer routes: direct links, clicks, simulated history, footnotes and backlinks passed.
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:48.1690884Z Viewer language: defaults, switching, state retention, empty states and authored values passed.
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:48.1792811Z Viewer locale values and hostile source resource passed.
+Test, vet, and module integrity	Test viewer routes and interface languages	2026-10-04T16:46:48.2152573Z Russian count forms for notes, edges and graph connections passed.
+Test, vet, and module integrity	Test skill package negative fixtures	﻿2026-10-04T16:46:48.2521230Z ##[group]Run node --test scripts/check-skill-package.test.mjs
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.2521802Z ^[[36;1mnode --test scripts/check-skill-package.test.mjs^[[0m
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.2586062Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.2586320Z env:
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.2586512Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.2586732Z ##[endgroup]
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:48.3290110Z TAP version 13
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9421003Z # Subtest: installed package resolves references within its own tree
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9432644Z ok 1 - installed package resolves references within its own tree
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9435770Z   ---
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9436172Z   duration_ms: 5577.072984
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9436453Z   type: 'test'
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:53.9436661Z   ...
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2388977Z # Subtest: frontmatter validates parsed YAML values and unique metadata
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2400751Z ok 2 - frontmatter validates parsed YAML values and unique metadata
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2413891Z   ---
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2423971Z   duration_ms: 297.927113
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2433951Z   type: 'test'
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2434554Z   ...
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2503268Z 1..2
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2504968Z # tests 2
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2505858Z # suites 0
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2506732Z # pass 2
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2507627Z # fail 0
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2509409Z # cancelled 0
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2510116Z # skipped 0
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2510640Z # todo 0
+Test, vet, and module integrity	Test skill package negative fixtures	2026-10-04T16:46:54.2511472Z # duration_ms 5943.393378
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	﻿2026-10-04T16:46:54.2589023Z ##[group]Run node scripts/check-skill-package.mjs
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.2589448Z ^[[36;1mnode scripts/check-skill-package.mjs^[[0m
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.2652064Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.2652326Z env:
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.2652523Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.2652749Z ##[endgroup]
+Test, vet, and module integrity	Check standalone skill installation and dependency lock	2026-10-04T16:46:54.5390848Z skill package and repository dependencies verified (3 skills)
+Test, vet, and module integrity	Test whitespace gate	﻿2026-10-04T16:46:54.5466108Z ##[group]Run bash .github/scripts/check-whitespace_test.sh
+Test, vet, and module integrity	Test whitespace gate	2026-10-04T16:46:54.5466600Z ^[[36;1mbash .github/scripts/check-whitespace_test.sh^[[0m
+Test, vet, and module integrity	Test whitespace gate	2026-10-04T16:46:54.5529297Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Test whitespace gate	2026-10-04T16:46:54.5529553Z env:
+Test, vet, and module integrity	Test whitespace gate	2026-10-04T16:46:54.5529747Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Test whitespace gate	2026-10-04T16:46:54.5529968Z ##[endgroup]
+Test, vet, and module integrity	Check whitespace errors	﻿2026-10-04T16:46:54.6936981Z ##[group]Run bash .github/scripts/check-whitespace.sh
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.6937431Z ^[[36;1mbash .github/scripts/check-whitespace.sh^[[0m
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.6999083Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.6999343Z env:
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.6999542Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.6999807Z   BASE_SHA: 61e75e9aa9a8719dfb480bf1f5226553b3a21d70
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.7000121Z   EVENT_NAME: pull_request
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.7000396Z   HEAD_SHA: e7062ef88efc2f0deaa99b3295df1c7a63b841cd
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.7000710Z   MAIN_REF: refs/remotes/origin/main
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.7000962Z   REF_TYPE: branch
+Test, vet, and module integrity	Check whitespace errors	2026-10-04T16:46:54.7001166Z ##[endgroup]
+Test, vet, and module integrity	Vet packages	﻿2026-10-04T16:46:54.7980596Z ##[group]Run go vet ./...
+Test, vet, and module integrity	Vet packages	2026-10-04T16:46:54.7980902Z ^[[36;1mgo vet ./...^[[0m
+Test, vet, and module integrity	Vet packages	2026-10-04T16:46:54.8040676Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Vet packages	2026-10-04T16:46:54.8040932Z env:
+Test, vet, and module integrity	Vet packages	2026-10-04T16:46:54.8041126Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Vet packages	2026-10-04T16:46:54.8041353Z ##[endgroup]
+Test, vet, and module integrity	Test packages	﻿2026-10-04T16:47:25.5401413Z ##[group]Run go test ./...
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:25.5401771Z ^[[36;1mgo test ./...^[[0m
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:25.5464803Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:25.5465080Z env:
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:25.5465291Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:25.5465514Z ##[endgroup]
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:29.5098615Z ok  	github.com/skosovsky/okf	0.158s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3260099Z ok  	github.com/skosovsky/okf/backfill	1.604s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3260892Z ok  	github.com/skosovsky/okf/benchmark/agent	0.428s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3261684Z ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter	0.038s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3262739Z ok  	github.com/skosovsky/okf/benchmark/agent/beforeafter/cmd/okf-before-after	0.014s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3264343Z ok  	github.com/skosovsky/okf/benchmark/agent/cmd/codex-adapter	0.017s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3293776Z ok  	github.com/skosovsky/okf/benchmark/agent/cmd/okf-agent-eval	0.264s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3323771Z ?   	github.com/skosovsky/okf/benchmark/agent/cmd/prepare-backfill	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3336809Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive	1.108s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3353924Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/codex-upkeep-adapter	0.010s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3383918Z ok  	github.com/skosovsky/okf/benchmark/agent/upkeeplive/cmd/upkeep-live	0.012s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3395133Z ?   	github.com/skosovsky/okf/benchmark/agent/upkeepstudy	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3397773Z ok  	github.com/skosovsky/okf/benchmarks/retrieval/cmd/okf-retrieval-eval	0.005s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3752860Z ok  	github.com/skosovsky/okf/benchmarks/toolkit	0.700s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3764068Z ok  	github.com/skosovsky/okf/benchmarks/toolkit/cmd/analyze	0.002s
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3794178Z ?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/corpusgen	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:47:31.3804493Z ?   	github.com/skosovsky/okf/benchmarks/toolkit/cmd/paired	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6978828Z ok  	github.com/skosovsky/okf/bundle	232.993s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6979594Z ok  	github.com/skosovsky/okf/cmd/okf	1.605s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6980636Z ok  	github.com/skosovsky/okf/cmd/okf-action	0.036s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6981971Z ok  	github.com/skosovsky/okf/cmd/okf-backfill	0.005s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6983244Z ?   	github.com/skosovsky/okf/cmd/okf-mcp	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6983910Z ok  	github.com/skosovsky/okf/cmd/okf-upkeep	0.098s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6984498Z ok  	github.com/skosovsky/okf/docs	0.411s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6984813Z ok  	github.com/skosovsky/okf/graph	3.580s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6985301Z ok  	github.com/skosovsky/okf/internal/documentlayout	0.009s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6985912Z ?   	github.com/skosovsky/okf/internal/markdownlimit	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6986372Z ok  	github.com/skosovsky/okf/internal/markdownowner	5.071s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6986982Z ok  	github.com/skosovsky/okf/internal/mcpserver	52.276s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6987382Z ok  	github.com/skosovsky/okf/internal/migrationpath	0.005s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6987774Z ok  	github.com/skosovsky/okf/internal/okfcli	7.556s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6988417Z ok  	github.com/skosovsky/okf/internal/receiptprojection	0.875s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6988889Z ?   	github.com/skosovsky/okf/internal/temporalrequest	[no test files]
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6989450Z ok  	github.com/skosovsky/okf/mutation	110.556s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6989878Z ok  	github.com/skosovsky/okf/retrieval	0.727s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6990273Z ok  	github.com/skosovsky/okf/scripts	3.373s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6990732Z ok  	github.com/skosovsky/okf/setup	2.134s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6991034Z ok  	github.com/skosovsky/okf/store	0.037s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6991419Z ok  	github.com/skosovsky/okf/store/fs	44.978s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6991900Z ok  	github.com/skosovsky/okf/upkeep	3.113s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6992305Z ok  	github.com/skosovsky/okf/validator	2.691s
+Test, vet, and module integrity	Test packages	2026-10-04T16:55:31.6992736Z ok  	github.com/skosovsky/okf/viewer	0.581s
+Test, vet, and module integrity	Validate repository knowledge bundle	﻿2026-10-04T16:55:31.8106822Z ##[group]Run go run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0 --json
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:31.8107892Z ^[[36;1mgo run ./cmd/okf validate --path knowledge --spec auto --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0 --json^[[0m
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:31.8171130Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:31.8171391Z env:
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:31.8171593Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:31.8171812Z ##[endgroup]
+Test, vet, and module integrity	Validate repository knowledge bundle	2026-10-04T16:55:32.0527216Z {"declared_version":"0.2","effective_version":"0.2","resolution":"declared","compatibility":"native","temporal_profile":"date-3fcbb9f","scanned_files":12,"conformant":true,"policy_failures":0,"errors":0,"warnings":0,"info":0,"diagnostics":[]}
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	﻿2026-10-04T16:55:32.0586576Z ##[group]Run snapshot_dir="$(mktemp -d)"
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0586954Z ^[[36;1msnapshot_dir="$(mktemp -d)"^[[0m
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0587245Z ^[[36;1mtrap 'rm -rf "$snapshot_dir"' EXIT^[[0m
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0587637Z ^[[36;1m./scripts/build-viewer-demo.sh "$snapshot_dir/knowledge.html"^[[0m
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0588101Z ^[[36;1mcmp docs/demo/knowledge.html "$snapshot_dir/knowledge.html"^[[0m
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0650874Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0651124Z env:
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0651347Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.0651584Z ##[endgroup]
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1416892Z Validating bundle: knowledge
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418187Z OKF version: declared=0.2 effective=0.2 resolution=declared compatibility=native
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418663Z
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418710Z
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1418946Z ---
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1419285Z Scanned 12 files.
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1419710Z Result: PASS (0 errors, 0 warnings, 0 info)
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.1420192Z Policy failures: 0
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.2210297Z wrote "/tmp/tmp.8wXSDWeerU/knowledge.html"
+Test, vet, and module integrity	Verify published knowledge viewer snapshot	2026-10-04T16:55:32.2221688Z prepared offline demo: /tmp/tmp.8wXSDWeerU/knowledge.html
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	﻿2026-10-04T16:55:32.2289519Z ##[group]Run snapshot_dir="$(mktemp -d)"
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2289891Z ^[[36;1msnapshot_dir="$(mktemp -d)"^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2290181Z ^[[36;1mtrap 'rm -rf "$snapshot_dir"' EXIT^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2290477Z ^[[36;1mfor language in en ru; do^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2290938Z ^[[36;1m  ./scripts/build-project-demo.sh "$language" "$snapshot_dir/project-$language-first.html"^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2291760Z ^[[36;1m  ./scripts/build-project-demo.sh "$language" "$snapshot_dir/project-$language-second.html"^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2292427Z ^[[36;1m  cmp "$snapshot_dir/project-$language-first.html" "$snapshot_dir/project-$language-second.html"^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2293443Z ^[[36;1m  cmp "docs/demo/project-$language.html" "$snapshot_dir/project-$language-first.html"^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2293882Z ^[[36;1mdone^[[0m
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2355941Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2356190Z env:
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2356382Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.2356596Z ##[endgroup]
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3256410Z Validating bundle: examples/project-knowledge/en
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257343Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257933Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3257945Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258077Z ---
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258384Z Scanned 3 files.
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258643Z Result: PASS (0 errors, 0 warnings, 0 info)
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3258971Z Policy failures: 0
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3940320Z wrote "/tmp/tmp.6ZPWEBQraj/project-en-first.html"
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.3954478Z prepared en project demo: /tmp/tmp.6ZPWEBQraj/project-en-first.html
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4643507Z Validating bundle: examples/project-knowledge/en
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4644472Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645250Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645516Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4645708Z ---
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4646018Z Scanned 3 files.
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4646478Z Result: PASS (0 errors, 0 warnings, 0 info)
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.4646969Z Policy failures: 0
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5249967Z wrote "/tmp/tmp.6ZPWEBQraj/project-en-second.html"
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5261473Z prepared en project demo: /tmp/tmp.6ZPWEBQraj/project-en-second.html
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5884457Z Validating bundle: examples/project-knowledge/ru
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5886118Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887275Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887651Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5887815Z ---
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5888052Z Scanned 3 files.
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5888334Z Result: PASS (0 errors, 0 warnings, 0 info)
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.5888641Z Policy failures: 0
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.6584079Z wrote "/tmp/tmp.6ZPWEBQraj/project-ru-first.html"
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.6603825Z prepared ru project demo: /tmp/tmp.6ZPWEBQraj/project-ru-first.html
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7411625Z Validating bundle: examples/project-knowledge/ru
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7413375Z OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414304Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414449Z
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7414644Z ---
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7415284Z Scanned 3 files.
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7415702Z Result: PASS (0 errors, 0 warnings, 0 info)
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.7416027Z Policy failures: 0
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.8177176Z wrote "/tmp/tmp.6ZPWEBQraj/project-ru-second.html"
+Test, vet, and module integrity	Verify localized project viewer snapshots and reproducibility	2026-10-04T16:55:32.8188069Z prepared ru project demo: /tmp/tmp.6ZPWEBQraj/project-ru-second.html
+Test, vet, and module integrity	Build knowledge viewer	﻿2026-10-04T16:55:32.8260082Z ##[group]Run go run ./cmd/okf view knowledge --output "$RUNNER_TEMP/knowledge-view.html" --spec auto --as-of 2026-09-26
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.8260949Z ^[[36;1mgo run ./cmd/okf view knowledge --output "$RUNNER_TEMP/knowledge-view.html" --spec auto --as-of 2026-09-26^[[0m
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.8324614Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.8324873Z env:
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.8325070Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.8325293Z ##[endgroup]
+Test, vet, and module integrity	Build knowledge viewer	2026-10-04T16:55:32.9038355Z wrote "/home/runner/work/_temp/knowledge-view.html"
+Test, vet, and module integrity	Upload knowledge viewer	﻿2026-10-04T16:55:32.9144703Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9145129Z with:
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9145332Z   name: knowledge-viewer
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9145609Z   path: /home/runner/work/_temp/knowledge-view.html
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9145924Z   if-no-files-found: error
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9146158Z   compression-level: 6
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9146559Z   overwrite: false
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9146771Z   include-hidden-files: false
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9147011Z   archive: true
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9147197Z env:
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9147378Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:32.9147580Z ##[endgroup]
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.0584341Z With the provided path, there will be 1 file uploaded
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.0585517Z Artifact name is valid!
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.0585938Z Root directory input is valid!
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.2502167Z Uploading artifact: knowledge-viewer.zip
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.2546885Z Beginning upload of artifact content to blob storage
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.3121596Z Uploaded bytes 12267
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.3221480Z Finished uploading artifact content to blob storage!
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.3222640Z SHA256 digest of uploaded artifact is 9d33add6ffcea0f0dd0f20c618bb20696967a30c960525d740d61922f7114840
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.3223880Z Finalizing artifact upload
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.5294441Z Artifact knowledge-viewer successfully finalized. Artifact ID 11309133940
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.5296046Z Artifact knowledge-viewer has been successfully uploaded! Final size is 12267 bytes. Artifact ID is 11309133940
+Test, vet, and module integrity	Upload knowledge viewer	2026-10-04T16:55:33.5299425Z Artifact download URL: https://github.com/skosovsky/okf/actions/runs/37218005570/artifacts/11309133940
+Test, vet, and module integrity	Build Linux packages	﻿2026-10-04T16:55:33.5414313Z ##[group]Run go build ./...
+Test, vet, and module integrity	Build Linux packages	2026-10-04T16:55:33.5414639Z ^[[36;1mgo build ./...^[[0m
+Test, vet, and module integrity	Build Linux packages	2026-10-04T16:55:33.5476501Z shell: /usr/bin/bash -e {0}
+Test, vet, and module integrity	Build Linux packages	2026-10-04T16:55:33.5476759Z env:
+Test, vet, and module integrity	Build Linux packages	2026-10-04T16:55:33.5476961Z   GOTOOLCHAIN: local
+Test, vet, and module integrity	Build Linux packages	2026-10-04T16:55:33.5477188Z ##[endgroup]
+Test, vet, and module integrity	Post Set up Go	﻿2026-10-04T16:55:35.8774879Z Post job cleanup.
+Test, vet, and module integrity	Post Check out repository	﻿2026-10-04T16:55:36.0160909Z Post job cleanup.
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1075059Z [command]/usr/bin/git version
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1123693Z git version 2.55.0
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1165061Z Temporarily overriding HOME='/home/runner/work/_temp/6d2a683b-8c5c-45b5-8f68-8f907c0a773d' before making global git config changes
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1165936Z Adding repository directory to the temporary git global config as a safe directory
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1170253Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/okf/okf
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1212053Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1246929Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1493593Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1531376Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1827820Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Test, vet, and module integrity	Post Check out repository	2026-10-04T16:55:36.1873700Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Test, vet, and module integrity	Complete job	﻿2026-10-04T16:55:36.2383302Z Cleaning up orphan processes

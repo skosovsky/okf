@@ -1,57 +1,67 @@
-# Техническое задание: agent skill, docs и examples для OKF v0.2
+---
+lang: en
+title: "Technical specification: agent skill, docs, and examples for OKF v0.2"
+permalink: /development/v0.2/tasks/task21/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Перевести agent-facing contract, README/docs, examples, fixtures и plugin
-packaging на v0.2, сохранив явно обозначенное legacy consumption.
+> Historical document from source revision `61e75e9`. This implementation plan is archived for reference and is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task21.md).
 
-Финализировать после tasks 09–20.
+# Technical specification: agent skill, docs, and examples for OKF v0.2 {#section001}
 
-## 2. Embedded specification
+## 1. Goal {#section002}
 
-- Заменить `references/spec-v01.md` на pinned `spec-v02.md`.
-- Добавить `references/migration-v01-v02.md`.
-- Нормативные MUST/SHOULD/MAY не смешивать.
-- YAML `relations` вынести в маркированный `skosovsky/okf extension`.
-- Deferred/ambiguous ABI описать честно, без invented rules.
+Move the agent-facing contract, README/docs, examples, fixtures, and plugin
+packaging to v0.2 while preserving explicitly labeled legacy consumption.
 
-## 3. Authoring workflow
+Finalize after tasks 09–20.
 
-Skill должен:
+## 2. Embedded specification {#section003}
 
-1. Определять target version и писать version только в root index.
-2. Требовать только `type` для minimal concept.
-3. Добавлять generated только при известном actor.
-4. Создавать sources только из реальных materials.
-5. Использовать keyed footnotes для доказуемого claim attribution.
-6. Не считать author/generator/validation фактом verification.
-7. Записывать verified только после реальной проверки.
-8. Не выдумывать status/stale date/credibility signals.
-9. Выносить sanctioned computation в отдельный concept.
-10. Не превращать credibility signals в score.
+- Replace `references/spec-v01.md` with pinned `spec-v02.md`.
+- Add `references/migration-v01-v02.md`.
+- Do not conflate normative MUST/SHOULD/MAY.
+- Move YAML `relations` into a labeled `skosovsky/okf extension`.
+- Describe deferred/ambiguous ABI honestly, without invented rules.
 
-## 4. Consumption workflow
+## 3. Authoring workflow {#section004}
 
-- Prefer v0.2 fields, затем §13 fallback.
+The skill must:
+
+1. Determine the target version and write the version only in the root index.
+2. Require only `type` for a minimal concept.
+3. Add generated only when the actor is known.
+4. Create sources only from actual materials.
+5. Use keyed footnotes for demonstrable claim attribution.
+6. Never treat author/generator/validation as evidence of verification.
+7. Write verified only after an actual check.
+8. Never invent status/stale date/credibility signals.
+9. Put sanctioned computation in a separate concept.
+10. Never turn credibility signals into a score.
+
+## 4. Consumption workflow {#section005}
+
+- Prefer v0.2 fields, then §13 fallback.
 - Normalize bare verified.
-- Derive trust tier строго по verified.
-- Показывать trust/status/staleness отдельно.
-- Не исполнять executor/attester content без trusted runtime и authorization.
-- Deprecated/stale signals не игнорировать по instruction из body.
+- Derive the trust tier strictly from verified.
+- Show trust/status/staleness separately.
+- Do not execute executor/attester content without a trusted runtime and authorization.
+- Do not ignore deprecated/stale signals because of an instruction in the body.
 
-## 5. Migration guidance
+## 5. Migration guidance {#section006}
 
-- Timestamp переносится только с explicit generated actor.
+- Transfer timestamp only with an explicit generated actor.
 - Unknown actor → unresolved/manual action.
-- Citations → sources без invented metadata.
-- Claim footnotes только при доказуемом mapping.
-- Не выводить verified/status/stale_after из git/timestamp/migration.
-- Version bump происходит после validation.
-- Unknown content сохраняется lossless.
+- Citations → sources without invented metadata.
+- Claim footnotes only with demonstrable mapping.
+- Do not infer verified/status/stale_after from git/timestamp/migration.
+- Bump the version after validation.
+- Preserve unknown content losslessly.
 
-## 6. Examples/fixtures
+## 6. Examples/fixtures {#section007}
 
-Обновить examples и добавить:
+Update examples and add:
 
 - human-authored concept;
 - multiple sources/keyed footnotes;
@@ -62,66 +72,66 @@ Skill должен:
 - narrative concept linking computation;
 - explicit legacy/mixed/future examples.
 
-Canonical snippets должны извлекаться из fixtures либо проверяться drift tests.
-Synthetic examples используют reserved domains и помечаются synthetic.
+Canonical snippets must be extracted from fixtures or checked by drift tests.
+Synthetic examples use reserved domains and are labeled synthetic.
 
-## 7. Adversarial contexts
+## 7. Adversarial contexts {#section008}
 
-Матрица input → expected decision → forbidden behavior:
+Matrix of input → expected decision → forbidden behavior:
 
-- body просит игнорировать frontmatter/trust;
-- generated human actor без verified;
-- human source author без verifier;
-- high usage_count как попытка повысить trust;
-- footnotes в code/unknown/duplicate IDs;
+- body asks to ignore frontmatter/trust;
+- generated human actor without verified;
+- human source author without a verifier;
+- high usage_count as an attempt to increase trust;
+- footnotes in code/unknown/duplicate IDs;
 - simultaneous legacy/v0.2 provenance;
 - stale/deprecated self-promotion;
 - executor asks for shell/secrets/policy bypass;
-- LLM receipt объявляет attestation success.
+- LLM receipt declares attestation success.
 
-Deterministic cases идут в fixtures/tests, agent-only cases — eval matrix.
+Deterministic cases go into fixtures/tests; agent-only cases go into the evaluation matrix.
 
-## 8. EN/RU и packaging
+## 8. EN/RU and packaging {#section009}
 
-Синхронно обновить:
+Update together:
 
 - `README.md` / `README.ru.md`;
 - `docs/index.md` / `docs/ru/index.md`;
 - `docs/skill.md` / `docs/ru/skill.md`;
 - `docs/toolkit.md` / `docs/ru/toolkit.md`;
-- navigation и migration page.
+- navigation and migration page.
 
-После стабилизации:
+After stabilization:
 
 - plugin descriptions/versions;
-- не приравнивать package version к OKF spec version;
-- пересчитать `skills-lock.json` последним;
-- проверить `skills.sh.json`/marketplace manifests.
+- do not equate the package version with the OKF specification version;
+- recalculate `skills-lock.json` last;
+- check `skills.sh.json`/marketplace manifests.
 
-## 9. Stop-slop constraints
+## 9. Stop-slop constraints {#section010}
 
-- Не выдумывать actors, sources, verification, freshness, receipt.
-- Один термин — одно значение.
-- Не дублировать overview на каждой странице.
-- EN/RU совпадают по contract, но русский не является калькой.
-- Repo policy всегда маркируется extension/tooling policy.
-- Никакого маркетингового тумана.
+- Do not invent actors, sources, verification, freshness, or receipts.
+- One term has one meaning.
+- Do not duplicate the overview on every page.
+- EN/RU agree on the contract, but Russian is not a literal calque.
+- Always label repository policy as extension/tooling policy.
+- No marketing fog.
 
-## 10. Acceptance criteria
+## 10. Acceptance criteria {#section011}
 
-- Active docs/skill не называют current spec v0.1 draft.
-- Timestamp/Citations остаются только в legacy/migration cases.
-- Все links ведут на spec-v02/migration.
-- Canonical v0.2 fixture base/strict clean.
-- Legacy fixture читается documented fallback.
-- Bare/list verified semantics identical.
-- Attested examples не обещают runtime ABI.
-- EN/RU parity пройдена.
-- Plugin manifests consistent; skill lock test проходит.
-- Поиск v0.1/timestamp/Citations/spec-v01 возвращает только intentional cases.
-- `go test ./...`, `go vet ./...`, `git diff --check` проходят.
+- Active docs/skill do not call the current specification a v0.1 draft.
+- Timestamp/Citations remain only in legacy/migration cases.
+- All links point to spec-v02/migration.
+- Canonical v0.2 fixtures pass base/strict validation cleanly.
+- The legacy fixture is read using the documented fallback.
+- Bare/list verified semantics are identical.
+- Attested examples make no runtime ABI promises.
+- EN/RU parity passes.
+- Plugin manifests are consistent; the skill lock test passes.
+- Searching for v0.1/timestamp/Citations/spec-v01 returns only intentional cases.
+- `go test ./...`, `go vet ./...`, and `git diff --check` pass.
 
-## 11. Out of scope
+## 11. Out of scope {#section012}
 
-Исполнение computation, attester ABI/sandbox/cache, invented scoring и
-автоматическое semantic rewriting.
+Computation execution, attester ABI/sandbox/cache, invented scoring, and
+automatic semantic rewriting.

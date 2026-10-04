@@ -14,6 +14,7 @@ import (
 func cmdView(args []string, stdout io.Writer) (int, error) {
 	parsed, err := parseArgs(args, []flagSpec{
 		{Name: "--output", Kind: stringFlag},
+		{Name: "--lang", Kind: stringFlag},
 		{Name: "--overwrite", Kind: boolFlag},
 		{Name: "--max-nodes", Kind: stringFlag},
 		{Name: "--as-of", Kind: stringFlag},
@@ -42,6 +43,10 @@ func cmdView(args []string, stdout io.Writer) (int, error) {
 			return 0, fmt.Errorf("invalid --max-nodes %q (want positive integer)", raw)
 		}
 	}
+	language := parsed.value("--lang", "en")
+	if language != "en" && language != "ru" {
+		return 0, fmt.Errorf("invalid --lang %q (want en or ru)", language)
+	}
 	b, err := bundle.LoadBundle(path)
 	if err != nil {
 		return 0, err
@@ -60,7 +65,7 @@ func cmdView(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if err := viewer.Export(context.Background(), b, output, viewer.Options{AsOf: asOf, MaxNodes: maxNodes, Overwrite: parsed.boolValue("--overwrite"), TemporalProfile: profile, VersionSelector: selectorAssertion(spec)}); err != nil {
+	if err := viewer.Export(context.Background(), b, output, viewer.Options{Language: language, AsOf: asOf, MaxNodes: maxNodes, Overwrite: parsed.boolValue("--overwrite"), TemporalProfile: profile, VersionSelector: selectorAssertion(spec)}); err != nil {
 		return 0, err
 	}
 	_, err = fmt.Fprintf(stdout, "wrote %s\n", renderTextString(output))

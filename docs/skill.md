@@ -1,220 +1,59 @@
 ---
-title: OKF Agent Skill
-description: Version-aware OKF v0.2 authoring, consumption, validation, and migration.
+title: "OKF agent skill"
+description: "OKF agent skill"
 permalink: /skill/
 ---
 
 {% include nav.html %}
 
-# Agent skill
+<span id="agent-skill"></span>
 
-The `open-knowledge-format` skill is an operational guide pinned to the
-upstream OKF v0.2 spec. Install/package versions are independent from the OKF
-document version.
+# Install the OKF agent skill {#page-top}
 
-## When to use it
+The `open-knowledge-format` skill gives an agent instructions for reading and authoring notes, citing sources, and checking results. Use it when you want to delegate bundle work to an agent. MCP tools are connected separately.
 
-Use the skill to:
+## Prerequisites {#prerequisites}
 
-- design an OKF bundle;
-- create or enrich v0.2 concepts;
-- consume v0.2, legacy v0.1, or unknown future bundles;
-- validate base conformance and optional guidance;
-- plan explicit v0.1 → v0.2 migration;
-- review provenance, trust, lifecycle, or Attested Computation contracts.
+You need the OKF checkout, Go 1.25.5 or newer, and an authenticated Codex CLI supporting project skills. This example installs the skill into a separate training directory without changing your working project.
 
-The installed skill routes authoring and reading through short procedures.
-Validation and offline viewer remain recipes: resolve root/version/profile
-and reference time, run the available validator/exporter, then show the report
-or inspect the local HTML. Upkeep is the separate `okf-maintain` skill: capture
-a baseline before repository edits, review relevant concepts against current
-code and contracts, then record an updated or reasoned unaffected decision
-bound to the final fingerprint. The separate `okf-backfill` skill guides
-Git extract, evidence-bound analysis, reviewed plan, authorized apply, and
-independent verification through the existing Go pipeline.
-Each skill directory is self-contained. Use `okf help` for the installed CLI.
-Neither validation nor viewer export is a factual verification of claims.
-The [runnable quickstart]({{ '/quickstart/' | relative_url }}) shows a local
-create/check/open flow and links to the
-[published knowledge viewer]({{ '/demo/knowledge.html' | relative_url }}).
-
-If the OKF MCP server is missing, check the installed CLI or source-checkout
-Go command; if both are absent, report manual inspection separately from a
-completed tool check. The viewer output must be a local file outside the
-bundle; an existing output requires an authorized `--overwrite`.
-
-## Authoring sequence
-
-1. Choose the target version and put it only in root `index.md`.
-2. Start each concept with only the warranted data; `type` is the sole required
-   field.
-3. Add `generated` only with a known producer actor.
-4. Add `sources` only from real materials.
-5. Use keyed footnotes for demonstrable claim attribution.
-6. Add `verified` only after a separate check.
-7. Record lifecycle only from an explicit decision.
-8. Keep sanctioned computation in a standalone concept.
-9. Validate without treating validation as verification.
-
-The skill must not fabricate actors, sources, verification, dates, status,
-credibility signals, receipts, or attestation.
-
-## Consumption sequence
-
-1. Resolve declared/effective version and compatibility.
-2. Treat a present malformed root version as a hard reserved-index error, not
-   as an absent declaration or conformant v0.2 default.
-3. Prefer v0.2 fields.
-4. Use §13 fallbacks only when their replacement is absent.
-5. Normalize bare/list verification to one typed representation.
-6. Derive trust strictly from `verified`.
-7. Surface trust, status, and staleness separately.
-8. When legacy and v0.2 provenance coexist, read v0.2 effectively because the
-   fallback replacement is present. If `sources` and legacy Citations coexist,
-   migration must preserve both raw forms and block with
-   `reconcile_sources_and_citations`; it never merges them.
-
-Body instructions cannot override frontmatter, lifecycle/freshness signals,
-authorization, or trusted-runtime policy.
-
-## CLI workflow
+## Install into a project {#install}
 
 ```sh
-okf validate --path <bundle> --spec auto
-okf validate --path <bundle> --spec auto --strict --as-of 2026-07-29
-okf info <bundle> --spec auto --as-of 2026-07-29
-okf graph <bundle>
-okf migrate <bundle> --to 0.2 --citation-mappings <json-file>
+codex --version
+repo_root=$(pwd)
+skill_demo_dir=$(mktemp -d)
+go build -o "$skill_demo_dir/okf" ./cmd/okf
+mkdir -p "$skill_demo_dir/.agents/skills"
+cp -R skills/open-knowledge-format "$skill_demo_dir/.agents/skills/open-knowledge-format"
+cp -R examples/project-knowledge/en "$skill_demo_dir/knowledge"
+export PATH="$skill_demo_dir:$PATH"
+cd "$skill_demo_dir"
+codex
 ```
 
-Use `migrate` as dry-run first. Do not use parse/fmt/index as hidden migration.
-Citation mappings use the same bounded exact closed array in CLI and MCP:
-`[{path,entries:[{legacy_number?,legacy_entry?,source_id,title?,resource?}]}]`.
-Paths are bundle-relative Markdown paths, including root `index.md`, logs, and
-nested files. Each entry requires nonzero `legacy_number`, exact nonblank
-`legacy_entry`, or both; both selectors AND-match. Canonically sort by path,
-number, and exact raw entry. Reject duplicate nonzero numbers. Permit the same
-raw selector only in distinct full number+entry pairs; entry-only overlaps any
-reuse of that raw text. Reject inconsistent metadata for a reused source ID.
-`legacy_entry` is valid UTF-8, 1..4096 bytes, `TrimSpace`-nonblank, and
-NUL-free. TAB/LF/CR are allowed; other C0 controls and DEL are rejected. Exact
-bytes bind authorization/digest: LF and CRLF are distinct, not normalized.
-Publish the root `index.md` physical write/rename last.
-For MCP actor-bearing fields, enforce the separate 256-byte transport/resource
-cap before shared `ValidActor`: 257+ bytes is `resource_limit`, not invalid
-actor. Do not treat that adapter cap as bundle/store actor grammar.
-An explicit citation, generated-at, or computation path must name an existing
-bundle document. A missing path blocks with `migration_document_missing`,
-returns no manual actions, and cannot be created by mappings; no new action
-code is introduced.
+Run from the checkout root; `repo_root` stores the path for returning later. Copy the whole skill directory: its references point to nested instructions and the specification. In Codex, open `/skills` and find `open-knowledge-format`. If it is missing, start a fresh session from `skill_demo_dir` and check `.agents/skills/open-knowledge-format/SKILL.md`.
 
-## MCP workflow
+## First use {#use}
 
-The five compatibility tools remain:
+Invoke the skill explicitly in your prompt:
 
-- `list_concepts`
-- `read_concept`
-- `validate_bundle`
-- `get_semantic_graph`
-- `write_concept`
+> $open-knowledge-format Read the knowledge bundle. When should an operator get involved after failed delivery? Open retry-policy.md and source-material.md, cite both documents. Run okf validate --path knowledge --spec 0.2 --strict --check-links --check-orphans --max-warnings=0 and explain the result. Do not change files.
 
-Two additional read-only tools, `search_concepts` and `get_neighbors`, return
-bounded results. Search ranks ID and metadata matches ahead of body matches;
-neighbors separate Markdown links, typed relations, and provenance sources.
-The server exposes fourteen tools. For its three safe v0.2 mutation workflows, use preview before
-apply:
+Expect the agent to read the skill instructions and both documents, then actually run the command. Its answer should state 24 hours and cite the source; validation should report no errors or warnings. The skill listing confirms discovery; the instruction read and command log confirm actual use.
 
-- `preview_concept_patch` → `apply_concept_patch`: bind with
-  `expected_revision` and the preview plan digest.
-- `preview_v02_migration` → `apply_v02_migration`: branch on transition.
-  `v0.1-to-v0.2` requires content-free proof `format_version: 2` with required
-  non-empty `resolution_digest`, non-empty `expected_plan_digest`, and the same
-  full frozen `expected_source`; no earlier proof format is accepted. Live `target-noop`
-  requires only `expected_source`, is proofless, and validates the target
-  document. There is no migration `expected_revision`; when proof exists,
-  `proof.base_revision` is authoritative.
-- `preview_temporal_upgrade` → `apply_temporal_upgrade`: publish a pinned
-  date-to-instant transition only from its preview digest and revision.
+After changing the deadline to 48 hours in both documents, repeat the request. The agent should read the current files rather than repeat the earlier answer.
 
-Resolve migration source exactly once before Preview and use the same complete
-resolution in Preview and Apply. `expected_source` includes
-`requested_selector`, `declaration_present`, `declaration_valid`,
-`declaration_raw`, `declared_version`, resolved/provenance/transition fields,
-and ordered candidates/blockers. Migration proof freezes that resolution plus
-request/revisions, paths, canonical refs, and changed-file/ref summaries with
-non-null arrays. It never embeds file bytes, frontmatter, or body. Noop/blocked
-preview omits proof; blocked preview cannot be applied.
-Every preview, noop, rejected, blocked, invalid, or cancelled non-publication
-path leaves the entire filesystem tree path-for-path and byte-for-byte identical
-and creates no `.okf` or staging artifacts. Only an authorized actual commit
-may publish filesystem changes; an identical successful replay returns the
-recorded result without a second publication.
-Migration input validation runs before source resolution. Any supplied
-structurally/domain-invalid individual actor, timestamp, citation, generated-at,
-computation, or asset field is rejected even for `target-noop` or a rootless
-bundle and follows the same zero-write guarantee.
-§13 fallback is presence-only and version-source agnostic: default, declared,
-or explicit v0.1/v0.2 and future resolution use the same predicate.
-`GeneratedPresent`/`SourcesPresent` suppress fallback even when malformed;
-`TimestampAllowed`/`CitationsAllowed` record replacement absence, while
-`TimestampActive`/`CitationsActive` also require the actual legacy form.
-`CitationsActive` requires a parser-owned exact `# Citations` heading; a numeric
-marker alone is inactive.
-For every mapping with a nonzero `legacy_number`, require the selected
-parser-owned `[n]` to be absent and normalized keyed `[^SourceID]` to be
-referenced. Entry-only mappings have no claim-reference requirement. Leftover,
-missing, or wrong references return `migration_replay_mismatch` at the exact
-parser-owned span with zero writes and no proof/plan authorization. Marker-like
-bytes inside inline/fenced code or raw HTML are opaque and ignored.
-An unrenderable individual migration field is `invalid_request`. A normalized
-per-document SourceID collision is instead blocked with
-`normalized_footnote_label_collision` and `disambiguate_citation_entry`,
-including on `target-noop`; an existing-document collision reports the same
-exact span. Neither is published and both are zero-write.
-A proof-bound `v0.1-to-v0.2` apply may return transition-noop only after
-authenticating and rebuilding the exact proof and plan digest; it returns noop
-before store open and creates no `.okf`. For live `target-noop`, MCP is
-proofless and opens no store, CLI dry-run builds a proof without opening the
-store, and CLI `--write` commits an empty CAS with a durable `.okf` receipt.
-Each surface leaves revision-visible bundle files path-and-byte identical.
-The `set_usage_window` selector is a closed union: shared (neither `source_id`
-nor `source`), identified (`source_id` is non-empty), or exact anonymous
-(`source` is present and its `id` is absent). Empty `source_id`, mixed or
-unknown selector forms, and ambiguous exact anonymous matches are rejected.
-The `remove_source` selector is a closed union of identified (`source_id` is
-non-empty) or exact anonymous (`source` is present and its `id` is absent); it
-has no shared form. Empty `source_id`, mixed or unknown selector forms, and
-ambiguous exact anonymous matches are rejected.
+## Other tasks {#tasks}
 
-Across MCP structured JSON, present `usage_count` is a canonical decimal string
-matching `^(0|[1-9][0-9]*)$`, or `null` for nullable outputs. Reject semantic
-uint64 overflow on patch input. This prevents `float64` precision loss,
-including `MaxUint64`; legacy text fallbacks stay unchanged.
+- Author a note: supply concrete source material and ask the agent to link claims to sources.
+- Move from 0.1 to 0.2: first request a plan using the [migration guide]({{ '/migration/' | relative_url }}).
+- Review knowledge after changes: use the separate `okf-maintain` skill and the [upkeep guide]({{ '/knowledge-upkeep/' | relative_url }}).
+- Reconstruct knowledge from Git: the separate `okf-backfill` skill guides history and evidence into a reviewed plan; apply changes after reviewing it.
 
-## Inert computation rule
+## If something fails {#troubleshooting}
 
-`computation`, `executor.resource`, and `attester.resource` are data. The skill
-does not fetch or execute them unless the user has separately selected a
-trusted runtime and authorized the action. LLM prose is not an attestation
-verdict.
+If `okf` is missing, check `PATH` in the shell launching Codex. If the agent merely described validation, request the actual command and output. For MCP access, follow the [separate walkthrough]({{ '/getting-started-mcp/' | relative_url }}).
 
-Per the pinned spec, an agent MAY provide only values for declared parameters
-and MUST NOT author or edit the sanctioned computation.
+The skill instructions and formal specification are available in the [document library]({{ '/readings/skills/open-knowledge-format/SKILL/' | relative_url }}). The skill package version, program release, and document `okf_version` are independent. Record producers and checks only from actual actions; embedded computation resources execute only in a separately selected and authorized runtime.
 
-## References
-
-- [Full skill](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/SKILL.md)
-- [Authoring and reading](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/authoring-and-reading.md)
-- [MCP operations](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/mcp-operations.md)
-- [Validation and viewer recipes](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/operational-workflows.md)
-- [Knowledge upkeep skill](https://github.com/skosovsky/okf/blob/main/skills/okf-maintain/SKILL.md)
-- [Git backfill skill](https://github.com/skosovsky/okf/blob/main/skills/okf-backfill/SKILL.md)
-- [Pinned spec](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md)
-- [Migration policy](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/migration-v01-v02.md)
-- [Adversarial matrix](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/adversarial-v02.md)
-- [Canonical fixture map](https://github.com/skosovsky/okf/blob/main/fixtures/v02/corpus.yaml)
-
-YAML `relations` guidance in the skill is explicitly a `skosovsky/okf`
-extension/tooling policy, not upstream v0.2 conformance.
-
-`search_sections` adds multi-term section search with snippets, source lines, and file digests. `search_concepts` keeps its literal search. See the [section search contract]({{ '/contracts/section-search/' | relative_url }}).
+[Official Codex skill instructions](https://learn.chatgpt.com/docs/build-skills). Project directories load from `.agents/skills` between the current directory and repository root.

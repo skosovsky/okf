@@ -9,7 +9,32 @@
   const type = document.getElementById('type');
   const showGraph = document.getElementById('show-graph');
   const summary = document.getElementById('summary');
-  summary.textContent = data.concepts.length + ' concepts · ' + data.edges.length + ' edges · OKF ' + data.spec_version + ' · staleness: ' + data.reference_basis + (data.reference_time ? ' (' + data.reference_time + ')' : '');
+  const language = document.getElementById('language');
+  let locale = document.documentElement.lang === 'ru' ? 'ru' : 'en';
+  language.value = locale;
+  const labels = {
+    en: {title:'OKF knowledge viewer', search:'Search', type:'Type', allTypes:'All types', showGraph:'Show graph', language:'Language', concepts:'concepts', edges:'edges', basis:'staleness reference', trust:'trust', status:'status', staleness:'staleness', unknownType:'type unknown', staleAfter:'Stale after', missing:'missing', missingConcept:'Missing concept', unresolved:'Unresolved link', sources:'Sources', noSources:'No sources recorded.', source:'Source', outgoing:'Outgoing', incoming:'Incoming', none:'None.', graph:'Graph', localGraph:'Local graph', connections:'connections', diagram:'Local relationship diagram for ', current:'current', empty:'This bundle contains no concepts.', noMatch:'No matching concepts.', neighborsLimit:'Diagram shows first 48 neighbors; the list below shows up to 200.', connectionsLimit:'Showing first 200 connections; use the edge lists above for all.'},
+    ru: {title:'Просмотр знаний OKF', search:'Поиск', type:'Тип', allTypes:'Все типы', showGraph:'Показать граф', language:'Язык', concepts:'заметок', edges:'связей', basis:'время оценки актуальности', trust:'проверка', status:'состояние', staleness:'актуальность', unknownType:'тип не указан', staleAfter:'Срок пересмотра', missing:'отсутствует', missingConcept:'Заметка не найдена', unresolved:'Ссылка не разрешена', sources:'Источники', noSources:'Источники не указаны.', source:'Источник', outgoing:'Исходящие связи', incoming:'Входящие связи', none:'Нет.', graph:'Граф', localGraph:'Граф соседних заметок', connections:'связей', diagram:'Граф связей заметки ', current:'текущая', empty:'В этом наборе нет заметок.', noMatch:'Подходящих заметок нет.', neighborsLimit:'На графе показаны первые 48 соседей; в списке ниже — до 200.', connectionsLimit:'Показаны первые 200 связей; полный список находится выше.'}
+  };
+  const values = {
+    ru: {'unverified':'не проверено', 'machine-confirmed':'подтверждено программой', 'human-reviewed':'проверено человеком', 'draft':'черновик', 'stable':'стабильно', 'deprecated':'выведено из использования', 'unresolved':'не определено', 'invalid':'некорректно', 'fresh':'актуально', 'stale':'требует пересмотра', 'unevaluated':'не оценено', 'explicit-instant':'заданный момент времени', 'explicit-civil-date':'заданная календарная дата', 'markdown':'ссылка в тексте', 'requires':'требует', 'used_in':'используется в', 'depends_on':'зависит от', 'related_to':'связано с', 'includes':'включает', 'extends':'расширяет', 'contradicts':'противоречит', 'supersedes':'заменяет'},
+    en: {}
+  };
+  const tr = key => labels[locale][key];
+  const countLabel = (count, kind) => {
+    if (locale !== 'ru') return tr(kind);
+    const forms = {concepts:['заметка','заметки','заметок'], edges:['связь','связи','связей'], connections:['связь','связи','связей']}[kind];
+    const lastTwo = count % 100, last = count % 10;
+    return forms[lastTwo >= 11 && lastTwo <= 14 ? 2 : last === 1 ? 0 : last >= 2 && last <= 4 ? 1 : 2];
+  };
+  const known = {trust:['unverified','machine-confirmed','human-reviewed'], status:['draft','stable','deprecated','invalid','unresolved'], staleness:['fresh','stale','invalid','unevaluated'], basis:['unevaluated','explicit-instant','explicit-civil-date'], relation:['markdown','requires','used_in','depends_on','related_to','includes','extends','contradicts','supersedes']};
+  const valueLabel = (value, category) => known[category].includes(value) && Object.hasOwn(values[locale], value) ? values[locale][value] : value;
+  const updateInterface = () => {
+    document.documentElement.lang = locale;
+    document.title = tr('title');
+    for (const [id, key] of [['viewer-title','title'], ['search-label','search'], ['type-label','type'], ['all-types','allTypes'], ['graph-label','showGraph'], ['language-label','language']]) document.getElementById(id).textContent = tr(key);
+    summary.textContent = data.concepts.length + ' ' + countLabel(data.concepts.length, 'concepts') + ' · ' + data.edges.length + ' ' + countLabel(data.edges.length, 'edges') + ' · OKF ' + data.spec_version + ' · ' + tr('basis') + ': ' + valueLabel(data.reference_basis, 'basis') + (data.reference_time ? ' (' + data.reference_time + ')' : '');
+  };
   [...new Set(data.concepts.map(c => c.type).filter(Boolean))].sort().forEach(t => {
     const option = document.createElement('option'); option.value = t; option.textContent = t; type.append(option);
   });
@@ -22,30 +47,35 @@
     const target = outgoing ? e.to_concept : e.from_concept;
     const reference = outgoing ? e.to : e.from;
     const row = el('div', 'edge' + (e.exists ? '' : ' missing'));
-    row.append(el('span', 'badge', e.kind + (outgoing ? ' → ' : ' ← ')));
+    row.append(el('span', 'badge', valueLabel(e.kind, 'relation') + (outgoing ? ' → ' : ' ← ')));
     if (concepts.has(target)) {
       const button = el('button', '', reference); button.addEventListener('click', () => navigate(target)); row.append(button);
-    } else row.append(el('span', '', reference + ' (missing)'));
+    } else row.append(el('span', '', reference + ' (' + tr('missing') + ')'));
     return row;
   };
-  const render = () => {
+  let selectedID;
+  const render = (refreshLocale = false) => {
     let id = '';
     try { id = decodeURIComponent(location.hash.slice(1)); } catch (_) { id = ''; }
     // A valid concept route wins over Goldmark's footnote anchor namespace.
-    if (!concepts.has(id) && /^fn(?:ref\d*)?:/i.test(id) && Array.from(byId.querySelectorAll('[id]')).some(anchor => anchor.id === id)) return;
+    if (!concepts.has(id) && /^fn(?:ref\d*)?:/i.test(id) && Array.from(byId.querySelectorAll('[id]')).some(anchor => anchor.id === id)) {
+      if (refreshLocale !== true) return;
+      id = selectedID;
+    }
     const c = concepts.get(id) || data.concepts[0];
+    selectedID = c && c.id;
     byId.replaceChildren();
-    if (!c) { byId.append(el('p', 'empty', 'This bundle contains no concepts.')); return; }
+    if (!c) { byId.append(el('p', 'empty', tr('empty'))); return; }
     byId.append(el('h2', '', c.title), el('code', '', c.id));
     const meta = el('div', 'meta');
     [
-      [c.type || 'type unknown', false],
-      ['trust: ' + c.trust, false],
-      ['status: ' + c.status, c.status === 'deprecated' || c.status === 'invalid'],
-      ['staleness: ' + c.staleness, c.staleness === 'stale' || c.staleness === 'invalid']
+      [c.type || tr('unknownType'), false],
+      [tr('trust') + ': ' + valueLabel(c.trust, 'trust'), false],
+      [tr('status') + ': ' + valueLabel(c.status, 'status'), c.status === 'deprecated' || c.status === 'invalid'],
+      [tr('staleness') + ': ' + valueLabel(c.staleness, 'staleness'), c.staleness === 'stale' || c.staleness === 'invalid']
     ].forEach(([value, alert]) => meta.append(el('span', 'badge' + (alert ? ' stale' : ''), value)));
     byId.append(meta);
-    if (c.stale_after) byId.append(el('p', '', 'Stale after: ' + c.stale_after));
+    if (c.stale_after) byId.append(el('p', '', tr('staleAfter') + ': ' + c.stale_after));
     const body = el('div', 'body'); body.innerHTML = c.html; byId.append(body);
     // Bundle resolution comes from Go. Relative Markdown links use concept deep links.
     const markdownLinks = data.edges.filter(e => e.kind === 'markdown' && e.from_concept === c.id);
@@ -56,7 +86,7 @@
       if (edge && edge.exists && concepts.has(edge.to_concept)) {
         a.href = '#' + encodeURIComponent(edge.to_concept);
       } else if (edge) {
-        a.removeAttribute('href'); a.title = 'Missing concept';
+        a.removeAttribute('href'); a.title = tr('missingConcept');
       } else if (/^#fn(?:ref\d*)?:/i.test(raw)) {
         // Goldmark footnotes link to anchors in the current detail card.
         a.addEventListener('click', event => {
@@ -66,13 +96,13 @@
       } else if (/^(https?:\/\/|mailto:)/i.test(raw) && !/[\u0000-\u001f\u007f]/.test(raw)) {
         a.rel = 'noopener noreferrer'; a.referrerPolicy = 'no-referrer';
       } else {
-        a.removeAttribute('href'); a.title = 'Unresolved link';
+        a.removeAttribute('href'); a.title = tr('unresolved');
       }
     });
-    byId.append(el('h3', '', 'Sources'));
-    if (!c.sources.length) byId.append(el('p', 'empty', 'No sources recorded.'));
+    byId.append(el('h3', '', tr('sources')));
+    if (!c.sources.length) byId.append(el('p', 'empty', tr('noSources')));
     c.sources.forEach(s => {
-      const row = el('div', 'source', (s.title || s.id || 'Source') + (s.resource ? ' · ' : ''));
+      const row = el('div', 'source', (s.title || s.id || tr('source')) + (s.resource ? ' · ' : ''));
       if (/^(https?:\/\/|mailto:)/i.test(s.resource) && !/[\u0000-\u001f\u007f]/.test(s.resource)) {
         const a = el('a', '', s.resource); a.href = s.resource; a.rel = 'noopener noreferrer'; a.referrerPolicy = 'no-referrer'; row.append(a);
       } else row.append(el('span', '', s.resource));
@@ -80,15 +110,15 @@
     });
     const outgoing = data.edges.filter(e => e.from_concept === c.id);
     const incoming = data.edges.filter(e => e.to_concept === c.id);
-    byId.append(el('h3', '', 'Outgoing')); if (!outgoing.length) byId.append(el('p', 'empty', 'None.')); outgoing.forEach(e => byId.append(edgeRow(e, true)));
-    byId.append(el('h3', '', 'Incoming')); if (!incoming.length) byId.append(el('p', 'empty', 'None.')); incoming.forEach(e => byId.append(edgeRow(e, false)));
+    byId.append(el('h3', '', tr('outgoing'))); if (!outgoing.length) byId.append(el('p', 'empty', tr('none'))); outgoing.forEach(e => byId.append(edgeRow(e, true)));
+    byId.append(el('h3', '', tr('incoming'))); if (!incoming.length) byId.append(el('p', 'empty', tr('none'))); incoming.forEach(e => byId.append(edgeRow(e, false)));
     if (showGraph.checked) {
-      const panel = el('div', 'graph'); panel.append(el('strong', '', 'Local graph · ' + (outgoing.length + incoming.length) + ' connections'));
+      const panel = el('div', 'graph'); panel.append(el('strong', '', tr('localGraph') + ' · ' + (outgoing.length + incoming.length) + ' ' + countLabel(outgoing.length + incoming.length, 'connections')));
       const nearby = [...outgoing, ...incoming].slice(0, 200);
       const ids = [...new Set(nearby.map(e => e.from_concept === c.id ? e.to_concept : e.from_concept))].slice(0, 48);
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 600 360'); svg.setAttribute('role', 'img');
-      svg.setAttribute('aria-label', 'Local relationship diagram for ' + c.id);
+      svg.setAttribute('aria-label', tr('diagram') + c.id);
       const svgEl = (tag, attrs) => {
         const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
         for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
@@ -97,7 +127,7 @@
       const center = svgEl('circle', {cx:300,cy:180,r:27,fill:'#155da0'});
       svg.append(center);
       const centerText = svgEl('text', {x:300,y:185,'text-anchor':'middle',fill:'#fff','font-size':11});
-      centerText.textContent = 'current'; svg.append(centerText);
+      centerText.textContent = tr('current'); svg.append(centerText);
       ids.forEach((id, index) => {
         const angle = index * Math.PI * 2 / ids.length - Math.PI / 2;
         const x = 300 + 245 * Math.cos(angle), y = 180 + 135 * Math.sin(angle);
@@ -110,13 +140,13 @@
       });
       if (ids.length) panel.append(svg);
       nearby.forEach(e => panel.append(edgeRow(e, e.from_concept === c.id)));
-      if (new Set(nearby.map(e => e.from_concept === c.id ? e.to_concept : e.from_concept)).size > 48) panel.append(el('p', 'empty', 'Diagram shows first 48 neighbors; the list below shows up to 200.'));
-      if (outgoing.length + incoming.length > 200) panel.append(el('p', 'empty', 'Showing first 200 connections; use the edge lists above for all.'));
-      byId.append(el('h3', '', 'Graph'), panel);
+      if (new Set(nearby.map(e => e.from_concept === c.id ? e.to_concept : e.from_concept)).size > 48) panel.append(el('p', 'empty', tr('neighborsLimit')));
+      if (outgoing.length + incoming.length > 200) panel.append(el('p', 'empty', tr('connectionsLimit')));
+      byId.append(el('h3', '', tr('graph')), panel);
     }
     list.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.id === c.id));
   };
-  const updateList = () => {
+  const updateList = (refreshLocale = false) => {
     const q = search.value.toLocaleLowerCase(); const t = type.value;
     list.replaceChildren();
     let count = 0;
@@ -128,10 +158,17 @@
       button.append(el('small', '', c.id + (c.type ? ' · ' + c.type : '')));
       button.addEventListener('click', () => navigate(c.id)); list.append(button);
     }
-    if (!count) list.append(el('p', 'empty', 'No matching concepts.'));
-    render();
+    if (!count) list.append(el('p', 'empty', tr('noMatch')));
+    render(refreshLocale === true);
   };
   search.addEventListener('input', updateList); type.addEventListener('change', updateList);
   showGraph.addEventListener('change', render); addEventListener('hashchange', render);
+  language.addEventListener('change', () => {
+    locale = language.value === 'ru' ? 'ru' : 'en';
+    updateInterface();
+    // Do not route, clear filters or persist a language choice.
+    updateList(true);
+  });
+  updateInterface();
   updateList();
 })();

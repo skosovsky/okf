@@ -1,50 +1,56 @@
-# Техническое задание: согласовать journal decoder с payload limits
+---
+layout: default
+lang: en
+title: "Task 18: journal decoding and payload limits"
+permalink: /development/v0.2/tasks/task18/
+---
 
-## 1. Проблема
+{% include nav.html %}
 
-`Config.Validate` допускает enlarged limits до absolute ceilings, writer и
-staged reader используют effective Config, но journal decoder hardcode'ит
-default 256 MiB/1 GiB. Валидная large-asset transaction может commit'иться, но
-не восстановиться после crash с той же конфигурацией.
+Historical implementation specification, preserved from revision `61e75e9`. Requirements describe the work planned at that time, not current usage instructions. [Original document](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task18.md).
 
-Проблема обнаружена при аудите v0.2 computation assets, но является общим
-durability bug.
+# Technical specification: align journal decoding with payload limits {#section001}
 
-## 2. Требования
+## 1. Problem {#section002}
 
-Выбрать и зафиксировать один contract:
+`Config.Validate` permits enlarged limits up to absolute ceilings. The writer and staged reader use the effective Config, but the journal decoder hardcodes the default 256 MiB/1 GiB limits. A valid large-asset transaction can commit yet fail to recover after a crash with the same configuration.
 
-1. Decoder проверяет manifest против immutable absolute ceilings без payload
-   I/O, затем `readStagedJournal` применяет effective Config; либо
-2. Decoder принимает явно переданные immutable effective limits.
+The problem was found during the audit of v0.2 computation assets but is a general durability bug.
 
-Нельзя:
+## 2. Requirements {#section003}
 
-- ослаблять overflow/ordinal/tamper checks;
-- читать payload до manifest/provenance/limit validation;
-- менять journal v5 wire format без необходимости;
-- аллоцировать сотни MiB только ради test fixture.
+Choose and document one contract:
 
-## 3. Файлы
+1. The decoder checks the manifest against immutable absolute ceilings without payload I/O, then `readStagedJournal` applies the effective Config; or
+2. The decoder accepts explicitly supplied immutable effective limits.
+
+Do not:
+
+- weaken overflow, ordinal or tamper checks;
+- read payload before manifest, provenance and limit validation;
+- change the journal v5 wire format unnecessarily;
+- allocate hundreds of MiB merely for a test fixture.
+
+## 3. Files {#section004}
 
 - `store/fs/fs.go`;
 - `store/fs/staged_payload_limits_test.go`;
-- focused recovery integration test.
+- a focused recovery integration test.
 
-## 4. Tests
+## 4. Tests {#section005}
 
-Все tests — AAA.
+All tests use AAA.
 
-- Manifest выше defaults, но ниже absolute ceiling, проходит decoder stage.
-- Smaller reopen config rejects before payload I/O.
-- Same enlarged config recovers successfully.
-- Aggregate/size overflow rejected.
-- Ordinal/tamper/missing payload contracts не регрессируют.
-- Bounded unit fixture вместо реального 256+ MiB allocation.
+- A manifest above defaults but below the absolute ceiling passes the decoder stage.
+- A smaller configuration on reopen rejects recovery before payload I/O.
+- The same enlarged configuration recovers successfully.
+- Aggregate and size overflow are rejected.
+- Ordinal, tamper and missing-payload contracts do not regress.
+- Use a bounded unit fixture instead of a real 256+ MiB allocation.
 
-## 5. Acceptance criteria
+## 5. Acceptance criteria {#section006}
 
-- Writer и recovery принимают одинаковую валидную configured transaction.
-- Smaller policy безопасно блокирует recovery до payload read.
-- Journal wire version unchanged.
-- `go test ./store/fs` проходит.
+- The writer and recovery accept the same valid configured transaction.
+- A smaller policy safely blocks recovery before payload reads.
+- The journal wire version is unchanged.
+- `go test ./store/fs` passes.

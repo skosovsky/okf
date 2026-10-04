@@ -1,23 +1,29 @@
+{% if page.lang == 'ru' %}
+{% include nav_ru.html %}
+{% else %}
+{% assign paired_document = nil %}
+{% for document in site.data.documentation.documents %}
+  {% if document.en.url == page.url or document.ru.url == page.url %}
+    {% assign paired_document = document %}
+    {% break %}
+  {% endif %}
+{% endfor %}
 <nav class="site-nav" aria-label="Main navigation">
-  <details class="site-nav__docs">
-    <summary>Docs</summary>
-    <a href="{{ '/' | relative_url }}">Overview</a>
-    <a href="{{ '/#spec' | relative_url }}">Spec</a>
-    <a href="{{ '/#quickstart' | relative_url }}">Quickstart</a>
-    <a href="{{ '/quickstart/' | relative_url }}">Runnable guide</a>
-    <a href="{{ '/demo/knowledge.html' | relative_url }}">Knowledge demo</a>
-    <a href="{{ '/#examples' | relative_url }}">Examples</a>
-    <a href="{{ '/#tools' | relative_url }}">Tools</a>
-    <a href="{{ '/#faq' | relative_url }}">FAQ</a>
-    <a href="{{ '/contracts/section-search/' | relative_url }}">Section search</a>
-    <a href="{{ '/contracts/markdown-setup/' | relative_url }}">Markdown setup</a>
-  </details>
+  <a href="{{ '/' | relative_url }}">Overview</a>
+  <a href="{{ '/quickstart/' | relative_url }}">Quickstart</a>
+  <a href="{{ '/toolkit/#setup' | relative_url }}">Existing documents</a>
+  <a href="{{ '/skill/' | relative_url }}">Agent</a>
   <a href="{{ '/reference/' | relative_url }}">Reference</a>
-  <a href="{{ '/getting-started-mcp/' | relative_url }}">Connect MCP</a>
-  <a href="{{ '/toolkit/' | relative_url }}">Toolkit</a>
-  <a href="{{ '/skill/' | relative_url }}">Skill</a>
-  <a href="{{ '/migration/' | relative_url }}">Migration</a>
-  <a href="{{ '/releases/v0.2.2/' | relative_url }}">v0.2.2 release</a>
-  <a class="site-nav__meta-start" href="{{ '/ru/' | relative_url }}">RU</a>
+  <a href="{{ '/history/' | relative_url }}">History</a>
+  <details class="site-nav__docs"><summary>All documents</summary>
+    <a href="{{ '/documentation/' | relative_url }}">Documentation index</a>
+    <a href="{{ '/getting-started-mcp/' | relative_url }}">Connect MCP</a>
+    <a href="{{ '/migration/' | relative_url }}">Upgrade to OKF 0.2</a>
+  </details>
+  {% if paired_document %}
+    <a class="site-nav__meta-start" data-locale-switch href="{{ paired_document.ru.url | relative_url }}" hreflang="ru" lang="ru" aria-label="Read this page in Russian">RU</a>
+  {% endif %}
+  <a href="https://github.com/skosovsky/okf/releases">Releases</a>
   <a href="https://github.com/skosovsky/okf">GitHub</a>
 </nav>
+{% endif %}

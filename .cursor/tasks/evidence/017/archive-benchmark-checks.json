@@ -1,0 +1,963 @@
+{
+  "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
+  "documents": [
+    {
+      "source": "benchmark/agent/BACKFILL-CONSUMER.md",
+      "source_sha256": "2b9b735bd3f8fe0c45f6bba5359d598bdec1e88d9b193f783d4ae573965e7f71",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+          "sha256": "979861b2edfa87642031eeb3302e2534db24428edd47526a267e157c887b33c8",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/BACKFILL-CONSUMER.md",
+          "sha256": "0faf0459c2ff05cb040bf67ecf44cec614a9c53de5217071716b795488ddf4a6",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/BEFORE-AFTER.md",
+      "source_sha256": "44acd6284cecc58d0862fb61b1df2a04fb76c6698822d9f54128ba80cd31e5fe",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/BEFORE-AFTER.md",
+          "sha256": "b016d6766e31bd676638f06b911c718bc1c1e10f069f4af647da363b3469210a",
+          "code_bodies_exact": true,
+          "table_line_count": 4,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/BEFORE-AFTER.md",
+          "sha256": "8d1cfc15a88be7dfa6d76b6461ee64eebec279d1c228f41dfaca54010eb4eca7",
+          "code_bodies_exact": true,
+          "table_line_count": 4,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/METADATA-CONTRAST.md",
+      "source_sha256": "0a0a31f2c50aa07a924eb39c154d03425d7e17c4e92c265de3fe400f1867cd1b",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/METADATA-CONTRAST.md",
+          "sha256": "16848807be2ce7001d94dcbe2b8ae5f7581b0f9132dc09b93305cfb2c23b22b1",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/METADATA-CONTRAST.md",
+          "sha256": "90af200ae2261320b94372c74625659e20d09ed83115f6e9fc0de866f06a32bb",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/PILOT-DIAGNOSTIC.md",
+      "source_sha256": "1d30eb47edb76410bafdf1fc7ca7b3f6b095d5bbe16d66ca62232da40d4de988",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+          "sha256": "6f94dc2ffecbab7beef97e9952e8d22ca38353b1139881a70b60dcc25182b9f6",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/PILOT-DIAGNOSTIC.md",
+          "sha256": "ab101b6cf14179807f858524e08547d85ad3cfd7d54e75d2e91fa7c1b6c0d21f",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/PILOT-PRECOMPUTED.md",
+      "source_sha256": "69d6ef3844f90062c4a151d17b7e3a9665e2ad63d6d75fdf386b325dd9939173",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+          "sha256": "5ee5573076d00c43a8e7bde94777bb2fa3d07399212858fff5199c1f072c697b",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/PILOT-PRECOMPUTED.md",
+          "sha256": "369f1a6721b5d3e0e671069f2b8012eb1e2fd302e81759b8b718680028f54e81",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/PILOT.md",
+      "source_sha256": "593a7c459f1ddfa899a3f69d97f0265d9e241157b0a9ff018240eac7ae136afe",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/PILOT.md",
+          "sha256": "75b5c18dc9f7dbe054c451ba710a6560754a7eca90318b51c8f2afb9d0c900c2",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/PILOT.md",
+          "sha256": "904bb8a724602aa8ad3bb478175d5da186cc772b98c01148d876fc662f2bbe90",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/README.md",
+      "source_sha256": "a6df84a468b42ebf3b6179c0bd40043e2ece9689a9616fa7566d0173bb849bcf",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/README.md",
+          "sha256": "fb9d077fce5d07086708aae64d693dbe5eb6f3c561d2d3db024095627fddf8a2",
+          "code_bodies_exact": true,
+          "table_line_count": 7,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/README.md",
+          "sha256": "7b88ea48843f67d98a095a2366cdade254d9ee8f185f26ae79c42013ef7e50ba",
+          "code_bodies_exact": true,
+          "table_line_count": 7,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/UPKEEP-STUDY.md",
+      "source_sha256": "772de7eacd4750dbdb6c0056ba986bfb545033fad200f0fb6441ab200c60f6d9",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/UPKEEP-STUDY.md",
+          "sha256": "a74e69e8fc459559c093863f568489fc64bc40dea94bf91c6b636907b5fbe557",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/UPKEEP-STUDY.md",
+          "sha256": "12c04e4dba0f7448b3e2b2e01d35f5b752746f1a899a41fde96c34bfd1eb4356",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+      "source_sha256": "bfe8af34bf3498a1af56b4126ba2d4f1fae2c3a7b1a23378fad357c1683c1a50",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+          "sha256": "c31ed2e6ae687c4b2fc9b01a977ece5a94233775f4fb78456f9905276241f1f3",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/WRITER-CONSUMER-BASELINE.md",
+          "sha256": "05c16e429d4d1f5924374404f57d69c1f2ca8652cfb5df3fd2d5beadffddfd72",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/beforeafter/LIVE.md",
+      "source_sha256": "63524be8139bf6dc1bf7631d773087ef7ad51c9ba72337cb1e0363e441607a47",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/beforeafter/LIVE.md",
+          "sha256": "a3a6dad19ec9c8551fa1b813b6de08056d7d1a55de10404d115c9ee16015a3b3",
+          "code_bodies_exact": true,
+          "table_line_count": 10,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/beforeafter/LIVE.md",
+          "sha256": "35892d4165064ff4308c7c514ff70d9f5d4526a5ce79b39e9f87620114557357",
+          "code_bodies_exact": true,
+          "table_line_count": 10,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/beforeafter/README.md",
+      "source_sha256": "ea49c9b126cbb5ecd9ee54a4a5fbc23c3dd81324f96f318995879a07e3d70ff3",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/beforeafter/README.md",
+          "sha256": "1ab947a19bcdea54432962d2f409a0a8613b92e4298d7bea5ba613d9287e26a6",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/beforeafter/README.md",
+          "sha256": "bda81d6ad87cd3e1c94356e4cd06be518b2b0269c09dd27fe92116d79a25a3f5",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+      "source_sha256": "22cca846194e28603a358d5878e0ea8fb145f44956d03fdfcdcd05aa1fbd7286",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+          "sha256": "d6ea6b128f27d3574ef741e7b1fb32d3d2b9e4e09b0af1d751c888fea1bf4dd5",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-backfill-consumer-v2/README.md",
+          "sha256": "d1f9d09df5d6334171ae554ff4a43a5ed46c60e3547e7b624c369861e0c6d14b",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+      "source_sha256": "6f0ac9d7d8e43bfc08ed3ec710c17d9c0419a7185aa3814a4e4708907f0d6177",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+          "sha256": "6a100beec774b6072bcf43767116b1e383308984640c701e98e7fbb433acdf4b",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-beforeafter-v1/README.md",
+          "sha256": "c037ede1f6073cfdb22e6eb1a62eb975d3eeb570b8948ae0fd69308867477526",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+      "source_sha256": "85eba939a041f248d6e9b26f27a9f1f3d4ebef0bd054699443713f879bffd7f7",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+          "sha256": "8cfc2be24d47f02b781a7b3fd803b53555287f8a4036553e74cc1e6237def1fa",
+          "code_bodies_exact": true,
+          "table_line_count": 4,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v1/README.md",
+          "sha256": "e2c051baa9924e43beaecbeacc2b47d88bcb9d1b566d8e2dfc86fa1ea834891b",
+          "code_bodies_exact": true,
+          "table_line_count": 4,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+      "source_sha256": "36fcd5c327ae38d61fdd63c72f931a50282b5ffa99a2e5f9b6336e198c626405",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+          "sha256": "c8fcd207132e10e9b2ef18abb971d497927de33955439e33a0830d752014185d",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-diagnostic-read-v2/README.md",
+          "sha256": "a7af045cbb49dd25ce728ce7d07af683b6595c5ac5c403b826160263ae20ca66",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-exploratory/README.md",
+      "source_sha256": "2767ef51b1c0de21c425506eb69480f632308f4910d757253d8acc8c0f81fe12",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+          "sha256": "5942aa9e28251075ba59a698d610fe2c06dcd11b042fb5717e4e82ce3babd8c8",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-exploratory/README.md",
+          "sha256": "796d09ea63ee611490f96e3933a3cb34332ef110c18440c3e778abc8d94bc91f",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+      "source_sha256": "315bd0e919f69b8c946efb989a7b4b9b87f6142dddbc85f88fdaffdcc7e98917",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+          "sha256": "48d28cf9b3d62fcc14a18758ddcfd16c97400264993a6a84623db46c331f5e3d",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-manual-writer-consumer-v3/README.md",
+          "sha256": "086417271fa1bcf176d58edeae5d434794c9b4957b839e26346668bc315e1595",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+      "source_sha256": "c92fe4fa05b95f8ba6df6619e8ad69085e69a5e208a33bebad85b38e81ae5cb7",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+          "sha256": "67672885db4a947f32c9e9b27965a91bd51e76bcf01e38cd50c9f100a5fc5a9f",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-metadata-only-v2/README.md",
+          "sha256": "61e16c0a0890809361be72576187da9c057c7d9b9ef84ffd07303e0055e6c2d2",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-primary-blocked/README.md",
+      "source_sha256": "dab0172e4e77b958aed8b0ac771eb985c40ff3ca78366d641b92d77579c93ba3",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+          "sha256": "ced955222d93b91db6038739d10ec32269c40d6bb6c34900a05616749eea385b",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-blocked/README.md",
+          "sha256": "87659f7cf747b2469bf36f3f6f38922c4067bf76f4435e3d6660c88e7a9b3aa8",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+      "source_sha256": "fa69a6f4483515518fc2e773a20683458068af0c2311bd4f40c96aae9a7b8dcd",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+          "sha256": "60a29233a2df97c4ae333f3f8ed14e51ce9119c0e4894ed284b65a1e873c7619",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-bundled-v2/README.md",
+          "sha256": "7d81a46b7c9588ef3ccaf8fb709774d64bf7c1857dbb76c74eda283db077c175",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-primary-live/README.md",
+      "source_sha256": "0f6626ccad7834b9ba3bd2e96cda966ab6590161618681bdb30ee86e0178b5fa",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+          "sha256": "9b5f36de5f65d71dfc9c63958026ea21eb553851f43e5f2691593a362aff3b65",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-live/README.md",
+          "sha256": "41990bd5c43e4ccef162aa6cd28dc87779b91a07c6f1105bbbdd5deaac69bcdc",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+      "source_sha256": "7b183376dcb2ca6b85a5e310ed16abdffa17e97894dedc352a2458b3912cc388",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+          "sha256": "361bfcd7fbc9bcff53b52a4af2cb4a6013ae2af213d6cd8ba651eb3217f8615e",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-primary-precomputed-v1/README.md",
+          "sha256": "d9716ccda6da4abcd400ff26709fd36dee8c0161943550282ad43210a38706e1",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+      "source_sha256": "04925d2b3c7922524a25290bf8f76ecdc74e9c9b3696d8f7d165c2ec43ad4d12",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+          "sha256": "d89ea5d71c9050fd84bb708c2bed4cfa12869f0031d064a60b04561ed5d7b30d",
+          "code_bodies_exact": true,
+          "table_line_count": 6,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v1/README.md",
+          "sha256": "3373fa67c4f9fde87cc4e7ffe7183703cdefae7bfd11699197bd89c273a9e999",
+          "code_bodies_exact": true,
+          "table_line_count": 6,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+      "source_sha256": "120c71200eb8aa2f912b5c2c52e6b76e9df2285a68ec00e0d95922b38f38b06b",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+          "sha256": "882672c3f7205baf709fbd8622f50fce3ab5572c5e8680ba4904c5a33e7bf162",
+          "code_bodies_exact": true,
+          "table_line_count": 7,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/runs/20260926-upkeep-live-v2/README.md",
+          "sha256": "255be35689b17d4a1e551618f6ccf3a781b9be7008ac491b56c26e890f8fe965",
+          "code_bodies_exact": true,
+          "table_line_count": 7,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/upkeeplive/LIVE-V2.md",
+      "source_sha256": "316ba11a5f1f3ba8bbafddceb0c36b56c3babb84d1bb74db04da85cf8fac451e",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+          "sha256": "f8ca77311d7d56a6937a4106f02fbc2b397cb20859b6c6bb29a62adc9a7b97ae",
+          "code_bodies_exact": true,
+          "table_line_count": 9,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE-V2.md",
+          "sha256": "56f9a0a12171b46648d013dd725a5ceeabaf7909052014022a30032198cb7898",
+          "code_bodies_exact": true,
+          "table_line_count": 9,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/upkeeplive/LIVE.md",
+      "source_sha256": "cce57e78c56d548b9235867d4767dcb789163789a43a591862a29d5d5e28b747",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/upkeeplive/LIVE.md",
+          "sha256": "0915c064121eadf1223da54abe57d10dab29e1b8c9d8f17a43e818fb3c2b985b",
+          "code_bodies_exact": true,
+          "table_line_count": 8,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/upkeeplive/LIVE.md",
+          "sha256": "5104ad4ace9f6deb51e38e9496f87b6e1a0128391de70fa144cf3e8d1115ba42",
+          "code_bodies_exact": true,
+          "table_line_count": 8,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmark/agent/upkeeplive/README.md",
+      "source_sha256": "3f3bac7a3ac9c2f170a9fff027b8669391867ac19f6113afde3618833c2f5617",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmark/agent/upkeeplive/README.md",
+          "sha256": "c8c17b3e893ce6e3d7d993353c0d182aa36ff744226e156ac9cdd2e1f1f9a1c4",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmark/agent/upkeeplive/README.md",
+          "sha256": "5ca45d438f3f940135b64226e3d8662246f13fc1222ffe195f6ad2a3aad22ab3",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmarks/retrieval/README.md",
+      "source_sha256": "29b66bdb636e17c7facb0e4447bfbbc7c9d19471c50503b6164a687be033ec0d",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmarks/retrieval/README.md",
+          "sha256": "7f3a2737c631b82c243bdb67b6fba2dc148e0817311d7d38de5f569df35edffc",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmarks/retrieval/README.md",
+          "sha256": "7f359623a6b26713c0400c8b4403a0ca31ae2e756a76839f65197977aa8b11eb",
+          "code_bodies_exact": true,
+          "table_line_count": 0,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmarks/toolkit/README.md",
+      "source_sha256": "afdc58b3937aae0264d2b9a1d1e5fd513b9040ff85ce1a3ee6d05aa6260d8d1d",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmarks/toolkit/README.md",
+          "sha256": "cafa53a098a26bc44a4d9e2532186b0e2ac6c1d920c1d054e17747f5958ea45a",
+          "code_bodies_exact": true,
+          "table_line_count": 15,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmarks/toolkit/README.md",
+          "sha256": "da44b62d9e1e8c16c979c4e24b4689bb3b59ae9a3b2f0116573e90366e579708",
+          "code_bodies_exact": true,
+          "table_line_count": 15,
+          "table_line_count_matches": true,
+          "stable_anchors": [
+            "section-1",
+            "section-2",
+            "section-3",
+            "section-4"
+          ],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    },
+    {
+      "source": "benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+      "source_sha256": "6b0e7026d99ffb473c0e7884508b5043aaab9724763f24ca8bc6ca8f77ada5a7",
+      "source_unchanged": true,
+      "locales": {
+        "en": {
+          "path": "docs/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+          "sha256": "120f5b33dbdf84cf8544d5d736d3019d7533b37829710aa69c444e3f848b07b7",
+          "code_bodies_exact": true,
+          "table_line_count": 36,
+          "table_line_count_matches": true,
+          "stable_anchors": [],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        },
+        "ru": {
+          "path": "docs/ru/readings/benchmarks/toolkit/results/paired-ed7ddc28-0f15ab4-summary.md",
+          "sha256": "c077ca988103832643d4d0816a0f2b637b3e4b9ea36a2399f89c5050a52cace6",
+          "code_bodies_exact": true,
+          "table_line_count": 36,
+          "table_line_count_matches": true,
+          "stable_anchors": [],
+          "navigation_locale_verified": true,
+          "rendered_heading_ids_verified": true
+        }
+      }
+    }
+  ]
+}

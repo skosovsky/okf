@@ -1,0 +1,57 @@
+{
+  "checkout": "/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/okf",
+  "clone_command": "git clone https://github.com/skosovsky/okf.git",
+  "source_overlay": "All changed tracked and nonignored untracked files copied over fresh clone; no publication claimed",
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "results": [
+    {
+      "name": "quickstart-en",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": false,
+      "script": ".cursor/tasks/evidence/017/quickstart-en.sh",
+      "log": ".cursor/tasks/evidence/017/quickstart-en.log"
+    },
+    {
+      "name": "quickstart-ru",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": false,
+      "script": ".cursor/tasks/evidence/017/quickstart-ru.sh",
+      "log": ".cursor/tasks/evidence/017/quickstart-ru.log"
+    },
+    {
+      "name": "toolkit-en",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": true,
+      "script": ".cursor/tasks/evidence/017/toolkit-en.sh",
+      "log": ".cursor/tasks/evidence/017/toolkit-en.log"
+    },
+    {
+      "name": "toolkit-ru",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": true,
+      "script": ".cursor/tasks/evidence/017/toolkit-ru.sh",
+      "log": ".cursor/tasks/evidence/017/toolkit-ru.log"
+    },
+    {
+      "name": "install-current-snapshot",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": false,
+      "script": ".cursor/tasks/evidence/017/install-current-snapshot.sh",
+      "log": ".cursor/tasks/evidence/017/install-current-snapshot.log"
+    },
+    {
+      "name": "migration-en",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": true,
+      "script": ".cursor/tasks/evidence/017/migration-en.sh",
+      "log": ".cursor/tasks/evidence/017/migration-en.log"
+    },
+    {
+      "name": "migration-ru",
+      "exit_code": 0,
+      "interactive_reviewed_digest_supplied": true,
+      "script": ".cursor/tasks/evidence/017/migration-ru.sh",
+      "log": ".cursor/tasks/evidence/017/migration-ru.log"
+    }
+  ]
+}

@@ -1,15 +1,24 @@
-# Техническое задание: v0.2 semantic mutation operations
+---
+lang: en
+title: "v0.2 semantic mutation operations"
+permalink: /development/v0.2/tasks/task14/
+---
 
-## 1. Цель
+{% include nav.html %}
 
-Добавить idempotent domain operations для стандартных families OKF v0.2 поверх
-lossless engine. Не давать caller'у raw YAML mutation escape hatch.
+# Technical specification: v0.2 semantic mutation operations {#section001}
 
-Зависимости: [`task10.md`](task10.md), [`task11.md`](task11.md), [`task13.md`](task13.md).
+> Historical document from source revision `61e75e9`. This plan records the work proposed at that revision; it is not current implementation guidance. [Original source](https://github.com/skosovsky/okf/blob/61e75e9/docs/development/v0.2/tasks/task14.md).
 
-## 2. Operations
+## 1. Goal {#section002}
 
-Добавить узкие canonical operations:
+Add idempotent domain operations for standard OKF v0.2 families on top of the lossless engine. Do not provide callers with a raw YAML mutation escape hatch.
+
+Dependencies: [`task10.md`]({{ '/development/v0.2/tasks/task10/' | relative_url }}), [`task11.md`]({{ '/development/v0.2/tasks/task11/' | relative_url }}), [`task13.md`]({{ '/development/v0.2/tasks/task13/' | relative_url }}).
+
+## 2. Operations {#section003}
+
+Add narrowly scoped canonical operations:
 
 - `SetGenerated`;
 - `EnsureVerification`;
@@ -19,9 +28,9 @@ lossless engine. Не давать caller'у raw YAML mutation escape hatch.
 - `SetUsageWindow`;
 - `SetLifecycle`;
 - `PutAttestedComputation`;
-- `SetBundleVersion` для root `index.md`.
+- `SetBundleVersion` for root `index.md`.
 
-`PutAttestedComputation` атомарно задаёт согласованный contract:
+`PutAttestedComputation` atomically sets a consistent contract:
 
 - `type: Attested Computation`;
 - runtime;
@@ -30,92 +39,86 @@ lossless engine. Не давать caller'у raw YAML mutation escape hatch.
 - executor resource/receipt;
 - attester resource.
 
-Не публиковать generic `SetYAML`, `yaml.Node` или raw key path.
+Do not expose generic `SetYAML`, `yaml.Node`, or raw key paths.
 
-## 3. Bare/list verified
+## 3. Bare/list verified {#section004}
 
-- Одна verification может сохранять bare mapping.
-- При добавлении второго события mapping атомарно становится sequence.
-- Ensure operation идемпотентна.
-- Removal сохраняет допустимую форму и не теряет unknown nested keys.
+- A single verification may retain a bare mapping.
+- Adding a second event atomically converts the mapping into a sequence.
+- The ensure operation is idempotent.
+- Removal preserves a valid form and retains unknown nested keys.
 
-## 4. Store canonical contract
+## 4. Store canonical contract {#section005}
 
-Каждая operation:
+Each operation:
 
-- имеет отдельный canonical tag;
-- length-prefix serializes все fields;
-- deep-copies caller-owned slices/maps;
-- имеет deterministic digest;
-- не меняет digest старых operations.
+- has its own canonical tag;
+- serializes every field with a length prefix;
+- deep-copies caller-owned slices and maps;
+- has a deterministic digest;
+- preserves the digests of existing operations.
 
-Нужно ADR: additive tags в ChangeSet format v1 либо обоснованный bump. Нельзя
-повышать format version «на всякий случай».
+An ADR is required: additive tags in ChangeSet format v1 or a justified version bump. Do not increase the format version “just in case”.
 
-`store.ChangeSet.Actor` не ограничивать actor convention v0.2: это transaction
-principal. Document actors валидируются внутри соответствующей operation.
+Do not restrict `store.ChangeSet.Actor` to the v0.2 actor convention: it is the transaction principal. Document actors are validated within the corresponding operation.
 
-## 5. Move/path integration
+## 5. Move/path integration {#section006}
 
-Расширить `MoveConcept`, чтобы он losslessly переписывал statically resolvable
-bundle paths в:
+Extend `MoveConcept` to rewrite statically resolvable bundle paths losslessly in:
 
 - `sources[].resource`;
 - `computation`;
 - `executor.resource`;
 - `attester.resource`.
 
-External URL и scope descriptors не менять. Broken/unresolved values сохранять.
+Leave external URLs and scope descriptors unchanged. Preserve broken or unresolved values.
 
-## 6. Validation gating
+## 6. Validation gating {#section007}
 
-Сохранить pipeline:
+Preserve the pipeline:
 
-1. Validate ChangeSet.
-2. Apply operations в clone.
-3. Load final staged bundle.
-4. Run version-aware validator.
-5. На blocking finding вернуть diagnostic-only preview.
+1. Validate the ChangeSet.
+2. Apply operations to a clone.
+3. Load the final staged bundle.
+4. Run the version-aware validator.
+5. Return a diagnostic-only preview on a blocking finding.
 
-Operation preflight проверяет actor/date/source selector/parameter uniqueness.
-Strict warnings не блокируют обычный commit, если не являются explicit
-postcondition операции.
+Operation preflight checks actors, dates, source selectors, and parameter uniqueness. Strict warnings do not block an ordinary commit unless they are explicit postconditions of the operation.
 
-## 7. Файлы
+## 7. Files {#section008}
 
 - `store/change.go`, `types.go`, `result.go`;
 - `mutation/planner.go`;
 - new operation handlers;
-- canonical/digest/deep-copy tests;
+- canonicalization, digest, and deep-copy tests;
 - preview contract tests.
 
-## 8. Tests
+## 8. Tests {#section009}
 
-Все tests — AAA.
+All tests follow AAA.
 
-- Insert/update/remove каждой family.
-- Bare/list verified.
-- Shared/per-source usage window.
-- Typed usage_count/required.
-- Inline/file computation.
-- Path rewriting local/external/scope.
-- Unknown nested extensions preserved.
-- Idempotent second application.
-- Caller slice mutation не влияет на request/digest.
-- Duplicate selectors/keys fail closed.
-- Rejected plan has no stage/write/rename.
-- Existing operations retain exact canonical digest.
+- Insert, update, and remove each family.
+- Bare/list verified forms.
+- Shared and per-source usage windows.
+- Typed usage_count/required values.
+- Inline and file computation.
+- Path rewriting for local paths, external URLs, and scopes.
+- Unknown nested extensions are preserved.
+- A second application is idempotent.
+- Caller slice mutation does not affect the request or digest.
+- Duplicate selectors and keys fail closed.
+- Rejected plans have no staging, writes, or renames.
+- Existing operations retain their exact canonical digests.
 - `go test -race ./mutation ./store`.
 
-## 9. Acceptance criteria
+## 9. Acceptance criteria {#section010}
 
-- Все v0.2 families имеют public desired-state operations.
-- Unknown fields/comments outside touched spans preserved.
-- Attested contract cannot be left half-updated.
-- Existing API/digests remain compatible.
-- CLI/MCP могут строить operations без raw YAML.
+- Every v0.2 family has public desired-state operations.
+- Unknown fields and comments outside touched spans are preserved.
+- The attested contract cannot be left partially updated.
+- Existing APIs and digests remain compatible.
+- CLI/MCP can construct operations without raw YAML.
 
-## 10. Out of scope
+## 10. Out of scope {#section011}
 
-Legacy migration, computation execution, binding, receipts/verdicts, attester
-runtime и arbitrary asset execution.
+Legacy migration, computation execution, binding, receipts/verdicts, attester runtime, and arbitrary asset execution.

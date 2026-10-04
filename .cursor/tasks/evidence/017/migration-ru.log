@@ -1,0 +1,98 @@
++ demo_dir=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI
++ export 'PATH=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI:/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/installed:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/skosovsky/.bun/bin:/Users/skosovsky/Library/Mobile Documents/com~apple~CloudDocs/Загрузки/google-cloud-sdk/bin:/Users/skosovsky/.opencode/bin:/Users/skosovsky/.npm-global/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Library/PostgreSQL/16/bin:/usr/local/mysql/bin:/opt/homebrew/opt/libpq/bin:/opt/homebrew/opt/sqlite/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Applications/Little Snitch.app/Contents/Components:/usr/local/go/bin:/Users/skosovsky/.codex/tmp/arg0/codex-arg0SZxBCC:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/skosovsky/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/Users/skosovsky/.bun/bin:/Users/skosovsky/Library/Mobile Documents/com~apple~CloudDocs/Загрузки/google-cloud-sdk/bin:/Users/skosovsky/.opencode/bin:/Users/skosovsky/.npm-global/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Library/PostgreSQL/16/bin:/usr/local/mysql/bin:/opt/homebrew/opt/libpq/bin:/opt/homebrew/opt/sqlite/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/Users/skosovsky/.cargo/bin:/Users/skosovsky/.local/bin:/Users/skosovsky/go/bin:/Users/skosovsky/.lmstudio/bin:/Users/skosovsky/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/skosovsky/.local/bin:/Users/skosovsky/go/bin:/Users/skosovsky/.local/bin:/Users/skosovsky/.lmstudio/bin'
++ PATH='/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.G0A9tN2sUI:/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/okf017-guide-_t9td54g/installed:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/skosovsky/.bun/bin:/Users/skosovsky/Library/Mobile Documents/com~apple~CloudDocs/Загрузки/google-cloud-sdk/bin:/Users/skosovsky/.opencode/bin:/Users/skosovsky/.npm-global/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Library/PostgreSQL/16/bin:/usr/local/mysql/bin:/opt/homebrew/opt/libpq/bin:/opt/homebrew/opt/sqlite/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Applications/Little Snitch.app/Contents/Components:/usr/local/go/bin:/Users/skosovsky/.codex/tmp/arg0/codex-arg0SZxBCC:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/skosovsky/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/Users/skosovsky/.bun/bin:/Users/skosovsky/Library/Mobile Documents/com~apple~CloudDocs/Загрузки/google-cloud-sdk/bin:/Users/skosovsky/.opencode/bin:/Users/skosovsky/.npm-global/bin:/opt/homebrew/opt/openjdk/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Library/PostgreSQL/16/bin:/usr/local/mysql/bin:/opt/homebrew/opt/libpq/bin:/opt/homebrew/opt/sqlite/bin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/Users/skosovsky/.cargo/bin:/Users/skosovsky/.local/bin:/Users/skosovsky/go/bin:/Users/skosovsky/.lmstudio/bin:/Users/skosovsky/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/skosovsky/.local/bin:/Users/skosovsky/go/bin:/Users/skosovsky/.local/bin:/Users/skosovsky/.lmstudio/bin'
++ okf version
+okf v0.2.6+dirty
+OKF spec default: v0.2
+OKF specs supported: v0.1, v0.2
+OKF spec v0.1 remains supported for legacy reads and migration.
+++ mktemp -d
++ migration_demo=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d
++ cd /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d
++ mkdir old-knowledge
++ cat
++ cat
++ cat
++ okf validate --path old-knowledge --spec 0.1
+Validating bundle: old-knowledge
+OKF version: declared=0.1 effective=0.1 resolution=explicit compatibility=legacy
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ cat
++ okf migrate-prepare old-knowledge --output-dir migration-inputs --format json
+{"source_sha256":"080aed7a9412ff6d818f49fd53c268a42aaf0d7e7351d1cc795ad3ac8a4f3105","required_inputs":{"generated_by":"","timestamp_policy":"preserve","timestamp_conflict":"reject"},"generated_at_template":[],"suggestions":[{"path":"retries.md","legacy_number":1,"legacy_entry":"[Учебные требования](requirements.md)","start_byte":273,"end_byte":332,"title":"Учебные требования","resource":"requirements.md","status":"proposal"}],"unresolved":[{"path":"","start_byte":0,"end_byte":0,"reason":"generated.by requires an explicit producer actor (--actor)"}]}
++ cat migration-inputs/preparation-report.json
+{
+  "source_sha256": "080aed7a9412ff6d818f49fd53c268a42aaf0d7e7351d1cc795ad3ac8a4f3105",
+  "required_inputs": {
+    "generated_by": "",
+    "timestamp_policy": "preserve",
+    "timestamp_conflict": "reject"
+  },
+  "generated_at_template": [],
+  "suggestions": [
+    {
+      "path": "retries.md",
+      "legacy_number": 1,
+      "legacy_entry": "[Учебные требования](requirements.md)",
+      "start_byte": 273,
+      "end_byte": 332,
+      "title": "Учебные требования",
+      "resource": "requirements.md",
+      "status": "proposal"
+    }
+  ],
+  "unresolved": [
+    {
+      "path": "",
+      "start_byte": 0,
+      "end_byte": 0,
+      "reason": "generated.by requires an explicit producer actor (--actor)"
+    }
+  ]
+}
++ printf 'Вставьте source_sha256 из отчёта: '
+Вставьте source_sha256 из отчёта: + read -r source_sha256
++ okf migrate old-knowledge --to 0.2 --actor human:trainer --citation-mappings citation-mappings.json --prepared-source-sha256 080aed7a9412ff6d818f49fd53c268a42aaf0d7e7351d1cc795ad3ac8a4f3105 --format json
+{"from":"0.1","requested_selector":"auto","declaration_present":true,"declaration_valid":true,"declaration_raw":"0.1","declared_version":"0.1","effective_version":"0.1","resolved_source":"0.1","resolution_source":"declared","compatibility":"legacy","transition":"v0.1-to-v0.2","future":false,"source_findings":[],"to":"0.2","actor":"human:trainer","mode":"dry-run","base_revision":"sha256:247d7835274b20465cf15e4f24de713a0c2c2a4525bd66590b216369f34436af","result_revision":"sha256:439cebf17afe4069ed592eb73aaafe1e0cbea4576f3b45287ea0d1f65f8a4125","plan_digest":"sha256:2e04bedba19434e7ced495c967fe2dc6d6053e31b5ba0e7b5fac17baee6c11b1","proof_format_version":2,"resolution_digest":"sha256:9bcd3debbe828ddbf63120b83b96a2b3ab67ad9e2ca09df147d45b50ca952121","outcome":"preview","noop":false,"applied":false,"reads":["index.md","requirements.md","retries.md"],"changes":[{"kind":"write","path":"index.md","digest":"675fd06b276f7e04de008aa1799cdf0646ec44d90e2805a2dbdf892236d24afc"},{"kind":"write","path":"requirements.md","digest":"4bb8568030a116b28e89e63db39059f1fd846b59af7fb5bcde4dafba3f408293"},{"kind":"write","path":"retries.md","digest":"72a8ebb80159fbc15d7a091da6bf37ff24aa1f4df77719da1b9ebc57a0adf360"}],"blockers":[],"manual_actions":[],"cleanup_diagnostics":[]}
++ okf migrate old-knowledge --to 0.2 --actor human:trainer --citation-mappings citation-mappings.json --prepared-source-sha256 080aed7a9412ff6d818f49fd53c268a42aaf0d7e7351d1cc795ad3ac8a4f3105 --write --format json
+{"from":"0.1","requested_selector":"auto","declaration_present":true,"declaration_valid":true,"declaration_raw":"0.1","declared_version":"0.1","effective_version":"0.1","resolved_source":"0.1","resolution_source":"declared","compatibility":"legacy","transition":"v0.1-to-v0.2","future":false,"source_findings":[],"to":"0.2","actor":"human:trainer","mode":"apply","base_revision":"sha256:247d7835274b20465cf15e4f24de713a0c2c2a4525bd66590b216369f34436af","result_revision":"sha256:439cebf17afe4069ed592eb73aaafe1e0cbea4576f3b45287ea0d1f65f8a4125","plan_digest":"sha256:2e04bedba19434e7ced495c967fe2dc6d6053e31b5ba0e7b5fac17baee6c11b1","proof_format_version":2,"resolution_digest":"sha256:9bcd3debbe828ddbf63120b83b96a2b3ab67ad9e2ca09df147d45b50ca952121","outcome":"applied","noop":false,"applied":true,"reads":["index.md","requirements.md","retries.md"],"changes":[{"kind":"write","path":"index.md","digest":"675fd06b276f7e04de008aa1799cdf0646ec44d90e2805a2dbdf892236d24afc"},{"kind":"write","path":"requirements.md","digest":"4bb8568030a116b28e89e63db39059f1fd846b59af7fb5bcde4dafba3f408293"},{"kind":"write","path":"retries.md","digest":"72a8ebb80159fbc15d7a091da6bf37ff24aa1f4df77719da1b9ebc57a0adf360"}],"blockers":[],"manual_actions":[],"receipt":{"format_version":1,"change_set_id":"okf-migrate-v01-v02","idempotency_key":"okf-plan-v1-cca1e01cb19b6668182039e8192d48f3605d2e306457a3c65e4d6c997b748ca8","request_digest":"sha256:bb3b8c4d9dae2b057abd94bfb1c14b77967d06410e2a327a7b803b0057b62dbe","base_revision":"sha256:247d7835274b20465cf15e4f24de713a0c2c2a4525bd66590b216369f34436af","result_revision":"sha256:439cebf17afe4069ed592eb73aaafe1e0cbea4576f3b45287ea0d1f65f8a4125","commit_time":"2026-10-04T16:21:19.030647Z","changed_refs":["requirements","retries"],"changed_files":[{"kind":"write","path":"index.md"},{"kind":"write","path":"requirements.md"},{"kind":"write","path":"retries.md"}]},"cleanup_diagnostics":[]}
++ okf validate --path old-knowledge --spec 0.2 --strict
+Validating bundle: old-knowledge
+OKF version: declared=0.2 effective=0.2 resolution=explicit compatibility=native
+
+
+---
+Scanned 3 files.
+Result: PASS (0 errors, 0 warnings, 0 info)
+Policy failures: 0
++ cat old-knowledge/retries.md
+---
+type: Note
+title: Повторы доставки
+timestamp: 2026-06-01T10:00:00Z
+generated:
+  by: human:trainer
+  at: 2026-06-01T10:00:00Z
+sources:
+  -
+    id: requirements
+    title: Учебные требования
+    resource: requirements.md
+---
+
+# Повторы доставки
+
+Повторять доставку не дольше 24 часов; затем передать задачу оператору.[^requirements]
+
+[^requirements]: [Учебные требования](requirements.md)
+
+
++ okf view old-knowledge --output migrated.html --lang ru
+wrote "migrated.html"
++ printf 'VALIDATION_MIGRATION=%s\n' /var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d
+VALIDATION_MIGRATION=/var/folders/46/5ywmz5gj26n7mnky51gd60g00000gn/T/tmp.zMXMBtYw7d
