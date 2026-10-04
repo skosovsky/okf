@@ -2,9 +2,11 @@ package viewer
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -83,11 +85,32 @@ func TestViewerRouteRegression(t *testing.T) {
 }
 
 func TestRouteFixturePreservesFootnotesAndUnusualIDs(t *testing.T) {
-	// Arrange: persistent browser-acceptance fixture, loaded through the real parser.
-	b, err := bundle.LoadBundle("testdata/regression-016")
+	// Arrange: Windows cannot represent colon filenames. Keep the repository
+	// checkout portable and materialize the original names on supported hosts.
+	if runtime.GOOS == "windows" {
+		t.Skip("colon concept filenames are not representable on Windows")
+	}
+	root := "testdata/regression-016"
+	entries, err := os.ReadDir(root)
 	if err != nil {
 		t.Fatal(err)
 	}
+	files := make(map[string]string)
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".md") && !strings.HasSuffix(name, ".md.fixture") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.HasSuffix(name, ".md.fixture") {
+			name = strings.Replace(strings.TrimSuffix(name, ".fixture"), "-example", ":example", 1)
+		}
+		files[name] = string(data)
+	}
+	b := fixture(t, files)
 	// Act.
 	p, err := Build(context.Background(), b, Options{})
 	// Assert: Goldmark emits anchors used by the route regression, and all IDs survive.
