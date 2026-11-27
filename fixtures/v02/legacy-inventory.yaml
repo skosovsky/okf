@@ -15,6 +15,7 @@ canonical_compatibility_cases:
 adversarial_legacy_cases:
   - adversarial/optional-shapes/malformed.md
 pinned_specification_history:
+  - fixtures/v03/SPEC.md
   - skills/open-knowledge-format/references/spec-v02.md
   - skills/open-knowledge-format/references/spec-v02-instant.md
 migration_guidance_paths:

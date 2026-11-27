@@ -130,3 +130,28 @@ Preview/rejection does not write the bundle or create `.okf`. A real CLI `--writ
 ## Upgrading calendar dates within v0.2 {#temporal-upgrade}
 
 A separate operation upgrades the old v0.2 calendar-date fields to offset-bearing datetimes. Supply a real time and timezone for every observed value; the tool never invents midnight. Follow the [temporal upgrade reference]({{ "/reference/" | relative_url }}#temporal-upgrade), keeping its preview revision and digest. This does not change `okf_version` to a new number.
+
+## Upgrade an OKF 0.2 bundle to 0.3 {#upgrade-to-03}
+
+Run the preview and review the changed files, path choices, and trust tier changes.
+
+```sh
+okf migrate-v03 ./knowledge
+```
+
+The preview lists files whose YAML scalar spelling changes to preserve their values under YAML Core. If a scalar blocks the plan, check the reported file and YAML position before rerunning the preview.
+
+For an unversioned bundle that you know uses 0.2, add `--assume-v02`. If preview reports competing targets, copy the field from the diagnostic into a choices file outside the bundle and rerun with `--path-choices ./choices.json`. For a Markdown link such as `index.md markdown[1]`, use `"concept":"index"` and `"field":"markdown[1]"`. Destinations are numbered in source order, including reference definitions.
+
+```json
+[{"concept":"guides/old","field":"sources[0].resource","target":"references/policy.md"}]
+```
+
+Keep the same arguments for apply. Copy `preview.BaseRevision` and `plan_digest` from the reviewed plan.
+
+```sh
+okf migrate-v03 ./knowledge --write --base-revision "$revision" --plan-digest "$digest"
+okf validate --path ./knowledge --spec 0.3
+```
+
+For MCP, use `preview_v03_migration` and `apply_v03_migration` with the same ID, actor, and choices. An existing 0.1 bundle first goes through the 0.1 → 0.2 steps above.

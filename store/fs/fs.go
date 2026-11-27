@@ -1010,6 +1010,27 @@ func (s *Store) ReplaceConcept(ctx context.Context, req ReplaceConceptRequest, o
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return ReplaceConceptResult{}, err
 	}
+	version, versionErr := base.(*snapshot).concepts.VersionResolutionContext(ctx, "")
+	if versionErr != nil && ctx.Err() != nil {
+		return ReplaceConceptResult{}, ctx.Err()
+	}
+	if version.Effective == bundle.OKFVersion03 {
+		if err := validateV03NewPaths(ctx, base, []string{targetPath}); err != nil {
+			return ReplaceConceptResult{}, err
+		}
+		// Keep the digest bound to the request while encoding new scalars
+		// according to the actual destination contract.
+		document := req.Document
+		document.HasFrontmatter = true
+		serialized, err = document.SerializeForVersion(version)
+		if err != nil {
+			return ReplaceConceptResult{}, invalidChangeSet(err)
+		}
+		if err := validateV03Replacement(ctx, base, targetPath, serialized); err != nil {
+			return ReplaceConceptResult{}, err
+		}
+	}
+
 	o, err := mutation.NewOverlayContext(ctx, base)
 	if err != nil {
 		return ReplaceConceptResult{}, err
@@ -1758,7 +1779,8 @@ func (s *snapshot) OpenConcept(id bundle.ConceptID) (bundle.Concept, error) {
 	// Document contains YAML nodes, so copying the struct is not sufficient.
 	// Reparse the snapshot-owned bytes to keep callers from mutating it.
 	data := s.files[c.Path]
-	doc, err := bundle.ParseDocument(string(data))
+	version, _ := s.concepts.VersionResolution("")
+	doc, err := bundle.ParseDocumentForVersionContext(context.Background(), string(data), version)
 	if err != nil {
 		return bundle.Concept{}, err
 	}
@@ -2123,7 +2145,11 @@ func (s *Store) validateStagedSource(ctx context.Context, source bundle.Source) 
 	if err := ctx.Err(); err != nil {
 		return validator.Report{}, false, nil, err
 	}
-	b, err := bundle.Load(ctx, source)
+	selector := ""
+	if config := s.config.ValidatorConfig; config != nil && config.Spec != "auto" {
+		selector = config.Spec
+	}
+	b, err := bundle.LoadWithSpec(ctx, source, selector)
 	if err != nil {
 		return validator.Report{}, false, nil, err
 	}
@@ -3019,7 +3045,7 @@ func (s *Store) applyWithOwnership(ctx context.Context, j journal, ownership *st
 	if err != nil {
 		return false, err
 	}
-	report, blocked, _, err := s.validateStagedSource(ctx, staged)
+	report, blocked, validatedBundle, err := s.validateStagedSource(ctx, staged)
 	if err != nil {
 		if ctx.Err() != nil && errors.Is(err, ctx.Err()) {
 			return false, err
@@ -3028,6 +3054,11 @@ func (s *Store) applyWithOwnership(ctx context.Context, j journal, ownership *st
 	}
 	if report.ExitCode() != 0 || blocked {
 		return false, metadataCorrupt(errors.New("fs store: journal staged post-state fails validation"))
+	}
+	if path, err := introducedCompanionMarkdown(ctx, validatedBundle, j.Base); err != nil {
+		return false, err
+	} else if path != "" {
+		return false, metadataCorrupt(fmt.Errorf("fs store: journal staged post-state fails validation: new concept %q requires a type", path))
 	}
 	if j.Receipt.ResultRevision.Valid() {
 		actual, err := newSnapshotWithAlgorithm(ctx, next, s.config.HashAlgorithm)
@@ -3446,6 +3477,21 @@ func (s *Store) prepareJournalContext(
 			return journal{}, nil, err
 		}
 		j.Base = append(j.Base, journalBaseFile{Path: p, Size: int64(len(data)), Digest: digest})
+	}
+	validatedBundle := next.concepts
+	if config := s.config.ValidatorConfig; config != nil && config.Spec == bundle.OKFVersion03 {
+		version, _ := validatedBundle.VersionResolutionContext(ctx, "")
+		if version.Effective != bundle.OKFVersion03 {
+			validatedBundle, err = bundle.LoadWithSpec(ctx, next, bundle.OKFVersion03)
+			if err != nil {
+				return journal{}, nil, err
+			}
+		}
+	}
+	if path, err := introducedCompanionMarkdown(ctx, validatedBundle, j.Base); err != nil {
+		return journal{}, nil, err
+	} else if path != "" {
+		return journal{}, nil, invalidV03Replacement(path, "concept_type_required", "New Markdown written by the store requires a non-empty type.")
 	}
 	j.BaseBinding, err = journalBaseBindingContext(ctx, receipt, j.Base)
 	if err != nil {

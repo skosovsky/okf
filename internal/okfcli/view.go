@@ -47,11 +47,12 @@ func cmdView(args []string, stdout io.Writer) (int, error) {
 	if language != "en" && language != "ru" {
 		return 0, fmt.Errorf("invalid --lang %q (want en or ru)", language)
 	}
-	b, err := bundle.LoadBundle(path)
+	b, err := bundle.LoadBundleWithSpec(path, selectorAssertion(spec))
 	if err != nil {
 		return 0, err
 	}
-	if _, err := resolveBundleVersion(b, spec); err != nil {
+	resolution, err := resolveBundleVersion(b, spec)
+	if err != nil {
 		return 0, err
 	}
 	profile := bundle.TemporalProfileDate
@@ -61,6 +62,7 @@ func cmdView(args []string, stdout io.Writer) (int, error) {
 	if _, err := bundle.NormalizeTemporalProfile(profile); err != nil {
 		return 0, err
 	}
+	profile = bundle.TemporalProfileForVersion(resolution, profile)
 	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), profile)
 	if err != nil {
 		return 0, err

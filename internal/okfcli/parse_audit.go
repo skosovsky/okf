@@ -57,11 +57,13 @@ type generationAuditDTO struct {
 }
 
 type verificationAuditDTO struct {
-	RawBy string           `json:"raw_by,omitempty"`
-	RawAt string           `json:"raw_at,omitempty"`
-	Valid bool             `json:"valid"`
-	At    temporalAuditDTO `json:"at"`
-	Value *verificationDTO `json:"value,omitempty"`
+	Current *bool            `json:"current,omitempty"`
+	Reason  string           `json:"reason,omitempty"`
+	RawBy   string           `json:"raw_by,omitempty"`
+	RawAt   string           `json:"raw_at,omitempty"`
+	Valid   bool             `json:"valid"`
+	At      temporalAuditDTO `json:"at"`
+	Value   *verificationDTO `json:"value,omitempty"`
 }
 
 type verificationsAuditDTO struct {
@@ -176,16 +178,19 @@ type sourceSpanDTO struct {
 }
 
 type computationAuditDTO struct {
-	TypeMatches     bool                        `json:"type_matches"`
-	ContractPresent bool                        `json:"contract_present"`
-	Valid           bool                        `json:"valid"`
-	Mode            string                      `json:"mode"`
-	Contract        computationContractAuditDTO `json:"contract"`
-	Inline          string                      `json:"inline,omitempty"`
-	FenceSpans      []sourceSpanDTO             `json:"fence_spans"`
-	Unclosed        bool                        `json:"unclosed"`
-	Multiple        bool                        `json:"multiple"`
-	Conflict        bool                        `json:"conflict"`
+	TypeMatches       bool                        `json:"type_matches"`
+	ContractPresent   bool                        `json:"contract_present"`
+	Valid             bool                        `json:"valid"`
+	Mode              string                      `json:"mode"`
+	Contract          computationContractAuditDTO `json:"contract"`
+	Inline            string                      `json:"inline,omitempty"`
+	FenceSpans        []sourceSpanDTO             `json:"fence_spans"`
+	Unclosed          bool                        `json:"unclosed"`
+	Multiple          bool                        `json:"multiple"`
+	Conflict          bool                        `json:"conflict"`
+	Attestable        *bool                       `json:"attestable,omitempty"`
+	UnavailableReason string                      `json:"unavailable_reason,omitempty"`
+	ResolvedPath      string                      `json:"resolved_path,omitempty"`
 }
 
 type attributionAuditDTO struct {
@@ -413,6 +418,7 @@ func projectLifecycleAudit(
 func projectComputationAudit(
 	ctx context.Context,
 	document bundle.Document,
+	versions ...bundle.VersionResolution,
 ) (computationAuditDTO, error) {
 	parametersFamily, err := projectKnownSemanticFamily(
 		ctx,
@@ -434,8 +440,19 @@ func projectComputationAudit(
 	if err != nil {
 		return computationAuditDTO{}, err
 	}
-	state := document.AttestedComputationState()
-	contractState := document.Frontmatter.ComputationContractState()
+	var version bundle.VersionResolution
+	if len(versions) > 0 {
+		version = versions[0]
+	}
+	state, err := document.AttestedComputationStateForVersionContext(ctx, version)
+	if err != nil {
+		return computationAuditDTO{}, err
+	}
+	contractState := state.ContractState
+	if !state.TypeMatches {
+		// The legacy audit exposes ungated raw field observations.
+		contractState = document.Frontmatter.ComputationContractState()
+	}
 	out := computationAuditDTO{
 		TypeMatches:     state.TypeMatches,
 		ContractPresent: state.ContractPresent,
@@ -447,6 +464,10 @@ func projectComputationAudit(
 		Unclosed:        state.Unclosed,
 		Multiple:        state.Multiple,
 		Conflict:        state.Conflict,
+	}
+	if version.Effective == bundle.OKFVersion03 && state.TypeMatches {
+		out.Attestable = &state.Attestable
+		out.UnavailableReason = state.UnavailableReason
 	}
 	out.Contract.ParametersFamily = parametersFamily
 	out.Contract.ExecutorFamily = executorFamily
@@ -729,7 +750,7 @@ func writeVerificationsAuditText(stdout io.Writer, audit verificationsAuditDTO) 
 	)
 	for index, entry := range audit.Entries {
 		fmt.Fprintf(stdout,
-			"  [%d] valid=%t raw_by=%s raw_at=%s at_state=%s typed_by=%s typed_at=%s\n",
+			"  [%d] valid=%t raw_by=%s raw_at=%s at_state=%s typed_by=%s typed_at=%s",
 			index,
 			entry.Valid,
 			renderTextString(entry.RawBy),
@@ -737,6 +758,10 @@ func writeVerificationsAuditText(stdout io.Writer, audit verificationsAuditDTO) 
 			renderTextString(entry.At.State),
 			renderTextString(valueOrZero(entry.Value, func(value verificationDTO) string { return value.By })),
 			renderTextString(valueOrZero(entry.Value, func(value verificationDTO) string { return value.At })))
+		if entry.Current != nil {
+			fmt.Fprintf(stdout, " current=%t reason=%s", *entry.Current, renderTextString(entry.Reason))
+		}
+		fmt.Fprintln(stdout)
 	}
 }
 
@@ -851,6 +876,12 @@ func writeComputationAuditText(stdout io.Writer, audit computationAuditDTO) {
 		audit.Conflict,
 		renderTextString(audit.Inline),
 		len(audit.FenceSpans))
+	if audit.Attestable != nil {
+		fmt.Fprintf(stdout, "  definition attestable=%t reason=%s\n", *audit.Attestable, renderTextString(audit.UnavailableReason))
+	}
+	if audit.ResolvedPath != "" {
+		fmt.Fprintf(stdout, "  resolved computation file: %s\n", renderTextString(audit.ResolvedPath))
+	}
 	for index, span := range audit.FenceSpans {
 		fmt.Fprintf(stdout, "  fence_span[%d]: start=%d end=%d\n", index, span.Start, span.End)
 	}

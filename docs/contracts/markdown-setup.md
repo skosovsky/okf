@@ -10,7 +10,7 @@ permalink: /contracts/markdown-setup/
 
 # Managed Markdown setup contract (v1) {#doc-section-001}
 
-`okf setup --source DIR --target NEW_DIR [--files a.md,b/c.md] [--type Guide] [--json]`
+`okf setup --source DIR --target NEW_DIR [--files a.md,b/c.md] [--type Guide] [--spec 0.2|0.3] [--json]`
 previews a managed copy. `--apply --plan-digest SHA256` publishes the exact
 preview. No source writes and no existing target replacement are permitted.
 `init` is unchanged. Source and target must be disjoint directories; target's
@@ -31,8 +31,8 @@ quoted YAML scalar without changing existing YAML bytes, body or unknown metadat
 An existing invalid `type` is a blocker rather than overwritten. Unterminated,
 malformed and duplicate YAML keys are blockers. No metadata other than type is
 inferred; provenance, verification, freshness and status are never invented.
-Indexes are generated with the existing bundle index renderer and root declaration
-`okf_version: "0.2"`. The shared parser/validator checks the complete staged bundle.
+The root index declares the selected OKF version. The default is 0.3. To create a 0.2 bundle, pass `--spec 0.2`
+in both preview and apply. The shared validator checks the staged bundle.
 
 JSON is the same versioned object for preview/apply: source and target are absolute
 paths; files are sorted paths with source/output SHA256; diagnostics are sorted

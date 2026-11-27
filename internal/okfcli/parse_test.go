@@ -334,8 +334,8 @@ func TestParseGeneratedFieldPresenceControlsTimestampFallback(t *testing.T) {
 			var textStdout, textStderr bytes.Buffer
 
 			// Act.
-			jsonCode := Run([]string{"parse", path, "--json"}, &jsonStdout, &jsonStderr)
-			textCode := Run([]string{"parse", path}, &textStdout, &textStderr)
+			jsonCode := Run([]string{"parse", path, "--spec", "0.2", "--json"}, &jsonStdout, &jsonStderr)
+			textCode := Run([]string{"parse", path, "--spec", "0.2"}, &textStdout, &textStderr)
 			var response parseResponse
 			decodeErr := json.Unmarshal(jsonStdout.Bytes(), &response)
 			wantGeneratedJSON, marshalErr := json.Marshal(test.wantGenerated)

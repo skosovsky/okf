@@ -263,7 +263,7 @@ func TestReferenceCataloguesMatchRegisteredToolsAndCLICommands(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools) != 14 {
+	if len(tools) != 16 {
 		t.Fatalf("registered MCP inventory changed: %d; update both catalogues", len(tools))
 	}
 	references := []string{"docs/reference.md", "docs/ru/reference.md"}

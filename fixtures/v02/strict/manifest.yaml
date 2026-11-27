@@ -1,6 +1,7 @@
 description: "Malformed optional v0.2 families are strict warnings, not base conformance errors"
 run:
   path: "."
+  spec: "0.2"
   strict: true
   check_links: false
   check_orphans: false

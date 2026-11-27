@@ -5,6 +5,30 @@ import (
 	"testing"
 )
 
+func TestParseRootIndexAutomaticV03WithDirective(t *testing.T) {
+	cases := []struct {
+		declaration string
+		declared    string
+		source      VersionSource
+	}{
+		{"", "", VersionSourceDefault},
+		{"okf_version: []\n", "", VersionSourceDefault},
+		{"okf_version: '9.9'\n", "9.9", VersionSourceFutureBestEffort},
+	}
+	for _, test := range cases {
+		index := "---\n%YAML 1.2\n--- # mapping\nlicense: MIT\n" + test.declaration + "---\n# Notes\n"
+		document, version, err := ParseBundleIndexContext(t.Context(), index, "")
+		if err != nil || !document.HasFrontmatter || version.Declared != test.declared ||
+			version.Effective != OKFVersion03 || version.Source != test.source {
+			t.Fatalf("declaration %q: frontmatter=%t, version=%+v, err=%v", test.declaration, document.HasFrontmatter, version, err)
+		}
+	}
+	index := "---\nokf_version: []\n---\n# Notes\n"
+	if _, _, err := ParseBundleIndexContext(t.Context(), index, OKFVersion); !errors.Is(err, ErrInvalidVersionDeclaration) {
+		t.Fatalf("explicit 0.2 accepted empty declaration: %v", err)
+	}
+}
+
 func TestResolveVersionPolicy(t *testing.T) {
 	t.Parallel()
 
@@ -15,8 +39,8 @@ func TestResolveVersionPolicy(t *testing.T) {
 		want     VersionResolution
 	}{
 		{
-			name: "default v0.2",
-			want: VersionResolution{Effective: OKFVersion, Source: VersionSourceDefault, Compatibility: VersionCompatibilityNative},
+			name: "default v0.3",
+			want: VersionResolution{Effective: OKFVersion03, Source: VersionSourceDefault, Compatibility: VersionCompatibilityNative},
 		},
 		{
 			name:     "declared legacy",
@@ -29,14 +53,24 @@ func TestResolveVersionPolicy(t *testing.T) {
 			want:     VersionResolution{Declared: OKFVersion, Effective: OKFVersion, Source: VersionSourceDeclared, Compatibility: VersionCompatibilityNative},
 		},
 		{
+			name:     "declared 0.3",
+			declared: OKFVersion03,
+			want:     VersionResolution{Declared: OKFVersion03, Effective: OKFVersion03, Source: VersionSourceDeclared, Compatibility: VersionCompatibilityNative},
+		},
+		{
+			name:     "explicit 0.3 without a declaration",
+			selector: OKFVersion03,
+			want:     VersionResolution{Effective: OKFVersion03, Source: VersionSourceExplicit, Compatibility: VersionCompatibilityNative},
+		},
+		{
 			name:     "future best effort",
 			declared: "9.0",
-			want:     VersionResolution{Declared: "9.0", Effective: OKFVersion, Source: VersionSourceFutureBestEffort, Compatibility: VersionCompatibilityBestEffort},
+			want:     VersionResolution{Declared: "9.0", Effective: OKFVersion03, Source: VersionSourceFutureBestEffort, Compatibility: VersionCompatibilityBestEffort},
 		},
 		{
 			name:     "lower unknown best effort",
 			declared: "0.0",
-			want:     VersionResolution{Declared: "0.0", Effective: OKFVersion, Source: VersionSourceFutureBestEffort, Compatibility: VersionCompatibilityBestEffort},
+			want:     VersionResolution{Declared: "0.0", Effective: OKFVersion03, Source: VersionSourceFutureBestEffort, Compatibility: VersionCompatibilityBestEffort},
 		},
 		{
 			name:     "explicit legacy",
@@ -96,7 +130,6 @@ func TestVersionResolutionUnsupportedCanonicalMatrix(t *testing.T) {
 
 	declarations := []string{
 		"0.0",
-		"0.3",
 		"0.10",
 		"1.0",
 		"999999999999999999999999999999999999.123456789012345678901234567890",
@@ -115,7 +148,7 @@ func TestVersionResolutionUnsupportedCanonicalMatrix(t *testing.T) {
 			}
 			want := VersionResolution{
 				Declared:      declaration,
-				Effective:     OKFVersion,
+				Effective:     OKFVersion03,
 				Source:        VersionSourceFutureBestEffort,
 				Compatibility: VersionCompatibilityBestEffort,
 			}

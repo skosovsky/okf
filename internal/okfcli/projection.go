@@ -50,6 +50,13 @@ func parseTemporalReference(raw string, profile bundle.TemporalProfile) (*time.T
 	if raw == "" {
 		return nil, nil
 	}
+	if profile == bundle.TemporalProfileV03 {
+		at, err := bundle.ParseTimestampV03(raw)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --as-of %q: %w", raw, err)
+		}
+		return &at, nil
+	}
 	format := time.DateOnly
 	if profile == bundle.TemporalProfileInstant {
 		format = time.RFC3339
@@ -72,7 +79,7 @@ func parseTemporalProfile(raw string) (bundle.TemporalProfile, error) {
 }
 
 func formatTemporalReference(at time.Time, profile bundle.TemporalProfile) string {
-	if profile == bundle.TemporalProfileInstant {
+	if profile != bundle.TemporalProfileDate {
 		return at.Format(time.RFC3339Nano)
 	}
 	return at.Format(time.DateOnly)

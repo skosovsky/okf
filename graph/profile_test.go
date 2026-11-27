@@ -625,7 +625,7 @@ func TestToolkitV02ProjectsTypedComputationModes(t *testing.T) {
 			var out strings.Builder
 
 			// Act.
-			err := RenderJSONLDWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02})
+			err := RenderJSONLDWithOptions(&out, b, Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02})
 
 			// Assert.
 			if err != nil {
@@ -676,7 +676,7 @@ func TestToolkitV02DoesNotInventAssetsForAmbiguousPathValues(t *testing.T) {
 				"sources: [{id: adversarial, resource: "+quotedValue+"}]\n"+
 				"---\nBody.\n")
 			b := loadGraphBundle(t, root)
-			options := Options{Profile: ProjectionProfileToolkitV02}
+			options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02}
 			var jsonld, ntriples strings.Builder
 
 			// Act.
@@ -798,7 +798,7 @@ func TestToolkitV02ProjectsCapturedLiteralPercentPathsAcrossAllFields(t *testing
 	var out strings.Builder
 
 	// Act.
-	err := RenderJSONLDWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02})
+	err := RenderJSONLDWithOptions(&out, b, Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02})
 
 	// Assert.
 	if err != nil {
@@ -949,7 +949,7 @@ func TestToolkitV02RejectsPartialMalformedComputationContractObservations(t *tes
 			writeGraphFile(t, root, "a.md", "---\ntype: Attested Computation\n"+
 				tt.frontmatter+"---\n"+body)
 			b := loadGraphBundle(t, root)
-			options := Options{Profile: ProjectionProfileToolkitV02}
+			options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02}
 			var jsonld, ntriples strings.Builder
 
 			// Act.
@@ -1082,7 +1082,7 @@ func TestToolkitV02UsesBundleOwnedComputationInspectionTaxonomy(t *testing.T) {
 			writeGraphFile(t, root, "a.md", "---\ntype: Attested Computation\n"+
 				tt.frontmatter+"---\n"+tt.body)
 			b := loadGraphBundle(t, root)
-			options := Options{Profile: ProjectionProfileToolkitV02}
+			options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02}
 			var jsonld, ntriples strings.Builder
 
 			// Act.
@@ -1127,7 +1127,7 @@ func TestToolkitV02MarksOnlyActualLegacyGenerationFallback(t *testing.T) {
 
 	// Act.
 	var out strings.Builder
-	err := RenderNTriplesWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02})
+	err := RenderNTriplesWithOptions(&out, b, Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02})
 
 	// Assert.
 	if err != nil {
@@ -1152,7 +1152,7 @@ func TestToolkitV02ProjectsLegacyCitationsOnlyWhenSourcesAbsent(t *testing.T) {
 	}
 	legacy := load(t, "")
 	mixed := load(t, "sources: [{id: current, resource: https://current.example/source}]\n")
-	options := Options{Profile: ProjectionProfileToolkitV02}
+	options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02}
 
 	// Act.
 	var legacyOut, mixedOut strings.Builder
@@ -1182,27 +1182,32 @@ func TestToolkitV02LegacyFallbackDependsOnlyOnSemanticFamilyAbsence(t *testing.T
 		declaration string
 		selector    string
 		wantSource  bundle.VersionSource
+		legacy      bool
 	}{
 		{name: "default", wantSource: bundle.VersionSourceDefault},
 		{
 			name:        "declared v0.1",
 			declaration: "okf_version: \"0.1\"\n",
 			wantSource:  bundle.VersionSourceDeclared,
+			legacy:      true,
 		},
 		{
 			name:        "declared v0.2",
 			declaration: "okf_version: \"0.2\"\n",
 			wantSource:  bundle.VersionSourceDeclared,
+			legacy:      true,
 		},
 		{
 			name:       "explicit v0.1",
 			selector:   "0.1",
 			wantSource: bundle.VersionSourceExplicit,
+			legacy:     true,
 		},
 		{
 			name:       "explicit v0.2",
 			selector:   "0.2",
 			wantSource: bundle.VersionSourceExplicit,
+			legacy:     true,
 		},
 		{
 			name:        "future",
@@ -1344,9 +1349,13 @@ func TestToolkitV02LegacyFallbackDependsOnlyOnSemanticFamilyAbsence(t *testing.T
 								legacySources = append(legacySources, node)
 							}
 						}
-						if generated.wantGeneration != (generation != nil) {
+						wantGeneration := generated.wantGeneration && (version.legacy || !generated.wantLegacyFallback)
+						if !version.legacy && generated.wantActor == "" {
+							wantGeneration = false
+						}
+						if wantGeneration != (generation != nil) {
 							t.Fatalf("generation = %#v, want present=%v",
-								generation, generated.wantGeneration)
+								generation, wantGeneration)
 						}
 						if generation != nil {
 							if generated.wantAt != "" &&
@@ -1377,7 +1386,7 @@ func TestToolkitV02LegacyFallbackDependsOnlyOnSemanticFamilyAbsence(t *testing.T
 									generation["legacyFallback"], generated.wantLegacyFallback)
 							}
 						}
-						wantLegacyCitation := sources.citationsAllowed && citations.hasEntry
+						wantLegacyCitation := version.legacy && sources.citationsAllowed && citations.hasEntry
 						if (len(legacySources) == 1) != wantLegacyCitation {
 							t.Fatalf("legacy citation nodes = %#v, want present=%v",
 								legacySources, wantLegacyCitation)
@@ -1389,7 +1398,7 @@ func TestToolkitV02LegacyFallbackDependsOnlyOnSemanticFamilyAbsence(t *testing.T
 							legacySources[0]["resource"] != "https://legacy.example/source" {
 							t.Fatalf("legacy citation = %#v, want actual Citations resource", legacySources[0])
 						}
-						if !generated.wantLegacyFallback &&
+						if !(version.legacy && generated.wantLegacyFallback) &&
 							strings.Contains(ntriples.String(), `"2026-05-28T22:53:05Z"`) {
 							t.Fatalf("legacy timestamp leaked into N-Triples:\n%s", ntriples.String())
 						}
@@ -1599,7 +1608,6 @@ func TestAllGraphRenderersEnforceBundleVersionResolution(t *testing.T) {
 		{name: "scalar", value: "17"},
 		{name: "list", value: "[\"0.2\"]"},
 		{name: "map", value: "{value: \"0.2\"}"},
-		{name: "blank", value: `""`},
 	}
 	for _, declaration := range malformed {
 		for _, renderer := range renderers {
@@ -1623,6 +1631,8 @@ func TestAllGraphRenderersEnforceBundleVersionResolution(t *testing.T) {
 		index string
 	}{
 		{name: "absent index"},
+		{name: "empty declaration", index: "---\nokf_version: \"\"\n---\n# Index\n"},
+		{name: "v0.3", index: "---\nokf_version: \"0.3\"\n---\n# Index\n"},
 		{name: "default", index: "---\ntitle: Root\n---\n# Index\n"},
 		{name: "v0.1", index: "---\nokf_version: \"0.1\"\n---\n# Index\n"},
 		{name: "v0.2", index: "---\nokf_version: \"0.2\"\n---\n# Index\n"},
@@ -1785,7 +1795,7 @@ Body.
 `)
 		b := loadGraphBundle(t, root)
 		asOf := time.Date(2026, 6, 30, 0, 0, 0, 0, time.UTC)
-		options := Options{Profile: ProjectionProfileToolkitV02, AsOf: &asOf}
+		options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02, AsOf: &asOf}
 		var jsonld, ntriples strings.Builder
 
 		// Act.
@@ -1873,7 +1883,7 @@ Body.
 		var out strings.Builder
 
 		// Act.
-		err := RenderJSONLDWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02})
+		err := RenderJSONLDWithOptions(&out, b, Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02})
 
 		// Assert.
 		if !errors.Is(err, bundle.ErrInvalidVersionDeclaration) {
@@ -1902,7 +1912,7 @@ func TestToolkitV02KeepsMalformedTypedSignalsOutOfProjection(t *testing.T) {
 
 	// Act.
 	var out strings.Builder
-	err := RenderJSONLDWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02})
+	err := RenderJSONLDWithOptions(&out, b, Options{Profile: ProjectionProfileToolkitV02, VersionSelector: bundle.OKFVersion})
 
 	// Assert.
 	if err != nil {
@@ -1964,7 +1974,7 @@ func TestToolkitV02ProjectsStalenessOnlyFromValidStaleAfter(t *testing.T) {
 			writeGraphFile(t, root, "a.md", frontmatter+"---\nBody.\n")
 			b := loadGraphBundle(t, root)
 			asOf := time.Date(2026, 6, 30, 16, 0, 0, 0, time.FixedZone("test", 7*60*60))
-			options := Options{Profile: ProjectionProfileToolkitV02, AsOf: &asOf}
+			options := Options{VersionSelector: bundle.OKFVersion, Profile: ProjectionProfileToolkitV02, AsOf: &asOf}
 			var jsonld, ntriples strings.Builder
 
 			// Act.
@@ -2012,7 +2022,7 @@ func TestToolkitV02ProjectsStalenessOnlyFromValidStaleAfter(t *testing.T) {
 	}
 }
 
-func TestToolkitV02FutureVersionIsBestEffort(t *testing.T) {
+func TestGraphFutureVersionIsBestEffort(t *testing.T) {
 	t.Parallel()
 
 	// Arrange.
@@ -2031,7 +2041,7 @@ func TestToolkitV02FutureVersionIsBestEffort(t *testing.T) {
 	}
 	for _, want := range []string{
 		`"declaredOKFVersion": "9.7"`,
-		`"effectiveOKFVersion": "0.2"`,
+		`"effectiveOKFVersion": "0.3"`,
 		`"versionSource": "future-best-effort"`,
 		`"compatibilityMode": "best-effort"`,
 	} {
@@ -2256,6 +2266,7 @@ func TestTopologyAnnotationProjectsStalenessOnlyFromValidStaleAfter(t *testing.T
 				b := loadGraphBundle(t, root)
 				options := Options{
 					Profile:          ProjectionProfileToolkitV02,
+					VersionSelector:  bundle.OKFVersion,
 					AsOf:             &asOf,
 					AnnotateTopology: true,
 				}

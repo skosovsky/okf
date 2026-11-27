@@ -142,7 +142,7 @@ func TestSourceResourceResolutionPreservesScopeAndAmbiguity(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "docs/a.md", "---\ntype: Note\n---\nbody\n")
 	writeFile(t, root, "docs/existing source.v1", "captured")
-	loaded, err := LoadBundle(root)
+	loaded, err := LoadBundleWithSpec(root, OKFVersion)
 	if err != nil {
 		t.Fatal(err)
 	}

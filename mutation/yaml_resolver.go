@@ -175,7 +175,7 @@ func (r *yamlResolver) typedScalar(n *yaml.Node) (yamlScalarSpan, error) {
 
 func yamlSupportedScalarTag(tag string) bool {
 	switch tag {
-	case "!!str", "!!bool", "!!int", "!!timestamp":
+	case "!!str", "!!bool", "!!int", "!!timestamp", "!!null":
 		return true
 	default:
 		return false
@@ -551,8 +551,30 @@ func yamlTokenDelimiter(c byte) bool {
 }
 
 func (r *yamlResolver) scalarEnd(n *yaml.Node, at int) (int, yaml.Style, error) {
+	// yaml.v3 locates an omitted block mapping value just after its colon.
+	if n.Tag == "!!null" && n.Value == "" && at > 0 && r.source[at-1] == ':' &&
+		(at == len(r.source) || yamlSeparationByte(r.source[at])) {
+		return at, 0, nil
+	}
 	if at >= len(r.source) {
 		return 0, 0, r.presentationError("scalar_outside_source", ErrUnsupportedPresentation, SourceSpan{Start: at, End: at})
+	}
+	// A core integer's decoded spelling is exactly its plain token. A flow
+	// delimiter can terminate it without belonging to the value's span.
+	if usesCoreYAMLMutation(r.ctx) && n.Tag == "!!int" && n.Style == 0 {
+		end := at + len(n.Value)
+		if bytes.HasPrefix(r.source[at:], []byte(n.Value)) {
+			next := end
+			for next < len(r.source) && yamlSeparationByte(r.source[next]) {
+				if next&4095 == 0 && r.ctx.Err() != nil {
+					return 0, 0, r.ctx.Err()
+				}
+				next++
+			}
+			if next < len(r.source) && (r.source[next] == ',' || r.source[next] == '}' || r.source[next] == ']') {
+				return end, 0, nil
+			}
+		}
 	}
 	switch r.source[at] {
 	case '\'':
@@ -680,7 +702,7 @@ func (r *yamlResolver) matchesNode(span SourceSpan, n *yaml.Node, style yaml.Sty
 	return r.ctx.Err() == nil && root.Kind == yaml.MappingNode && len(root.Content) == 2 && root.Content[1].Kind == yaml.ScalarNode && root.Content[1].Tag == n.Tag && root.Content[1].Value == n.Value && root.Content[1].Style == style, r.ctx.Err()
 }
 
-func yamlScalarTokenContext(ctx context.Context, value string, preferred yaml.Style) (string, error) {
+func yamlScalarTokenContext(ctx context.Context, value string, preferred yaml.Style, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -690,7 +712,7 @@ func yamlScalarTokenContext(ctx context.Context, value string, preferred yaml.St
 	if preferred&yaml.DoubleQuotedStyle != 0 {
 		return strconv.Quote(value), nil
 	}
-	safe, err := yamlPlainSafeContext(ctx, value)
+	safe, err := yamlPlainSafeContext(ctx, value, coreV03)
 	if err != nil {
 		return "", err
 	}
@@ -700,7 +722,7 @@ func yamlScalarTokenContext(ctx context.Context, value string, preferred yaml.St
 	return strconv.Quote(value), nil
 }
 
-func yamlPlainSafeContext(ctx context.Context, value string) (bool, error) {
+func yamlPlainSafeContext(ctx context.Context, value string, coreV03 bool) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
@@ -708,7 +730,7 @@ func yamlPlainSafeContext(ctx context.Context, value string) (bool, error) {
 		return false, nil
 	}
 	probe, ok := boundedSyntheticYAMLScalarProbe("v: ", value, "\n")
-	if !ok {
+	if !ok || coreV03 && bundle.YAMLCoreStringNeedsQuotes(value) {
 		return false, nil
 	}
 	doc, err := decodeGuardedYAMLNodeContext(ctx, probe)

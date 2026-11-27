@@ -10,6 +10,8 @@ document_id: skills-open-knowledge-format-references-operational-workflows
 
 This is a full reading edition of the runtime instruction. Install the original skill package, not this page. Canonical source: [skills/open-knowledge-format/references/operational-workflows.md](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/skills/open-knowledge-format/references/operational-workflows.md). Verified source revision: `61e75e9aa9a8719dfb480bf1f5226553b3a21d70`.
 
+Historical edition for OKF 0.2. Use the [toolkit guide]({{ '/toolkit/' | relative_url }}) for current validation and viewer commands.
+
 # OKF operational recipes
 {: #section-1 }
 

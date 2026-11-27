@@ -130,6 +130,9 @@ func (f Frontmatter) SemanticFamilyObservationContext(
 			field,
 		)
 	}
+	if f.coreV03 && (field == "sources" || field == "parameters") {
+		accepted = []YAMLValueShape{YAMLShapeSequence, YAMLShapeMapping}
+	}
 	if err := ctx.Err(); err != nil {
 		return SemanticFamilyObservation{}, err
 	}
@@ -164,10 +167,15 @@ func (d Document) AttributionObservationContext(ctx context.Context) (Attributio
 		return AttributionFamilyObservation{}, err
 	}
 	out := AttributionFamilyObservation{Family: family.observation}
-	if family.observation.Ambiguous || family.resolved == nil ||
-		family.resolved.Kind != yaml.SequenceNode {
+	if family.observation.Ambiguous || family.resolved == nil {
 		return out, nil
 	}
+	if d.Frontmatter.coreV03 && family.resolved.Kind == yaml.MappingNode {
+		out.Family.ShapeValid = true
+	} else if family.resolved.Kind != yaml.SequenceNode {
+		return out, nil
+	}
+	items := yamlSourceItems(family.resolved, d.Frontmatter.coreV03)
 
 	joined, err := d.AttributionsContext(ctx)
 	if err != nil {
@@ -181,9 +189,9 @@ func (d Document) AttributionObservationContext(ctx context.Context) (Attributio
 		byNormalizedID[value.NormalizedID] = cloneAttribution(value)
 	}
 
-	out.Entries = make([]AttributionEntryObservation, 0, len(family.resolved.Content))
+	out.Entries = make([]AttributionEntryObservation, 0, len(items))
 	resolver := newYAMLSemanticResolver(ctx)
-	for index, rawItem := range family.resolved.Content {
+	for index, rawItem := range items {
 		if err := ctx.Err(); err != nil {
 			return AttributionFamilyObservation{}, err
 		}
@@ -191,7 +199,7 @@ func (d Document) AttributionObservationContext(ctx context.Context) (Attributio
 		if err != nil {
 			return AttributionFamilyObservation{}, err
 		}
-		source, sourceErr := provenanceSourceStateContext(ctx, resolver, resolvedItem)
+		source, sourceErr := provenanceSourceStateContext(ctx, resolver, resolvedItem, d.Frontmatter.coreV03)
 		if sourceErr != nil {
 			return AttributionFamilyObservation{}, sourceErr
 		}
@@ -665,7 +673,7 @@ func provenanceSourceStateFromNodeContext(ctx context.Context, node *yaml.Node) 
 	if node == nil || node.Kind != yaml.MappingNode {
 		return ProvenanceSourceState{Present: true}, nil
 	}
-	return provenanceSourceStateContext(ctx, newYAMLSemanticResolver(ctx), node)
+	return provenanceSourceStateContext(ctx, newYAMLSemanticResolver(ctx), node, false)
 }
 
 func strictObservedStringState(selection semanticFamilySelection) ScalarValueState {

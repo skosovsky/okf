@@ -14,14 +14,26 @@ import (
 )
 
 func cmdSetup(args []string, stdout io.Writer) (int, error) {
-	parsed, err := parseArgs(args, []flagSpec{{Name: "--source", Kind: stringFlag}, {Name: "--target", Kind: stringFlag}, {Name: "--files", Kind: stringFlag}, {Name: "--type", Kind: stringFlag}, {Name: "--apply", Kind: boolFlag}, {Name: "--plan-digest", Kind: stringFlag}, {Name: "--json", Kind: boolFlag}})
+	parsed, err := parseArgs(args, []flagSpec{
+		{Name: "--source", Kind: stringFlag},
+		{Name: "--target", Kind: stringFlag},
+		{Name: "--files", Kind: stringFlag},
+		{Name: "--type", Kind: stringFlag},
+		{Name: "--spec", Kind: stringFlag},
+		{Name: "--apply", Kind: boolFlag},
+		{Name: "--plan-digest", Kind: stringFlag},
+		{Name: "--json", Kind: boolFlag},
+	})
 	if err != nil {
 		return 0, err
 	}
 	if len(parsed.positionals) != 0 {
 		return 0, fmt.Errorf("setup uses explicit --source and --target")
 	}
-	opts := setup.Options{Source: parsed.value("--source", ""), Target: parsed.value("--target", ""), Type: parsed.value("--type", "")}
+	opts := setup.Options{
+		Source: parsed.value("--source", ""), Target: parsed.value("--target", ""),
+		Type: parsed.value("--type", ""), OKFVersion: parsed.value("--spec", ""),
+	}
 	if raw := parsed.value("--files", ""); raw != "" {
 		opts.Files = strings.Split(raw, ",")
 	}

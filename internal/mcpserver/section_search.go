@@ -3,6 +3,7 @@ package mcpserver
 import (
 	"context"
 	"errors"
+
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/skosovsky/okf/retrieval"
 )
@@ -25,6 +26,10 @@ func handleSearchSections(ctx context.Context, request mcp.CallToolRequest) (*mc
 	if r != nil {
 		return r, nil
 	}
+	currentOnly, r := optionalBool(request, "current_only")
+	if r != nil {
+		return r, nil
+	}
 	root, r := requireBundlePath(ctx, request)
 	if r != nil {
 		return r, nil
@@ -36,8 +41,15 @@ func handleSearchSections(ctx context.Context, request mcp.CallToolRequest) (*mc
 	if r := parseErrorsResult(root, b.ParseErrors()); r != nil {
 		return r, nil
 	}
-	result, err := retrieval.Search(ctx, b, query, limit)
+	search := retrieval.Search
+	if currentOnly {
+		search = retrieval.SearchCurrent
+	}
+	result, err := search(ctx, b, query, limit)
 	if err != nil {
+		if errors.Is(err, retrieval.ErrCurrentVersion) {
+			return stableToolError("invalid_argument", err.Error(), false), nil
+		}
 		if errors.Is(err, retrieval.ErrLimit) {
 			return stableToolError("resource_limit", "section search exceeds bounds", false), nil
 		}

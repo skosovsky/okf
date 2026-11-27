@@ -20,6 +20,28 @@ func TestMCPConceptPatchPolicyFailuresBlockButOrdinaryWarningsDoNot(t *testing.T
 		"generated": map[string]any{"by": "human:reviewer"},
 	}
 
+	t.Run("declared 0.3 with a YAML directive", func(t *testing.T) {
+		root := t.TempDir()
+		writeTestFile(t, root, "index.md",
+			"---\n%YAML 1.2\n--- # YAML mapping\nokf_version: '0.3'\n---\n# Notes\n\n- [A](a.md)\n",
+		)
+		writeTestFile(t, root, "a.md", "---\ntype: Note\n---\nBody.\n")
+
+		preview := callMCPTool(t, srv, "preview_concept_patch", map[string]any{
+			"bundle_path": root,
+			"actor":       "mcp:policy-test",
+			"operations":  []any{operation},
+		})
+
+		if preview.IsError {
+			t.Fatalf("0.3 preview returned a tool error: %s", resultText(t, preview))
+		}
+		payload := preview.StructuredContent.(map[string]any)
+		if payload["status"] != "applicable" || payload["result_revision"] == nil {
+			t.Fatalf("0.3 preview = %#v, want applicable", payload)
+		}
+	})
+
 	t.Run("explicit selector mismatch is diagnostic-only", func(t *testing.T) {
 		// Arrange.
 		root := t.TempDir()

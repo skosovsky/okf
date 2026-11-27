@@ -20,6 +20,8 @@ description: >
   validation, viewer browsing, or bundle migration.
 ```
 
+Historical edition for OKF 0.2. Current installation uses the instructions in the installed skill.
+
 # Maintain OKF knowledge after code changes
 {: #section-1 }
 

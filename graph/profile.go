@@ -71,18 +71,16 @@ func normalizeOptions(options Options) (Options, error) {
 	return options, nil
 }
 
-func assertVersionSelector(b *bundle.Bundle, options Options) error {
-	return assertVersionSelectorContext(context.Background(), b, options)
-}
-
-func assertVersionSelectorContext(ctx context.Context, b *bundle.Bundle, options Options) error {
+func selectGraphBundleContext(ctx context.Context, b *bundle.Bundle, options Options) (*bundle.Bundle, bundle.VersionResolution, error) {
 	if err := checkGraphContext(ctx); err != nil {
-		return err
+		return nil, bundle.VersionResolution{}, err
 	}
-	if _, err := b.VersionResolutionContext(ctx, options.VersionSelector); err != nil {
-		return err
+	version, err := b.VersionResolutionContext(ctx, options.VersionSelector)
+	if err != nil {
+		return nil, bundle.VersionResolution{}, err
 	}
-	return checkGraphContext(ctx)
+	selected, err := b.WithVersionResolutionContext(ctx, version)
+	return selected, version, err
 }
 
 func topologyAnnotation(document bundle.Document, options Options) string {
@@ -90,11 +88,15 @@ func topologyAnnotation(document bundle.Document, options Options) string {
 	return annotation
 }
 
-func topologyAnnotationContext(ctx context.Context, document bundle.Document, options Options) (string, error) {
+func topologyAnnotationContext(ctx context.Context, document bundle.Document, options Options, versions ...bundle.VersionResolution) (string, error) {
+	var version bundle.VersionResolution
+	if len(versions) > 0 {
+		version = versions[0]
+	}
 	if err := checkGraphContext(ctx); err != nil {
 		return "", err
 	}
-	status, err := document.StatusStateContext(ctx)
+	status, err := document.StatusStateForVersionContext(ctx, version)
 	if err != nil {
 		return "", err
 	}
@@ -102,7 +104,7 @@ func topologyAnnotationContext(ctx context.Context, document bundle.Document, op
 	if !status.Valid {
 		effectiveStatus = "unresolved"
 	}
-	trustTier, err := document.TrustTierContext(ctx)
+	trustTier, err := document.TrustTierForVersionContext(ctx, version)
 	if err != nil {
 		return "", err
 	}
@@ -115,14 +117,27 @@ func topologyAnnotationContext(ctx context.Context, document bundle.Document, op
 		return "", err
 	}
 	parts := []string{statusPart, trustPart}
-	if options.AsOf != nil {
+	if version.Effective == bundle.OKFVersion03 && !status.Valid && status.Raw != "" {
+		rawStatusPart, err := concatGraphStringsContext(ctx, "status_raw=", status.Raw)
+		if err != nil {
+			return "", err
+		}
+		parts = append(parts, rawStatusPart)
+	}
+	if options.AsOf != nil || version.Effective == bundle.OKFVersion03 {
 		temporalProfile := bundle.TemporalProfileDate
-		if options.Profile == ProjectionProfileToolkitV02Instant { temporalProfile = bundle.TemporalProfileInstant }
+		if options.Profile == ProjectionProfileToolkitV02Instant {
+			temporalProfile = bundle.TemporalProfileInstant
+		}
+		temporalProfile = bundle.TemporalProfileForVersion(version, temporalProfile)
 		observation, err := document.Frontmatter.StaleAfterForProfileContext(ctx, temporalProfile)
 		if err != nil {
 			return "", err
 		}
-		if observation.Value.State == bundle.TemporalValid {
+		if temporalProfile == bundle.TemporalProfileV03 && observation.Value.State == bundle.TemporalMalformed {
+			parts = append(parts, "stale_after=malformed")
+		}
+		if options.AsOf != nil && observation.Value.State == bundle.TemporalValid {
 			stale, _, err := document.Frontmatter.IsStaleForProfileContext(ctx, *options.AsOf, temporalProfile)
 			if err != nil {
 				return "", err

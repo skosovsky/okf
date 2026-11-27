@@ -1,8 +1,9 @@
 package bundle
 
 import (
+	"context"
+	"fmt"
 	"strings"
-	"time"
 
 	"github.com/skosovsky/okf/internal/markdownowner"
 )
@@ -169,6 +170,37 @@ func (l Log) Markdown() string {
 	return out.String()
 }
 
+// MarkdownForVersionContext renders a log and checks the OKF 0.3 date and
+// entry structure before callers publish it.
+func (l Log) MarkdownForVersionContext(ctx context.Context, version VersionResolution) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if version.Effective != OKFVersion03 {
+		return l.Markdown(), ctx.Err()
+	}
+	for _, day := range l.Days {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+		if !markdownowner.IsLogDate(day.Date) {
+			return "", fmt.Errorf("log date heading is not ISO-8601 YYYY-MM-DD: %q", day.Date)
+		}
+	}
+	text := l.Markdown()
+	if err := validateV03LogBody(ctx, text); err != nil {
+		return "", err
+	}
+	return text, ctx.Err()
+}
+
+func validateV03LogBody(ctx context.Context, body string) error {
+	if strings.TrimSpace(body) == "" {
+		return ctx.Err()
+	}
+	return markdownowner.InspectLogContext(ctx, body, fmt.Errorf)
+}
+
 func writeLogEntryText(out *strings.Builder, value string) {
 	lines := strings.Split(value, "\n")
 	for index, line := range lines {
@@ -186,7 +218,7 @@ func writeLogEntryText(out *strings.Builder, value string) {
 func (l Log) InvalidDates() []string {
 	var invalid []string
 	for _, day := range l.Days {
-		if !isISODate(day.Date) {
+		if !markdownowner.IsLogDate(day.Date) {
 			invalid = append(invalid, day.Date)
 		}
 	}
@@ -209,7 +241,7 @@ func (l Log) OutOfOrderDates() []string {
 	var out []string
 	previous := ""
 	for _, day := range l.Days {
-		if !isISODate(day.Date) {
+		if !markdownowner.IsLogDate(day.Date) {
 			continue
 		}
 		if previous != "" && day.Date > previous {
@@ -218,19 +250,6 @@ func (l Log) OutOfOrderDates() []string {
 		previous = day.Date
 	}
 	return out
-}
-
-func isISODate(value string) bool {
-	if len(value) != 10 || value[4] != '-' || value[7] != '-' {
-		return false
-	}
-	for _, index := range []int{0, 1, 2, 3, 5, 6, 8, 9} {
-		if value[index] < '0' || value[index] > '9' {
-			return false
-		}
-	}
-	_, err := time.Parse("2006-01-02", value)
-	return err == nil
 }
 
 func parseLogEntry(body string) LogEntry {

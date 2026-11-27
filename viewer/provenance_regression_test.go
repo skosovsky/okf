@@ -69,6 +69,63 @@ func TestDeclaredV01LegacySourcesRegression(t *testing.T) {
 	}
 }
 
+func TestViewerSourceFootnotesKeepAuthoredMarkdown(t *testing.T) {
+	// Arrange.
+	b := fixture(t, map[string]string{
+		"index.md": "---\nokf_version: '0.3'\n---\n# Concepts\n\n- [Note](note.md)\n",
+		"note.md": `---
+type: Note
+sources:
+  - {id: upstream, title: Upstream guide, resource: https://example.test/guide}
+  - {id: authored, resource: https://example.test/alternate}
+  - {id: local, resource: note.md}
+  - {id: ambiguous, resource: https://example.test/first}
+  - {id: AMBIGUOUS, resource: https://example.test/second}
+  - {id: incomplete}
+  - {id: "part*em*tail", resource: https://example.test/em}
+---
+Two sources[^UPSTREAM][^local]; repeat[^upstream].
+Authored[^authored] and again[^authored].
+Punctuation in a source label[^part*em*tail].
+Unresolved[^missing], ambiguous[^ambiguous], and incomplete[^incomplete].
+Escaped \[^upstream], image-like ![^upstream], code ` + "`[^upstream]`" + ` and [^upstream](https://example.test/ordinary).
+
+| Claim |
+| --- |
+| In a table[^upstream] |
+
+    Indented code[^upstream]
+
+[^authored]: **Author's text** with <file>.
+`,
+	})
+
+	// Act.
+	p, err := Build(context.Background(), b, Options{})
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := p.Concepts[0].HTML
+	for _, expected := range []string{
+		`Two sources<a href="#fn:source-1" class="source-footnote">S1</a><a href="#fn:source-3" class="source-footnote">S3</a>`,
+		`<td>In a table<a href="#fn:source-1"`,
+		`Punctuation in a source label<a href="#fn:source-6"`,
+		`href="#fn:1"`, `id="fn:1"`, `href="#fnref:1"`, `href="#fnref1:1"`, `<strong>Author's text</strong>`,
+		`Unresolved[^missing], ambiguous[^ambiguous], and incomplete[^incomplete].`,
+		`Escaped [^upstream], image-like ![^upstream], code <code>[^upstream]</code> and <a href="https://example.test/ordinary">^upstream</a>`,
+		`<pre><code>Indented code[^upstream]`,
+	} {
+		if !strings.Contains(body, expected) {
+			t.Errorf("missing %q in %s", expected, body)
+		}
+	}
+	if got := strings.Count(body, `class="source-footnote"`); got != 5 {
+		t.Errorf("source-backed footnote count = %d, want 5", got)
+	}
+}
+
 func TestViewerRouteRegression(t *testing.T) {
 	// Arrange: Node executes the shipped browser script with a small DOM harness.
 	// Real-browser acceptance is recorded separately; this is a repeatable regression.

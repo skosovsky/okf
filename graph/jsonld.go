@@ -59,7 +59,8 @@ func renderJSONLDWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.
 	if options.Profile == ProjectionProfileToolkitV02 || options.Profile == ProjectionProfileToolkitV02Instant {
 		return renderToolkitJSONLDContext(ctx, w, b, options)
 	}
-	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+	b, _, err = selectGraphBundleContext(ctx, b, options)
+	if err != nil {
 		return err
 	}
 	return renderLegacyJSONLDContext(ctx, w, b, options)

@@ -28,6 +28,6 @@ fi
 
 cd "$repo"
 bundle="examples/project-knowledge/$language"
-go run ./cmd/okf validate --path "$bundle" --spec 0.2 --strict --check-links --check-orphans --as-of 2026-09-26 --max-warnings=0
-go run ./cmd/okf view "$bundle" --output "$output" --spec 0.2 --lang "$language" --temporal-profile date-3fcbb9f --as-of 2026-09-26
+go run ./cmd/okf validate --path "$bundle" --spec 0.3 --strict --check-links --check-orphans --as-of 2026-11-27 --max-warnings=1
+go run ./cmd/okf view "$bundle" --output "$output" --spec 0.3 --lang "$language" --as-of 2026-11-27
 echo "prepared $language project demo: $output"

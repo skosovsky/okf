@@ -125,6 +125,12 @@ func yamlRenderFromValidatedSemanticContext(ctx context.Context, node *yamlSeman
 			}
 			return yamlBool(value), nil
 		case "!!int":
+			if usesCoreYAMLMutation(ctx) {
+				if value, ok := coreMutationInteger(node.Value); ok {
+					return value, nil
+				}
+				return yamlRenderValue{}, fmt.Errorf("%w: invalid core integer", ErrUnsupportedPresentation)
+			}
 			if len(node.Value) > 66 {
 				return yamlRenderValue{}, fmt.Errorf("%w: invalid int", ErrUnsupportedPresentation)
 			}

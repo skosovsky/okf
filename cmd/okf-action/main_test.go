@@ -258,3 +258,37 @@ func containsPair(args []string, key, value string) bool {
 	}
 	return false
 }
+
+func TestOKF03ActionUsesBundleTimeContract(t *testing.T) {
+	// Arrange.
+	values, getenv := actionEnv(t)
+	root := t.TempDir()
+	for path, data := range map[string]string{
+		"index.md":  "---\nokf_version: '0.3'\n---\n\n# Notes\n\n- [Policy](policy.md)\n",
+		"policy.md": "---\ntype: Policy\nstale_after: 2026-11-18\n---\n",
+	} {
+		if err := os.WriteFile(filepath.Join(root, path), []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	values["OKF_ACTION_INPUT_PATH"] = root
+	values["OKF_ACTION_INPUT_SPEC"] = "0.3"
+	values["OKF_ACTION_INPUT_AS_OF"] = "2026-11-17T19:00:00-05:00"
+	values["OKF_ACTION_INPUT_STRICT"] = "true"
+
+	// Act.
+	err := run(getenv, okfcli.Run, io.Discard)
+
+	// Assert.
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputs, err := os.ReadFile(values["GITHUB_OUTPUT"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(outputs), "outcome=pass\n") ||
+		!strings.Contains(string(outputs), "\"code\":\"stale\"") {
+		t.Fatalf("unexpected action outputs: %s", outputs)
+	}
+}

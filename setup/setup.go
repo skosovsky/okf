@@ -16,9 +16,11 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/pathportability"
 	"github.com/skosovsky/okf/validator"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -27,10 +29,11 @@ import (
 )
 
 type Options struct {
-	Source string   `json:"source"`
-	Target string   `json:"target"`
-	Files  []string `json:"selection"`
-	Type   string   `json:"type"`
+	Source     string   `json:"source"`
+	Target     string   `json:"target"`
+	Files      []string `json:"selection"`
+	Type       string   `json:"type"`
+	OKFVersion string   `json:"okf_version,omitempty"`
 }
 type Diagnostic struct {
 	Code    string `json:"code"`
@@ -71,6 +74,15 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 	if opts.Source == "" || opts.Target == "" {
 		return p, nil, fmt.Errorf("source and target are required")
 	}
+	version := opts.OKFVersion
+	switch version {
+	case "":
+		version = bundle.OKFVersion03
+	case bundle.OKFVersion, bundle.OKFVersion03:
+	default:
+		return p, nil, fmt.Errorf("setup supports OKF 0.2 and 0.3, got %q", version)
+	}
+	opts.OKFVersion = version
 	opts.Source, err = filepath.Abs(opts.Source)
 	if err != nil {
 		return p, nil, err
@@ -167,6 +179,7 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 		p.diagnostic("limit", "", "at most 1000 documents")
 		names = nil
 	}
+	resolution := bundle.VersionResolution{Effective: version}
 	total := 0
 	for _, name := range names {
 		if err := ctx.Err(); err != nil {
@@ -197,12 +210,12 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 			p.diagnostic("limit", name, "source byte limit exceeded")
 			continue
 		}
-		doc, err := bundle.ParseDocumentContext(ctx, string(b))
+		doc, err := bundle.ParseDocumentForVersionContext(ctx, string(b), resolution)
 		if err != nil {
 			p.diagnostic("frontmatter", name, err.Error())
 			continue
 		}
-		if duplicateYAMLKeys(doc.Frontmatter.YAMLNode(), map[*yaml.Node]bool{}) {
+		if version != bundle.OKFVersion03 && duplicateYAMLKeys(doc.Frontmatter.YAMLNode(), map[*yaml.Node]bool{}) {
 			p.diagnostic("frontmatter", name, "duplicate YAML mapping keys")
 			continue
 		}
@@ -217,6 +230,9 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 				continue
 			}
 			scalar, _ := yaml.Marshal(opts.Type)
+			if version == bundle.OKFVersion03 && bundle.YAMLCoreStringNeedsQuotes(opts.Type) {
+				scalar = []byte(strconv.Quote(opts.Type) + "\n")
+			}
 			// Insertion preserves all original YAML/body bytes, including comments and CRLF.
 			line := "type: " + string(scalar)
 			if doc.HasFrontmatter {
@@ -234,7 +250,7 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 		if !ok {
 			continue
 		}
-		doc, _ := bundle.ParseDocumentContext(ctx, string(b))
+		doc, _ := bundle.ParseDocumentForVersionContext(ctx, string(b), resolution)
 		body := []byte(doc.Body)
 		tree := goldmark.New().Parser().Parse(text.NewReader(body))
 		err := ast.Walk(tree, func(node ast.Node, enter bool) (ast.WalkStatus, error) {
@@ -291,23 +307,37 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 	}
 	if len(p.Diagnostics) == 0 {
 		dirs := map[string][]bundle.IndexEntry{}
+		render := bundle.BuildIndexText
+		indexLink := url.PathEscape
+		if version == bundle.OKFVersion03 {
+			render = bundle.BuildIndexTextV03
+			indexLink = func(path string) string { return path }
+		}
 		for _, f := range p.Files {
-			doc, _ := bundle.ParseDocumentContext(ctx, string(out[f.Path]))
+			doc, _ := bundle.ParseDocumentForVersionContext(ctx, string(out[f.Path]), resolution)
 			typ, _ := doc.Frontmatter.Type()
 			dir := path.Dir(f.Path)
 			title := path.Base(f.Path)
-			dirs[dir] = append(dirs[dir], bundle.IndexEntry{Type: typ, Title: title, Link: url.PathEscape(path.Base(f.Path))})
+			var description string
+			if version == bundle.OKFVersion03 {
+				if declared, ok := doc.Frontmatter.Title(); ok && declared != "" {
+					title = declared
+				}
+				description, _ = doc.Frontmatter.Description()
+			}
+			dirs[dir] = append(dirs[dir], bundle.IndexEntry{Type: typ, Title: title, Link: indexLink(path.Base(f.Path)), Description: description})
 			for dir != "." {
 				child := path.Base(dir)
 				par := path.Dir(dir)
+				link := indexLink(child) + "/index.md"
 				found := false
 				for _, e := range dirs[par] {
-					if e.Link == url.PathEscape(child)+"/index.md" {
+					if e.Link == link {
 						found = true
 					}
 				}
 				if !found {
-					dirs[par] = append(dirs[par], bundle.IndexEntry{Type: "Directories", Title: child, Link: url.PathEscape(child) + "/index.md"})
+					dirs[par] = append(dirs[par], bundle.IndexEntry{Type: "Directories", Title: child, Link: link})
 				}
 				dir = par
 			}
@@ -315,9 +345,23 @@ func prepare(ctx context.Context, opts Options) (Plan, map[string][]byte, error)
 		for dir, entries := range dirs {
 			prefix := ""
 			if dir == "." {
-				prefix = "---\nokf_version: \"0.2\"\n---\n\n"
+				prefix = fmt.Sprintf("---\nokf_version: %q\n---\n\n", version)
 			}
-			out[path.Join(dir, "index.md")] = []byte(prefix + bundle.BuildIndexText(entries))
+			out[path.Join(dir, "index.md")] = []byte(prefix + render(entries))
+		}
+		if version == bundle.OKFVersion03 {
+			paths := make([]string, 0, len(out))
+			for name := range out {
+				paths = append(paths, name)
+			}
+			sort.Strings(paths)
+			if err := pathportability.CheckNew(ctx, nil, paths); err != nil {
+				var collision *pathportability.CaseCollision
+				if !errors.As(err, &collision) {
+					return p, nil, err
+				}
+				p.diagnostic("path_case_collision", collision.Path, collision.Error())
+			}
 		}
 		report, err := validator.ValidateSource(ctx, memorySource(out), &validator.ValidatorConfig{CheckLinks: true})
 		if err != nil {

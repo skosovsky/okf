@@ -12,9 +12,9 @@ permalink: /
 
 Keep rules, decisions, and instructions in Markdown so your team and AI agents can find an answer and open its source.
 
-For example, a service retries failed delivery for 24 hours, then involves an operator. Record the rule, link it to the requirements, and let an agent find the answer. When the deadline changes, update the source and the note in the same workflow.
+In the training example, a delivery deadline moves from 24 to 48 hours. Follow the old note to its replacement and check the source.
 
-[Open the training example]({{ '/demo/project-en.html#retry-policy' | relative_url }}) · [Try it locally]({{ '/quickstart/' | relative_url }})
+[Open the training example]({{ '/demo/project-en.html#retry-policy-current' | relative_url }}) · [Try it locally]({{ '/quickstart/' | relative_url }})
 
 ## When it helps {#use-cases}
 
@@ -30,7 +30,7 @@ This repository provides Go libraries, the `okf` command, an `okf-mcp` server, a
 
 ## What to check yourself {#validation}
 
-OKF validation finds structural and link errors. Compare content with its source: the presence of `sources` does not mean a claim was checked. Add `verified` only after a real check. Document version `0.2` and program release version are separate values.
+OKF validation finds structural and link errors. Compare content with its source: the presence of `sources` does not mean a claim was checked. Add `verified` only after a real check. The training bundle declares OKF 0.3 in its root index.
 
 ## Next step {#next-steps}
 
@@ -39,4 +39,4 @@ OKF validation finds structural and link errors. Compare content with its source
 3. [Work with files and commands]({{ '/toolkit/' | relative_url }}).
 4. [Review knowledge after changes]({{ '/knowledge-upkeep/' | relative_url }}).
 
-Exact fields, limits, and interfaces are in the [reference]({{ '/reference/' | relative_url }}). The [architecture example for this repository]({{ '/demo/knowledge.html#architecture' | relative_url }}) remains available separately in English.
+Exact fields, limits, and interfaces are in the [reference]({{ '/reference/' | relative_url }}). The [architecture example for this repository (OKF 0.2)]({{ '/demo/knowledge.html#architecture' | relative_url }}) remains available separately in English.

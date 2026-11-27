@@ -423,7 +423,7 @@ func TestPlanRemoveSource_PreservesUnselectedOpaqueSibling(t *testing.T) {
 			}
 
 			// Act.
-			result, planErr := Plan(context.Background(), source, change(t, source, operation))
+			result, planErr := planV02(context.Background(), source, change(t, source, operation))
 			var updated []byte
 			if planErr == nil {
 				updated, planErr = result.Staged.ReadFile(context.Background(), "a.md")
@@ -475,7 +475,7 @@ func TestPlanRemoveSource_SelectedOpaqueItemHasTypedZeroStageFailure(t *testing.
 			}
 
 			// Act.
-			result, planErr := Plan(context.Background(), source, change(t, source, operation))
+			result, planErr := planV02(context.Background(), source, change(t, source, operation))
 
 			// Assert.
 			if !errors.Is(planErr, ErrAmbiguousPresentation) {
@@ -642,7 +642,7 @@ func TestPlanSetLifecycle_PreservesOpaqueRootAndNestedExtensions(t *testing.T) {
 		"  opaque: second\n")
 
 	// Act.
-	result, planErr := Plan(context.Background(), source, change(t, source, operation))
+	result, planErr := planV02(context.Background(), source, change(t, source, operation))
 	var updated []byte
 	if planErr == nil {
 		updated, planErr = result.Staged.ReadFile(context.Background(), "a.md")
@@ -669,7 +669,7 @@ func TestPlanSetLifecycle_TouchedDuplicateHasTypedZeroStageFailure(t *testing.T)
 	}
 
 	// Act.
-	result, planErr := Plan(context.Background(), source, change(t, source, operation))
+	result, planErr := planV02(context.Background(), source, change(t, source, operation))
 
 	// Assert.
 	if !errors.Is(planErr, ErrAmbiguousPresentation) {

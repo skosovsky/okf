@@ -210,7 +210,7 @@ func TestRunValidateUsageErrorsPrecedeBundleDependencies(t *testing.T) {
 			loadCalls := 0
 			validateCalls := 0
 			dependencies := productionRunDependencies()
-			dependencies.loadBundle = func(gotRoot string) (*bundle.Bundle, error) {
+			dependencies.loadBundle = func(gotRoot, _ string) (*bundle.Bundle, error) {
 				loadCalls++
 				if gotRoot != test.root {
 					t.Fatalf("load root = %q, want %q", gotRoot, test.root)
@@ -299,7 +299,7 @@ func TestSeparatedStringFlagsRejectDashLeadingValuesBeforeIO(t *testing.T) {
 				validateCalls := 0
 				indexCalls := 0
 				dependencies := productionRunDependencies()
-				dependencies.loadBundle = func(string) (*bundle.Bundle, error) {
+				dependencies.loadBundle = func(string, string) (*bundle.Bundle, error) {
 					loadCalls++
 					return nil, errors.New("bundle loader must not run")
 				}
@@ -500,7 +500,7 @@ func TestValidateCompatibilityAliasesShareCanonicalIdentityBeforeDependencies(t 
 			loadCalls := 0
 			validateCalls := 0
 			dependencies := productionRunDependencies()
-			dependencies.loadBundle = func(string) (*bundle.Bundle, error) {
+			dependencies.loadBundle = func(string, string) (*bundle.Bundle, error) {
 				loadCalls++
 				return nil, errors.New("bundle loader must not run")
 			}

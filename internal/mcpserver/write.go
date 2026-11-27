@@ -41,7 +41,7 @@ func openTransactionalStoreContext(
 	ctx context.Context,
 	root string,
 	cfg storefs.Config,
-) (transactionalStore, error) {
+) (*storefs.Store, error) {
 	return storefs.OpenContext(ctx, root, cfg)
 }
 
@@ -77,7 +77,9 @@ func writeConceptCommitWithMaxAttempts(
 		frontmatterText,
 		body,
 		maxAttempts,
-		openTransactionalStoreContext,
+		func(ctx context.Context, root string, cfg storefs.Config) (transactionalStore, error) {
+			return openTransactionalStoreContext(ctx, root, cfg)
+		},
 	)
 }
 
@@ -117,7 +119,7 @@ func writeConceptCommitWithStoreOpener(
 		return writeConceptResponse{}, err
 	}
 
-	frontmatter, err := bundle.ParseFrontmatterContext(ctx, frontmatterText)
+	frontmatter, coreOnly, err := parseWriteFrontmatterContext(ctx, frontmatterText)
 	if err != nil {
 		return writeConceptResponse{}, err
 	}
@@ -170,6 +172,9 @@ func writeConceptCommitWithStoreOpener(
 		if err != nil {
 			return writeConceptResponse{}, err
 		}
+		if coreOnly && resolution.Effective != bundle.OKFVersion03 {
+			return writeConceptResponse{}, fmt.Errorf("%w: YAML directive requires an OKF 0.3 bundle", bundle.ErrInvalidFrontmatter)
+		}
 		changeSetID := writeConceptChangeSetIDWithPolicy(id, frontmatterText, body, resolution)
 		// MCP does not accept a caller-supplied idempotency key. The canonical
 		// server identity binds both content and the resolved OKF policy.
@@ -194,6 +199,17 @@ func writeConceptCommitWithStoreOpener(
 		return writeConceptResponse{}, outcomeErr
 	}
 	return writeConceptResponse{}, errWriteConceptConflictRetriesExhausted
+}
+
+// Check YAML resource limits before opening the store. The snapshot later
+// confirms the OKF profile required by a YAML 1.2 directive.
+func parseWriteFrontmatterContext(ctx context.Context, text string) (bundle.Frontmatter, bool, error) {
+	frontmatter, err := bundle.ParseFrontmatterContext(ctx, text)
+	if err == nil || ctx.Err() != nil || !strings.Contains(text, "%") {
+		return frontmatter, false, err
+	}
+	frontmatter, err = bundle.ParseFrontmatterForVersionContext(ctx, text, bundle.VersionResolution{Effective: bundle.OKFVersion03})
+	return frontmatter, true, err
 }
 
 func writeConceptSuccessContext(

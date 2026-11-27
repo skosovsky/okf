@@ -194,7 +194,6 @@ func TestRegenerateIndexesRejectsMalformedPresentVersionBeforeAnyWrite(t *testin
 		{name: "scalar type", frontmatter: "okf_version: 2\n"},
 		{name: "sequence type", frontmatter: "okf_version: [0.2]\n"},
 		{name: "mapping type", frontmatter: "okf_version: {major: 0, minor: 2}\n"},
-		{name: "blank string", frontmatter: "okf_version: \"\"\n"},
 		{name: "noncanonical syntax", frontmatter: "okf_version: \"v0.2\"\n"},
 		{
 			name: "malformed terminal alias",
@@ -524,4 +523,59 @@ func itoa(value int) string {
 		value /= 10
 	}
 	return string(digits[i:])
+}
+
+func TestRegenerateIndexesKeepsRootFrontmatterBytes(t *testing.T) {
+	t.Parallel()
+
+	for _, version := range []string{"", "okf_version: []\r\n", "okf_version: '0.2'\r\n", "okf_version: '0.3'\r\n"} {
+		t.Run(strings.TrimSpace(version), func(t *testing.T) {
+			// Arrange.
+			root := t.TempDir()
+			prefix := "---\r\n# Bundle metadata\r\n" + version +
+				"title: 'Delivery'\r\nlicense: CC-BY-4.0\r\nx-acme: {owner: 'ops'}\r\n---\r\n"
+			writeFile(t, root, "index.md", prefix+"\r\n# Previous listing\r\n")
+			writeIndexDoc(t, root, "policy.md", "Note", "Policy", "Delivery policy.")
+
+			// Act and assert.
+			for range 2 {
+				if _, err := RegenerateIndexes(root); err != nil {
+					t.Fatal(err)
+				}
+				got := readFile(t, root, "index.md")
+				if !strings.HasPrefix(got, prefix) || !strings.Contains(got, "[Policy](policy.md)") {
+					t.Fatalf("index did not preserve frontmatter and regenerate the body: %q", got)
+				}
+			}
+		})
+	}
+}
+
+func TestOKF03IndexEncodesReservedFilenameBytes(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "index.md", "---\nokf_version: '0.3'\n---\n# Previous\n")
+	writeFile(t, root, "label ] ) & %.md", "---\ntype: Guide\ntitle: 'Label ]'\ndescription: Rules for review\n---\nGuide.\n")
+
+	if _, err := RegenerateIndexes(root); err != nil {
+		t.Fatal(err)
+	}
+	output := readFile(t, root, "index.md")
+	const entry = `* [Label \]](label%20%5D%20%29%20%26%20%25.md) - Rules for review`
+	if !strings.Contains(output, entry) {
+		t.Fatalf("index lacks %q: %q", entry, output)
+	}
+}
+
+func TestOKF03IndexRejectsCaseAliasOfGeneratedIndex(t *testing.T) {
+	root := t.TempDir()
+	const uppercase = "---\ntype: Note\nokf_version: '0.2'\n---\n# Draft\n"
+	writeFile(t, root, "INDEX.md", uppercase)
+
+	written, err := RegenerateIndexes(root)
+	if err == nil || !strings.Contains(err.Error(), `"index.md" differs only by case from "INDEX.md"`) || len(written) != 0 {
+		t.Fatalf("regenerate = %v, %v", written, err)
+	}
+	if got := readFile(t, root, "INDEX.md"); got != uppercase {
+		t.Fatalf("case alias changed during failed publication: %q", got)
+	}
 }

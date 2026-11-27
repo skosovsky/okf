@@ -180,9 +180,9 @@ func parseSpecSelector(raw string) (string, error) {
 	switch raw {
 	case "", "auto":
 		return "auto", nil
-	case "0.1", "0.2":
+	case "0.1", "0.2", "0.3":
 		return raw, nil
 	default:
-		return "", fmt.Errorf("unsupported spec selector %q (want auto, 0.1, or 0.2)", raw)
+		return "", fmt.Errorf("unsupported spec selector %q (want auto, 0.1, 0.2, or 0.3)", raw)
 	}
 }

@@ -30,8 +30,8 @@ func TestVersionJSONContract(t *testing.T) {
 	}
 	want := VersionInfo{
 		CLIVersion:       cliVersion(),
-		OKFSpecDefault:   "0.2",
-		OKFSpecSupported: []string{"0.1", "0.2"},
+		OKFSpecDefault:   "0.3",
+		OKFSpecSupported: []string{"0.1", "0.2", "0.3"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("version JSON = %#v, want %#v", got, want)
@@ -88,7 +88,7 @@ func TestStandaloneConceptLocalVersionIsPreservedButNeverDeclaresContract(t *tes
 				wantSource := "explicit"
 				wantCompatibility := "native"
 				if selector == "auto" {
-					wantEffective = "0.2"
+					wantEffective = "0.3"
 					wantSource = "default"
 				} else if selector == "0.1" {
 					wantCompatibility = "legacy"
@@ -136,7 +136,7 @@ func TestParseAndFmtResolveVersionFromDeclaringBundleRoot(t *testing.T) {
 		},
 		{
 			name:          "undeclared root defaults",
-			wantEffective: "0.2",
+			wantEffective: "0.3",
 			wantSource:    "default",
 		},
 		{

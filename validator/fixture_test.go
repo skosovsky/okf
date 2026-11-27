@@ -110,7 +110,7 @@ func TestValidationFixtures(t *testing.T) {
 			} else if !strings.Contains(filepath.ToSlash(manifestPath), "/v02/") &&
 				!strings.Contains(filepath.ToSlash(manifestPath), "/versioning/root-0.2/") {
 				// The pre-v0.2 fixture corpus is the explicit legacy regression
-				// profile. New fixtures declare their contract or use v0.2 auto.
+				// profile. New fixtures declare their contract or exercise auto.
 				cfg.Spec = "0.1"
 			}
 			if manifest.Run.AsOf != nil {

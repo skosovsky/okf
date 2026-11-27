@@ -40,7 +40,8 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 	if err != nil {
 		return err
 	}
-	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+	b, version, err := selectGraphBundleContext(ctx, b, options)
+	if err != nil {
 		return err
 	}
 	concepts, err := graphConceptsContext(ctx, b)
@@ -57,6 +58,10 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 		if err != nil {
 			return err
 		}
+		pathEdges, err := b.PathConceptEdgesContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
 		var relations []bundle.Relation
 		if options.ExtensionRelations == ExtensionRelationsInclude {
 			relations, err = b.SemanticLinksFromContext(ctx, concept.ID)
@@ -64,7 +69,7 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 				return err
 			}
 		}
-		if len(links) == 0 && len(relations) == 0 {
+		if len(links) == 0 && len(pathEdges) == 0 && len(relations) == 0 {
 			continue
 		}
 		conceptID, err := graphConceptIDContext(ctx, concept.ID)
@@ -72,7 +77,7 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 			return err
 		}
 		if options.AnnotateTopology {
-			annotation, err := topologyAnnotationContext(ctx, concept.Document, options)
+			annotation, err := topologyAnnotationContext(ctx, concept.Document, options, version)
 			if err != nil {
 				return err
 			}
@@ -81,7 +86,7 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 			}
 		}
 		lastHeader := ""
-		if len(links) > 0 {
+		if len(links) > 0 || len(pathEdges) > 0 {
 			lastHeader = conceptID
 			if err := writelnContext(ctx, w, lastHeader); err != nil {
 				return err
@@ -102,6 +107,15 @@ func renderTextWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bu
 				return err
 			}
 			if err := writefContext(ctx, w, "  %s %s\n", mark, target); err != nil {
+				return err
+			}
+		}
+		for _, edge := range pathEdges {
+			target, err := graphConceptIDContext(ctx, edge.Target)
+			if err != nil {
+				return err
+			}
+			if err := writefContext(ctx, w, "  -> %s [%s]\n", target, edge.FieldPath); err != nil {
 				return err
 			}
 		}

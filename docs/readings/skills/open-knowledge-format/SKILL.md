@@ -10,6 +10,8 @@ document_id: skills-open-knowledge-format-skill
 
 This is the full reading edition of the skill instruction, pinned to revision `61e75e9aa9a8719dfb480bf1f5226553b3a21d70`. It is documentation for people, not an installable skill. The [canonical source](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/skills/open-knowledge-format/SKILL.md) remains authoritative.
 
+Historical edition for OKF 0.2. For current migration commands, see the [migration guide]({{ "/migration/" | relative_url }}).
+
 # Open Knowledge Format
 {: #section-1 }
 

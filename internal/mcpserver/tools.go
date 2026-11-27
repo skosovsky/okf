@@ -122,10 +122,13 @@ type versionDeclarationDTO struct {
 }
 
 type computationMarkerDTO struct {
-	Present  bool    `json:"present"`
-	Runtime  *string `json:"runtime"`
-	Executor *string `json:"executor"`
-	Attester *string `json:"attester"`
+	Present           bool    `json:"present"`
+	Attestable        *bool   `json:"attestable,omitempty"`
+	UnavailableReason string  `json:"unavailable_reason,omitempty"`
+	Mode              string  `json:"mode,omitempty"`
+	Runtime           *string `json:"runtime"`
+	Executor          *string `json:"executor"`
+	Attester          *string `json:"attester"`
 }
 
 type legacyDerivedDTO struct {
@@ -141,22 +144,24 @@ type statusStateDTO struct {
 }
 
 type conceptSummaryV02 struct {
-	ID            string               `json:"id"`
-	Type          string               `json:"type"`
-	Title         string               `json:"title"`
-	Path          string               `json:"path"`
-	Status        *string              `json:"status"`
-	StatusState   statusStateDTO       `json:"status_state"`
-	Trust         string               `json:"trust"`
-	Stale         *bool                `json:"stale"`
-	StaleAfter    *string              `json:"stale_after"`
-	GeneratedAt   *string              `json:"generated_at"`
-	SourceCount   int                  `json:"source_count"`
-	Computation   computationMarkerDTO `json:"computation"`
-	LegacyDerived legacyDerivedDTO     `json:"legacy_derived"`
+	ID              string                    `json:"id"`
+	Type            string                    `json:"type"`
+	Title           string                    `json:"title"`
+	Path            string                    `json:"path"`
+	Status          *string                   `json:"status"`
+	StatusState     statusStateDTO            `json:"status_state"`
+	Trust           string                    `json:"trust"`
+	Stale           *bool                     `json:"stale"`
+	StaleAfter      *string                   `json:"stale_after"`
+	StaleAfterState bundle.TemporalValueState `json:"stale_after_state,omitempty"`
+	GeneratedAt     *string                   `json:"generated_at"`
+	SourceCount     int                       `json:"source_count"`
+	Computation     computationMarkerDTO      `json:"computation"`
+	LegacyDerived   legacyDerivedDTO          `json:"legacy_derived"`
 }
 
 type listConceptsStructured struct {
+	BundleMetadata     *bundle.BundleMetadata `json:"bundle_metadata,omitempty"`
 	Version            versionDTO             `json:"version"`
 	VersionDeclaration versionDeclarationDTO  `json:"version_declaration"`
 	TemporalProfile    bundle.TemporalProfile `json:"temporal_profile"`
@@ -197,8 +202,10 @@ type generationDTO struct {
 }
 
 type verificationDTO struct {
-	By string `json:"by"`
-	At string `json:"at"`
+	By      string `json:"by"`
+	At      string `json:"at"`
+	Current *bool  `json:"current,omitempty"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 type computationParameterDTO struct {
@@ -217,11 +224,14 @@ type attesterDTO struct {
 }
 
 type attestedComputationDTO struct {
-	Runtime     string                    `json:"runtime"`
-	Parameters  []computationParameterDTO `json:"parameters"`
-	Computation string                    `json:"computation"`
-	Executor    *executorDTO              `json:"executor"`
-	Attester    *attesterDTO              `json:"attester"`
+	Attestable        *bool                     `json:"attestable,omitempty"`
+	UnavailableReason string                    `json:"unavailable_reason,omitempty"`
+	Mode              string                    `json:"mode,omitempty"`
+	Runtime           string                    `json:"runtime"`
+	Parameters        []computationParameterDTO `json:"parameters"`
+	Computation       string                    `json:"computation"`
+	Executor          *executorDTO              `json:"executor"`
+	Attester          *attesterDTO              `json:"attester"`
 }
 
 type footnoteReferenceDTO struct {
@@ -244,21 +254,22 @@ type attributionDTO struct {
 }
 
 type conceptProjectionDTO struct {
-	Type         *string                 `json:"type"`
-	Title        *string                 `json:"title"`
-	Description  *string                 `json:"description"`
-	Resource     *string                 `json:"resource"`
-	Tags         []string                `json:"tags"`
-	Sources      []sourceDTO             `json:"sources"`
-	Attributions []attributionDTO        `json:"attributions"`
-	UsageWindow  *usageWindowDTO         `json:"usage_window"`
-	Generated    *generationDTO          `json:"generated"`
-	Verified     []verificationDTO       `json:"verified"`
-	Trust        string                  `json:"trust"`
-	Status       *string                 `json:"status"`
-	StatusState  statusStateDTO          `json:"status_state"`
-	StaleAfter   *string                 `json:"stale_after"`
-	Computation  *attestedComputationDTO `json:"computation"`
+	Type            *string                   `json:"type"`
+	Title           *string                   `json:"title"`
+	Description     *string                   `json:"description"`
+	Resource        *string                   `json:"resource"`
+	Tags            []string                  `json:"tags"`
+	Sources         []sourceDTO               `json:"sources"`
+	Attributions    []attributionDTO          `json:"attributions"`
+	UsageWindow     *usageWindowDTO           `json:"usage_window"`
+	Generated       *generationDTO            `json:"generated"`
+	Verified        []verificationDTO         `json:"verified"`
+	Trust           string                    `json:"trust"`
+	Status          *string                   `json:"status"`
+	StatusState     statusStateDTO            `json:"status_state"`
+	StaleAfter      *string                   `json:"stale_after"`
+	StaleAfterState bundle.TemporalValueState `json:"stale_after_state,omitempty"`
+	Computation     *attestedComputationDTO   `json:"computation"`
 }
 
 type legacyFallbackDTO struct {
@@ -279,11 +290,12 @@ type readConceptStructured struct {
 }
 
 type readConceptProjectionCollections struct {
-	Tags         []string
-	Sources      []bundle.ProvenanceSource
-	Attributions []bundle.Attribution
-	Verified     []bundle.Verification
-	Computation  *bundle.AttestedComputationContract
+	Tags             []string
+	Sources          []bundle.ProvenanceSource
+	Attributions     []bundle.Attribution
+	Verified         []bundle.Verification
+	Computation      *bundle.AttestedComputationContract
+	ComputationState *bundle.AttestedComputationState
 }
 
 func versionDTOFromBundle(resolution bundle.VersionResolution) versionDTO {
@@ -362,6 +374,10 @@ func validDate(value string) bool {
 }
 
 func validMCPTemporal(value string, profile bundle.TemporalProfile) bool {
+	if profile == bundle.TemporalProfileV03 {
+		_, err := bundle.ParseTimestampV03(value)
+		return err == nil
+	}
 	if profile != bundle.TemporalProfileInstant {
 		return validDate(value)
 	}
@@ -377,6 +393,7 @@ func validTimestamp(value string) bool {
 func collectReadConceptProjectionContext(
 	ctx context.Context,
 	document bundle.Document,
+	resolved ...bundle.AttestedComputationState,
 ) (readConceptProjectionCollections, error) {
 	if err := ctx.Err(); err != nil {
 		return readConceptProjectionCollections{}, err
@@ -393,14 +410,26 @@ func collectReadConceptProjectionContext(
 	if err != nil {
 		return readConceptProjectionCollections{}, err
 	}
+	tags, err := document.Frontmatter.TagsContext(ctx)
+	if err != nil {
+		return readConceptProjectionCollections{}, err
+	}
 	collections := readConceptProjectionCollections{
-		Tags:         document.Frontmatter.Tags(),
+		Tags:         tags,
 		Sources:      sources,
 		Attributions: attributions,
 		Verified:     verifications,
 	}
 	if err := ctx.Err(); err != nil {
 		return readConceptProjectionCollections{}, err
+	}
+	if len(resolved) != 0 {
+		state := resolved[0]
+		if state.TypeMatches {
+			collections.Computation = &state.Contract
+			collections.ComputationState = &state
+		}
+		return collections, ctx.Err()
 	}
 	computation, err := document.AttestedComputationStateContext(ctx)
 	if err != nil {
@@ -493,11 +522,11 @@ func projectDocumentContext(
 	ctx context.Context,
 	document bundle.Document,
 ) (conceptProjectionDTO, *mcp.CallToolResult) {
-	return projectDocumentForProfileContext(ctx, document, bundle.TemporalProfileDate)
+	return projectDocumentForProfileContext(ctx, document, bundle.TemporalProfileDate, bundle.VersionResolution{})
 }
 
-func projectDocumentForProfileContext(ctx context.Context, document bundle.Document, profile bundle.TemporalProfile) (conceptProjectionDTO, *mcp.CallToolResult) {
-	collections, err := collectReadConceptProjectionContext(ctx, document)
+func projectDocumentForProfileContext(ctx context.Context, document bundle.Document, profile bundle.TemporalProfile, version bundle.VersionResolution, computation ...bundle.AttestedComputationState) (conceptProjectionDTO, *mcp.CallToolResult) {
+	collections, err := collectReadConceptProjectionContext(ctx, document, computation...)
 	if err != nil {
 		return conceptProjectionDTO{}, bundleDomainError(
 			"project captured concept",
@@ -505,7 +534,7 @@ func projectDocumentForProfileContext(ctx context.Context, document bundle.Docum
 			err,
 		)
 	}
-	if profile == bundle.TemporalProfileInstant {
+	if profile != bundle.TemporalProfileDate {
 		states, err := document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
 		if err != nil {
 			return conceptProjectionDTO{}, bundleDomainError("project captured concept", "concept projection exceeds MCP resource limits", err)
@@ -535,7 +564,7 @@ func projectDocumentForProfileContext(ctx context.Context, document bundle.Docum
 	if result := validateReadConceptProjectionCapsContext(ctx, collections); result != nil {
 		return conceptProjectionDTO{}, result
 	}
-	projection, err := projectDocumentCollectionsForProfileContext(ctx, document, collections, profile)
+	projection, err := projectDocumentCollectionsForProfileContext(ctx, document, collections, profile, version)
 	if err != nil {
 		return conceptProjectionDTO{}, bundleDomainError(
 			"project captured concept",
@@ -551,24 +580,23 @@ func projectDocumentCollectionsContext(
 	document bundle.Document,
 	collections readConceptProjectionCollections,
 ) (conceptProjectionDTO, error) {
-	return projectDocumentCollectionsForProfileContext(ctx, document, collections, bundle.TemporalProfileDate)
+	return projectDocumentCollectionsForProfileContext(ctx, document, collections, bundle.TemporalProfileDate, bundle.VersionResolution{})
 }
 
-func projectDocumentCollectionsForProfileContext(ctx context.Context, document bundle.Document, collections readConceptProjectionCollections, profile bundle.TemporalProfile) (conceptProjectionDTO, error) {
+func projectDocumentCollectionsForProfileContext(ctx context.Context, document bundle.Document, collections readConceptProjectionCollections, profile bundle.TemporalProfile, version bundle.VersionResolution) (conceptProjectionDTO, error) {
 	if err := ctx.Err(); err != nil {
 		return conceptProjectionDTO{}, err
 	}
-	status := statusStateFromBundle(document.StatusState())
-	trust, err := document.TrustTierContext(ctx)
+	lifecycle, err := document.StatusStateForVersionContext(ctx, version)
 	if err != nil {
 		return conceptProjectionDTO{}, err
 	}
+	status := statusStateFromBundle(lifecycle)
 	projection := conceptProjectionDTO{
 		Tags:         make([]string, 0, len(collections.Tags)),
 		Sources:      []sourceDTO{},
 		Attributions: []attributionDTO{},
 		Verified:     []verificationDTO{},
-		Trust:        string(trust),
 		Status:       status.Effective,
 		StatusState:  status,
 	}
@@ -630,7 +658,10 @@ func projectDocumentCollectionsForProfileContext(ctx context.Context, document b
 	if window.Valid {
 		projection.UsageWindow = &usageWindowDTO{From: window.Value.From, To: window.Value.To}
 	}
-	generated := document.GenerationState()
+	generated, err := document.Frontmatter.GenerationStateForProfileContext(ctx, profile)
+	if err != nil {
+		return conceptProjectionDTO{}, err
+	}
 	if generated.HasValue {
 		projection.Generated = &generationDTO{}
 		if generated.By.Valid {
@@ -639,16 +670,51 @@ func projectDocumentCollectionsForProfileContext(ctx context.Context, document b
 		}
 		if generated.At.State == bundle.TemporalValid {
 			value := generated.At.Raw
+			if profile == bundle.TemporalProfileV03 {
+				value = generated.At.Time.Format(time.RFC3339Nano)
+			}
 			projection.Generated.At = &value
 		}
 	}
-	for _, verification := range collections.Verified {
-		if err := ctx.Err(); err != nil {
+	if profile == bundle.TemporalProfileV03 {
+		trust, err := document.Frontmatter.TrustStateV03Context(ctx)
+		if err != nil {
 			return conceptProjectionDTO{}, err
 		}
-		if verification.By != "" && validTimestamp(verification.At) {
-			projection.Verified = append(projection.Verified, verificationDTO{By: verification.By, At: verification.At})
+		if len(trust.Verifications) > maxReadConceptProjectionItems {
+			return conceptProjectionDTO{}, errMCPResourceLimit
 		}
+		if version.Effective == bundle.OKFVersion03 {
+			projection.Trust = string(trust.Tier)
+		}
+		for _, event := range trust.Verifications {
+			if err := ctx.Err(); err != nil {
+				return conceptProjectionDTO{}, err
+			}
+			if event.Verification.Valid {
+				projection.Verified = append(projection.Verified, verificationDTO{
+					By:      event.Verification.Value.By,
+					At:      event.Verification.AtValue.Time.Format(time.RFC3339Nano),
+					Current: &event.Current, Reason: event.Reason,
+				})
+			}
+		}
+	} else {
+		for _, verification := range collections.Verified {
+			if err := ctx.Err(); err != nil {
+				return conceptProjectionDTO{}, err
+			}
+			if verification.By != "" && validTimestamp(verification.At) {
+				projection.Verified = append(projection.Verified, verificationDTO{By: verification.By, At: verification.At})
+			}
+		}
+	}
+	if projection.Trust == "" {
+		trust, err := document.TrustTierForVersionContext(ctx, version)
+		if err != nil {
+			return conceptProjectionDTO{}, err
+		}
+		projection.Trust = string(trust)
 	}
 	staleAfter, err := document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
 	if err != nil {
@@ -657,6 +723,9 @@ func projectDocumentCollectionsForProfileContext(ctx context.Context, document b
 	if staleAfter.Value.State == bundle.TemporalValid {
 		value := staleAfter.Value.Raw
 		projection.StaleAfter = &value
+	}
+	if profile == bundle.TemporalProfileV03 {
+		projection.StaleAfterState = staleAfter.Value.State
 	}
 	if computation := collections.Computation; computation != nil {
 		parameters := make([]computationParameterDTO, 0, len(computation.Parameters))
@@ -688,6 +757,11 @@ func projectDocumentCollectionsForProfileContext(ctx context.Context, document b
 		}
 		if computation.Attester != nil {
 			dto.Attester = &attesterDTO{Resource: computation.Attester.Resource}
+		}
+		if state := collections.ComputationState; state != nil {
+			dto.Attestable = &state.Attestable
+			dto.UnavailableReason = state.UnavailableReason
+			dto.Mode = string(state.Mode)
 		}
 		projection.Computation = dto
 	}
@@ -878,10 +952,6 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	if result != nil {
 		return result, nil
 	}
-	asOf, result := optionalTemporalReference(request, "as_of", profile)
-	if result != nil {
-		return result, nil
-	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
 		return result, nil
@@ -926,12 +996,22 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	if err != nil {
 		return bundleLoadError("resolve bundle version", err), nil
 	}
+	profile = bundle.TemporalProfileForVersion(resolution, profile)
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
+	if result != nil {
+		return result, nil
+	}
 	declaration, err := loaded.VersionDeclarationStateContext(ctx)
 	if err != nil {
 		return bundleLoadError("read bundle version declaration", err), nil
 	}
 	response := listConceptsResponse{Concepts: make([]conceptSummary, 0, len(concepts))}
+	metadata, err := loaded.BundleMetadataContext(ctx, resolution)
+	if err != nil {
+		return bundleDomainError("read bundle metadata", "bundle metadata exceeds MCP limits", err), nil
+	}
 	structured := listConceptsStructured{
+		BundleMetadata:     metadata,
 		Version:            versionDTOFromBundle(resolution),
 		VersionDeclaration: versionDeclarationDTOFromBundle(declaration),
 		TemporalProfile:    profile,
@@ -945,7 +1025,7 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		if result := requestContextCheckpoint(ctx, "project concept list"); result != nil {
 			return result, nil
 		}
-		fallback, result := legacyFallbackObservation(ctx, concept.Document)
+		fallback, result := legacyFallbackObservation(ctx, concept.Document, resolution)
 		if result != nil {
 			return result, nil
 		}
@@ -957,7 +1037,11 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			Title: title,
 			Path:  relativeSlashPath(root, concept.Path),
 		})
-		status := statusStateFromBundle(concept.Document.StatusState())
+		lifecycle, err := concept.Document.StatusStateForVersionContext(ctx, resolution)
+		if err != nil {
+			return bundleDomainError("project concept status", "concept list exceeds MCP resource limits", err), nil
+		}
+		status := statusStateFromBundle(lifecycle)
 		sources, sourcesErr := concept.Document.SourcesContext(ctx)
 		if sourcesErr != nil {
 			return bundleDomainError(
@@ -967,7 +1051,7 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			), nil
 		}
 		sourceCount := len(sources)
-		if profile == bundle.TemporalProfileInstant {
+		if profile != bundle.TemporalProfileDate {
 			states, err := concept.Document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
 			if err != nil {
 				return bundleDomainError("project concept sources", "concept list exceeds MCP resource limits", err), nil
@@ -979,7 +1063,7 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 				}
 			}
 		}
-		trust, trustErr := concept.Document.TrustTierContext(ctx)
+		trust, trustErr := concept.Document.TrustTierForVersionContext(ctx, resolution)
 		if trustErr != nil {
 			return bundleDomainError(
 				"project concept list",
@@ -988,6 +1072,26 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			), nil
 		}
 		computation, computationErr := computationMarkerContext(ctx, concept.Document)
+		if resolution.Effective == bundle.OKFVersion03 {
+			state, err := loaded.ComputationStateContext(ctx, concept)
+			computationErr = err
+			computation = computationMarkerDTO{Present: state.TypeMatches}
+			if state.TypeMatches {
+				computation.Attestable = &state.Attestable
+				computation.UnavailableReason = state.UnavailableReason
+				computation.Mode = string(state.Mode)
+				contract := state.Contract
+				if contract.Runtime != "" {
+					computation.Runtime = &contract.Runtime
+				}
+				if contract.Executor != nil {
+					computation.Executor = &contract.Executor.Resource
+				}
+				if contract.Attester != nil {
+					computation.Attester = &contract.Attester.Resource
+				}
+			}
+		}
 		if computationErr != nil {
 			return bundleDomainError(
 				"project concept list",
@@ -1030,7 +1134,17 @@ func handleListConcepts(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 			value := staleAfter.Value.Raw
 			summary.StaleAfter = &value
 		}
-		if value, ok := concept.Document.EffectiveContentChangeTime(); ok && validTimestamp(value) {
+		if profile == bundle.TemporalProfileV03 {
+			summary.StaleAfterState = staleAfter.Value.State
+			generation, err := concept.Document.Frontmatter.GenerationStateForProfileContext(ctx, profile)
+			if err != nil {
+				return bundleDomainError("project content change time", "concept list exceeds MCP resource limits", err), nil
+			}
+			if generation.HasValue && generation.At.State == bundle.TemporalValid {
+				value := generation.At.Time.Format(time.RFC3339Nano)
+				summary.GeneratedAt = &value
+			}
+		} else if value, ok := concept.Document.EffectiveContentChangeTime(); ok && validTimestamp(value) {
 			summary.GeneratedAt = &value
 		}
 		structured.Concepts = append(structured.Concepts, summary)
@@ -1104,14 +1218,6 @@ func readConceptFromBundleContext(
 	if len(document.FrontmatterYAML()) > maxFrontmatterBytes {
 		return stableToolError("resource_limit", "concept frontmatter exceeds the MCP limit", false)
 	}
-	fallback, result := legacyFallbackObservation(ctx, document)
-	if result != nil {
-		return result
-	}
-	projection, result := projectDocumentForProfileContext(ctx, document, profile)
-	if result != nil {
-		return result
-	}
 	declaration, err := loaded.VersionDeclarationStateContext(ctx)
 	if err != nil {
 		return bundleLoadError("read captured version declaration", err)
@@ -1128,6 +1234,23 @@ func readConceptFromBundleContext(
 			return bundleLoadError("resolve captured bundle version", resolveErr)
 		}
 		return bundleParseErrorResult(root, "index.md", resolveErr)
+	}
+	fallback, result := legacyFallbackObservation(ctx, document, resolved)
+	if result != nil {
+		return result
+	}
+	profile = bundle.TemporalProfileForVersion(resolved, profile)
+	var computation []bundle.AttestedComputationState
+	if resolved.Effective == bundle.OKFVersion03 {
+		state, err := loaded.ComputationStateContext(ctx, concept)
+		if err != nil {
+			return bundleLoadError("resolve captured computation", err)
+		}
+		computation = append(computation, state)
+	}
+	projection, result := projectDocumentForProfileContext(ctx, document, profile, resolved, computation...)
+	if result != nil {
+		return result
 	}
 	structured := readConceptStructured{
 		ID:                 id.String(),
@@ -1159,8 +1282,9 @@ func conceptNotFoundResult(id bundle.ConceptID) *mcp.CallToolResult {
 func legacyFallbackObservation(
 	ctx context.Context,
 	document bundle.Document,
+	version bundle.VersionResolution,
 ) (bundle.LegacyFallbackObservation, *mcp.CallToolResult) {
-	observation, err := document.LegacyFallbackObservationContext(ctx)
+	observation, err := document.LegacyFallbackForVersionContext(ctx, version)
 	if err == nil {
 		return observation, nil
 	}
@@ -1195,15 +1319,11 @@ func handleValidateBundle(ctx context.Context, request mcp.CallToolRequest) (*mc
 		return result, nil
 	}
 	switch targetVersion {
-	case "auto", bundle.LegacyOKFVersion, bundle.OKFVersion:
+	case "auto", bundle.LegacyOKFVersion, bundle.OKFVersion, bundle.OKFVersion03:
 	default:
-		return toolErrorf("argument %q must be auto, 0.1, or 0.2", "target_version"), nil
+		return toolErrorf("argument %q must be auto, 0.1, 0.2, or 0.3", "target_version"), nil
 	}
 	profile, result := optionalTemporalProfile(request)
-	if result != nil {
-		return result, nil
-	}
-	asOf, result := optionalTemporalReference(request, "as_of", profile)
 	if result != nil {
 		return result, nil
 	}
@@ -1211,9 +1331,19 @@ func handleValidateBundle(ctx context.Context, request mcp.CallToolRequest) (*mc
 	if result != nil {
 		return result, nil
 	}
-	loaded, err := loadBundleContext(ctx, root)
+	selector := targetVersion
+	if selector == "auto" {
+		selector = ""
+	}
+	loaded, err := loadBundleContext(ctx, root, selector)
 	if err != nil {
 		return bundleLoadError("load bundle", err), nil
+	}
+	resolvedVersion, _ := loaded.VersionResolutionContext(ctx, selector)
+	profile = bundle.TemporalProfileForVersion(resolvedVersion, profile)
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
+	if result != nil {
+		return result, nil
 	}
 	cfg := validator.ValidatorConfig{
 		Strict:          strict,
@@ -1293,10 +1423,6 @@ func handleSemanticGraph(ctx context.Context, request mcp.CallToolRequest) (*mcp
 	if result != nil {
 		return result, nil
 	}
-	asOf, result := optionalTemporalReference(request, "as_of", profile)
-	if result != nil {
-		return result, nil
-	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
 		return result, nil
@@ -1309,6 +1435,15 @@ func handleSemanticGraph(ctx context.Context, request mcp.CallToolRequest) (*mcp
 		return result, nil
 	}
 
+	version, err := loaded.VersionResolutionContext(ctx, "")
+	if err != nil {
+		return bundleLoadError("resolve bundle version", err), nil
+	}
+	profile = bundle.TemporalProfileForVersion(version, profile)
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
+	if result != nil {
+		return result, nil
+	}
 	// Keep the historical renderer byte-for-byte as text fallback while
 	// applying the same explicit transport ceiling as the structured profile.
 	legacy := newBoundedOutputBuffer(maxConceptReadBytes)
@@ -1446,7 +1581,7 @@ func handleWriteConcept(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	if !utf8.ValidString(frontmatterText) || !utf8.ValidString(body) {
 		return toolError(bundle.ErrInvalidEncoding.Error()), nil
 	}
-	frontmatter, err := bundle.ParseFrontmatterContext(ctx, frontmatterText)
+	frontmatter, _, err := parseWriteFrontmatterContext(ctx, frontmatterText)
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) ||
 			errors.Is(err, bundle.ErrYAMLResourceLimit) ||
@@ -2498,12 +2633,12 @@ func bundleDomainError(operation, resourceMessage string, err error) *mcp.CallTo
 	return toolErrorf("%s: %v", operation, err)
 }
 
-func loadBundleContext(ctx context.Context, root string) (*bundle.Bundle, error) {
+func loadBundleContext(ctx context.Context, root string, selectors ...string) (*bundle.Bundle, error) {
 	observeLegacyToolIO(ctx, func(observer legacyToolIOObserver) func() {
 		return observer.sourceOpen
 	})
 	source := &bundle.FileSystemSource{Root: root}
-	return loadOwnedBundleSourceContext(ctx, source)
+	return loadOwnedBundleSourceContext(ctx, source, selectors...)
 }
 
 type ownedBundleSource interface {
@@ -2518,6 +2653,7 @@ type ownedBundleSource interface {
 func loadOwnedBundleSourceContext(
 	ctx context.Context,
 	source ownedBundleSource,
+	selectors ...string,
 ) (loaded *bundle.Bundle, err error) {
 	if source == nil {
 		return nil, errNilOwnedBundleSource
@@ -2529,11 +2665,15 @@ func loadOwnedBundleSourceContext(
 		}
 		err = errors.Join(err, closeErr)
 	}()
-	return loadBoundedSource(ctx, source)
+	return loadBoundedSource(ctx, source, selectors...)
 }
 
-func loadBoundedSource(ctx context.Context, source bundle.Source) (*bundle.Bundle, error) {
-	loaded, err := bundle.Load(ctx, &boundedBundleSource{source: source})
+func loadBoundedSource(ctx context.Context, source bundle.Source, selectors ...string) (*bundle.Bundle, error) {
+	selector := ""
+	if len(selectors) > 0 {
+		selector = selectors[0]
+	}
+	loaded, err := bundle.LoadWithSpec(ctx, &boundedBundleSource{source: source}, selector)
 	if err != nil {
 		return nil, err
 	}
@@ -2600,7 +2740,7 @@ func (s *boundedBundleSource) ReadFile(ctx context.Context, path string) ([]byte
 // syntax, frontmatter, and encoding failures intentionally remain per-file
 // Bundle.ParseErrors; only cancellation and typed graph failures abort capture.
 func validateMCPDocumentYAMLContext(ctx context.Context, data []byte) error {
-	_, err := bundle.ParseDocumentContext(ctx, string(data))
+	_, err := parseDocumentForMCPYAMLContext(ctx, data)
 	switch {
 	case err == nil:
 		return nil
@@ -2613,6 +2753,14 @@ func validateMCPDocumentYAMLContext(ctx context.Context, data []byte) error {
 	default:
 		return nil
 	}
+}
+
+func parseDocumentForMCPYAMLContext(ctx context.Context, data []byte) (bundle.Document, error) {
+	document, err := bundle.ParseDocumentContext(ctx, string(data))
+	if err == nil || ctx.Err() != nil || bytes.IndexByte(data, '%') < 0 || !errors.Is(err, bundle.ErrInvalidFrontmatter) {
+		return document, err
+	}
+	return bundle.ParseDocumentForVersionContext(ctx, string(data), bundle.VersionResolution{Effective: bundle.OKFVersion03})
 }
 
 func normalizeBundleRootContext(ctx context.Context, raw string) (string, error) {
@@ -2870,7 +3018,7 @@ func optionalTemporalProfile(request mcp.CallToolRequest) (bundle.TemporalProfil
 }
 
 func optionalTemporalReference(request mcp.CallToolRequest, key string, profile bundle.TemporalProfile) (*time.Time, *mcp.CallToolResult) {
-	if profile != bundle.TemporalProfileInstant {
+	if profile == bundle.TemporalProfileDate {
 		return optionalDate(request, key)
 	}
 	args := request.GetArguments()
@@ -2882,7 +3030,11 @@ func optionalTemporalReference(request mcp.CallToolRequest, key string, profile 
 	if !ok {
 		return nil, toolErrorf("argument %q is not a string", key)
 	}
-	parsed, err := bundle.ParseOffsetDateTime(raw)
+	parse := bundle.ParseOffsetDateTime
+	if profile == bundle.TemporalProfileV03 {
+		parse = bundle.ParseTimestampV03
+	}
+	parsed, err := parse(raw)
 	if err != nil {
 		return nil, toolErrorf("argument %q must be an RFC3339 datetime with UTC offset", key)
 	}
@@ -2890,7 +3042,7 @@ func optionalTemporalReference(request mcp.CallToolRequest, key string, profile 
 }
 
 func formatMCPTemporalReference(at time.Time, profile bundle.TemporalProfile) string {
-	if profile == bundle.TemporalProfileInstant {
+	if profile != bundle.TemporalProfileDate {
 		return at.Format(time.RFC3339Nano)
 	}
 	return at.Format(time.DateOnly)

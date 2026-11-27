@@ -6,7 +6,7 @@ inputs:
     required: false
     default: .
   spec:
-    description: OKF version selector (auto, 0.1, or 0.2)
+    description: OKF version selector (auto, 0.1, 0.2, or 0.3)
     required: false
     default: auto
   temporal-profile:
@@ -26,7 +26,7 @@ inputs:
     required: false
     default: 'false'
   as-of:
-    description: Reference date or offset datetime according to temporal-profile; empty uses the toolkit default
+    description: Reference date or offset date-time according to the selected OKF contract. Empty leaves freshness unevaluated.
     required: false
     default: ''
   max-warnings:

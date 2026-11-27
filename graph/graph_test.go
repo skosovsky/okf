@@ -223,10 +223,10 @@ func TestRenderNTriplesRelationExistenceContract(t *testing.T) {
 
 	// Act.
 	var first, second strings.Builder
-	if err := RenderNTriples(&first, b); err != nil {
+	if err := RenderNTriplesWithOptions(&first, b, Options{VersionSelector: bundle.OKFVersion}); err != nil {
 		t.Fatalf("RenderNTriples(first) error = %v", err)
 	}
-	if err := RenderNTriples(&second, b); err != nil {
+	if err := RenderNTriplesWithOptions(&second, b, Options{VersionSelector: bundle.OKFVersion}); err != nil {
 		t.Fatalf("RenderNTriples(second) error = %v", err)
 	}
 

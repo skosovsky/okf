@@ -35,13 +35,14 @@ type documentSessionState struct {
 	closeErr    error
 	attempted   bool
 
-	rootPath     string
-	targetPath   string
-	relativePath string
-	selector     string
-	bytes        []byte
-	document     Document
-	resolution   VersionResolution
+	rootPath         string
+	targetPath       string
+	relativePath     string
+	selector         string
+	bytes            []byte
+	document         Document
+	resolution       VersionResolution
+	computationScope *Bundle
 
 	target      documentFileGuard
 	rootIndex   documentFileGuard
@@ -229,13 +230,13 @@ func openDocumentSessionContext(
 	if !present {
 		return nil, fmt.Errorf("capture document %q: %w", discovery.target, fs.ErrNotExist)
 	}
-	document, err := ParseDocumentContext(ctx, string(capturedBytes))
-	if err != nil {
-		return nil, fmt.Errorf("parse document %q: %w", discovery.target, err)
-	}
 	resolution, err := loaded.VersionResolutionContext(ctx, selector)
 	if err != nil {
 		return nil, fmt.Errorf("resolve OKF version: %w", err)
+	}
+	document, err := ParseDocumentForVersionContext(ctx, string(capturedBytes), resolution)
+	if err != nil {
+		return nil, fmt.Errorf("parse document %q: %w", discovery.target, err)
 	}
 
 	directory, leaf := path.Split(relativePath)
@@ -302,6 +303,9 @@ func openDocumentSessionContext(
 			discovery:    recoveredDiscovery,
 			publishHook:  hooks.publish,
 		},
+	}
+	if resolution.Effective == OKFVersion03 && document.IsAttestedComputation() {
+		session.state.computationScope = loaded
 	}
 	return session, nil
 }
@@ -386,6 +390,26 @@ func (s *DocumentSession) VersionResolution() VersionResolution {
 	return s.state.resolution
 }
 
+// ComputationStateContext resolves a captured computation without reading
+// more files from disk. The session must still be open.
+func (s *DocumentSession) ComputationStateContext(ctx context.Context) (AttestedComputationState, error) {
+	if s == nil || s.state == nil {
+		return AttestedComputationState{}, documentConflict("nil session", nil)
+	}
+	state := s.state
+	state.mu.Lock()
+	closed, scope := state.closed || state.closing, state.computationScope
+	state.mu.Unlock()
+	if closed {
+		return AttestedComputationState{}, documentConflict("session is closed", nil)
+	}
+	if scope == nil {
+		return state.document.AttestedComputationStateForVersionContext(ctx, state.resolution)
+	}
+	concept := Concept{Path: state.relativePath, Document: state.document}
+	return scope.computationStateForVersionContext(ctx, concept, state.resolution)
+}
+
 // RewriteContext serializes document and atomically publishes it only if every
 // captured identity, byte sequence, mode, declaration dependency, and ancestor
 // is unchanged. The first call consumes the session even when it fails.
@@ -409,18 +433,37 @@ func (s *DocumentSession) RewriteContext(ctx context.Context, document Document)
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	serialized, err := document.Serialize()
+	serialized, err := document.SerializeForVersion(state.resolution)
 	if err != nil {
 		return err
 	}
 	data := []byte(serialized)
+	version := state.resolution
 	if state.relativePath == indexFilename {
-		state := document.Frontmatter.VersionDeclarationState()
-		if state.Present && !state.Valid {
-			return fmt.Errorf("%w: %q", ErrInvalidVersionDeclaration, state.Raw)
+		declaration, declarationErr := document.Frontmatter.rootVersionDeclarationStateContext(ctx, state.selector)
+		if declarationErr != nil {
+			return declarationErr
 		}
-		if _, err := ResolveVersion(state.Value, s.state.selector); err != nil {
+		if declaration.Present && !declaration.Valid {
+			return fmt.Errorf("%w: %q", ErrInvalidVersionDeclaration, declaration.Raw)
+		}
+		version, err = ResolveVersion(declaration.Value, state.selector)
+		if err != nil {
 			return err
+		}
+	}
+	if version.Effective == OKFVersion03 || state.resolution.Effective == OKFVersion03 {
+		parsed, err := ParseDocumentForVersionContext(ctx, serialized, VersionResolution{Effective: OKFVersion03})
+		if err != nil {
+			return err
+		}
+		if path.Base(state.relativePath) == "log.md" {
+			if parsed.HasFrontmatter {
+				return errors.New("log.md must not contain frontmatter")
+			}
+			if err := validateV03LogBody(ctx, parsed.Body); err != nil {
+				return err
+			}
 		}
 	}
 	return mapDocumentPublicError(
@@ -457,6 +500,7 @@ func (s *DocumentSession) Close() error {
 	state.parent = nil
 	state.source = nil
 	state.releaseLock = nil
+	state.computationScope = nil
 	state.mu.Unlock()
 
 	var err error
@@ -479,15 +523,11 @@ func (s *DocumentSession) Close() error {
 }
 
 func cloneDocumentValue(document Document) Document {
-	return Document{
-		Frontmatter: Frontmatter{
-			node: cloneYAMLNode(&document.Frontmatter.node),
-			raw:  append([]byte(nil), document.Frontmatter.raw...),
-		},
-		Body:            document.Body,
-		HasFrontmatter:  document.HasFrontmatter,
-		frontmatterYAML: append([]byte(nil), document.frontmatterYAML...),
-	}
+	document.Frontmatter.node = cloneYAMLNode(&document.Frontmatter.node)
+	document.Frontmatter.raw = append([]byte(nil), document.Frontmatter.raw...)
+	document.Frontmatter.directiveWarnings = document.Frontmatter.YAMLDirectiveWarnings()
+	document.frontmatterYAML = append([]byte(nil), document.frontmatterYAML...)
+	return document
 }
 
 func documentConflict(reason string, err error) error {
@@ -643,7 +683,7 @@ func inspectAncestorIndex(
 		return documentAbsoluteIndexGuard{}, VersionDeclarationState{},
 			documentConflict("ancestor root index observation changed during discovery", err)
 	}
-	document, parseErr := ParseDocumentContext(ctx, string(data))
+	document, parseErr := parseRootIndexVersionProbeContext(ctx, string(data), "")
 	state := VersionDeclarationState{Valid: true}
 	if parseErr != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
@@ -654,7 +694,10 @@ func inspectAncestorIndex(
 		}
 		state = VersionDeclarationState{Present: true}
 	} else {
-		state = document.Frontmatter.VersionDeclarationState()
+		state, err = document.Frontmatter.rootVersionDeclarationStateContext(ctx, "")
+		if err != nil {
+			return documentAbsoluteIndexGuard{}, VersionDeclarationState{}, err
+		}
 	}
 	return documentAbsoluteIndexGuard{
 		path:    indexPath,

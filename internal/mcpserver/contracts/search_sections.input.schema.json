@@ -25,6 +25,11 @@
       "minimum": 1,
       "maximum": 100,
       "description": "Maximum sections, default 20; no cursor."
+    },
+    "current_only": {
+      "type": "boolean",
+      "default": false,
+      "description": "OKF 0.3: omit retired concepts without a current replacement and identify current replacements for historical matches."
     }
   }
 }

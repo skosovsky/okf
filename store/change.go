@@ -952,9 +952,13 @@ func validateUsageWindowForProfile(window UsageWindow, profile bundle.TemporalPr
 	if err := validateTemporalForProfile("usage_window.to", window.To, profile); err != nil {
 		return err
 	}
-	if profile == bundle.TemporalProfileInstant {
-		from, _ := bundle.ParseOffsetDateTime(window.From)
-		to, _ := bundle.ParseOffsetDateTime(window.To)
+	if profile == bundle.TemporalProfileInstant || profile == bundle.TemporalProfileV03 {
+		parse := bundle.ParseOffsetDateTime
+		if profile == bundle.TemporalProfileV03 {
+			parse = bundle.ParseTimestampV03
+		}
+		from, _ := parse(window.From)
+		to, _ := parse(window.To)
 		if from.After(to) {
 			return invalidOperation("usage window starts after it ends")
 		}
@@ -1279,6 +1283,12 @@ func validateDate(kind, value string) error {
 }
 
 func validateTemporalForProfile(kind, value string, profile bundle.TemporalProfile) error {
+	if profile == bundle.TemporalProfileV03 {
+		if _, err := bundle.ParseTimestampV03(value); err != nil {
+			return invalidOperation("invalid " + kind)
+		}
+		return nil
+	}
 	if profile != bundle.TemporalProfileInstant {
 		return validateDate(kind, value)
 	}

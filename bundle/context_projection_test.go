@@ -202,9 +202,9 @@ func TestSegmentsContextEntryCancellationIsExactCallsite(t *testing.T) {
 		line     int
 	}{
 		{"ConceptID.SegmentsContext", 81},
-		{"stringFromStringContext", 378},
-		{"stringFromStringContext", 384},
-		{"stringFromStringContext", 392},
+		{"stringFromStringContext", 447},
+		{"stringFromStringContext", 453},
+		{"stringFromStringContext", 461},
 		{"conceptIDSegmentsFinalContext", 99},
 	}
 	if len(trace.calls) != len(wantTrace) {

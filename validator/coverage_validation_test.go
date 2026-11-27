@@ -195,8 +195,8 @@ func TestParseDiagnosticsAreEmittedExactlyOnceAcrossOptionalPasses(t *testing.T)
 
 	// Assert.
 	for _, want := range []Diagnostic{
-		{Code: "concept_unparseable", SpecRef: "okf-v0.2#11.1", File: "bad.md", FieldPath: "frontmatter", Severity: SeverityError},
-		{Code: "index_structure_invalid", SpecRef: "okf-v0.2#11.3", File: "index.md", FieldPath: "frontmatter", Severity: SeverityError},
+		{Code: "concept_unparseable", SpecRef: "okf-v0.3#11.1", File: "bad.md", FieldPath: "frontmatter", Severity: SeverityError},
+		{Code: "index_structure_invalid", SpecRef: "okf-v0.3#11.3", File: "index.md", FieldPath: "frontmatter", Severity: SeverityError},
 	} {
 		count := 0
 		for _, diagnostic := range report.Diagnostics {

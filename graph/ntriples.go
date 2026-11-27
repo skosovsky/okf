@@ -63,7 +63,8 @@ func renderNTriplesWithOptionsContext(ctx context.Context, w io.Writer, b *bundl
 	if options.Profile == ProjectionProfileToolkitV02 || options.Profile == ProjectionProfileToolkitV02Instant {
 		return renderToolkitNTriplesContext(ctx, w, b, options)
 	}
-	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+	b, _, err = selectGraphBundleContext(ctx, b, options)
+	if err != nil {
 		return err
 	}
 	return renderLegacyNTriplesContext(ctx, w, b, options)

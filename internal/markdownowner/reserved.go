@@ -5,7 +5,10 @@ import (
 	"strings"
 
 	"github.com/skosovsky/okf/internal/markdownlimit"
+	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
+	tableast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -17,6 +20,7 @@ const (
 	TopLevelOther   TopLevelBlockKind = "other"
 	TopLevelHeading TopLevelBlockKind = "heading"
 	TopLevelList    TopLevelBlockKind = "list"
+	TopLevelTable   TopLevelBlockKind = "table"
 	TopLevelCode    TopLevelBlockKind = "code"
 )
 
@@ -67,11 +71,28 @@ func TopLevelStructure(markdown string) []TopLevelBlock {
 // TopLevelStructureContext is the cancellation-aware form of
 // TopLevelStructure.
 func TopLevelStructureContext(ctx context.Context, markdown string) ([]TopLevelBlock, error) {
+	return topLevelStructureContext(ctx, markdown, parseValidatedMarkdownContext)
+}
+
+var indexMarkdown = goldmark.New(goldmark.WithExtensions(extension.Table))
+
+// TopLevelIndexStructureContext also recognizes GFM tables in OKF 0.3 indexes.
+func TopLevelIndexStructureContext(ctx context.Context, markdown string) ([]TopLevelBlock, error) {
+	return topLevelStructureContext(ctx, markdown, func(ctx context.Context, source []byte) (ast.Node, error) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		document := indexMarkdown.Parser().Parse(text.NewReader(source))
+		return document, ctx.Err()
+	})
+}
+
+func topLevelStructureContext(ctx context.Context, markdown string, parse func(context.Context, []byte) (ast.Node, error)) ([]TopLevelBlock, error) {
 	if err := validateMarkdownStringContext(ctx, markdown, markdownlimit.ResourceBodyBytes); err != nil {
 		return nil, err
 	}
 	source := []byte(markdown)
-	document, err := parseValidatedMarkdownContext(ctx, source)
+	document, err := parse(ctx, source)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +128,17 @@ func TopLevelStructureContext(ctx context.Context, markdown string) ([]TopLevelB
 			}
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
 			block.Kind = TopLevelCode
+		case *tableast.Table:
+			block.Kind = TopLevelTable
+			for row := node.FirstChild(); row != nil; row = row.NextSibling() {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+				if _, ok := row.(*tableast.TableRow); ok && blockHasLink(row) {
+					block.HasLink = true
+					break
+				}
+			}
 		default:
 			block.HasLink = blockHasLink(child)
 		}

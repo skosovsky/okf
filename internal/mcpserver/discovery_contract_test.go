@@ -82,6 +82,58 @@ func TestTwoMCPServerCatalogsRequireServerQualifiedSelection(t *testing.T) {
 	}
 }
 
+func TestProductionMCPAcceptsVersionedQueryComparisonTimes(t *testing.T) {
+	// Arrange.
+	srv, err := NewServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := client.NewInProcessClient(srv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	if err := c.Start(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var initialize mcp.InitializeRequest
+	initialize.Params.ProtocolVersion = mcp.LATEST_PROTOCOL_VERSION
+	initialize.Params.ClientInfo = mcp.Implementation{Name: "query-test", Version: "1.0.0"}
+	if _, err := c.Initialize(t.Context(), initialize); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct{ version, profile, asOf, want string }{
+		{"0.2", "date-3fcbb9f", "2026-11-27", "2026-11-27"},
+		{"0.2", "instant-0b87c52", "2026-11-27T07:00:00+07:00", "2026-11-27T07:00:00+07:00"},
+		{"0.3", "", "2026-11-27", "2026-11-27T00:00:00Z"},
+		{"0.3", "", "2026-11-27T07:00:00+07:00", "2026-11-27T07:00:00+07:00"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.version+"/"+tt.asOf, func(t *testing.T) {
+			root := t.TempDir()
+			writeTestFile(t, root, "index.md", "---\nokf_version: '"+tt.version+"'\n---\n# Notes\n\n- [Alpha](alpha.md)\n")
+			writeTestFile(t, root, "alpha.md", "---\ntype: Note\n---\nAlpha.\n")
+			for tool, selector := range map[string]string{"search_concepts": "query", "get_neighbors": "concept_id"} {
+				arguments := map[string]any{"bundle_path": root, "as_of": tt.asOf, selector: "alpha"}
+				if tt.profile != "" {
+					arguments["temporal_profile"] = tt.profile
+				}
+
+				// Act through the server that enables production output validation.
+				result, err := c.CallTool(t.Context(), mcp.CallToolRequest{Params: mcp.CallToolParams{Name: tool, Arguments: arguments}})
+
+				// Assert.
+				if err != nil || result == nil || result.IsError {
+					t.Fatalf("%s: result=%#v, err=%v", tool, result, err)
+				}
+				if data, ok := result.StructuredContent.(map[string]any); !ok || data["as_of"] != tt.want {
+					t.Fatalf("%s: unexpected comparison time in %#v, want %s", tool, result.StructuredContent, tt.want)
+				}
+			}
+		})
+	}
+}
+
 func TestToolDiscoveryAnnotationsAndStableWireList(t *testing.T) {
 	// Arrange.
 	tools := mustServerTools(t)

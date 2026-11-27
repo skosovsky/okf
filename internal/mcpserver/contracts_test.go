@@ -96,12 +96,29 @@ var advertisedContractRows = []advertisedContractRow{
 		arguments["plan_digest"] = plan["plan_digest"]
 		return arguments
 	}},
+	{name: "preview_v03_migration", readOnly: true, handler: handlePreviewV03Migration, input: func(_ *testing.T, root string) map[string]any {
+		return map[string]any{"bundle_path": root, "id": "migrate-v03", "actor": "human:reviewer", "assume_v02": true}
+	}},
+	{name: "apply_v03_migration", handler: handleApplyV03Migration, input: func(t *testing.T, root string) map[string]any {
+		arguments := map[string]any{"bundle_path": root, "id": "migrate-v03", "actor": "human:reviewer", "assume_v02": true}
+		preview := callHandler(t, contractToolHandler("preview_v03_migration", handlePreviewV03Migration), arguments)
+		if preview.IsError {
+			t.Fatalf("migration preview: %s", resultText(t, preview))
+		}
+		plan := preview.StructuredContent.(migrationV03PreviewResponse)
+		if plan.Status != "ready" {
+			t.Fatalf("migration preview: %+v", plan)
+		}
+		arguments["base_revision"] = plan.BaseRevision
+		arguments["plan_digest"] = plan.PlanDigest
+		return arguments
+	}},
 }
 
 func TestAdvertisedContractMatrix(t *testing.T) {
 	// Arrange.
-	if len(advertisedContractRows) != 14 {
-		t.Fatalf("advertised rows = %d, want 14", len(advertisedContractRows))
+	if len(advertisedContractRows) != 16 {
+		t.Fatalf("advertised rows = %d, want 16", len(advertisedContractRows))
 	}
 	tools := mustServerTools(t)
 	if len(tools) != len(advertisedContractRows) {
@@ -175,8 +192,8 @@ func TestCheckedInSchemaClosureMatrix(t *testing.T) {
 	for _, row := range advertisedContractRows {
 		contracts = append(contracts, row.name+".input", row.name+".output")
 	}
-	if len(contracts) != 32 {
-		t.Fatalf("schema descriptors = %d, want 32", len(contracts))
+	if len(contracts) != 36 {
+		t.Fatalf("schema descriptors = %d, want 36", len(contracts))
 	}
 	for _, name := range contracts {
 		t.Run(name, func(t *testing.T) {

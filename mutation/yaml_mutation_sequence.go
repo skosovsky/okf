@@ -431,7 +431,7 @@ func (m *yamlMutation) validateMappingEntryUniqueness(
 	// unrelated sibling YAML. Whole-value mutation paths retain recursive
 	// uniqueness and provenance checks.
 	var candidates []yamlRenderValue
-	if sourcePresent {
+	if sourcePresent && (match.value.Kind != yaml.ScalarNode || match.value.Tag != "!!null") {
 		base, renderErr := yamlRenderFromNodeIgnoringCommentsContext(m.ctx, match.value)
 		if renderErr != nil {
 			return m.p.renderNodeError(renderErr, match.value)
@@ -443,11 +443,15 @@ func (m *yamlMutation) validateMappingEntryUniqueness(
 		if indexErr != nil {
 			return indexErr
 		}
-		accumulated, renderErr := yamlRenderFromSemanticContext(m.ctx, expected.Content[index+1])
-		if renderErr != nil {
-			return m.p.preserveTraversalError(renderErr, "semantic_edit_path", ErrUnsupportedPresentation, match.value, mapping)
+		current := expected.Content[index+1]
+		// A null scalar has no keys or sequence identities to validate.
+		if current.Kind != yaml.ScalarNode || current.Tag != "!!null" {
+			accumulated, renderErr := yamlRenderFromSemanticContext(m.ctx, current)
+			if renderErr != nil {
+				return m.p.preserveTraversalError(renderErr, "semantic_edit_path", ErrUnsupportedPresentation, match.value, mapping)
+			}
+			candidates = append(candidates, accumulated)
 		}
-		candidates = append(candidates, accumulated)
 	}
 	if mode != "delete" {
 		candidates = append(candidates, value)

@@ -4,17 +4,17 @@
     "okf-backfill": {
       "source": ".",
       "sourceType": "local",
-      "computedHash": "9cefbe8944fdcde613666f689c38ce128a12cd20dcf421e786c76004439bdf29"
+      "computedHash": "47650b8525e426e0600f6271d187c300c979443743c6e57d85b3b995fed1b4af"
     },
     "okf-maintain": {
       "source": ".",
       "sourceType": "local",
-      "computedHash": "f2cca9161808c70b8a0673964e2d2356a88ee7586cec3253bc54bd257fe56f56"
+      "computedHash": "999c328ebb63befd6f53158cb73808abe8ec066284c47bfbf3a9cb8a279ef728"
     },
     "open-knowledge-format": {
       "source": ".",
       "sourceType": "local",
-      "computedHash": "4d89a31d756e39cf9ef081a5fbfa993f0f139cfae13881d0932abbbf18ee70f6"
+      "computedHash": "89142f24b6413e2a7c6d22e72e4ae849c77aef516c02e72a5170fabaa78ae81d"
     }
   }
 }

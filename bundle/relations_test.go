@@ -395,7 +395,7 @@ func TestSubresourceIndexScopesDuplicateExplicitMappingKeys(t *testing.T) {
 	writeFile(t, root, "source.md", "---\ntype: Note\nrelations:\n  depends_on:\n    - target: target#one\n    - target: target#two\n    - target: target#three\n    - target: target#four\n    - target: target#canonical\n    - target: target#later\n---\nSource\n")
 
 	// Act.
-	loaded, err := LoadBundle(root)
+	loaded, err := LoadBundleWithSpec(root, OKFVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,7 +490,7 @@ func TestNestedIdentityPolicyScopesDuplicateExplicitMappingKeys(t *testing.T) {
 	writeFile(t, root, "target.md", "---\ntype: Note\n---\nTarget\n")
 
 	// Act.
-	loaded, err := LoadBundle(root)
+	loaded, err := LoadBundleWithSpec(root, OKFVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -711,7 +711,7 @@ func TestBundleInvalidNestedIdentityDoesNotInheritParentSource(t *testing.T) {
 	writeFile(t, root, "target.md", "---\ntype: Note\n---\nTarget\n")
 
 	// Act.
-	loaded, err := LoadBundle(root)
+	loaded, err := LoadBundleWithSpec(root, OKFVersion)
 	if err != nil {
 		t.Fatal(err)
 	}

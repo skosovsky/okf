@@ -4,7 +4,7 @@
   "groupings": [
     {
       "title": "Knowledge Formats",
-      "description": "Portable, version-aware knowledge bundle workflows for AI agents.",
+      "description": "Write and validate OKF bundles, preview migration to 0.3, and review knowledge after code changes.",
       "skills": [
         "open-knowledge-format",
         "okf-maintain",

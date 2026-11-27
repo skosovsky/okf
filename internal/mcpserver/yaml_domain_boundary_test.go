@@ -349,7 +349,7 @@ func TestMCPProductionHasNoLocalYAMLWalker(t *testing.T) {
 			t.Errorf("tools.go retains local YAML walker token %q", forbidden)
 		}
 	}
-	for _, required := range []string{"bundle.ParseDocumentContext", "bundle.ParseFrontmatterContext"} {
+	for _, required := range []string{"bundle.ParseDocumentContext", "bundle.ParseDocumentForVersionContext"} {
 		if !strings.Contains(text, required) {
 			t.Errorf("tools.go lacks domain YAML boundary %q", required)
 		}

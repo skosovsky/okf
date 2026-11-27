@@ -39,6 +39,9 @@ func (decoder *guardedYAMLStreamDecoder) decode() (*yaml.Node, error) {
 	if err := validateMutationYAMLGraphContext(decoder.ctx, &node); err != nil {
 		return nil, err
 	}
+	if err := resolveCoreMutationIntegers(decoder.ctx, &node); err != nil {
+		return nil, err
+	}
 	return &node, decoder.ctx.Err()
 }
 
@@ -56,6 +59,9 @@ func decodeGuardedYAMLNodeContext(ctx context.Context, source []byte) (*yaml.Nod
 		return nil, err
 	}
 	if err := validateMutationYAMLGraphContext(ctx, &node); err != nil {
+		return nil, err
+	}
+	if err := resolveCoreMutationIntegers(ctx, &node); err != nil {
 		return nil, err
 	}
 	return &node, ctx.Err()

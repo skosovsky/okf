@@ -29,6 +29,8 @@ const (
 	PathFieldComputation      PathValueField = "computation"
 	PathFieldExecutorResource PathValueField = "executor-resource"
 	PathFieldAttesterResource PathValueField = "attester-resource"
+	PathFieldSupersededBy     PathValueField = "superseded-by"
+	PathFieldLicense          PathValueField = "license"
 )
 
 // ResolvedPathValue is a syntactically classified path value. Path is the
@@ -40,6 +42,8 @@ type ResolvedPathValue struct {
 	Suffix string
 	Kind   PathValueKind
 	Exists bool
+	// RootFallback reports use of the older bundle-root convention.
+	RootFallback bool
 }
 
 // ConceptPathValueObservations preserves the retained frontmatter shape needed
@@ -98,9 +102,14 @@ func (b *Bundle) ConceptPathValueObservationsContext(
 		return ConceptPathValueObservations{}, false, err
 	}
 	observations.SourcesPresent = sourcesPresent
-	if sourcesPresent && sources.Kind == yaml.SequenceNode {
-		observations.SourcesSequence = true
-		for sourceIndex, source := range sources.Content {
+	if sourcesPresent && (sources.Kind == yaml.SequenceNode ||
+		b.discoveryVersion.Effective == OKFVersion03 && sources.Kind == yaml.MappingNode) {
+		observations.SourcesSequence = sources.Kind == yaml.SequenceNode
+		items := sources.Content
+		if !observations.SourcesSequence {
+			items = []*yaml.Node{sources}
+		}
+		for sourceIndex, source := range items {
 			if err := ctx.Err(); err != nil {
 				return ConceptPathValueObservations{}, false, err
 			}
@@ -203,6 +212,23 @@ func (b *Bundle) ConceptPathValueObservationsContext(
 			Scalar:        scalar,
 		})
 	}
+	if b.discoveryVersion.Effective == OKFVersion03 {
+		for _, direct := range []struct {
+			key   string
+			field PathValueField
+		}{{"resource", PathFieldConceptResource}, {"superseded_by", PathFieldSupersededBy}} {
+			value, present, err := semanticMappingNodeContext(resolver, &root, direct.key)
+			if err != nil {
+				return ConceptPathValueObservations{}, false, err
+			}
+			scalar, err := strictStringNodeStateContext(ctx, value, present)
+			if err != nil {
+				return ConceptPathValueObservations{}, false, err
+			}
+			observations.Values = append(observations.Values, ConceptPathValueObservation{Field: direct.field, FieldPath: direct.key, Scalar: scalar})
+		}
+	}
+
 	if err := ctx.Err(); err != nil {
 		return ConceptPathValueObservations{}, false, err
 	}
@@ -272,9 +298,14 @@ func (b *Bundle) resolvePathValueForOwnedContext(ctx context.Context, documentPa
 		PathFieldSourceResource,
 		PathFieldComputation,
 		PathFieldExecutorResource,
-		PathFieldAttesterResource:
+		PathFieldAttesterResource,
+		PathFieldSupersededBy,
+		PathFieldLicense:
 	default:
 		return ResolvedPathValue{}, false, ctx.Err()
+	}
+	if b != nil && b.discoveryVersion.Effective == OKFVersion03 {
+		return b.resolveURIReferenceContext(ctx, documentPath, value, field == PathFieldSourceResource, b.discoveryVersion.Declared == "")
 	}
 	raw := value
 	var err error

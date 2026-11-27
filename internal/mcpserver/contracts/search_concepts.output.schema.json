@@ -16,7 +16,7 @@
       "type": "string"
     },
     "as_of": {
-      "oneOf": [
+      "anyOf": [
         {
           "type": "string",
           "format": "date"
@@ -51,6 +51,10 @@
           "concept": {
             "$ref": "#/$defs/card"
           },
+          "matched_concept_id": {
+            "type": "string",
+            "description": "ID of the deprecated concept whose match was forwarded to this replacement."
+          },
           "match": {
             "enum": [
               "id",
@@ -66,7 +70,8 @@
     "temporal_profile": {
       "enum": [
         "date-3fcbb9f",
-        "instant-0b87c52"
+        "instant-0b87c52",
+        "date-or-instant-0.3"
       ]
     }
   },
@@ -133,6 +138,10 @@
             "string",
             "null"
           ]
+        },
+        "stale_after_state": {
+          "description": "OKF 0.3 deadline observation, independent of as_of.",
+          "enum": ["absent", "valid", "malformed"]
         },
         "status_state": {
           "type": "object",

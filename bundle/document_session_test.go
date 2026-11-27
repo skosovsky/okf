@@ -60,7 +60,7 @@ func TestDocumentSessionScopeResolutionMatrix(t *testing.T) {
 			},
 			wantRelative: "deep/concept.md",
 			wantVersion: VersionResolution{
-				Effective:     "0.2",
+				Effective:     OKFVersion03,
 				Source:        VersionSourceDefault,
 				Compatibility: VersionCompatibilityNative,
 			},
@@ -78,7 +78,7 @@ func TestDocumentSessionScopeResolutionMatrix(t *testing.T) {
 			},
 			wantRelative: "note.md",
 			wantVersion: VersionResolution{
-				Effective:     "0.2",
+				Effective:     OKFVersion03,
 				Source:        VersionSourceDefault,
 				Compatibility: VersionCompatibilityNative,
 			},

@@ -584,7 +584,14 @@ func TestMigrationComputationAssetContext_CancellationPublishesExactZero(t *test
 	}
 }
 
+func migrationStringCompareCheckpoints() (chunk, terminal int) {
+	entry := reflect.ValueOf(compareStringsContext).Pointer()
+	_, declaration := runtime.FuncForPC(entry).FileLine(entry)
+	return declaration + 4, declaration + 18
+}
+
 func TestMigrationInputFindings_ManualActionSortComparatorCancelsInsideStringCompare(t *testing.T) {
+	chunk, terminal := migrationStringCompareCheckpoints()
 	for _, surface := range []string{"Preflight", "Preview"} {
 		t.Run(surface, func(t *testing.T) {
 			// Arrange.
@@ -600,9 +607,9 @@ func TestMigrationInputFindings_ManualActionSortComparatorCancelsInsideStringCom
 			} else {
 				_, _ = NewMigrationPlanner().Preview(trace, source, resolution, migrationPreflightRequestFixture(input))
 			}
-			wantTrace := []int{1286, 1300, 1286, 1286, 1286, 1286, 1286, 1286, 1286, 1300, 1286}
+			wantTrace := []int{chunk, terminal, chunk, chunk, chunk, chunk, chunk, chunk, chunk, terminal, chunk}
 			if surface == "Preview" {
-				wantTrace = []int{1286, 1300, 1286, 1286, 1286, 1286, 1286, 1286, 1286, 1300, 1286, 1286}
+				wantTrace = []int{chunk, terminal, chunk, chunk, chunk, chunk, chunk, chunk, chunk, terminal, chunk, chunk}
 			}
 			if !reflect.DeepEqual(trace.lines, wantTrace) {
 				t.Fatalf("manual-action sort trace=%v want=%v", trace.lines, wantTrace)
@@ -610,7 +617,7 @@ func TestMigrationInputFindings_ManualActionSortComparatorCancelsInsideStringCom
 			ctx := &migrationNthCallsiteCheckpointContext{
 				Context: context.Background(), occurrence: 1,
 				site: migrationCheckpointSite{
-					direct: "compareStringsContext", line: 1300,
+					direct: "compareStringsContext", line: terminal,
 					chain: []string{"compareMigrationManualActionContext", "siftSliceCompareContext", "sortSliceCompareContext", "sortMigrationInputFindingsContext"},
 				},
 			}
@@ -639,6 +646,7 @@ func TestMigrationInputFindings_ManualActionSortComparatorCancelsInsideStringCom
 }
 
 func TestMigrationComputationAssetHelper_IsolatedCheckpointsPublishExactZero(t *testing.T) {
+	_, terminal := migrationStringCompareCheckpoints()
 	// Arrange a non-cancel trace first. Exact direct call sites prove that the
 	// later final-site rows cannot silently bind an inserted earlier check.
 	baselineSource := migrationPreflightSourceFixture()
@@ -691,7 +699,7 @@ func TestMigrationComputationAssetHelper_IsolatedCheckpointsPublishExactZero(t *
 			newContext: func() (context.Context, func(*testing.T)) {
 				ctx := &migrationCallsiteCheckpointContext{
 					Context: context.Background(),
-					target:  migrationCheckpointSite{direct: "compareStringsContext", line: 1300, chain: []string{"migrationComputationAssetPathErrorContext"}},
+					target:  migrationCheckpointSite{direct: "compareStringsContext", line: terminal, chain: []string{"migrationComputationAssetPathErrorContext"}},
 				}
 				return ctx, func(t *testing.T) {
 					if ctx.matches != 1 {

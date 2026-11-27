@@ -441,7 +441,7 @@ func TestValidateBundleReturnsNormalReportForConformanceErrors(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "bad.md", "---\ntitle: Missing Type\n---\nBody.\n")
 
-	result := callHandler(t, handleValidateBundle, map[string]any{"bundle_path": root})
+	result := callHandler(t, handleValidateBundle, map[string]any{"bundle_path": root, "target_version": "0.2"})
 	if result.IsError {
 		t.Fatalf("handleValidateBundle() returned tool error: %s", resultText(t, result))
 	}

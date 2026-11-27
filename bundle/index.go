@@ -6,8 +6,12 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
+
+	"github.com/skosovsky/okf/internal/documentlayout"
+	"github.com/skosovsky/okf/internal/pathportability"
 )
 
 const indexFilename = "index.md"
@@ -68,6 +72,18 @@ func BuildIndexText(entries []IndexEntry) string {
 		return ""
 	}
 	return strings.Join(sections, "\n\n") + "\n"
+}
+
+// BuildIndexTextV03 accepts local paths in Link and renders OKF 0.3 Markdown.
+func BuildIndexTextV03(entries []IndexEntry) string {
+	rendered := make([]IndexEntry, 0, len(entries))
+	escapeLabel := strings.NewReplacer("\\", "\\\\", "[", "\\[", "]", "\\]")
+	for _, entry := range entries {
+		entry.Link = EscapePathV03(entry.Link)
+		entry.Title = escapeLabel.Replace(entry.Title)
+		rendered = append(rendered, entry)
+	}
+	return BuildIndexText(rendered)
 }
 
 // DefaultSynthesizeDescription deterministically describes a subdirectory by listing child titles.
@@ -132,7 +148,8 @@ func regenerateIndexesWithHooks(
 	if err != nil {
 		return nil, err
 	}
-	rootIndex, err := resolveRootIndexForPublication(source, selector)
+	existingFiles := files
+	rootIndex, err := resolveRootIndexForPublication(source, selector, slices.Contains(files, indexFilename))
 	if err != nil {
 		return nil, err
 	}
@@ -141,9 +158,20 @@ func regenerateIndexesWithHooks(
 			return nil, err
 		}
 	}
-	documents, err := preloadIndexDocuments(source, files)
+	documents, err := preloadIndexDocumentsForVersion(source, files, rootIndex.version)
 	if err != nil {
 		return nil, err
+	}
+	if rootIndex.version.Effective == OKFVersion03 {
+		conceptFiles := make([]string, 0, len(documents))
+		for _, path := range files {
+			if document, ok := documents[path]; ok {
+				if _, typed := document.Frontmatter.Type(); typed {
+					conceptFiles = append(conceptFiles, path)
+				}
+			}
+		}
+		files = conceptFiles
 	}
 	directories, err := directoriesToIndex(bundleRoot, files)
 	if err != nil {
@@ -192,11 +220,18 @@ func regenerateIndexesWithHooks(
 		}
 
 		indexPath := filepath.Join(directory, indexFilename)
-		text := BuildIndexText(entries)
+		render := BuildIndexText
+		if rootIndex.version.Effective == OKFVersion03 {
+			render = BuildIndexTextV03
+		}
+		text := render(entries)
 		if isRoot {
-			text, err = preserveRootIndexVersion(rootIndex, text)
-			if err != nil {
-				return nil, err
+			if len(rootIndex.frontmatter) > 0 {
+				prefix := string(rootIndex.frontmatter)
+				if !strings.HasSuffix(prefix, "\n") {
+					prefix += "\n"
+				}
+				text = prefix + "\n" + text
 			}
 		}
 		outputs = append(outputs, indexOutput{
@@ -228,6 +263,15 @@ func regenerateIndexesWithHooks(
 		dirDescriptions[pathJoin("", strings.TrimPrefix(filepath.ToSlash(directoryRel), "./"))] = description
 	}
 
+	if rootIndex.version.Effective == OKFVersion03 {
+		targets := make([]string, 0, len(outputs))
+		for _, output := range outputs {
+			targets = append(targets, output.relative)
+		}
+		if err := pathportability.CheckNew(context.Background(), existingFiles, targets); err != nil {
+			return nil, err
+		}
+	}
 	return publishIndexOutputs(root, outputs, hooks)
 }
 
@@ -250,57 +294,42 @@ func finalizeIndexRegeneration(
 }
 
 type rootIndexPublicationState struct {
-	present  bool
-	raw      []byte
-	document Document
+	present     bool
+	raw         []byte
+	frontmatter []byte
+	version     VersionResolution
 }
 
-func resolveRootIndexForPublication(source Source, selector string) (rootIndexPublicationState, error) {
+func resolveRootIndexForPublication(source Source, selector string, exactIndexPresent bool) (rootIndexPublicationState, error) {
+	if !exactIndexPresent {
+		version, err := ResolveVersion("", selector)
+		if err != nil || version.Effective == OKFVersion03 {
+			return rootIndexPublicationState{version: version}, err
+		}
+	}
 	raw, err := source.ReadFile(context.Background(), indexFilename)
 	if errors.Is(err, fs.ErrNotExist) {
-		_, resolveErr := ResolveVersion("", selector)
-		return rootIndexPublicationState{}, resolveErr
+		version, resolveErr := ResolveVersion("", selector)
+		return rootIndexPublicationState{version: version}, resolveErr
 	}
 	if err != nil {
 		return rootIndexPublicationState{}, indexDocumentReadError{path: indexFilename, err: err}
 	}
-	document, err := ParseDocumentContext(context.Background(), string(raw))
+	_, version, err := ParseBundleIndexContext(context.Background(), string(raw), selector)
 	if err != nil {
 		return rootIndexPublicationState{}, fmt.Errorf("parse index document %q: %w", indexFilename, err)
 	}
-	state := document.Frontmatter.VersionDeclarationState()
-	if state.Present && !state.Valid {
-		return rootIndexPublicationState{}, invalidVersionDeclarationError(state)
-	}
-	if _, err := ResolveVersion(state.Value, selector); err != nil {
+	raw = append([]byte(nil), raw...)
+	layout, _, err := documentlayout.Split(raw)
+	if err != nil {
 		return rootIndexPublicationState{}, err
 	}
 	return rootIndexPublicationState{
-		present:  true,
-		raw:      append([]byte(nil), raw...),
-		document: document,
+		present:     true,
+		raw:         raw,
+		frontmatter: raw[:layout.BodyStart],
+		version:     version,
 	}, nil
-}
-
-func preserveRootIndexVersion(rootIndex rootIndexPublicationState, body string) (string, error) {
-	if !rootIndex.present {
-		return body, nil
-	}
-
-	state := rootIndex.document.Frontmatter.VersionDeclarationState()
-	if !state.Present {
-		return body, nil
-	}
-	if !state.Valid {
-		return "", invalidVersionDeclarationError(state)
-	}
-
-	frontmatter := NewFrontmatter()
-	if err := frontmatter.SetString("okf_version", state.Value); err != nil {
-		return "", err
-	}
-	updated := NewDocument(frontmatter, body)
-	return updated.Serialize()
 }
 
 func invalidVersionDeclarationError(state VersionDeclarationState) error {
@@ -316,6 +345,10 @@ func indexEntriesForDirectory(source Source, directory string, files []string, d
 }
 
 func preloadIndexDocuments(source Source, files []string) (map[string]Document, error) {
+	return preloadIndexDocumentsForVersion(source, files, VersionResolution{})
+}
+
+func preloadIndexDocumentsForVersion(source Source, files []string, version VersionResolution) (map[string]Document, error) {
 	ordered := append([]string(nil), files...)
 	sort.Strings(ordered)
 	documents := make(map[string]Document)
@@ -326,7 +359,7 @@ func preloadIndexDocuments(source Source, files []string) (map[string]Document, 
 		if filepath.Ext(file) != ".md" || isReservedFilename(filepath.Base(filepath.FromSlash(file))) {
 			continue
 		}
-		document, err := loadIndexDocument(source, file)
+		document, err := loadIndexDocumentForVersion(source, file, version)
 		if err != nil {
 			return nil, err
 		}
@@ -406,11 +439,15 @@ func indexEntriesForDirectoryFromDocuments(
 }
 
 func loadIndexDocument(source Source, path string) (Document, error) {
+	return loadIndexDocumentForVersion(source, path, VersionResolution{})
+}
+
+func loadIndexDocumentForVersion(source Source, path string, version VersionResolution) (Document, error) {
 	text, err := source.ReadFile(context.Background(), path)
 	if err != nil {
 		return Document{}, indexDocumentReadError{path: path, err: err}
 	}
-	document, err := ParseDocumentContext(context.Background(), string(text))
+	document, err := ParseDocumentForVersionContext(context.Background(), string(text), version)
 	if err != nil {
 		return Document{}, fmt.Errorf("parse index document %q: %w", path, err)
 	}

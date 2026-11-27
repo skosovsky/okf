@@ -19,10 +19,14 @@ import (
 )
 
 func (s *planState) setGenerated(op store.SetGenerated, operationName string) error {
-	return s.applyV02ConceptOperation(op.Concept, operationName, op, func(p *presentation) ([]byte, error) {
-		entries := []desiredMappingEntry{{key: "by", value: yamlString(op.Generated.By), present: true}}
-		if op.Generated.At != "" {
-			at, err := yamlDateTime(op.Generated.At)
+	return s.writeGenerated(op.Concept, operationName, op, op.Generated, yamlDateTime)
+}
+
+func (s *planState) writeGenerated(id bundle.ConceptID, name string, op store.Operation, generated store.Generation, timestamp func(string) (yamlRenderValue, error)) error {
+	return s.applyV02ConceptOperation(id, name, op, func(p *presentation) ([]byte, error) {
+		entries := []desiredMappingEntry{{key: "by", value: yamlString(generated.By), present: true}}
+		if generated.At != "" {
+			at, err := timestamp(generated.At)
 			if err != nil {
 				return nil, err
 			}
@@ -30,13 +34,30 @@ func (s *planState) setGenerated(op store.SetGenerated, operationName string) er
 		} else {
 			entries = append(entries, desiredMappingEntry{key: "at"})
 		}
+		if _, v03 := op.(store.ProvenanceV03); v03 {
+			existing, present, err := p.structuralMappingEntry(p.root, "generated")
+			if err != nil {
+				return nil, err
+			}
+			if present && emptyOptionalFamilyV03(existing.value) {
+				value := yamlMapping()
+				for _, entry := range entries {
+					setRenderMappingEntry(&value, entry)
+				}
+				return p.replaceMappingValue(p.root, "generated", value)
+			}
+		}
 		return upsertKnownMappingFamily(p, p.root, "generated", entries)
 	})
 }
 
 func (s *planState) ensureVerification(op store.EnsureVerification, operationName string) error {
-	return s.applyV02ConceptOperation(op.Concept, operationName, op, func(p *presentation) ([]byte, error) {
-		desired, selector, err := verificationRender(op.Verification)
+	return s.writeVerification(op.Concept, operationName, op, op.Verification, yamlDateTime)
+}
+
+func (s *planState) writeVerification(id bundle.ConceptID, name string, op store.Operation, verification store.Verification, timestamp func(string) (yamlRenderValue, error)) error {
+	return s.applyV02ConceptOperation(id, name, op, func(p *presentation) ([]byte, error) {
+		desired, selector, err := verificationRender(verification, timestamp)
 		if err != nil {
 			return nil, err
 		}
@@ -50,6 +71,9 @@ func (s *planState) ensureVerification(op store.EnsureVerification, operationNam
 				return nil, err
 			}
 			return mutation.apply()
+		}
+		if _, v03 := op.(store.ProvenanceV03); v03 && emptyOptionalFamilyV03(verified.value) {
+			return p.replaceMappingValue(p.root, "verified", desired)
 		}
 		if verified.value.Kind != yaml.MappingNode && verified.value.Kind != yaml.SequenceNode {
 			return nil, p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, verified.value)
@@ -67,8 +91,12 @@ func (s *planState) ensureVerification(op store.EnsureVerification, operationNam
 }
 
 func (s *planState) removeVerification(op store.RemoveVerification, operationName string) error {
-	return s.applyV02ConceptOperation(op.Concept, operationName, op, func(p *presentation) ([]byte, error) {
-		_, selector, err := verificationRender(op.Verification)
+	return s.deleteVerification(op.Concept, operationName, op, op.Verification, yamlDateTime)
+}
+
+func (s *planState) deleteVerification(id bundle.ConceptID, name string, op store.Operation, verification store.Verification, timestamp func(string) (yamlRenderValue, error)) error {
+	return s.applyV02ConceptOperation(id, name, op, func(p *presentation) ([]byte, error) {
+		_, selector, err := verificationRender(verification, timestamp)
 		if err != nil {
 			return nil, err
 		}
@@ -77,6 +105,9 @@ func (s *planState) removeVerification(op store.RemoveVerification, operationNam
 			return nil, err
 		}
 		if !found {
+			return appendBytesContext(p.ctx, nil, p.data)
+		}
+		if _, v03 := op.(store.ProvenanceV03); v03 && emptyOptionalFamilyV03(verified.value) {
 			return appendBytesContext(p.ctx, nil, p.data)
 		}
 		if verified.value.Kind != yaml.MappingNode && verified.value.Kind != yaml.SequenceNode {
@@ -119,7 +150,10 @@ func (s *planState) putSource(op store.PutSource, operationName string) error {
 			}
 			return mutation.apply()
 		}
-		if sources.value.Kind != yaml.SequenceNode {
+		if p.coreV03 && emptyOptionalFamilyV03(sources.value) {
+			return p.replaceMappingValue(p.root, "sources", yamlSequence(desired))
+		}
+		if !p.supportsSourceCollection(sources.value) {
 			return nil, p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, sources.value)
 		}
 		selector := yamlExactSelector(desired)
@@ -159,10 +193,10 @@ func (s *planState) removeSource(op store.RemoveSource, operationName string) er
 		if err != nil {
 			return nil, err
 		}
-		if !found {
+		if !found || p.coreV03 && emptyOptionalFamilyV03(sources.value) {
 			return appendBytesContext(p.ctx, nil, p.data)
 		}
-		if sources.value.Kind != yaml.SequenceNode {
+		if !p.supportsSourceCollection(sources.value) {
 			return nil, p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, sources.value)
 		}
 		yamlSelector, err := sourceSelectorRender(selector)
@@ -188,7 +222,7 @@ func (s *planState) removeSource(op store.RemoveSource, operationName string) er
 			return appendBytesContext(p.ctx, nil, p.data)
 		}
 		mutation := p.newYAMLMutationContext(p.ctx)
-		if len(sources.value.Content) == 1 {
+		if sources.value.Kind == yaml.MappingNode || len(sources.value.Content) == 1 {
 			if err := mutation.deleteMappingValue(p.root, "sources"); err != nil {
 				return nil, err
 			}
@@ -218,7 +252,7 @@ func (s *planState) setUsageWindow(op store.SetUsageWindow, operationName string
 		if err != nil {
 			return nil, err
 		}
-		if !found || sources.value.Kind != yaml.SequenceNode {
+		if !found || !p.supportsSourceCollection(sources.value) {
 			return nil, invalid("missing_source_selector", nil, errors.New("source selector does not exist"))
 		}
 		var item *yaml.Node
@@ -263,6 +297,10 @@ func (s *planState) setUsageWindow(op store.SetUsageWindow, operationName string
 	})
 }
 
+func (p *presentation) supportsSourceCollection(node *yaml.Node) bool {
+	return node.Kind == yaml.SequenceNode || p.coreV03 && node.Kind == yaml.MappingNode
+}
+
 func (s *planState) setLifecycle(op store.SetLifecycle, operationName string) error {
 	lifecycle := op.Lifecycle()
 	return s.applyV02ConceptOperation(op.Concept, operationName, op, func(p *presentation) ([]byte, error) {
@@ -292,7 +330,27 @@ func (s *planState) putAttestedComputation(op store.PutAttestedComputation, oper
 		if err != nil {
 			return nil, err
 		}
-		return rewriteInlineComputation(s.ctx, updated, contract)
+		updated, err = rewriteInlineComputation(s.ctx, updated, contract)
+		if err != nil || !p.coreV03 || bytes.Equal(p.data, updated) {
+			return updated, err
+		}
+		version := s.bundle.DiscoveryVersion()
+		before, err := bundle.ParseDocumentForVersionContext(s.ctx, string(p.data), version)
+		if err != nil {
+			return nil, err
+		}
+		after, err := bundle.ParseDocumentForVersionContext(s.ctx, string(updated), version)
+		if err != nil {
+			return nil, err
+		}
+		lost, err := LostExtensionsV03(s.ctx, before.Frontmatter, after.Frontmatter)
+		if err != nil {
+			return nil, err
+		}
+		if len(lost) != 0 {
+			return nil, invalid("extension_not_preserved", nil, fmt.Errorf("computation update would change or omit extension %q", lost[0]))
+		}
+		return updated, nil
 	})
 }
 
@@ -306,7 +364,7 @@ func (s *planState) setBundleVersion(op store.SetBundleVersion, operationName st
 		return err
 	}
 	if documentlayout.HasOpeningDelimiter(data) {
-		p, parseErr := parsePresentationContext(s.ctx, data)
+		p, parseErr := parseBundlePresentationContext(s.ctx, s.bundle, data)
 		if parseErr != nil {
 			return s.presentationInvalid(presentationChangeCode(parseErr), nil, parseErr, "index.md", operationName, data)
 		}
@@ -319,7 +377,7 @@ func (s *planState) setBundleVersion(op store.SetBundleVersion, operationName st
 		if bytes.Contains(data, []byte("\r\n")) {
 			newline = "\r\n"
 		}
-		versionToken, tokenErr := yamlScalarTokenContext(s.ctx, op.Version, 0)
+		versionToken, tokenErr := yamlScalarTokenContext(s.ctx, op.Version, 0, op.Version == bundle.OKFVersion03)
 		if tokenErr != nil {
 			return tokenErr
 		}
@@ -353,7 +411,7 @@ func (s *planState) applyV02ConceptOperation(conceptID bundle.ConceptID, operati
 	if !fileFound {
 		return invalid("missing_concept", []store.Diagnostic{{Code: "missing_concept", Refs: []bundle.RelationRef{{ID: conceptID}}}}, errors.New("concept file missing"))
 	}
-	p, err := parsePresentationContext(s.ctx, data)
+	p, err := parseBundlePresentationContext(s.ctx, s.bundle, data)
 	if err != nil {
 		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptPath, operationName, data)
 	}
@@ -386,8 +444,8 @@ type desiredMappingEntry struct {
 	present bool
 }
 
-func verificationRender(verification store.Verification) (yamlRenderValue, yamlSequenceSelector, error) {
-	at, err := yamlDateTime(verification.At)
+func verificationRender(verification store.Verification, timestamp func(string) (yamlRenderValue, error)) (yamlRenderValue, yamlSequenceSelector, error) {
+	at, err := timestamp(verification.At)
 	if err != nil {
 		return yamlRenderValue{}, yamlSequenceSelector{}, err
 	}
@@ -612,7 +670,8 @@ func usageWindowRender(window store.UsageWindow) (yamlRenderValue, error) {
 }
 
 func mutateKnownSource(mutation *yamlMutation, item *yaml.Node, source store.ProvenanceSource) error {
-	if err := rejectInvalidUsageCount(mutation.p, item); err != nil {
+	previousCount, hasCount, err := existingUsageCount(mutation.p, item)
+	if err != nil {
 		return err
 	}
 	entries := []desiredMappingEntry{
@@ -641,6 +700,16 @@ func mutateKnownSource(mutation *yamlMutation, item *yaml.Node, source store.Pro
 		}
 		entries[6].value = value
 	}
+	if mutation.p.coreV03 && hasCount && source.UsageCount != nil {
+		if handled, err := mutateCoreSourceCount(mutation, item, entries, previousCount); handled || err != nil {
+			return err
+		}
+	}
+	fields := entries[:6]
+	if mutation.p.coreV03 && hasCount && source.UsageCount != nil && previousCount == *source.UsageCount {
+		// Equality in the 0.3 contract does not request a different spelling.
+		fields = append(fields[:4:4], fields[5])
+	}
 	if item.Style&yaml.FlowStyle != 0 {
 		current, err := yamlRenderFromNodeIgnoringCommentsContext(mutation.ctx, item)
 		if err != nil {
@@ -650,7 +719,7 @@ func mutateKnownSource(mutation *yamlMutation, item *yaml.Node, source store.Pro
 		if err != nil {
 			return err
 		}
-		for _, entry := range entries[:6] {
+		for _, entry := range fields {
 			setRenderMappingEntry(&outer, entry)
 		}
 		equal, err := equalYAMLRenderCanonicalAtKeyContext(mutation.ctx, current, outer, "")
@@ -674,21 +743,94 @@ func mutateKnownSource(mutation *yamlMutation, item *yaml.Node, source store.Pro
 	} else if err := mutateUsageWindowValue(mutation, item, yamlRenderValue{}, false); err != nil {
 		return err
 	}
-	return mutateKnownMapping(mutation, item, entries[:6])
+	return mutateKnownMapping(mutation, item, fields)
 }
 
-func rejectInvalidUsageCount(p *presentation, source *yaml.Node) error {
+// A single scalar update leaves the surrounding YAML and its trivia intact.
+// Structural changes still use the mapping editor.
+func mutateCoreSourceCount(m *yamlMutation, item *yaml.Node, entries []desiredMappingEntry, previous uint64) (bool, error) {
+	var count *yaml.Node
+	var desired yamlRenderValue
+	for _, entry := range entries {
+		match, found, err := m.p.structuralMappingEntry(item, entry.key)
+		if err != nil {
+			return false, err
+		}
+		if found != entry.present {
+			return false, nil
+		}
+		if !found {
+			continue
+		}
+		if entry.key == "usage_count" {
+			count, desired = match.value, entry.value
+			continue
+		}
+		current, err := yamlRenderFromNodeIgnoringCommentsContext(m.ctx, match.value)
+		if err != nil {
+			return false, m.ctx.Err()
+		}
+		equal, err := equalYAMLRenderCanonicalAtKeyContext(m.ctx, current, entry.value, entry.key)
+		if err != nil || !equal {
+			return false, err
+		}
+	}
+	if count == nil {
+		return false, nil
+	}
+	if previous == desired.unsigned {
+		return true, nil
+	}
+	if err := m.requireActive(); err != nil {
+		return true, err
+	}
+	if err := m.p.requireMutationPathProvenance(count); err != nil {
+		return true, err
+	}
+	expected := m.expectedNodes[count]
+	if expected == nil {
+		return true, m.p.yamlNodeError("semantic_edit_path", ErrUnsupportedPresentation, count)
+	}
+	value, err := desired.semanticContext(m.ctx)
+	if err != nil {
+		return true, err
+	}
+	resolved, err := m.p.resolver.typedScalar(count)
+	if err != nil {
+		return true, err
+	}
+	if err := m.addPatch(bytePatch{
+		Start: m.p.yamlStart + resolved.Span.Start,
+		End:   m.p.yamlStart + resolved.Span.End,
+		Text:  []byte(value.Value),
+		Owner: count,
+	}); err != nil {
+		return true, err
+	}
+	*expected = *value
+	return true, nil
+}
+
+func existingUsageCount(p *presentation, source *yaml.Node) (uint64, bool, error) {
 	match, found, err := p.structuralMappingEntry(source, "usage_count")
 	if err != nil || !found {
-		return err
+		return 0, found, err
 	}
 	if match.value.Kind != yaml.ScalarNode || match.value.Tag != "!!int" {
-		return p.yamlNodeError("usage_count_invalid", ErrUnsupportedPresentation, match.value)
+		return 0, true, p.yamlNodeError("usage_count_invalid", ErrUnsupportedPresentation, match.value)
 	}
-	if _, err := bundle.ParseNonNegativeYAMLUint64(strings.TrimSpace(match.value.Value)); err != nil {
-		return p.yamlNodeError("usage_count_invalid", ErrUnsupportedPresentation, match.value)
+	parse := bundle.ParseNonNegativeYAMLUint64
+	if p.coreV03 {
+		if err := p.requireNoSyntaxProvenance(match.value); err != nil {
+			return 0, true, err
+		}
+		parse = bundle.ParseNonNegativeYAMLUint64V03
 	}
-	return nil
+	value, err := parse(strings.TrimSpace(match.value.Value))
+	if err != nil {
+		return 0, true, p.yamlNodeError("usage_count_invalid", ErrUnsupportedPresentation, match.value)
+	}
+	return value, true, nil
 }
 
 func mutateKnownMapping(mutation *yamlMutation, mapping *yaml.Node, entries []desiredMappingEntry) error {
@@ -855,7 +997,7 @@ func reconcileAttestedComputationYAMLContext(
 	if err != nil {
 		return nil, err
 	}
-	return reorderComputationParametersContext(ctx, updated, contract.Parameters)
+	return reorderComputationParametersContext(ctx, updated, contract.Parameters, p.coreV03)
 }
 
 func reconcileAttestedComputationYAMLBytesContext(
@@ -875,10 +1017,21 @@ func stageAttestedComputationContract(
 	contract store.AttestedComputationContract,
 ) error {
 	p := mutation.p
-	for _, entry := range []desiredMappingEntry{
-		{key: "type", value: yamlString("Attested Computation"), present: true},
-		{key: "runtime", value: yamlString(contract.Runtime), present: true},
+	for _, field := range []struct{ key, value string }{
+		{key: "type", value: "Attested Computation"},
+		{key: "runtime", value: contract.Runtime},
 	} {
+		if p.coreV03 {
+			existing, found, err := p.structuralMappingEntry(p.root, field.key)
+			if err != nil {
+				return err
+			}
+			if found && existing.value.Kind == yaml.ScalarNode && existing.value.Tag == "!!str" &&
+				existing.value.Value == field.value {
+				continue
+			}
+		}
+		entry := desiredMappingEntry{key: field.key, value: yamlString(field.value), present: true}
 		if err := mutateDesiredMappingEntry(mutation, p.root, entry); err != nil {
 			return err
 		}
@@ -913,18 +1066,32 @@ func mergeComputationParameters(
 	if err != nil {
 		return err
 	}
-	if !found {
+	if !found || p.coreV03 && emptyOptionalFamilyV03(match.value) {
 		return mutateDesiredMappingEntry(mutation, p.root, desiredMappingEntry{
 			key:     "parameters",
 			value:   computationParametersRender(desired),
 			present: true,
 		})
 	}
+	if p.coreV03 && match.value.Kind == yaml.MappingNode {
+		name, err := computationParameterName(p, match.value)
+		if err != nil {
+			return err
+		}
+		if len(desired) == 1 && desired[0].Name == name {
+			return mutateKnownMapping(mutation, match.value, computationParameterEntries(desired[0]))
+		}
+		rendered, err := mergeRenderedComputationParameters(p, []*yaml.Node{match.value}, desired)
+		if err != nil {
+			return err
+		}
+		return mutateDesiredMappingEntry(mutation, p.root, desiredMappingEntry{key: "parameters", value: rendered, present: true})
+	}
 	if match.value.Kind != yaml.SequenceNode {
 		return p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, match.value)
 	}
 	if match.value.Style&yaml.FlowStyle != 0 {
-		rendered, err := mergedFlowComputationParameters(p, match.value, desired)
+		rendered, err := mergeRenderedComputationParameters(p, match.value.Content, desired)
 		if err != nil {
 			return err
 		}
@@ -974,24 +1141,20 @@ func mergeComputationParameters(
 			}
 			continue
 		}
-		if err := mutateKnownMapping(mutation, item, []desiredMappingEntry{
-			{key: "name", value: yamlString(parameter.Name), present: true},
-			{key: "type", value: yamlString(parameter.Type), present: true},
-			{key: "required", value: yamlBool(parameter.Required), present: true},
-		}); err != nil {
+		if err := mutateKnownMapping(mutation, item, computationParameterEntries(parameter)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func mergedFlowComputationParameters(
+func mergeRenderedComputationParameters(
 	p *presentation,
-	sequence *yaml.Node,
+	items []*yaml.Node,
 	desired []store.ComputationParameter,
 ) (yamlRenderValue, error) {
 	existing := make(map[string]yamlRenderValue)
-	for _, item := range sequence.Content {
+	for _, item := range items {
 		rendered, err := yamlRenderFromNodeContext(p.ctx, item)
 		if err != nil {
 			return yamlRenderValue{}, p.renderNodeError(err, item)
@@ -1014,16 +1177,20 @@ func mergedFlowComputationParameters(
 		if !ok {
 			rendered = yamlMapping()
 		}
-		for _, entry := range []desiredMappingEntry{
-			{key: "name", value: yamlString(parameter.Name), present: true},
-			{key: "type", value: yamlString(parameter.Type), present: true},
-			{key: "required", value: yamlBool(parameter.Required), present: true},
-		} {
+		for _, entry := range computationParameterEntries(parameter) {
 			setRenderMappingEntry(&rendered, entry)
 		}
 		out = append(out, rendered)
 	}
 	return yamlSequence(out...), nil
+}
+
+func computationParameterEntries(parameter store.ComputationParameter) []desiredMappingEntry {
+	return []desiredMappingEntry{
+		{key: "name", value: yamlString(parameter.Name), present: true},
+		{key: "type", value: yamlString(parameter.Type), present: true},
+		{key: "required", value: yamlBool(parameter.Required), present: true},
+	}
 }
 
 func computationParameterName(p *presentation, item *yaml.Node) (string, error) {
@@ -1063,17 +1230,21 @@ func reorderComputationParametersContext(
 	ctx context.Context,
 	source []byte,
 	desired []store.ComputationParameter,
+	coreV03 bool,
 ) ([]byte, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	p, err := parsePresentationContext(ctx, source)
+	p, err := parsePresentationWithCoreContext(ctx, source, coreV03)
 	if err != nil {
 		return nil, err
 	}
 	match, found, err := p.structuralMappingEntry(p.root, "parameters")
 	if err != nil {
 		return nil, err
+	}
+	if coreV03 && found && match.value.Kind == yaml.MappingNode && len(desired) == 1 {
+		return source, nil
 	}
 	if !found || match.value.Kind != yaml.SequenceNode {
 		return nil, p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, p.root)
@@ -1374,7 +1545,7 @@ func computationFenceContent(source []byte, computation string) string {
 }
 
 func rewriteV02PathValuesContext(ctx context.Context, loaded *bundle.Bundle, sourcePath, outputPath, movedFrom, movedTo string, data []byte) ([]byte, error) {
-	p, err := parsePresentationContext(ctx, data)
+	p, err := parseBundlePresentationContext(ctx, loaded, data)
 	if err != nil {
 		return nil, err
 	}
@@ -1478,6 +1649,19 @@ func rewriteV02PathValuesContext(ctx context.Context, loaded *bundle.Bundle, sou
 				}
 			}
 		}
+		if found && p.coreV03 && sources.value.Kind == yaml.MappingNode {
+			if err := rewrite(sources.value, "resource", bundle.PathFieldSourceResource); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if p.coreV03 {
+		if err := rewrite(p.root, "resource", bundle.PathFieldConceptResource); err != nil {
+			return nil, err
+		}
+		if err := rewrite(p.root, "superseded_by", bundle.PathFieldSupersededBy); err != nil {
+			return nil, err
+		}
 	}
 	if err := rewrite(p.root, "computation", bundle.PathFieldComputation); err != nil {
 		return nil, err
@@ -1565,7 +1749,13 @@ func (probe v02PathRewriteProbe) sourcesRelevantContext(
 		"sources",
 		func(value *yaml.Node) (bool, error) {
 			value = rawAliasTarget(value, make(map[*yaml.Node]bool))
-			if value == nil || value.Kind != yaml.SequenceNode {
+			if value == nil {
+				return false, ctx.Err()
+			}
+			if value.Kind == yaml.MappingNode && probe.loaded.DiscoveryVersion().Effective == bundle.OKFVersion03 {
+				return probe.sourceItemRelevantContext(ctx, value)
+			}
+			if value.Kind != yaml.SequenceNode {
 				return false, ctx.Err()
 			}
 			for _, item := range value.Content {
@@ -1711,6 +1901,13 @@ func rewritePathValue(loaded *bundle.Bundle, sourcePath, outputPath, movedFrom, 
 		resolved.Kind != bundle.PathValueRelative && resolved.Kind != bundle.PathValueBundleRelative {
 		return raw
 	}
+	return rewriteResolvedLocalPath(raw, sourcePath, outputPath, movedFrom, movedTo, resolved, loaded.DiscoveryVersion().Effective == bundle.OKFVersion03)
+}
+
+func rewriteResolvedLocalPath(raw, sourcePath, outputPath, movedFrom, movedTo string, resolved bundle.ResolvedPathValue, uri bool) string {
+	if resolved.Kind != bundle.PathValueRelative && resolved.Kind != bundle.PathValueBundleRelative {
+		return raw
+	}
 	target := resolved.Path
 	if target == movedFrom {
 		target = movedTo
@@ -1721,13 +1918,18 @@ func rewritePathValue(loaded *bundle.Bundle, sourcePath, outputPath, movedFrom, 
 		}
 	}
 	if resolved.Kind == bundle.PathValueBundleRelative {
-		return "/" + target + resolved.Suffix
+		target = "/" + target
+	} else {
+		relative, err := filepath.Rel(path.Dir(outputPath), target)
+		if err != nil {
+			return raw
+		}
+		target = filepath.ToSlash(relative)
 	}
-	relative, err := filepath.Rel(path.Dir(outputPath), target)
-	if err != nil {
-		return raw
+	if uri {
+		target = bundle.EscapePathV03(target)
 	}
-	return filepath.ToSlash(relative) + resolved.Suffix
+	return target + resolved.Suffix
 }
 
 func pathValueHasSurroundingWhitespace(value string) bool {

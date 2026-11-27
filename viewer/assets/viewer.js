@@ -13,12 +13,16 @@
   let locale = document.documentElement.lang === 'ru' ? 'ru' : 'en';
   language.value = locale;
   const labels = {
-    en: {title:'OKF knowledge viewer', search:'Search', type:'Type', allTypes:'All types', showGraph:'Show graph', language:'Language', concepts:'concepts', edges:'edges', basis:'staleness reference', trust:'trust', status:'status', staleness:'staleness', unknownType:'type unknown', staleAfter:'Stale after', missing:'missing', missingConcept:'Missing concept', unresolved:'Unresolved link', sources:'Sources', noSources:'No sources recorded.', source:'Source', outgoing:'Outgoing', incoming:'Incoming', none:'None.', graph:'Graph', localGraph:'Local graph', connections:'connections', diagram:'Local relationship diagram for ', current:'current', empty:'This bundle contains no concepts.', noMatch:'No matching concepts.', neighborsLimit:'Diagram shows first 48 neighbors; the list below shows up to 200.', connectionsLimit:'Showing first 200 connections; use the edge lists above for all.'},
-    ru: {title:'Просмотр знаний OKF', search:'Поиск', type:'Тип', allTypes:'Все типы', showGraph:'Показать граф', language:'Язык', concepts:'заметок', edges:'связей', basis:'время оценки актуальности', trust:'проверка', status:'состояние', staleness:'актуальность', unknownType:'тип не указан', staleAfter:'Срок пересмотра', missing:'отсутствует', missingConcept:'Заметка не найдена', unresolved:'Ссылка не разрешена', sources:'Источники', noSources:'Источники не указаны.', source:'Источник', outgoing:'Исходящие связи', incoming:'Входящие связи', none:'Нет.', graph:'Граф', localGraph:'Граф соседних заметок', connections:'связей', diagram:'Граф связей заметки ', current:'текущая', empty:'В этом наборе нет заметок.', noMatch:'Подходящих заметок нет.', neighborsLimit:'На графе показаны первые 48 соседей; в списке ниже — до 200.', connectionsLimit:'Показаны первые 200 связей; полный список находится выше.'}
+    en: {title:'OKF knowledge viewer', search:'Search', type:'Type', allTypes:'All types', showGraph:'Show graph', language:'Language', concepts:'concepts', edges:'edges', basis:'staleness reference', trust:'trust', status:'status', staleness:'staleness', unknownType:'type unknown', staleAfter:'Stale after', replacement:'Open replacement', missing:'missing', missingConcept:'Missing concept', unresolved:'Unresolved link', sources:'Sources', noSources:'No sources recorded.', source:'Source', outgoing:'Outgoing', incoming:'Incoming', none:'None.', graph:'Graph', localGraph:'Local graph', connections:'connections', diagram:'Local relationship diagram for ', current:'current', empty:'This bundle contains no concepts.', noMatch:'No matching concepts.', neighborsLimit:'Diagram shows first 48 neighbors; the list below shows up to 200.', connectionsLimit:'Showing first 200 connections; use the edge lists above for all.'},
+    ru: {title:'Просмотр знаний OKF', search:'Поиск', type:'Тип', allTypes:'Все типы', showGraph:'Показать граф', language:'Язык', concepts:'заметок', edges:'связей', basis:'время оценки актуальности', trust:'проверка', status:'состояние', staleness:'актуальность', unknownType:'тип не указан', staleAfter:'Срок пересмотра', replacement:'Открыть замену', missing:'отсутствует', missingConcept:'Заметка не найдена', unresolved:'Ссылка не разрешена', sources:'Источники', noSources:'Источники не указаны.', source:'Источник', outgoing:'Исходящие связи', incoming:'Входящие связи', none:'Нет.', graph:'Граф', localGraph:'Граф соседних заметок', connections:'связей', diagram:'Граф связей заметки ', current:'текущая', empty:'В этом наборе нет заметок.', noMatch:'Подходящих заметок нет.', neighborsLimit:'На графе показаны первые 48 соседей; в списке ниже — до 200.', connectionsLimit:'Показаны первые 200 связей; полный список находится выше.'}
   };
   const values = {
     ru: {'unverified':'не проверено', 'machine-confirmed':'подтверждено программой', 'human-reviewed':'проверено человеком', 'draft':'черновик', 'stable':'стабильно', 'deprecated':'выведено из использования', 'unresolved':'не определено', 'invalid':'некорректно', 'fresh':'актуально', 'stale':'требует пересмотра', 'unevaluated':'не оценено', 'explicit-instant':'заданный момент времени', 'explicit-civil-date':'заданная календарная дата', 'markdown':'ссылка в тексте', 'requires':'требует', 'used_in':'используется в', 'depends_on':'зависит от', 'related_to':'связано с', 'includes':'включает', 'extends':'расширяет', 'contradicts':'противоречит', 'supersedes':'заменяет'},
     en: {}
+  };
+  const computation = {
+    en: {ready: 'Computation ready for attestation', missing_computation_file: 'Computation file missing', missing_inline_computation: 'Computation block missing', missing_runtime: 'Runtime missing', missing_attester: 'Attester missing', missing_attester_file: 'Attester file missing', invalid_computation_path: 'Invalid computation path'},
+    ru: {ready: 'Вычисление готово к аттестации', missing_computation_file: 'Файл вычисления отсутствует', missing_inline_computation: 'Блок вычисления отсутствует', missing_runtime: 'Среда выполнения не указана', missing_attester: 'Аттестатор не указан', missing_attester_file: 'Файл аттестатора отсутствует', invalid_computation_path: 'Некорректный путь к вычислению'}
   };
   const tr = key => labels[locale][key];
   const countLabel = (count, kind) => {
@@ -31,8 +35,8 @@
   const valueLabel = (value, category) => known[category].includes(value) && Object.hasOwn(values[locale], value) ? values[locale][value] : value;
   const updateInterface = () => {
     document.documentElement.lang = locale;
-    document.title = tr('title');
-    for (const [id, key] of [['viewer-title','title'], ['search-label','search'], ['type-label','type'], ['all-types','allTypes'], ['graph-label','showGraph'], ['language-label','language']]) document.getElementById(id).textContent = tr(key);
+    document.title = data.bundle_metadata?.title || tr('title');
+    for (const [id, key] of [['viewer-title','title'], ['search-label','search'], ['type-label','type'], ['all-types','allTypes'], ['graph-label','showGraph'], ['language-label','language']]) document.getElementById(id).textContent = id === 'viewer-title' ? document.title : tr(key);
     summary.textContent = data.concepts.length + ' ' + countLabel(data.concepts.length, 'concepts') + ' · ' + data.edges.length + ' ' + countLabel(data.edges.length, 'edges') + ' · OKF ' + data.spec_version + ' · ' + tr('basis') + ': ' + valueLabel(data.reference_basis, 'basis') + (data.reference_time ? ' (' + data.reference_time + ')' : '');
   };
   [...new Set(data.concepts.map(c => c.type).filter(Boolean))].sort().forEach(t => {
@@ -71,27 +75,54 @@
     [
       [c.type || tr('unknownType'), false],
       [tr('trust') + ': ' + valueLabel(c.trust, 'trust'), false],
-      [tr('status') + ': ' + valueLabel(c.status, 'status'), c.status === 'deprecated' || c.status === 'invalid'],
+      [tr('status') + ': ' + (c.status_raw || valueLabel(c.status, 'status')), Boolean(c.status_raw) || c.status === 'deprecated' || c.status === 'invalid'],
       [tr('staleness') + ': ' + valueLabel(c.staleness, 'staleness'), c.staleness === 'stale' || c.staleness === 'invalid']
     ].forEach(([value, alert]) => meta.append(el('span', 'badge' + (alert ? ' stale' : ''), value)));
+    if (typeof c.attestable === 'boolean') {
+      const label = computation[locale][c.attestable ? 'ready' : c.computation_unavailable_reason];
+      if (label) meta.append(el('span', 'badge', label));
+    }
     byId.append(meta);
+    if (c.replacement && concepts.has(c.replacement)) {
+      const replacement = el('button', '', tr('replacement') + ' · ' + concepts.get(c.replacement).title);
+      replacement.addEventListener('click', () => navigate(c.replacement));
+      byId.append(replacement);
+    }
     if (c.stale_after) byId.append(el('p', '', tr('staleAfter') + ': ' + c.stale_after));
+    if (c.verifications && c.verifications.length) {
+      const labels = locale === 'ru'
+        ? {history:'Проверки', current:'Действует', historical:'В истории'}
+        : {history:'Verification history', current:'Current', historical:'Historical'};
+      const history = el('details', '');
+      const events = el('ul', '');
+      for (const event of c.verifications) {
+        const status = event.current ? labels.current : labels.historical;
+        events.append(el('li', '', `${status} · ${event.at} · ${event.by}`));
+      }
+      history.append(el('summary', '', labels.history), events);
+      byId.append(history);
+    }
     const body = el('div', 'body'); body.innerHTML = c.html; byId.append(body);
     // Bundle resolution comes from Go. Relative Markdown links use concept deep links.
     const markdownLinks = data.edges.filter(e => e.kind === 'markdown' && e.from_concept === c.id);
     body.querySelectorAll('a').forEach(a => {
       const raw = a.getAttribute('href') || '';
       const normalized = value => { try { return decodeURI(value); } catch (_) { return value; } };
-      const edge = markdownLinks.find(e => e.raw === raw || normalized(e.raw) === normalized(raw));
+      const sourceFootnote = a.getAttribute('class') === 'source-footnote';
+      const edge = sourceFootnote ? undefined : markdownLinks.find(e => e.raw === raw || normalized(e.raw) === normalized(raw));
       if (edge && edge.exists && concepts.has(edge.to_concept)) {
         a.href = '#' + encodeURIComponent(edge.to_concept);
       } else if (edge) {
         a.removeAttribute('href'); a.title = tr('missingConcept');
       } else if (/^#fn(?:ref\d*)?:/i.test(raw)) {
-        // Goldmark footnotes link to anchors in the current detail card.
+        // Footnotes link to anchors in the current detail card.
         a.addEventListener('click', event => {
           const target = document.getElementById(raw.slice(1));
-          if (target) { event.preventDefault(); target.scrollIntoView(); }
+          if (target) {
+            event.preventDefault();
+            if (sourceFootnote) target.focus({preventScroll: true});
+            target.scrollIntoView();
+          }
         });
       } else if (/^(https?:\/\/|mailto:)/i.test(raw) && !/[\u0000-\u001f\u007f]/.test(raw)) {
         a.rel = 'noopener noreferrer'; a.referrerPolicy = 'no-referrer';
@@ -101,8 +132,12 @@
     });
     byId.append(el('h3', '', tr('sources')));
     if (!c.sources.length) byId.append(el('p', 'empty', tr('noSources')));
-    c.sources.forEach(s => {
+    c.sources.forEach((s, i) => {
       const row = el('div', 'source', (s.title || s.id || tr('source')) + (s.resource ? ' · ' : ''));
+      if (data.spec_version === '0.3') {
+        row.id = 'fn:source-' + (i + 1);
+        row.tabIndex = -1;
+      }
       if (/^(https?:\/\/|mailto:)/i.test(s.resource) && !/[\u0000-\u001f\u007f]/.test(s.resource)) {
         const a = el('a', '', s.resource); a.href = s.resource; a.rel = 'noopener noreferrer'; a.referrerPolicy = 'no-referrer'; row.append(a);
       } else row.append(el('span', '', s.resource));

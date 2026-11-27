@@ -725,7 +725,7 @@ func (p *presentation) VerifyPatchedContext(ctx context.Context, out []byte, pat
 
 func (p *presentation) verifyPatchedPlanContext(ctx context.Context, out []byte, plan auditedBytePatches) error {
 	patches := plan.patches
-	after, err := parsePresentationContext(ctx, out)
+	after, err := parsePresentationWithCoreContext(ctx, out, p.coreV03)
 	if err != nil {
 		return err
 	}

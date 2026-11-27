@@ -1466,12 +1466,12 @@
     },
     {
       "id": "skills-okf-backfill-skill",
-      "purpose": "contract",
-      "status": "current",
+      "purpose": "historical",
+      "status": "historical",
       "source": "skills/okf-backfill/SKILL.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "32e05a1a705902e4485e1b9181f680a8c560bdef3c0fa79aa084f3d046d85148",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/okf-backfill/SKILL.md",
       "en": {
         "path": "docs/readings/skills/okf-backfill/SKILL.md",
@@ -1502,12 +1502,12 @@
     },
     {
       "id": "skills-okf-maintain-skill",
-      "purpose": "contract",
-      "status": "current",
+      "purpose": "historical",
+      "status": "historical",
       "source": "skills/okf-maintain/SKILL.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "eac8c5f792984be5aad90eb6ce7cf6dcb593e1c781743dc180acb3c256e64d8b",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/okf-maintain/SKILL.md",
       "en": {
         "path": "docs/readings/skills/okf-maintain/SKILL.md",
@@ -1520,12 +1520,12 @@
     },
     {
       "id": "skills-open-knowledge-format-skill",
-      "purpose": "contract",
-      "status": "current",
+      "purpose": "historical",
+      "status": "historical",
       "source": "skills/open-knowledge-format/SKILL.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "15bc7a088362ccf85cd519704465f02eb6a5d934c8527bdfa803510feaecfbcf",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/open-knowledge-format/SKILL.md",
       "en": {
         "path": "docs/readings/skills/open-knowledge-format/SKILL.md",
@@ -1561,7 +1561,7 @@
       "source": "skills/open-knowledge-format/references/authoring-and-reading.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "ee5aa80e01dfeba67e57e4dc22deebfed16eb717961bf2430ae5b0ff385611c0",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/open-knowledge-format/references/authoring-and-reading.md",
       "en": {
         "path": "docs/readings/skills/open-knowledge-format/references/authoring-and-reading.md",
@@ -1610,12 +1610,12 @@
     },
     {
       "id": "skills-open-knowledge-format-references-mcp-operations",
-      "purpose": "contract",
-      "status": "current",
+      "purpose": "historical",
+      "status": "historical",
       "source": "skills/open-knowledge-format/references/mcp-operations.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "a04a399ab1f4cb5441312e3cc6ac2545b8bc182aca44cf6b4ecbbd6b380043ec",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/open-knowledge-format/references/mcp-operations.md",
       "en": {
         "path": "docs/readings/skills/open-knowledge-format/references/mcp-operations.md",
@@ -1651,7 +1651,7 @@
       "source": "skills/open-knowledge-format/references/operational-workflows.md",
       "source_revision": "61e75e9aa9a8719dfb480bf1f5226553b3a21d70",
       "baseline_sha256": "3ba9c8f3d148231bd9c727c0345f68e3b428950235c35c93b96e8c3388587607",
-      "preserve_source": true,
+      "preserve_source": false,
       "normative_source": "skills/open-knowledge-format/references/operational-workflows.md",
       "en": {
         "path": "docs/readings/skills/open-knowledge-format/references/operational-workflows.md",
@@ -2791,12 +2791,104 @@
       "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
     },
     {
+      "path": "examples/project-knowledge/en/retry-policy-current.md",
+      "reason": "Fictional rule in the localized teaching bundle."
+    },
+    {
+      "path": "examples/project-knowledge/ru/retry-policy-current.md",
+      "reason": "Fictional rule in the localized teaching bundle."
+    },
+    {
       "path": "examples/project-knowledge/en/index.md",
       "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
     },
     {
       "path": "examples/project-knowledge/en/source-material.md",
       "reason": "Localized teaching bundle data; fictional requirements and notes are executed as examples, not documentation editions."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/GOAL.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T01-contract.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T02-documents.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T03-knowledge.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T04-paths.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T05-computations.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T06-writes.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T07-migrate.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T08-clients.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T09-workflows.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T10-viewer.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T11-site.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/T12-acceptance.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/contract.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/ecosystem.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/normative-evidence.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/progress.md",
+      "reason": "Internal OKF 0.3 implementation plan or acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/acceptance.md",
+      "reason": "Internal OKF 0.3 release acceptance evidence."
+    },
+    {
+      "path": "docs/_tasks/okf-v03/public-corpus.md",
+      "reason": "Internal OKF 0.3 corpus acceptance evidence."
+    },
+    {
+      "path": "fixtures/v03/SPEC.md",
+      "reason": "Immutable upstream OKF 0.3 conformance fixture checked by SHA-256."
+    },
+    {
+      "path": "fixtures/v03/LICENSE.md",
+      "reason": "Upstream license accompanying the immutable OKF 0.3 specification."
     }
   ],
   "exclusion_rules": [

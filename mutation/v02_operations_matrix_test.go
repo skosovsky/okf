@@ -384,7 +384,7 @@ func TestPlanSourceIDOperationsPreserveOpaqueAnonymousSibling(t *testing.T) {
 				}
 
 				// Act.
-				result, planErr := Plan(context.Background(), source, change(t, source, op))
+				result, planErr := planV02(context.Background(), source, change(t, source, op))
 				var updated []byte
 				if planErr == nil {
 					updated, planErr = result.Staged.ReadFile(context.Background(), "a.md")
@@ -446,7 +446,7 @@ func TestPlanAnonymousExactRemovalFailsOnUnresolvedOpaqueSibling(t *testing.T) {
 			}
 
 			// Act.
-			result, planErr := Plan(context.Background(), source, change(t, source, operation))
+			result, planErr := planV02(context.Background(), source, change(t, source, operation))
 
 			// Assert.
 			var presentationErr *PresentationError
@@ -1614,6 +1614,62 @@ func TestPutAttestedComputation_ReconcilesClosedCollectionsAndPreservesExtension
 	}
 }
 
+func TestOKF03ComputationPatchPreservesSingletonParameterExtensions(t *testing.T) {
+	const original = "---\n%YAML 1.2\n--- # YAML mapping\ntype: Attested Computation\nruntime: postgres\n" +
+		"parameters:\n  name: year\n  type: integer\n  x-units: fiscal-year\n" +
+		"computation: query.sql\nexecutor: {resource: run.md, receipt: [result]}\n" +
+		"attester: {resource: attest.py}\n---\n\nA note.\n"
+	source := memorySource{"a.md": []byte(original), "query.sql": []byte("SELECT 1"), "attest.py": []byte("# Attester.")}
+	request := store.AttestedComputationContract{
+		Mode:            store.AttestedComputationModeFile,
+		Runtime:         "postgres",
+		ComputationPath: "query.sql",
+		Executor:        store.ExecutorContract{Resource: "run.md", Receipt: []string{"result"}},
+		Attester:        store.AttesterContract{Resource: "attest.py"},
+	}
+	plan := func(params []store.ComputationParameter) (Result, error) {
+		t.Helper()
+		request.Parameters = params
+		op, err := store.NewPutAttestedComputation(ref(t, "a").ID, request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Plan(t.Context(), source, change(t, source, op))
+	}
+	retained := store.ComputationParameter{Name: "year", Type: "number", Required: true}
+	for _, parameters := range [][]store.ComputationParameter{
+		{retained},
+		{{Name: "region", Type: "string"}, retained},
+	} {
+		result, err := plan(parameters)
+		if err != nil {
+			t.Fatalf("parameters %+v: %v", parameters, err)
+		}
+		updated, err := result.Staged.ReadFile(t.Context(), "a.md")
+		if err != nil {
+			t.Fatal(err)
+		}
+		doc, err := bundle.ParseDocumentForVersionContext(t.Context(), string(updated), bundle.VersionResolution{Effective: bundle.OKFVersion03})
+		if err != nil {
+			t.Fatal(err)
+		}
+		observed, err := doc.AttestedComputationStateForVersionContext(t.Context(), bundle.VersionResolution{Effective: bundle.OKFVersion03})
+		if err != nil || len(observed.Contract.Parameters) != len(parameters) ||
+			observed.Contract.Parameters[len(parameters)-1].Type != "number" ||
+			!bytes.Contains(updated, []byte("x-units: fiscal-year")) || !bytes.Contains(updated, []byte("%YAML 1.2")) {
+			t.Fatalf("parameters %+v, staged %q, err=%v", observed.Contract.Parameters, updated, err)
+		}
+		if len(parameters) == 1 && !bytes.Contains(updated, []byte("parameters:\n  name: year")) {
+			t.Fatalf("singleton shape changed: %s", updated)
+		}
+	}
+	result, err := plan(nil)
+	var invalid *store.InvalidChangeSet
+	if !errors.As(err, &invalid) || invalid.Code != "extension_not_preserved" || result.Staged != nil {
+		t.Fatalf("parameter removal = %v, staged=%v", err, result.Staged)
+	}
+}
+
 func TestPutAttestedComputation_ObsoleteParameterFailureFollowsDocumentOrder(t *testing.T) {
 	document := func(parameters string) []byte {
 		return []byte("---\n" +
@@ -2522,7 +2578,7 @@ func TestMoveConcept_RewritesCapturedLiteralPercentPathsAcrossV02Families(t *tes
 			}
 
 			// Act.
-			result, err := Plan(context.Background(), source, change(t, source, operation))
+			result, err := planV02(context.Background(), source, change(t, source, operation))
 			read := func(name string) []byte {
 				t.Helper()
 				if err != nil {
@@ -2745,7 +2801,7 @@ func TestMoveConcept_V02AmbiguousPathValuesAndNilResolverAreNoops(t *testing.T) 
 		context.Background(), nil,
 		"ambiguous.md", "ambiguous.md", "a.md", "nested/a.md", ambiguousDocument,
 	)
-	result, err := Plan(context.Background(), source, change(t, source, operation))
+	result, err := planV02(context.Background(), source, change(t, source, operation))
 	var got []byte
 	if err == nil {
 		got, err = result.Staged.ReadFile(context.Background(), "ambiguous.md")
@@ -2885,7 +2941,7 @@ func TestMoveConcept_V02PathRewriteIgnoresUnrelatedOpaqueProvenance(t *testing.T
 					}
 
 					// Act.
-					result, err := Plan(
+					result, err := planV02(
 						context.Background(),
 						source,
 						change(t, source, operation),
@@ -2950,7 +3006,7 @@ func TestMoveConcept_V02IrrelevantPathProvenanceDoesNotVeto(t *testing.T) {
 						}
 
 						// Act.
-						result, err := Plan(
+						result, err := planV02(
 							context.Background(),
 							source,
 							change(t, source, operation),
@@ -3007,7 +3063,7 @@ func TestMoveConcept_V02BlockPathRewritePreservesOpaqueSiblings(t *testing.T) {
 				}
 
 				// Act.
-				result, err := Plan(
+				result, err := planV02(
 					context.Background(),
 					source,
 					change(t, source, operation),
@@ -3055,7 +3111,7 @@ func TestMoveConcept_V02FlowAtomicRewriteRejectsOpaqueSiblingProvenance(t *testi
 				}
 
 				// Act.
-				result, err := Plan(
+				result, err := planV02(
 					context.Background(),
 					source,
 					change(t, source, operation),
@@ -3106,7 +3162,7 @@ func TestMoveConcept_V02TouchedPathProvenanceFailsClosed(t *testing.T) {
 					}
 
 					// Act.
-					result, err := Plan(
+					result, err := planV02(
 						context.Background(),
 						source,
 						change(t, source, operation),

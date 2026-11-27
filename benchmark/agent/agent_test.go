@@ -286,7 +286,15 @@ func TestRealisticCasePinsActualGoSource(t *testing.T) {
 			if support.RepoPath == "" {
 				t.Fatalf("%s: unpinned realistic source", c.ID)
 			}
-			data, err := os.ReadFile(filepath.Join("../..", support.RepoPath))
+			sourcePath := filepath.Join("../..", support.RepoPath)
+			// These frozen excerpts predate OKF 0.3 and come from commit 61e75e9.
+			switch {
+			case c.ID == "repo-default-okf-version" && support.RepoPath == "bundle/doc.go":
+				sourcePath = filepath.Join("testdata", "61e75e9-bundle-doc.go.txt")
+			case c.ID == "repo-parse-output" && support.RepoPath == "internal/okfcli/run.go":
+				sourcePath = filepath.Join("testdata", "61e75e9-cli-parse-output.go.txt")
+			}
+			data, err := os.ReadFile(sourcePath)
 			if err != nil {
 				t.Fatal(err)
 			}

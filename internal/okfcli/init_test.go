@@ -35,7 +35,7 @@ func TestInitCreatesValidDraftBundle(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatal(err)
 	}
-	if result.Path != target || result.OKFVersion != bundle.OKFVersion ||
+	if result.Path != target || result.OKFVersion != bundle.OKFVersion03 ||
 		len(result.Files) != 2 || result.Files[0] != "index.md" || result.Files[1] != "getting-started.md" {
 		t.Fatalf("init result = %+v", result)
 	}
@@ -43,9 +43,12 @@ func TestInitCreatesValidDraftBundle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report := validator.ValidateBundle(loaded, &validator.ValidatorConfig{Spec: "0.2", Strict: true})
+	report := validator.ValidateBundle(loaded, &validator.ValidatorConfig{Strict: true})
 	if !report.IsConformant() || report.ErrorCount() != 0 {
 		t.Fatalf("new bundle fails base validation: %+v", report)
+	}
+	if report.Version.Declared != bundle.OKFVersion03 || report.Version.Effective != bundle.OKFVersion03 {
+		t.Fatalf("new bundle version = %+v", report.Version)
 	}
 	concept, err := os.ReadFile(filepath.Join(target, "getting-started.md"))
 	if err != nil {
@@ -53,6 +56,24 @@ func TestInitCreatesValidDraftBundle(t *testing.T) {
 	}
 	if !strings.Contains(string(concept), "status: draft") || strings.Contains(string(concept), "sources:") || strings.Contains(string(concept), "verified:") {
 		t.Fatalf("unsafe placeholder metadata: %s", concept)
+	}
+}
+
+func TestInitExplicitlyCreatesOKF02Bundle(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "legacy-knowledge")
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"init", target, "--spec", "0.2", "--json"}, &stdout, &stderr)
+	var result initResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil || code != 0 || stderr.Len() != 0 || result.OKFVersion != bundle.OKFVersion {
+		t.Fatalf("legacy init = %d %q %q, %v", code, stdout.String(), stderr.String(), err)
+	}
+	loaded, err := bundle.LoadBundle(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := validator.ValidateBundle(loaded, &validator.ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
+	if !report.IsConformant() || report.Version.Declared != bundle.OKFVersion {
+		t.Fatalf("legacy bundle: %+v", report)
 	}
 }
 

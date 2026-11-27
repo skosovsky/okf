@@ -48,7 +48,13 @@ func cmdInit(args []string, stdout io.Writer) (int, error) {
 }
 
 func cmdInitWithHook(args []string, stdout io.Writer, beforePublish func(context.Context) error) (int, error) {
-	parsed, err := parseArgs(args, []flagSpec{{Name: "--json", Kind: boolFlag}})
+	parsed, err := parseArgs(args, []flagSpec{
+		{Name: "--json", Kind: boolFlag},
+		{Name: "--spec", Kind: stringFlag},
+		{Name: "--title", Kind: stringFlag},
+		{Name: "--description", Kind: stringFlag},
+		{Name: "--license", Kind: stringFlag},
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -56,12 +62,41 @@ func cmdInitWithHook(args []string, stdout io.Writer, beforePublish func(context
 	if err != nil {
 		return 0, err
 	}
+	version := parsed.value("--spec", bundle.OKFVersion03)
+	index := initIndex
+	switch version {
+	case bundle.OKFVersion:
+		if parsed.has("--title") || parsed.has("--description") || parsed.has("--license") {
+			return 0, fmt.Errorf("bundle metadata requires --spec 0.3")
+		}
+	case bundle.OKFVersion03:
+		template, err := bundle.ParseDocument(initIndex)
+		if err != nil {
+			return 0, err
+		}
+		if err := template.Frontmatter.SetString("okf_version", version); err != nil {
+			return 0, err
+		}
+		for _, field := range []string{"title", "description", "license"} {
+			if value := parsed.value("--"+field, ""); value != "" {
+				if err := template.Frontmatter.SetString(field, value); err != nil {
+					return 0, err
+				}
+			}
+		}
+		index, err = template.SerializeForVersion(bundle.VersionResolution{Effective: version})
+		if err != nil {
+			return 0, err
+		}
+	default:
+		return 0, fmt.Errorf("init --spec must be 0.2 or 0.3")
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := initBundleContext(ctx, target, beforePublish); err != nil {
+	if err := initBundleContext(ctx, target, beforePublish, index); err != nil {
 		return 0, err
 	}
-	result := initResult{Path: filepath.Clean(target), OKFVersion: bundle.OKFVersion, Files: []string{"index.md", "getting-started.md"}}
+	result := initResult{Path: filepath.Clean(target), OKFVersion: version, Files: []string{"index.md", "getting-started.md"}}
 	if parsed.boolValue("--json") {
 		return 0, json.NewEncoder(stdout).Encode(result)
 	}
@@ -72,7 +107,11 @@ func cmdInitWithHook(args []string, stdout io.Writer, beforePublish func(context
 // initBundleContext stages a complete bundle beside its absent target, then
 // atomically installs it using the same no-replace primitive as index writes.
 // beforePublish is a test seam for cancellation and failed publication.
-func initBundleContext(ctx context.Context, target string, beforePublish func(context.Context) error) (resultErr error) {
+func initBundleContext(ctx context.Context, target string, beforePublish func(context.Context) error, indexes ...string) (resultErr error) {
+	index := initIndex
+	if len(indexes) > 0 {
+		index = indexes[0]
+	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -112,7 +151,7 @@ func initBundleContext(ctx context.Context, target string, beforePublish func(co
 		return fmt.Errorf("open init stage: %w", err)
 	}
 	for _, file := range []struct{ name, content string }{
-		{"index.md", initIndex},
+		{"index.md", index},
 		{"getting-started.md", initConcept},
 	} {
 		if err := writeInitFile(stage, file.name, file.content); err != nil {

@@ -54,7 +54,9 @@ including IDs beginning with `fn:` or `fnref:`. Percent-encoded deep links and
 browser Back/Forward use the same route. Actual Goldmark footnote links and
 backlinks scroll within the current card without changing its concept route;
 an existing footnote anchor hash preserves that card. Unknown hashes retain the
-existing fallback to the first concept. Footnote labels are not source records.
+existing fallback to the first concept. In OKF 0.3, a prose marker without a
+Markdown footnote definition links to its matching Sources row when the label
+identifies one source. The row receives focus when the reader follows the link.
 Repeated footnote references use Goldmark's numbered `fnref1:`, `fnref2:`, etc.
 backlink anchors and receive the same local scrolling behavior.
 

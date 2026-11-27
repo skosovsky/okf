@@ -102,7 +102,7 @@ func TestSearchConceptsRejectsBlankQueryAndCancellation(t *testing.T) {
 	// Act.
 	result := callHandler(t, contractToolHandler("search_concepts", handleSearchConcepts), blank)
 	tooMany := callHandler(t, contractToolHandler("search_concepts", handleSearchConcepts), map[string]any{"bundle_path": root, "query": "a", "limit": float64(101)})
-	_, err := searchConceptSnapshot(cancelled, &bundle.Bundle{}, "a", 20, nil, bundle.TemporalProfileDate)
+	_, err := searchConceptSnapshot(cancelled, &bundle.Bundle{}, "a", 20, nil, bundle.TemporalProfileDate, false)
 
 	// Assert.
 	if !result.IsError {
@@ -311,3 +311,27 @@ func TestConceptQueryTemporalProfileIsExplicit(t *testing.T) {
 }
 
 var _ = mcp.CallToolRequest{}
+
+func TestOKF03SearchCurrentFollowsReplacement(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	writeTestFile(t, root, "index.md", "---\nokf_version: '0.3'\n---\n\n# Index\n")
+	writeTestFile(t, root, "old.md", "---\ntype: Note\ntitle: Delivery hours\nstatus: deprecated\nsuperseded_by: intermediate.md\n---\n")
+	writeTestFile(t, root, "intermediate.md", "---\ntype: Note\ntitle: Delivery hours\nstatus: deprecated\nsuperseded_by: current.md\n---\n")
+	writeTestFile(t, root, "current.md", "---\ntype: Note\ntitle: Escalation window\n---\n")
+	writeTestFile(t, root, "unavailable.md", "---\ntype: Note\ntitle: Delivery hours\nstatus: deprecated\nsuperseded_by: unavailable.md\n---\n")
+
+	// Act.
+	result := callHandler(t, contractToolHandler("search_concepts", handleSearchConcepts), map[string]any{
+		"bundle_path": root, "query": "Delivery hours", "current_only": true,
+	})
+
+	// Assert.
+	if result.IsError {
+		t.Fatalf("search error: %s", resultText(t, result))
+	}
+	got := result.StructuredContent.(conceptSearchResult)
+	if got.Total != 1 || len(got.Hits) != 1 || got.Hits[0].Concept.ID != "current" || got.Hits[0].MatchedConceptID != "intermediate" {
+		t.Fatalf("unexpected replacement: %#v", got)
+	}
+}

@@ -21,7 +21,7 @@ type Generation struct {
 
 // GenerationState preserves generated mapping shape and validates actor/time
 // independently. Value is populated only when the complete generated contract
-// is valid; By and At remain available to typed projections independently.
+// is valid. By and At retain their observations for diagnostics.
 type GenerationState struct {
 	Present  bool
 	Mapping  bool
@@ -267,6 +267,9 @@ func DecodeFrontmatter[T any](frontmatter Frontmatter) (T, error) {
 		return out, err
 	}
 	node := frontmatter.YAMLNode()
+	if frontmatter.coreV03 {
+		prepareCoreV03Decode(node)
+	}
 	if err := node.Decode(&out); err != nil {
 		return out, fmt.Errorf("%w: %v", ErrInvalidFrontmatter, err)
 	}
@@ -336,11 +339,11 @@ func (f Frontmatter) SourceStatesContext(ctx context.Context) ([]ProvenanceSourc
 		return nil, err
 	}
 	node, present := semanticSelectionNode(selection)
-	if !present || node.Kind != yaml.SequenceNode {
+	if !present {
 		return nil, nil
 	}
 	var out []ProvenanceSourceState
-	for _, item := range node.Content {
+	for _, item := range yamlSourceItems(node, f.coreV03) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -355,7 +358,7 @@ func (f Frontmatter) SourceStatesContext(ctx context.Context) ([]ProvenanceSourc
 			out = append(out, ProvenanceSourceState{Present: true})
 			continue
 		}
-		state, stateErr := provenanceSourceStateContext(ctx, resolver, item)
+		state, stateErr := provenanceSourceStateContext(ctx, resolver, item, f.coreV03)
 		if stateErr != nil {
 			return nil, stateErr
 		}
@@ -365,6 +368,19 @@ func (f Frontmatter) SourceStatesContext(ctx context.Context) ([]ProvenanceSourc
 		return nil, err
 	}
 	return out, nil
+}
+
+func yamlSourceItems(node *yaml.Node, singleton bool) []*yaml.Node {
+	if node == nil {
+		return nil
+	}
+	if node.Kind == yaml.SequenceNode {
+		return node.Content
+	}
+	if singleton && node.Kind == yaml.MappingNode {
+		return []*yaml.Node{node}
+	}
+	return nil
 }
 
 func (f Frontmatter) sourceStatesContext(ctx context.Context) ([]ProvenanceSourceState, error) {
@@ -477,6 +493,17 @@ func (f Frontmatter) GenerationState() GenerationState {
 // GenerationStateContext is the cancellation-aware generated-family
 // observation over the retained, already-validated semantic graph.
 func (f Frontmatter) GenerationStateContext(ctx context.Context) (GenerationState, error) {
+	return f.GenerationStateForProfileContext(ctx, TemporalProfileDate)
+}
+
+// GenerationStateForProfileContext applies the selected timestamp and actor rules.
+func (f Frontmatter) GenerationStateForProfileContext(ctx context.Context, profile TemporalProfile) (GenerationState, error) {
+	parseTimestamp := dateTimeValueFromNodeContext
+	validateActor := validActorContext
+	if profile == TemporalProfileV03 {
+		parseTimestamp = timestampV03FromNode
+		validateActor = ValidActorV03Context
+	}
 	if err := ctx.Err(); err != nil {
 		return GenerationState{}, err
 	}
@@ -488,7 +515,8 @@ func (f Frontmatter) GenerationStateContext(ctx context.Context) (GenerationStat
 	}
 	node, present := semanticSelectionNode(selection)
 	state := GenerationState{Present: present}
-	if !present {
+	if !present || profile == TemporalProfileV03 && emptyV03Value(node) {
+		state.Present = false
 		return state, nil
 	}
 	if node.Kind != yaml.MappingNode {
@@ -500,7 +528,7 @@ func (f Frontmatter) GenerationStateContext(ctx context.Context) (GenerationStat
 		return GenerationState{}, err
 	}
 	if state.By.Valid {
-		validActor, actorErr := validActorContext(ctx, state.By.Value)
+		validActor, actorErr := validateActor(ctx, state.By.Value)
 		if actorErr != nil {
 			return GenerationState{}, actorErr
 		}
@@ -510,11 +538,14 @@ func (f Frontmatter) GenerationStateContext(ctx context.Context) (GenerationStat
 	if err != nil {
 		return GenerationState{}, err
 	}
-	state.At, err = dateTimeValueFromNodeContext(ctx, atNode, atPresent)
+	state.At, err = parseTimestamp(ctx, atNode, atPresent)
 	if err != nil {
 		return GenerationState{}, err
 	}
 	state.HasValue = state.By.Valid || state.At.State == TemporalValid
+	if profile == TemporalProfileV03 {
+		state.HasValue = state.By.Valid
+	}
 	state.Valid = state.By.Valid && state.At.State != TemporalMalformed
 	if state.Valid {
 		state.Value = Generation{By: state.By.Value}
@@ -571,6 +602,14 @@ func (f Frontmatter) VerificationStates() []VerificationState {
 // projection. It resolves the retained, already-validated frontmatter graph
 // through the shared semantic resolver. Cancellation returns no partial state.
 func (f Frontmatter) VerificationStatesContext(ctx context.Context) ([]VerificationState, error) {
+	return f.verificationStatesContext(ctx, dateTimeValueFromNodeContext, validActorContext)
+}
+
+func (f Frontmatter) verificationStatesContext(
+	ctx context.Context,
+	parseTimestamp func(context.Context, *yaml.Node, bool) (DateTimeValue, error),
+	validActor func(context.Context, string) (bool, error),
+) ([]VerificationState, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -624,13 +663,13 @@ func (f Frontmatter) VerificationStatesContext(ctx context.Context) ([]Verificat
 		if rawErr != nil {
 			return nil, rawErr
 		}
-		atValue, valueErr := dateTimeValueFromNodeContext(ctx, atNode, atPresent)
+		atValue, valueErr := parseTimestamp(ctx, atNode, atPresent)
 		if valueErr != nil {
 			return nil, valueErr
 		}
 		actorValid := false
 		if byState.Valid {
-			actorValid, stateErr = validActorContext(ctx, byState.Value)
+			actorValid, stateErr = validActor(ctx, byState.Value)
 			if stateErr != nil {
 				return nil, stateErr
 			}
@@ -841,16 +880,20 @@ func (f Frontmatter) ComputationContractState() ComputationContractState {
 // ComputationContractStateContext observes every contract field with no
 // partial state on cancellation.
 func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (ComputationContractState, error) {
+	return f.computationContractStateContext(ctx, false)
+}
+
+func (f Frontmatter) computationContractStateContext(ctx context.Context, v03 bool) (ComputationContractState, error) {
 	keys := []string{"runtime", "parameters", "computation", "executor", "attester"}
 	state := ComputationContractState{Valid: true}
 	root := f.mappingNode()
 	resolver := newYAMLSemanticResolver(ctx)
 	for _, key := range keys {
-		_, present, err := semanticMappingNodeContext(resolver, &root, key)
+		node, present, err := semanticMappingNodeContext(resolver, &root, key)
 		if err != nil {
 			return ComputationContractState{}, err
 		}
-		if present {
+		if present && !(v03 && emptyV03Value(node)) {
 			state.Present = true
 			break
 		}
@@ -859,11 +902,21 @@ func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (Compu
 		return state, ctx.Err()
 	}
 	var err error
-	if state.Runtime, err = mappingStringStateContext(ctx, resolver, &root, "runtime"); err != nil {
-		return ComputationContractState{}, err
-	}
-	if state.Computation, err = mappingStringStateContext(ctx, resolver, &root, "computation"); err != nil {
-		return ComputationContractState{}, err
+	for _, field := range []struct {
+		key   string
+		state *ScalarValueState
+	}{{"runtime", &state.Runtime}, {"computation", &state.Computation}} {
+		node, present, err := semanticMappingNodeContext(resolver, &root, field.key)
+		if err != nil {
+			return ComputationContractState{}, err
+		}
+		if v03 && present && emptyV03Value(node) {
+			continue
+		}
+		*field.state, err = strictStringNodeStateContext(ctx, node, present)
+		if err != nil {
+			return ComputationContractState{}, err
+		}
 	}
 	if state.Runtime.Valid {
 		state.Value.Runtime = state.Runtime.Value
@@ -875,12 +928,17 @@ func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (Compu
 	if err != nil {
 		return ComputationContractState{}, err
 	}
-	state.ParametersPresent = parametersPresent
-	state.ParametersValid = !parametersPresent
-	if parametersPresent {
+	state.ParametersPresent = parametersPresent && !(v03 && emptyV03Value(parameters))
+	state.ParametersValid = !state.ParametersPresent
+	if state.ParametersPresent {
+		items := parameters.Content
 		state.ParametersValid = parameters.Kind == yaml.SequenceNode
-		if parameters.Kind == yaml.SequenceNode {
-			for _, item := range parameters.Content {
+		if v03 && parameters.Kind == yaml.MappingNode {
+			items = []*yaml.Node{parameters}
+			state.ParametersValid = true
+		}
+		if state.ParametersValid {
+			for _, item := range items {
 				resolved, resolveErr := resolver.value(item)
 				if resolveErr != nil {
 					return ComputationContractState{}, resolveErr
@@ -891,6 +949,9 @@ func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (Compu
 				parameter, parameterErr := computationParameterStateContext(ctx, resolver, item)
 				if parameterErr != nil {
 					return ComputationContractState{}, parameterErr
+				}
+				if v03 && !parameter.Required.Present {
+					parameter.Valid = parameter.Name.Valid && parameter.Type.Valid
 				}
 				state.Parameters = append(state.Parameters, parameter)
 				if parameter.Valid {
@@ -906,6 +967,9 @@ func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (Compu
 	if err != nil {
 		return ComputationContractState{}, err
 	}
+	if v03 {
+		executorPresent = executorPresent && !emptyV03Value(executor)
+	}
 	if state.Executor, err = executorContractStateContext(ctx, resolver, executor, executorPresent); err != nil {
 		return ComputationContractState{}, err
 	}
@@ -917,6 +981,9 @@ func (f Frontmatter) ComputationContractStateContext(ctx context.Context) (Compu
 	attester, attesterPresent, err := semanticMappingNodeContext(resolver, &root, "attester")
 	if err != nil {
 		return ComputationContractState{}, err
+	}
+	if v03 {
+		attesterPresent = attesterPresent && !emptyV03Value(attester)
 	}
 	if state.Attester, err = attesterContractStateContext(ctx, resolver, attester, attesterPresent); err != nil {
 		return ComputationContractState{}, err
@@ -1269,6 +1336,7 @@ func provenanceSourceStateContext(
 	ctx context.Context,
 	resolver *yamlSemanticResolver,
 	node *yaml.Node,
+	coreV03 bool,
 ) (ProvenanceSourceState, error) {
 	if err := ctx.Err(); err != nil {
 		return ProvenanceSourceState{}, err
@@ -1290,7 +1358,7 @@ func provenanceSourceStateContext(
 	if state.Author, err = mappingStringStateContext(ctx, resolver, node, "author"); err != nil {
 		return ProvenanceSourceState{}, err
 	}
-	if state.UsageCount, err = mappingUint64StateContext(ctx, resolver, node, "usage_count"); err != nil {
+	if state.UsageCount, err = mappingUint64StateContext(ctx, resolver, node, "usage_count", coreV03); err != nil {
 		return ProvenanceSourceState{}, err
 	}
 	if state.LastModified, err = mappingDateValueContext(ctx, resolver, node, "last_modified"); err != nil {
@@ -1351,6 +1419,7 @@ func mappingUint64StateContext(
 	resolver *yamlSemanticResolver,
 	node *yaml.Node,
 	key string,
+	coreV03 bool,
 ) (Uint64ValueState, error) {
 	value, present, err := semanticMappingNodeContext(resolver, node, key)
 	if err != nil {
@@ -1367,9 +1436,15 @@ func mappingUint64StateContext(
 	if value.Kind != yaml.ScalarNode || value.Tag != "!!int" {
 		return state, nil
 	}
-	parsed, parseErr := parseNonNegativeYAMLUint64Context(ctx, value.Value)
-	if parseErr != nil && ctx.Err() != nil {
-		return Uint64ValueState{}, ctx.Err()
+	var parsed uint64
+	var parseErr error
+	if coreV03 {
+		parsed, parseErr = ParseNonNegativeYAMLUint64V03(value.Value)
+	} else {
+		parsed, parseErr = parseNonNegativeYAMLUint64Context(ctx, value.Value)
+	}
+	if err := ctx.Err(); err != nil {
+		return Uint64ValueState{}, err
 	}
 	if parseErr == nil {
 		state.Valid, state.Value = true, parsed
@@ -1946,6 +2021,15 @@ func (d Document) LegacyFallbackObservationContext(ctx context.Context) (LegacyF
 		return LegacyFallbackObservation{}, err
 	}
 	return observation, nil
+}
+
+// LegacyFallbackForVersionContext reports the compatibility behavior of the
+// selected reader. The historical observation remains available to migrations.
+func (d Document) LegacyFallbackForVersionContext(ctx context.Context, version VersionResolution) (LegacyFallbackObservation, error) {
+	if version.Effective == OKFVersion03 {
+		return LegacyFallbackObservation{}, ctx.Err()
+	}
+	return d.LegacyFallbackObservationContext(ctx)
 }
 func (d Document) AttestedComputation() (AttestedComputationContract, bool) {
 	state := d.AttestedComputationState()

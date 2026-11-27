@@ -10,7 +10,7 @@ permalink: /contracts/section-search/
 
 # Section search v1 {#doc-section-001}
 
-`okf search <bundle> --query TEXT [--limit N] [--json]` and MCP
+`okf search <bundle> --query TEXT [--limit N] [--current-only] [--json]` and MCP
 `search_sections` share the Go `retrieval` package. They are additive;
 `search_concepts` keeps its literal-substring contract.
 
@@ -24,6 +24,11 @@ terms must occur in a section's raw Markdown, heading or concept title (AND).
 No stemming, synonyms, translation, regex, semantic search or stopword removal.
 Markdown code is searchable inert text; fenced pseudo-headings never create
 sections. Reserved index/log files are navigation and excluded from search.
+
+On OKF 0.3, `--current-only` (MCP `current_only`) follows replacement chains.
+Historical matches link to the current note through `replacement_concept_id`.
+The original snippet, locator and digest remain available for checking the match.
+Unknown statuses are excluded from current results and remain visible when you open the note.
 
 Sections are non-overlapping spans: the preamble followed by each parser-owned
 heading through the line before the next heading. Empty spans are omitted.

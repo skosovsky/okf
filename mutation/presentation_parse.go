@@ -9,6 +9,7 @@ import (
 
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/internal/documentlayout"
+	"github.com/skosovsky/okf/internal/yamldirective"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,14 +22,29 @@ type presentation struct {
 	resolver           *yamlResolver
 	paths              map[*yaml.Node][]int
 	parents            map[*yaml.Node]*yaml.Node
+	coreV03            bool
 }
 
 // parsePresentationContext only treats the bytes between the recognized
 // opening and closing Markdown delimiters as YAML.  In particular, a body
 // thematic break or setext underline is never a second YAML document.
 func parsePresentationContext(ctx context.Context, data []byte) (*presentation, error) {
+	return parsePresentationWithCoreContext(ctx, data, false)
+}
+
+func parseBundlePresentationContext(ctx context.Context, loaded *bundle.Bundle, data []byte) (*presentation, error) {
+	if loaded.DiscoveryVersion().Effective != bundle.OKFVersion03 {
+		return parsePresentationContext(ctx, data)
+	}
+	return parsePresentationWithCoreContext(ctx, data, true)
+}
+
+func parsePresentationWithCoreContext(ctx context.Context, data []byte, coreV03 bool) (*presentation, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if coreV03 && !usesCoreYAMLMutation(ctx) {
+		ctx = context.WithValue(ctx, coreYAMLMutationKey{}, true)
 	}
 	// The presentation and resolver retain byte slices for the lifetime of the
 	// mutation. Snapshot caller-owned bytes before parsing so mutations after
@@ -64,12 +80,27 @@ func parsePresentationContext(ctx context.Context, data []byte) (*presentation, 
 		return nil, yamlPresentationError("unterminated_frontmatter", fmt.Errorf("%w: %w", ErrUnsupportedPresentation, bundle.ErrUnterminatedFrontmatter), location)
 	}
 	first, end := layout.YAMLStart, layout.YAMLEnd
-	if span, ok, err := leadingYAMLStreamTokenContext(ctx, data[first:end]); err != nil {
-		return nil, err
-	} else if ok {
-		return nil, yamlDocumentPresentationError("yaml_stream_syntax", ErrUnsupportedPresentation, data, first, end, span)
+	source := data[first:end]
+	decoderSource := source
+	if coreV03 {
+		if bytes.IndexByte(source, '%') >= 0 {
+			adapted, _, err := yamldirective.ForV3Decoder(ctx, string(source))
+			if err != nil {
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+				return nil, yamlDocumentPresentationError("yaml_syntax", fmt.Errorf("%w: %v", ErrUnsupportedPresentation, err), data, first, end, yamlDocumentDiagnosticSpan(source))
+			}
+			decoderSource = []byte(adapted)
+		}
+	} else {
+		if span, ok, err := leadingYAMLStreamTokenContext(ctx, source); err != nil {
+			return nil, err
+		} else if ok {
+			return nil, yamlDocumentPresentationError("yaml_stream_syntax", ErrUnsupportedPresentation, data, first, end, span)
+		}
 	}
-	decoder, err := newGuardedYAMLStreamDecoder(ctx, data[first:end])
+	decoder, err := newGuardedYAMLStreamDecoder(ctx, decoderSource)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +121,10 @@ func parsePresentationContext(ctx context.Context, data []byte) (*presentation, 
 	// Once the closing delimiter is recognized, every following byte is
 	// Markdown body. Stream syntax is rejected only when yaml.v3 has established
 	// the first document and the raw token is proven outside quoted scalars.
-	if err := supportedYAMLDocumentContext(ctx, data[first:end], decoded, r); err != nil {
-		return nil, err
+	if !coreV03 {
+		if err := supportedYAMLDocumentContext(ctx, source, decoded, r); err != nil {
+			return nil, err
+		}
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -113,7 +146,7 @@ func parsePresentationContext(ctx context.Context, data []byte) (*presentation, 
 	} else if containsCRLF {
 		nl = []byte("\r\n")
 	}
-	p := &presentation{ctx: ctx, data: data, yaml: data[first:end], yamlStart: first, yamlEnd: end, root: decoded.Content[0], newline: nl, resolver: r, paths: map[*yaml.Node][]int{}, parents: map[*yaml.Node]*yaml.Node{}}
+	p := &presentation{ctx: ctx, data: data, yaml: source, yamlStart: first, yamlEnd: end, root: decoded.Content[0], newline: nl, resolver: r, paths: map[*yaml.Node][]int{}, parents: map[*yaml.Node]*yaml.Node{}, coreV03: coreV03}
 	if err := p.indexPathsContext(ctx, p.root, nil, nil); err != nil {
 		return nil, err
 	}

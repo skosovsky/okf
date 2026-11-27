@@ -56,24 +56,26 @@ type BrokenLink struct {
 
 // Bundle is a loaded OKF directory tree.
 type Bundle struct {
-	root         string
-	files        []string
-	allFiles     []string
-	assetFiles   []string
-	concepts     []Concept
-	byID         map[string]int
-	indexFiles   []string
-	logFiles     []string
-	parseErrors  []ParseError
-	outbound     map[string][]ResolvedLink
-	backlinks    map[string][]ConceptID
-	semantic     map[string][]Relation
-	observations map[string][]RelationObservation
-	incoming     map[relationRefKey][]Relation
-	subresources map[string]map[string]fragmentState
-	diagnostics  []RelationDiagnostic
-	contents     map[string][]byte
-	captured     map[string]capturedFile
+	root              string
+	discoveryVersion  VersionResolution
+	files             []string
+	allFiles          []string
+	assetFiles        []string
+	concepts          []Concept
+	byID              map[string]int
+	indexFiles        []string
+	logFiles          []string
+	parseErrors       []ParseError
+	companionMarkdown []string
+	outbound          map[string][]ResolvedLink
+	backlinks         map[string][]ConceptID
+	semantic          map[string][]Relation
+	observations      map[string][]RelationObservation
+	incoming          map[relationRefKey][]Relation
+	subresources      map[string]map[string]fragmentState
+	diagnostics       []RelationDiagnostic
+	contents          map[string][]byte
+	captured          map[string]capturedFile
 }
 
 type capturedFile struct {
@@ -86,9 +88,15 @@ type capturedFile struct {
 // I/O failures and a non-directory root are returned as errors. Per-file parse
 // failures are collected in Bundle.ParseErrors and do not abort loading.
 func LoadBundle(root string) (*Bundle, error) {
+	return LoadBundleWithSpec(root, "")
+}
+
+// LoadBundleWithSpec selects the discovery rules for the requested version.
+// VersionResolution reports declaration or selector errors on the snapshot.
+func LoadBundleWithSpec(root, selector string) (*Bundle, error) {
 	source := &FileSystemSource{Root: root}
 	defer source.Close()
-	b, err := Load(context.Background(), source)
+	b, err := LoadWithSpec(context.Background(), source, selector)
 	if b != nil {
 		b.root = root
 		for i, p := range b.files {
@@ -109,6 +117,9 @@ func LoadBundle(root string) (*Bundle, error) {
 		for i := range b.concepts {
 			b.concepts[i].Path = filepath.Join(root, filepath.FromSlash(b.concepts[i].Path))
 		}
+		for i := range b.companionMarkdown {
+			b.companionMarkdown[i] = filepath.Join(root, filepath.FromSlash(b.companionMarkdown[i]))
+		}
 		for i := range b.parseErrors {
 			b.parseErrors[i].Path = filepath.Join(root, filepath.FromSlash(b.parseErrors[i].Path))
 		}
@@ -121,6 +132,12 @@ func LoadBundle(root string) (*Bundle, error) {
 // The caller retains ownership of source. In particular, Load never closes a
 // supplied io.Closer, so a Source may be reused for subsequent loads.
 func Load(ctx context.Context, source Source) (*Bundle, error) {
+	return LoadWithSpec(ctx, source, "")
+}
+
+// LoadWithSpec captures the source before applying version-specific discovery.
+// Malformed declarations remain available for diagnostic consumers.
+func LoadWithSpec(ctx context.Context, source Source, selector string) (*Bundle, error) {
 	if source == nil {
 		return nil, fmt.Errorf("nil bundle source")
 	}
@@ -160,18 +177,11 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 	}
 
 	bundle := &Bundle{
-		files:        markdown,
-		allFiles:     clean,
-		assetFiles:   assets,
-		byID:         make(map[string]int),
-		outbound:     make(map[string][]ResolvedLink),
-		backlinks:    make(map[string][]ConceptID),
-		semantic:     make(map[string][]Relation),
-		observations: make(map[string][]RelationObservation),
-		incoming:     make(map[relationRefKey][]Relation),
-		subresources: make(map[string]map[string]fragmentState),
-		contents:     make(map[string][]byte),
-		captured:     make(map[string]capturedFile),
+		files:      markdown,
+		allFiles:   clean,
+		assetFiles: assets,
+		contents:   make(map[string][]byte),
+		captured:   make(map[string]capturedFile),
 	}
 
 	for _, path := range clean {
@@ -192,44 +202,85 @@ func Load(ctx context.Context, source Source) (*Bundle, error) {
 			return nil, err
 		}
 		bundle.captured[path] = metadata
-		if filepath.Ext(path) != ".md" {
-			continue
-		}
-		switch filepath.Base(path) {
-		case "index.md":
-			bundle.indexFiles = append(bundle.indexFiles, path)
-		case "log.md":
-			bundle.logFiles = append(bundle.logFiles, path)
-		default:
-			if err := bundle.loadConceptBytesContext(ctx, path, owned); err != nil {
-				return nil, err
-			}
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
 	}
-
-	for i, concept := range bundle.concepts {
-		if err := ctx.Err(); err != nil {
-			return nil, err
+	version, err := bundle.VersionResolutionContext(ctx, selector)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
 		}
-		id, err := conceptIDStringContext(ctx, concept.ID)
-		if err != nil {
-			return nil, err
-		}
-		bundle.byID[id] = i
+		version, _ = bundle.VersionResolutionContext(ctx, "")
 	}
-	if err := bundle.buildGraphContext(ctx); err != nil {
-		return nil, err
-	}
-	if err := bundle.finalizeRelationDiagnosticsContext(ctx); err != nil {
-		return nil, err
-	}
-	if err := ctx.Err(); err != nil {
+	if err := bundle.discoverContext(ctx, version); err != nil {
 		return nil, err
 	}
 	return bundle, nil
+}
+
+// WithVersionResolutionContext builds a view of the retained snapshot under a
+// version decision already resolved by the caller. It does not read the source.
+func (b *Bundle) WithVersionResolutionContext(ctx context.Context, version VersionResolution) (*Bundle, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if b == nil || b.discoveryVersion == version {
+		return b, nil
+	}
+	view := &Bundle{
+		root:       b.root,
+		files:      b.files,
+		allFiles:   b.allFiles,
+		assetFiles: b.assetFiles,
+		contents:   b.contents,
+		captured:   b.captured,
+	}
+	if err := view.discoverContext(ctx, version); err != nil {
+		return nil, err
+	}
+	return view, nil
+}
+
+func (b *Bundle) discoverContext(ctx context.Context, version VersionResolution) error {
+	b.discoveryVersion = version
+	b.byID = make(map[string]int)
+	b.outbound = make(map[string][]ResolvedLink)
+	b.backlinks = make(map[string][]ConceptID)
+	b.semantic = make(map[string][]Relation)
+	b.observations = make(map[string][]RelationObservation)
+	b.incoming = make(map[relationRefKey][]Relation)
+	b.subresources = make(map[string]map[string]fragmentState)
+	for _, path := range b.files {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		switch filepath.Base(path) {
+		case "index.md":
+			b.indexFiles = append(b.indexFiles, path)
+		case "log.md":
+			b.logFiles = append(b.logFiles, path)
+		default:
+			if err := b.loadMarkdownContext(ctx, path, b.contents[b.capturedPathKey(path)], version); err != nil {
+				return err
+			}
+		}
+	}
+
+	for i, concept := range b.concepts {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		id, err := conceptIDStringContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
+		b.byID[id] = i
+	}
+	if err := b.buildGraphContext(ctx); err != nil {
+		return err
+	}
+	if err := b.finalizeRelationDiagnosticsContext(ctx); err != nil {
+		return err
+	}
+	return ctx.Err()
 }
 
 // preflightSourcePathsContext canonicalizes the validation order before Load
@@ -467,7 +518,7 @@ func cloneConceptContext(ctx context.Context, concept Concept) (Concept, error) 
 	if out.Path, err = stringFromStringContext(ctx, concept.Path); err != nil {
 		return Concept{}, err
 	}
-	out.Document.HasFrontmatter = concept.Document.HasFrontmatter
+	out.Document = concept.Document
 	if out.Document.Body, err = stringFromStringContext(ctx, concept.Document.Body); err != nil {
 		return Concept{}, err
 	}
@@ -477,6 +528,7 @@ func cloneConceptContext(ctx context.Context, concept Concept) (Concept, error) 
 	if out.Document.Frontmatter.raw, err = copySourceBytesContext(ctx, concept.Document.Frontmatter.raw); err != nil {
 		return Concept{}, err
 	}
+	out.Document.Frontmatter.directiveWarnings = concept.Document.Frontmatter.YAMLDirectiveWarnings()
 	if out.Document.frontmatterYAML, err = copySourceBytesContext(ctx, concept.Document.frontmatterYAML); err != nil {
 		return Concept{}, err
 	}
@@ -831,10 +883,16 @@ func (b *Bundle) VersionDeclarationState() VersionDeclarationState {
 // VersionDeclarationStateContext returns the root version declaration with
 // cancellation checks around retained-byte projection and document parsing.
 func (b *Bundle) VersionDeclarationStateContext(ctx context.Context) (VersionDeclarationState, error) {
+	return b.VersionDeclarationStateForSelectorContext(ctx, "")
+}
+
+// VersionDeclarationStateForSelectorContext reads the declaration using the
+// same bootstrap rules as VersionResolutionContext.
+func (b *Bundle) VersionDeclarationStateForSelectorContext(ctx context.Context, selector string) (VersionDeclarationState, error) {
 	if err := ctx.Err(); err != nil {
 		return VersionDeclarationState{}, err
 	}
-	document, present, err := b.rootIndexDocumentContext(ctx)
+	document, present, err := b.rootIndexDocumentForSelectorContext(ctx, selector)
 	if !present {
 		return VersionDeclarationState{Valid: true}, err
 	}
@@ -847,7 +905,7 @@ func (b *Bundle) VersionDeclarationStateContext(ctx context.Context) (VersionDec
 		}
 		return VersionDeclarationState{Present: true}, nil
 	}
-	return document.Frontmatter.VersionDeclarationStateContext(ctx)
+	return document.Frontmatter.rootVersionDeclarationStateContext(ctx, selector)
 }
 
 func (b *Bundle) rootIndexDocument() (Document, bool, error) {
@@ -855,6 +913,10 @@ func (b *Bundle) rootIndexDocument() (Document, bool, error) {
 }
 
 func (b *Bundle) rootIndexDocumentContext(ctx context.Context) (Document, bool, error) {
+	return b.rootIndexDocumentForSelectorContext(ctx, "")
+}
+
+func (b *Bundle) rootIndexDocumentForSelectorContext(ctx context.Context, selector string) (Document, bool, error) {
 	if err := ctx.Err(); err != nil {
 		return Document{}, false, err
 	}
@@ -871,7 +933,7 @@ func (b *Bundle) rootIndexDocumentContext(ctx context.Context) (Document, bool, 
 	if err := ctx.Err(); err != nil {
 		return Document{}, false, err
 	}
-	document, err := ParseDocumentContext(ctx, string(text))
+	document, err := parseRootIndexVersionProbeContext(ctx, string(text), selector)
 	if err != nil {
 		return Document{}, true, fmt.Errorf("parse root index document: %w", err)
 	}
@@ -881,11 +943,20 @@ func (b *Bundle) rootIndexDocumentContext(ctx context.Context) (Document, bool, 
 	return document, true, nil
 }
 
+// CompanionMarkdown returns paths skipped by OKF 0.3 concept discovery.
+func (b *Bundle) CompanionMarkdown() []string {
+	return append([]string(nil), b.companionMarkdown...)
+}
+
 func (b *Bundle) loadConceptBytes(path string, text []byte) {
 	_ = b.loadConceptBytesContext(context.Background(), path, text)
 }
 
 func (b *Bundle) loadConceptBytesContext(ctx context.Context, path string, text []byte) error {
+	return b.loadMarkdownContext(ctx, path, text, VersionResolution{})
+}
+
+func (b *Bundle) loadMarkdownContext(ctx context.Context, path string, text []byte, version VersionResolution) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -893,7 +964,7 @@ func (b *Bundle) loadConceptBytesContext(ctx context.Context, path string, text 
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: fmt.Errorf("%w: invalid UTF-8", ErrInvalidEncoding)})
 		return nil
 	}
-	document, err := ParseDocumentContext(ctx, string(text))
+	document, err := ParseDocumentForVersionContext(ctx, string(text), version)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
@@ -901,7 +972,17 @@ func (b *Bundle) loadConceptBytesContext(ctx context.Context, path string, text 
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: err})
 		return nil
 	}
-	id, err := ConceptIDFromPath("", path)
+	if version.Effective == OKFVersion03 {
+		_, typed, err := document.Frontmatter.TypeContext(ctx)
+		if err != nil {
+			return err
+		}
+		if !typed {
+			b.companionMarkdown = append(b.companionMarkdown, path)
+			return nil
+		}
+	}
+	id, err := ConceptIDFromPath(b.root, path)
 	if err != nil {
 		b.parseErrors = append(b.parseErrors, ParseError{Path: path, Err: err})
 		return nil
@@ -937,7 +1018,11 @@ func (b *Bundle) buildGraphContext(ctx context.Context) error {
 			return err
 		}
 		var resolved []ResolvedLink
-		links, err := concept.Document.LinksContext(ctx)
+		extract := ExtractLinksContext
+		if b.discoveryVersion.Effective == OKFVersion03 {
+			extract = ExtractLinksV03Context
+		}
+		links, err := extract(ctx, concept.Document.Body)
 		if err != nil {
 			return err
 		}
@@ -945,7 +1030,7 @@ func (b *Bundle) buildGraphContext(ctx context.Context) error {
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			target, ok, err := link.ResolveContext(ctx, concept.ID)
+			target, ok, err := b.resolveConceptLinkContext(ctx, concept, link)
 			if err != nil {
 				return err
 			}

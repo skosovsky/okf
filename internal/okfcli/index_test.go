@@ -161,7 +161,7 @@ func TestIndexMalformedDeclarationAndSymlinkDestinationFailBeforeAnyWrite(t *tes
 			t.Fatalf("os.Mkdir() error = %v", err)
 		}
 		writeFixtureFile(t, filepath.Join(root, "index.md"),
-			"---\nokf_version: []\n---\n\n# Root before\n")
+			"---\nokf_version: [0.2]\n---\n\n# Root before\n")
 		writeFixtureFile(t, filepath.Join(root, "nested", "index.md"), "# Nested before\n")
 		writeFixtureFile(t, filepath.Join(root, "nested", "note.md"),
 			"---\ntype: Note\ntitle: Note\n---\nBody.\n")

@@ -18,6 +18,40 @@ func projectDocumentForTemporalProfile(ctx context.Context, path string, documen
 		return parseResponse{}, err
 	}
 	response.TemporalProfile = profile
+	if profile == bundle.TemporalProfileV03 {
+		generation, err := document.Frontmatter.GenerationStateForProfileContext(ctx, profile)
+		if err != nil {
+			return parseResponse{}, err
+		}
+		response.Generated = nil
+		if generation.HasValue {
+			response.Generated = &generationDTO{By: generation.By.Value, At: generation.At.Raw}
+		}
+		if generation.HasValue && generation.At.State == bundle.TemporalValid {
+			response.EffectiveContentChangeTime = generation.At.Time.Format(time.RFC3339Nano)
+		}
+		response.GeneratedAudit.Mapping = generation.Mapping
+		response.GeneratedAudit.Valid = generation.Valid
+		response.GeneratedAudit.HasValue = generation.HasValue
+		response.GeneratedAudit.By = projectScalarAudit(generation.By)
+		response.GeneratedAudit.At = projectDateTimeAudit(generation.At)
+		trust, err := document.Frontmatter.TrustStateV03Context(ctx)
+		if err != nil {
+			return parseResponse{}, err
+		}
+		response.Verified = make([]verificationDTO, 0, len(trust.Verifications))
+		response.VerifiedAudit.Entries = make([]verificationAuditDTO, 0, len(trust.Verifications))
+		for _, event := range trust.Verifications {
+			state := event.Verification
+			entry := verificationAuditDTO{RawBy: state.RawBy, RawAt: state.RawAt, Valid: state.Valid, At: projectDateTimeAudit(state.AtValue), Current: &event.Current, Reason: event.Reason}
+			if state.Valid {
+				value := verificationDTO{By: state.Value.By, At: state.Value.At}
+				entry.Value = &value
+				response.Verified = append(response.Verified, value)
+			}
+			response.VerifiedAudit.Entries = append(response.VerifiedAudit.Entries, entry)
+		}
+	}
 	stale, err := document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
 	if err != nil {
 		return parseResponse{}, err

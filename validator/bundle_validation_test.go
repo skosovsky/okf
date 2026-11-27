@@ -137,7 +137,7 @@ func TestAppendixABundleIsConformant(t *testing.T) {
 	}
 }
 
-func TestMissingTypeIsConformanceError(t *testing.T) {
+func TestMissingTypeIsConformanceErrorInV02(t *testing.T) {
 	t.Parallel()
 
 	// Arrange.
@@ -145,7 +145,7 @@ func TestMissingTypeIsConformanceError(t *testing.T) {
 	writeValidationFile(t, root, "bad.md", "---\ntitle: No Type\n---\nbody\n")
 
 	// Act.
-	report := ValidatePath(root, nil)
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion})
 
 	// Assert.
 	if report.IsConformant() {

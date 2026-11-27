@@ -57,6 +57,11 @@
             "type": "string",
             "maxLength": 4096
           },
+          "replacement_concept_id": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Current concept for this historical match. The snippet and locator refer to the matched section."
+          },
           "path": {
             "type": "string",
             "maxLength": 4096

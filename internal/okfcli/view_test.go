@@ -48,10 +48,10 @@ func TestViewCLIRejectsInvalidTimeAndConceptOverwrite(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	// Act, Assert
-	if code := Run([]string{"view", root, "--output", filepath.Join(root, "view.html"), "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-26"}, &stdout, &stderr); code == 0 {
+	if code := Run([]string{"view", root, "--output", filepath.Join(root, "view.html"), "--spec", "0.2", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-26"}, &stdout, &stderr); code == 0 {
 		t.Fatal("date-only as-of accepted for instant profile")
 	}
-	if code := Run([]string{"view", root, "--output", filepath.Join(root, "view.html"), "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-26T12:00:00-00:00"}, &stdout, &stderr); code == 0 {
+	if code := Run([]string{"view", root, "--output", filepath.Join(root, "view.html"), "--spec", "0.2", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-26T12:00:00-00:00"}, &stdout, &stderr); code == 0 {
 		t.Fatal("unknown UTC offset accepted for instant profile")
 	}
 	if code := Run([]string{"view", root, "--output", filepath.Join(root, "a.md"), "--overwrite"}, &stdout, &stderr); code == 0 {

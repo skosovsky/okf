@@ -9,11 +9,11 @@ Do not install packages, register hooks, or guess a host-specific MCP prefix.
 
 ## Validate and explain a bundle
 
-**Input:** bundle root, desired `--spec auto|0.1|0.2`, temporal profile
-(`date-3fcbb9f` by default or explicit `instant-0b87c52`), and optional
-reference time. Ask for a warning budget only if the caller/CI needs a policy
-threshold. `auto` resolves the root declaration; an explicit selector asserts
-it. A malformed present declaration is an error, not a request to assume v0.2.
+Provide the bundle root and optional `--as-of`. `--spec auto` follows the
+root declaration and defaults to 0.3. Select 0.2 explicitly for an
+undeclared bundle that uses 0.2 rules. For 0.2, choose `instant-0b87c52`
+if the bundle relies on that temporal revision. Set a warning budget when
+the caller or CI needs a policy threshold.
 
 1. Confirm the root and available tool. Prefer `validate_bundle` from the
    connected OKF MCP server when its live schema covers the requested options;

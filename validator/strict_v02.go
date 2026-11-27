@@ -95,21 +95,27 @@ func (v *validator) validateV02Resource(concept bundle.Concept) error {
 	}
 	if valid, err := nonEmptyScalarContext(v.ctx, node); err != nil {
 		return err
-	} else if ok && !valid {
+	} else if ok && !valid && !v.optionalEmptyV03(node) {
 		v.warn("path_value_invalid", concept.Path, "resource", "'resource' should be a non-empty string path, URL, or scope descriptor")
 	}
 	tags, present, err := frontmatter.SemanticGetContext(v.ctx, "tags")
 	if err != nil {
 		return err
 	}
-	if !present {
+	if !present || v.optionalEmptyV03(tags) {
 		return nil
 	}
-	if tags.Kind != yaml.SequenceNode {
+	var items []*yaml.Node
+	switch {
+	case tags.Kind == yaml.SequenceNode:
+		items = tags.Content
+	case v.version.Effective == bundle.OKFVersion03 && tags.Kind == yaml.ScalarNode:
+		items = []*yaml.Node{tags}
+	default:
 		v.warn("tags_invalid", concept.Path, "tags", "'tags' should be a YAML sequence of strings")
 		return nil
 	}
-	for i, tag := range tags.Content {
+	for i, tag := range items {
 		if err := v.check(); err != nil {
 			return err
 		}
@@ -138,7 +144,7 @@ func (v *validator) validateSources(concept bundle.Concept) error {
 		return err
 	}
 	sharedWindowValid := false
-	if hasSharedWindow {
+	if hasSharedWindow && !v.optionalEmptyV03(sharedWindow) {
 		sharedWindowValid, err = v.validateUsageWindow(concept.Path, "usage_window", sharedWindow)
 		if err != nil {
 			return err
@@ -152,12 +158,20 @@ func (v *validator) validateSources(concept bundle.Concept) error {
 	if !ok {
 		return nil
 	}
-	if sources.Kind != yaml.SequenceNode {
+	var sourceEntries []*yaml.Node
+	switch {
+	case sources.Kind == yaml.SequenceNode:
+		sourceEntries = sources.Content
+	case v.cfg.TemporalProfile == bundle.TemporalProfileV03 && sources.Kind == yaml.MappingNode:
+		sourceEntries = []*yaml.Node{sources}
+	case v.optionalEmptyV03(sources):
+		return nil
+	default:
 		v.warn("sources_invalid", concept.Path, "sources", "'sources' should be a YAML sequence of mappings")
 		return nil
 	}
 
-	for i, source := range sources.Content {
+	for i, source := range sourceEntries {
 		if err := v.check(); err != nil {
 			return err
 		}
@@ -268,7 +282,7 @@ func (v *validator) validateSources(concept bundle.Concept) error {
 		if usageCount, present, err := bundle.SemanticMappingValueContext(v.ctx, source, "usage_count"); err != nil {
 			return err
 		} else if present {
-			valid, err := validNonNegativeIntegerContext(v.ctx, usageCount)
+			valid, err := validNonNegativeIntegerForVersionContext(v.ctx, usageCount, v.version.Effective == bundle.OKFVersion03)
 			if err != nil {
 				return err
 			}
@@ -334,7 +348,9 @@ func (v *validator) validateSourceFootnotes(concept bundle.Concept) error {
 		if len(attribution.Sources) == 0 && (len(attribution.References) != 0 || len(attribution.Definitions) != 0) {
 			v.warn("source_footnote_unknown", concept.Path, fieldPath, v.diagnosticMessage("footnote %q does not match a sources[].id", attribution.ID))
 		}
-		if len(attribution.References) != 0 && len(attribution.Definitions) == 0 {
+		// OKF 0.3 resolves claim attribution through the matching source.
+		resolvedBySource := v.version.Effective == bundle.OKFVersion03 && len(attribution.Sources) != 0
+		if len(attribution.References) != 0 && len(attribution.Definitions) == 0 && !resolvedBySource {
 			v.warn("source_footnote_definition_missing", concept.Path, fieldPath, v.diagnosticMessage("footnote %q has no definition", attribution.ID))
 		}
 		if len(attribution.Definitions) > 1 {
@@ -342,6 +358,38 @@ func (v *validator) validateSourceFootnotes(concept bundle.Concept) error {
 		}
 	}
 	return v.check()
+}
+
+func (v *validator) optionalEmptyV03(node *yaml.Node) bool {
+	return v.cfg.TemporalProfile == bundle.TemporalProfileV03 && node != nil &&
+		(node.Tag == "!!null" || node.Tag == "!!str" && node.Value == "" ||
+			node.Kind == yaml.SequenceNode && len(node.Content) == 0)
+}
+
+func (v *validator) verificationTimeDescription() string {
+	if v.cfg.TemporalProfile == bundle.TemporalProfileV03 {
+		return temporalFormatDescription(v.cfg.TemporalProfile)
+	}
+	return "RFC3339"
+}
+
+func (v *validator) validActor(node *yaml.Node) (bool, error) {
+	if v.cfg.TemporalProfile == bundle.TemporalProfileV03 {
+		value, ok, err := nonEmptyStringContext(v.ctx, node)
+		if !ok || err != nil {
+			return false, err
+		}
+		return bundle.ValidActorV03Context(v.ctx, value)
+	}
+	return validActorScalarContext(v.ctx, node)
+}
+
+func (v *validator) validVerificationTime(node *yaml.Node) (bool, error) {
+	if v.cfg.TemporalProfile == bundle.TemporalProfileV03 {
+		_, valid, err := parseTemporalScalarContext(v.ctx, node, v.cfg.TemporalProfile)
+		return valid, err
+	}
+	return validRFC3339ScalarContext(v.ctx, node)
 }
 
 func (v *validator) validateGenerated(concept bundle.Concept) error {
@@ -361,6 +409,9 @@ func (v *validator) validateGenerated(concept bundle.Concept) error {
 		}
 		return v.check()
 	}
+	if v.optionalEmptyV03(generated) {
+		return v.check()
+	}
 	if generated.Kind != yaml.MappingNode {
 		v.warn("generated_invalid", concept.Path, "generated", "'generated' should be a mapping")
 		return v.check()
@@ -369,7 +420,7 @@ func (v *validator) validateGenerated(concept bundle.Concept) error {
 	if err != nil {
 		return err
 	}
-	validActor, err := validActorScalarContext(v.ctx, by)
+	validActor, err := v.validActor(by)
 	if err != nil {
 		return err
 	}
@@ -382,10 +433,10 @@ func (v *validator) validateGenerated(concept bundle.Concept) error {
 	}
 	if at, ok, err := bundle.SemanticMappingValueContext(v.ctx, generated, "at"); err != nil {
 		return err
-	} else if valid, err := validRFC3339ScalarContext(v.ctx, at); err != nil {
+	} else if valid, err := v.validVerificationTime(at); err != nil {
 		return err
 	} else if ok && !valid {
-		v.warn("generated_at_invalid", concept.Path, "generated.at", "'generated.at' should be RFC3339")
+		v.warn("generated_at_invalid", concept.Path, "generated.at", "'generated.at' should be "+v.verificationTimeDescription())
 	}
 	return v.check()
 }
@@ -398,7 +449,7 @@ func (v *validator) validateVerified(concept bundle.Concept) error {
 	if err := v.check(); err != nil {
 		return err
 	}
-	if !present {
+	if !present || v.optionalEmptyV03(verified) {
 		return nil
 	}
 	var events []*yaml.Node
@@ -442,7 +493,7 @@ func (v *validator) validateVerified(concept bundle.Concept) error {
 		}
 		if !hasBy || !byNonEmpty {
 			v.warn("verification_by_missing", concept.Path, path+".by", fmt.Sprintf("'%s.by' should be a non-empty actor", path))
-		} else if valid, err := validActorScalarContext(v.ctx, by); err != nil {
+		} else if valid, err := v.validActor(by); err != nil {
 			return err
 		} else if !valid {
 			v.warn("actor_invalid", concept.Path, path+".by", fmt.Sprintf("'%s.by' should follow the OKF actor convention", path))
@@ -453,10 +504,10 @@ func (v *validator) validateVerified(concept bundle.Concept) error {
 		}
 		if !hasAt {
 			v.warn("verification_at_missing", concept.Path, path+".at", fmt.Sprintf("'%s.at' is required", path))
-		} else if valid, err := validRFC3339ScalarContext(v.ctx, at); err != nil {
+		} else if valid, err := v.validVerificationTime(at); err != nil {
 			return err
 		} else if !valid {
-			v.warn("verification_at_invalid", concept.Path, path+".at", fmt.Sprintf("'%s.at' should be RFC3339", path))
+			v.warn("verification_at_invalid", concept.Path, path+".at", fmt.Sprintf("'%s.at' should be %s", path, v.verificationTimeDescription()))
 		}
 	}
 	return v.check()
@@ -499,6 +550,15 @@ func (v *validator) validateLifecycle(concept bundle.Concept) error {
 	if !present {
 		return v.check()
 	}
+	if v.cfg.TemporalProfile == bundle.TemporalProfileV03 {
+		observed, err := concept.Document.Frontmatter.StaleAfterForProfileContext(v.ctx, v.cfg.TemporalProfile)
+		if err != nil {
+			return err
+		}
+		if observed.Value.State == bundle.TemporalAbsent {
+			return v.check()
+		}
+	}
 	_, ok, err := parseTemporalScalarContext(v.ctx, staleAfter, v.cfg.TemporalProfile)
 	if err != nil {
 		return err
@@ -514,7 +574,7 @@ func (v *validator) validateLifecycle(concept bundle.Concept) error {
 		}
 		if known && stale {
 			reference := v.cfg.ReferenceDate.Format(time.DateOnly)
-			if v.cfg.TemporalProfile == bundle.TemporalProfileInstant {
+			if v.cfg.TemporalProfile != bundle.TemporalProfileDate {
 				reference = v.cfg.ReferenceDate.Format(time.RFC3339Nano)
 			}
 			v.warn("stale", concept.Path, "stale_after", fmt.Sprintf("concept is stale as of %s", reference))
@@ -524,7 +584,7 @@ func (v *validator) validateLifecycle(concept bundle.Concept) error {
 }
 
 func (v *validator) validateAttestedComputation(concept bundle.Concept) error {
-	payloadState, err := concept.Document.AttestedComputationStateContext(v.ctx)
+	payloadState, err := v.bundle.ComputationStateContext(v.ctx, concept)
 	if err != nil {
 		return err
 	}
@@ -562,10 +622,26 @@ func (v *validator) validateAttestedComputation(concept bundle.Concept) error {
 		return err
 	}
 	fileMode = computationPresent && fileMode
+	if v.version.Effective == bundle.OKFVersion03 {
+		computationPresent = payloadState.ContractState.Computation.Present
+		fileMode = payloadState.ContractState.Computation.Valid
+	}
 	if computationPresent && !fileMode {
 		v.warn("computation_invalid", concept.Path, "computation", "'computation' should be a non-empty string path")
 	}
-	if fileMode && payloadState.Conflict {
+	if v.version.Effective == bundle.OKFVersion03 {
+		switch payloadState.UnavailableReason {
+		case "missing_computation_file":
+			v.warn("computation_file_missing", concept.Path, "computation", "computation file is absent from the bundle")
+		case "missing_inline_computation":
+			v.warn("computation_inline_missing", concept.Path, "body.Computation", "Computation section needs a fenced code block")
+		case "missing_attester_file":
+			v.warn("attester_file_missing", concept.Path, "attester.resource", "attester file is absent from the bundle")
+		}
+		if payloadState.Multiple {
+			v.warn("computation_inline_multiple", concept.Path, "body.Computation", "use one fenced code block; readers use the first")
+		}
+	} else if fileMode && payloadState.Conflict {
 		v.warn("computation_conflict", concept.Path, "computation", "file and inline computation modes are mutually exclusive")
 	} else if payloadState.Multiple {
 		v.warn("computation_inline_multiple", concept.Path, "body.# Computation", "inline computation mode permits exactly one directly-owned closed fence under '# Computation'")
@@ -584,7 +660,7 @@ func (v *validator) validateAttestedComputation(concept bundle.Concept) error {
 	if err != nil {
 		return err
 	}
-	if !hasExecutor {
+	if !hasExecutor || v.optionalEmptyV03(executor) {
 		v.warn("executor_missing", concept.Path, "executor", "'executor' is recommended for usable Attested Computation")
 	} else {
 		if err := v.validateExecutor(concept.Path, executor); err != nil {
@@ -595,7 +671,7 @@ func (v *validator) validateAttestedComputation(concept bundle.Concept) error {
 	if err != nil {
 		return err
 	}
-	if !hasAttester {
+	if !hasAttester || v.optionalEmptyV03(attester) {
 		v.warn("attester_missing", concept.Path, "attester", "'attester' is recommended for usable Attested Computation")
 	} else {
 		if err := v.validateAttester(concept.Path, attester); err != nil {
@@ -606,12 +682,20 @@ func (v *validator) validateAttestedComputation(concept bundle.Concept) error {
 }
 
 func (v *validator) validateParameters(file string, parameters *yaml.Node) error {
-	if parameters.Kind != yaml.SequenceNode {
+	var entries []*yaml.Node
+	switch {
+	case parameters.Kind == yaml.SequenceNode:
+		entries = parameters.Content
+	case v.version.Effective == bundle.OKFVersion03 && parameters.Kind == yaml.MappingNode:
+		entries = []*yaml.Node{parameters}
+	case v.optionalEmptyV03(parameters):
+		return nil
+	default:
 		v.warn("parameters_invalid", file, "parameters", "'parameters' should be a sequence of mappings")
 		return nil
 	}
 	names := v.newStringBuckets()
-	for i, parameter := range parameters.Content {
+	for i, parameter := range entries {
 		if err := v.check(); err != nil {
 			return err
 		}
@@ -657,6 +741,9 @@ func (v *validator) validateParameters(file string, parameters *yaml.Node) error
 		required, hasRequired, err := bundle.SemanticMappingValueContext(v.ctx, parameter, "required")
 		if err != nil {
 			return err
+		}
+		if !hasRequired && v.version.Effective == bundle.OKFVersion03 {
+			continue
 		}
 		if !hasRequired || required.Kind != yaml.ScalarNode || required.Tag != "!!bool" {
 			v.warn("parameter_required_invalid", file, path+".required", fmt.Sprintf("'%s.required' should be a boolean", path))
@@ -746,11 +833,19 @@ func (v *validator) validateAttester(file string, attester *yaml.Node) error {
 }
 
 func (v *validator) warn(code, file, fieldPath, message string) {
-	v.addSpecAt(SeverityWarning, code, strictSpecRef(code), file, fieldPath, message)
+	reference := strictSpecRef(code)
+	if v.version.Effective == bundle.OKFVersion03 && strings.HasPrefix(reference, "okf-v0.2#") {
+		reference = v.specRef(strings.TrimPrefix(reference, "okf-v0.2#"))
+	}
+	v.addSpecAt(SeverityWarning, code, reference, file, fieldPath, message)
 }
 
 func strictSpecRef(code string) string {
 	switch code {
+	case "computation_file_missing":
+		return "okf-v0.3#10.3"
+	case "attester_file_missing":
+		return "okf-v0.3#10.2"
 	case "tags_invalid":
 		return "okf-v0.2#4.1"
 	case "source_id_duplicate":
@@ -925,6 +1020,9 @@ func parseDateScalarContext(ctx context.Context, node *yaml.Node) (time.Time, bo
 }
 
 func temporalFormatDescription(profile bundle.TemporalProfile) string {
+	if profile == bundle.TemporalProfileV03 {
+		return "an RFC3339 date or offset-bearing date-time"
+	}
 	if profile == bundle.TemporalProfileInstant {
 		return "an offset-bearing RFC3339 datetime"
 	}
@@ -932,7 +1030,7 @@ func temporalFormatDescription(profile bundle.TemporalProfile) string {
 }
 
 func parseTemporalScalarContext(ctx context.Context, node *yaml.Node, profile bundle.TemporalProfile) (time.Time, bool, error) {
-	if profile != bundle.TemporalProfileInstant {
+	if profile == bundle.TemporalProfileDate {
 		return parseDateScalarContext(ctx, node)
 	}
 	if err := ctx.Err(); err != nil {
@@ -941,7 +1039,11 @@ func parseTemporalScalarContext(ctx context.Context, node *yaml.Node, profile bu
 	if node == nil || node.Kind != yaml.ScalarNode || node.Tag != "!!str" && node.Tag != "!!timestamp" {
 		return time.Time{}, false, nil
 	}
-	value, err := bundle.ParseOffsetDateTime(node.Value)
+	parse := bundle.ParseOffsetDateTime
+	if profile == bundle.TemporalProfileV03 {
+		parse = bundle.ParseTimestampV03
+	}
+	value, err := parse(node.Value)
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return time.Time{}, false, ctxErr
 	}
@@ -949,6 +1051,10 @@ func parseTemporalScalarContext(ctx context.Context, node *yaml.Node, profile bu
 }
 
 func validNonNegativeIntegerContext(ctx context.Context, node *yaml.Node) (bool, error) {
+	return validNonNegativeIntegerForVersionContext(ctx, node, false)
+}
+
+func validNonNegativeIntegerForVersionContext(ctx context.Context, node *yaml.Node, coreV03 bool) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
@@ -960,7 +1066,11 @@ func validNonNegativeIntegerContext(ctx context.Context, node *yaml.Node) (bool,
 			return false, err
 		}
 	}
-	_, err := bundle.ParseNonNegativeYAMLUint64(node.Value)
+	parse := bundle.ParseNonNegativeYAMLUint64
+	if coreV03 {
+		parse = bundle.ParseNonNegativeYAMLUint64V03
+	}
+	_, err := parse(node.Value)
 	if ctxErr := validNonNegativeIntegerPostParseContext(ctx); ctxErr != nil {
 		return false, ctxErr
 	}

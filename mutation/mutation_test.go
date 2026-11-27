@@ -13,10 +13,53 @@ import (
 
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/store"
+	"github.com/skosovsky/okf/validator"
 	"gopkg.in/yaml.v3"
 )
 
 type memorySource map[string][]byte
+
+func planV02(ctx context.Context, source bundle.Source, change store.ChangeSet) (Result, error) {
+	return NewPlanner(&validator.ValidatorConfig{Spec: bundle.OKFVersion}).Plan(ctx, source, change)
+}
+
+func TestOKF03MoveRewritesEncodedMarkdownAndPathFields(t *testing.T) {
+	source := memorySource{
+		"index.md":    []byte("---\nokf_version: '0.3'\n---\n# Guides\n\n- [Rule](old%20%26.md)\n- [Observer](observer.md)\n"),
+		"observer.md": []byte("---\ntype: Guide\nstatus: deprecated\nsuperseded_by: /old%20%26.md\nresource: old%20%26.md\nsources:\n  resource: old%20%26.md#claim\n  x-note: keep\n---\nInline [Rule](old%20%26.md#claim) and [Reference][rule].\n\n[rule]: /old%20%26.md?rev=1#claim\n"),
+		"old &.md":    []byte("---\ntype: Guide\n---\n[Observer](observer.md)\n\n## Claim\n"),
+	}
+	from, err := bundle.NewConceptID([]string{"old &"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	to, err := bundle.NewConceptID([]string{"nested", "rule ) ] & %"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := Plan(t.Context(), source, change(t, source, store.MoveConcept{From: from, To: to}))
+	if err != nil {
+		t.Fatalf("move: %v %+v", err, result.Validation.Diagnostics)
+	}
+
+	const target = "nested/rule%20%29%20%5D%20%26%20%25.md"
+	for path, fragments := range map[string][]string{
+		"index.md":               {"[Rule](" + target + ")"},
+		"observer.md":            {"superseded_by: /" + target, "resource: " + target, "resource: " + target + "#claim", "x-note: keep", "[Rule](" + target + "#claim)", "[rule]: /" + target + "?rev=1#claim"},
+		"nested/rule ) ] & %.md": {"[Observer](../observer.md)"},
+	} {
+		data, err := result.Staged.ReadFile(t.Context(), path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, fragment := range fragments {
+			if !strings.Contains(string(data), fragment) {
+				t.Fatalf("%s lacks %q: %s", path, fragment, data)
+			}
+		}
+	}
+}
 
 type noReadSource struct{}
 
@@ -178,7 +221,7 @@ func TestYAMLScalarToken_RoundTripsExactValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act.
-			token, tokenErr := yamlScalarTokenContext(context.Background(), tt.value, tt.preferred)
+			token, tokenErr := yamlScalarTokenContext(context.Background(), tt.value, tt.preferred, false)
 			var got map[string]string
 			err := yaml.Unmarshal([]byte("value: "+token+"\n"), &got)
 
@@ -614,6 +657,7 @@ func TestEnsureRelation_RejectsDuplicateMappingKeys(t *testing.T) {
 	// Arrange. A successful desired-state operation may not leave a second YAML
 	// mapping key behind, so the ambiguous source is rejected before staging.
 	s := memorySource{"a.md": []byte("---\ntype: thing\nrelations: {uses: []}\nrelations: {uses: []}\n---\n\nA\n"), "b.md": []byte("---\ntype: thing\n---\n\nB\n")}
+	s["index.md"] = []byte("---\nokf_version: '0.2'\n---\n# Notes\n")
 	op := store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}
 
 	// Act.
@@ -631,7 +675,7 @@ func TestRenameFragment_PreservesDuplicateUnrelatedKeys(t *testing.T) {
 	s := memorySource{"a.md": []byte("---\ntype: thing\nparts:\n  - anchor: old\n    label: one\n    label: two\n---\nA\n")}
 
 	// Act.
-	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{
+	result, err := planV02(context.Background(), s, change(t, s, store.RenameFragment{
 		Concept: ref(t, "a").ID,
 		From:    "old",
 		To:      "new",
@@ -659,7 +703,7 @@ func TestMoveConcept_PreservesDuplicateUnrelatedRelationExtensions(t *testing.T)
 	}
 
 	// Act.
-	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	result, err := planV02(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
 	var got []byte
 	if err == nil {
 		got, err = result.Staged.ReadFile(context.Background(), "b.md")
@@ -909,7 +953,7 @@ func TestEnsureRelation_ClassifiesCanonicalEndpointAmbiguityBeforeMissing(t *tes
 			}
 
 			// Act.
-			result, err := Plan(context.Background(), tt.source, change(t, tt.source, tt.op))
+			result, err := planV02(context.Background(), tt.source, change(t, tt.source, tt.op))
 
 			// Assert.
 			if !errors.Is(err, ErrAmbiguousPresentation) || result.Staged != nil {
@@ -1068,7 +1112,7 @@ func TestEnsureRelation_RejectsDuplicateTargetKeysWithoutStaging(t *testing.T) {
 			op := store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}
 
 			// Act.
-			result, err := Plan(context.Background(), s, change(t, s, op))
+			result, err := planV02(context.Background(), s, change(t, s, op))
 
 			// Assert.
 			var invalidChange *store.InvalidChangeSet
@@ -1171,7 +1215,7 @@ func TestMoveConcept_UnrelatedUnsupportedYAMLDoesNotVeto(t *testing.T) {
 		"a.md": []byte("---\ntype: thing\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\n...\nextra: 1\n---\nB\n"),
 	}
-	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	result, err := planV02(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1192,7 +1236,7 @@ func TestMoveConcept_RelatedUnsupportedYAMLStillFailsClosed(t *testing.T) {
 		"a.md": []byte("---\ntype: thing\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a\n...\nextra: 1\n---\nB\n"),
 	}
-	result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
+	result, err := planV02(context.Background(), s, change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved/a").ID}))
 	if !errors.Is(err, ErrUnsupportedPresentation) || result.Staged != nil {
 		t.Fatalf("result/error = %#v / %v", result, err)
 	}
@@ -1203,7 +1247,7 @@ func TestRenameFragment_UnrelatedUnsupportedYAMLDoesNotVeto(t *testing.T) {
 		"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\n...\nextra: 1\n---\nB\n"),
 	}
-	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	result, err := planV02(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1224,7 +1268,7 @@ func TestRenameFragment_RelatedUnsupportedYAMLStillFailsClosed(t *testing.T) {
 		"a.md": []byte("---\ntype: thing\nparts:\n  - id: old\n---\nA\n"),
 		"b.md": []byte("---\ntype: thing\nrelations:\n  uses:\n    - target: a#old\n...\nextra: 1\n---\nB\n"),
 	}
-	result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+	result, err := planV02(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
 	if !errors.Is(err, ErrUnsupportedPresentation) || result.Staged != nil {
 		t.Fatalf("result/error = %#v / %v", result, err)
 	}
@@ -1299,7 +1343,7 @@ func TestPlanMoveConceptPresentationFailureReturnsNoStage(t *testing.T) {
 	changeSet := change(t, s, store.MoveConcept{From: ref(t, "a").ID, To: ref(t, "moved").ID})
 
 	// Act.
-	result, err := Plan(context.Background(), s, changeSet)
+	result, err := planV02(context.Background(), s, changeSet)
 
 	// Assert.
 	var invalidChange *store.InvalidChangeSet
@@ -1590,7 +1634,7 @@ func TestPlanMoveConcept_RewritesEveryPubliclyResolvableInternalDestination(t *t
 			}
 
 			// Act.
-			result, err := Plan(context.Background(), s, change(t, s, store.MoveConcept{From: old, To: moved}))
+			result, err := planV02(context.Background(), s, change(t, s, store.MoveConcept{From: old, To: moved}))
 
 			// Assert.
 			if err != nil {

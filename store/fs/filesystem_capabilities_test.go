@@ -17,6 +17,7 @@ func TestFilesystemCaseCapabilityGuardsPublicMutations(t *testing.T) {
 	newStore := func(t *testing.T) (string, *Store) {
 		t.Helper()
 		root := t.TempDir()
+		writeTestFile(t, root, "index.md", "---\nokf_version: '0.2'\n---\n# Notes\n\n- [Original](a.md)\n")
 		writeTestFile(t, root, "a.md", adversarialDocument("original"))
 		s, err := openObserved(root, Config{})
 		if err != nil {

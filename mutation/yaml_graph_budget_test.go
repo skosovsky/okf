@@ -323,8 +323,8 @@ func TestMutationYAMLSyntheticScalarProbeBoundary(t *testing.T) {
 		// Act.
 		exactProbe, exactOK := boundedSyntheticYAMLScalarProbe("v: ", exactValue, "\n")
 		plusOneProbe, plusOneOK := boundedSyntheticYAMLScalarProbe("v: ", plusOneValue, "\n")
-		exactToken, exactTokenErr := yamlScalarTokenContext(context.Background(), exactValue, 0)
-		plusOneToken, plusOneTokenErr := yamlScalarTokenContext(context.Background(), plusOneValue, 0)
+		exactToken, exactTokenErr := yamlScalarTokenContext(context.Background(), exactValue, 0, false)
+		plusOneToken, plusOneTokenErr := yamlScalarTokenContext(context.Background(), plusOneValue, 0, false)
 
 		// Assert.
 		if exactTokenErr != nil || plusOneTokenErr != nil {
@@ -346,8 +346,8 @@ func TestMutationYAMLSyntheticScalarProbeBoundary(t *testing.T) {
 		// Act.
 		exactProbe, exactOK := boundedSyntheticYAMLScalarProbe("{v: ", exactValue, "}\n")
 		plusOneProbe, plusOneOK := boundedSyntheticYAMLScalarProbe("{v: ", plusOneValue, "}\n")
-		exactSafe, exactErr := yamlFlowPlainSafeContext(context.Background(), exactValue)
-		plusOneRendered, plusOneErr := yamlFlowScalarTokenContext(context.Background(), plusOneValue)
+		exactSafe, exactErr := yamlFlowPlainSafeContext(context.Background(), exactValue, false)
+		plusOneRendered, plusOneErr := yamlFlowScalarTokenContext(context.Background(), plusOneValue, false)
 
 		// Assert.
 		if exactErr != nil || plusOneErr != nil {

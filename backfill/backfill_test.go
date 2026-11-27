@@ -629,6 +629,51 @@ func TestNestedBackfillIndexesPassOrphanPolicy(t *testing.T) {
 	}
 }
 
+func TestOKF03BackfillPreservesRootAndRejectsLosingExtensions(t *testing.T) {
+	manifest, analysis := testManifest(t)
+	analysis.Candidates[1].Title = "1e9999"
+	analysis.Candidates[1].Description = "True"
+	root := t.TempDir()
+	const header = "---\r\n%YAML 1.2\r\n--- # YAML mapping\r\nokf_version: '0.3'\r\nlicense: MIT\r\nowner:   {team: data} # keep spacing\r\n---\r\n"
+	indexPath := filepath.Join(root, "index.md")
+	if err := os.WriteFile(indexPath, []byte(header+"\r\n# Concepts\r\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	ctx := t.Context()
+	s, err := storefs.Open(root, storefs.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	plan, err := Prepare(ctx, s, manifest, analysis)
+	if err != nil || len(plan.Concepts) != 1 {
+		t.Fatalf("prepare = %+v, %v", plan, err)
+	}
+	if _, err := Apply(ctx, s, plan, manifest, analysis, filepath.Join(t.TempDir(), "checkpoint.json")); err != nil {
+		t.Fatal(err)
+	}
+	index, err := os.ReadFile(indexPath)
+	if err != nil || !strings.HasPrefix(string(index), header) || !strings.Contains(string(index), plan.Concepts[0].ConceptID+".md") {
+		t.Fatalf("published index = %q, %v", index, err)
+	}
+	conceptPath := filepath.Join(root, filepath.FromSlash(plan.Concepts[0].ConceptID+".md"))
+	if !strings.Contains(plan.Concepts[0].Document, `title: "1e9999"`) ||
+		!strings.Contains(plan.Concepts[0].Document, `description: "True"`) {
+		t.Fatalf("backfill string types were lost: %s", plan.Concepts[0].Document)
+	}
+	withExtension := strings.Replace(plan.Concepts[0].Document, "---\n", "---\nowner: {team: platform}\n", 1)
+	if err := os.WriteFile(conceptPath, []byte(withExtension), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Prepare(ctx, s, manifest, analysis); err == nil || !strings.Contains(err.Error(), `extension "owner"`) {
+		t.Fatalf("prepare replacement = %v", err)
+	}
+	concept, err := os.ReadFile(conceptPath)
+	if err != nil || string(concept) != withExtension {
+		t.Fatalf("existing concept = %q, %v", concept, err)
+	}
+}
+
 type lostResponseWriter struct {
 	*storefs.Store
 	lost bool
