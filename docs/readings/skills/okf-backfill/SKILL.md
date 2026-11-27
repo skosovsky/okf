@@ -19,6 +19,8 @@ description: >
   routine bundle validation, migration, or repository knowledge upkeep.
 ```
 
+Historical edition for OKF 0.2. Current installation uses the instructions in the installed skill.
+
 # Backfill OKF knowledge from Git
 {: #section-1 }
 

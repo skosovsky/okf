@@ -66,11 +66,11 @@ func (TemporalUpgradePlanner) Preview(ctx context.Context, source bundle.Source,
 	if err != nil {
 		return TemporalUpgradePreview{}, err
 	}
-	loaded, err := bundle.Load(ctx, source)
+	loaded, err := bundle.LoadWithSpec(ctx, source, bundle.OKFVersion)
 	if err != nil {
 		return TemporalUpgradePreview{}, err
 	}
-	version, err := loaded.VersionResolutionContext(ctx, "")
+	version, err := loaded.VersionResolutionContext(ctx, bundle.OKFVersion)
 	if err != nil {
 		return TemporalUpgradePreview{}, err
 	}

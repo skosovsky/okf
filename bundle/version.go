@@ -16,8 +16,7 @@ const (
 	VersionSourceFutureBestEffort VersionSource = "future-best-effort"
 )
 
-// VersionCompatibility describes how the v0.2 reader consumes the effective
-// contract.
+// VersionCompatibility describes the relationship to the effective contract.
 type VersionCompatibility string
 
 const (
@@ -25,6 +24,9 @@ const (
 	VersionCompatibilityLegacy     VersionCompatibility = "legacy"
 	VersionCompatibilityBestEffort VersionCompatibility = "best-effort"
 )
+
+// DefaultOKFVersion is the reader contract for an undeclared or unfamiliar bundle.
+const DefaultOKFVersion = OKFVersion03
 
 // VersionResolution keeps declaration, effective semantics, provenance of the
 // decision, and compatibility separate.
@@ -127,11 +129,22 @@ func (f Frontmatter) VersionDeclarationState() VersionDeclarationState {
 // VersionDeclarationStateContext preserves declaration shape while allowing
 // cancellation during semantic resolution, scalar ownership, and parsing.
 func (f Frontmatter) VersionDeclarationStateContext(ctx context.Context) (VersionDeclarationState, error) {
+	return f.versionDeclarationStateForSelectorContext(ctx, "")
+}
+
+func (f Frontmatter) rootVersionDeclarationStateContext(ctx context.Context, selector string) (VersionDeclarationState, error) {
+	if selector == "" {
+		selector = DefaultOKFVersion
+	}
+	return f.versionDeclarationStateForSelectorContext(ctx, selector)
+}
+
+func (f Frontmatter) versionDeclarationStateForSelectorContext(ctx context.Context, selector string) (VersionDeclarationState, error) {
 	node, present, err := f.SemanticGetContext(ctx, "okf_version")
 	if err != nil {
 		return VersionDeclarationState{}, err
 	}
-	if !present {
+	if !present || (f.coreV03 || selector == OKFVersion03) && emptyV03Value(node) {
 		return VersionDeclarationState{Valid: true}, nil
 	}
 	state, err := strictStringNodeStateContext(ctx, node, true)
@@ -154,7 +167,7 @@ func (f Frontmatter) VersionDeclarationStateContext(ctx context.Context) (Versio
 //
 // selector is an assertion, not an override. Only versions implemented by this
 // read layer may be selected explicitly. Unknown declarations remain visible
-// while being consumed with v0.2 best-effort semantics.
+// while being consumed with the current reader contract.
 func ResolveVersion(declared, selector string) (VersionResolution, error) {
 	return resolveVersionContext(context.Background(), declared, selector)
 }
@@ -174,11 +187,15 @@ func resolveVersionContext(ctx context.Context, declared, selector string) (Vers
 	if err != nil {
 		return VersionResolution{}, err
 	}
-	native, err := equalStringContext(ctx, selector, OKFVersion)
+	v02, err := equalStringContext(ctx, selector, OKFVersion)
 	if err != nil {
 		return VersionResolution{}, err
 	}
-	if selector != "" && !legacy && !native {
+	v03, err := equalStringContext(ctx, selector, OKFVersion03)
+	if err != nil {
+		return VersionResolution{}, err
+	}
+	if selector != "" && !legacy && !v02 && !v03 {
 		return VersionResolution{}, fmt.Errorf("%w: %q", ErrUnsupportedVersionSelector, selector)
 	}
 	equal, err := equalStringContext(ctx, selector, declared)
@@ -196,13 +213,13 @@ func resolveVersionContext(ctx context.Context, declared, selector string) (Vers
 	}
 	switch declared {
 	case "":
-		return resolutionForSupported("", OKFVersion, VersionSourceDefault), nil
-	case LegacyOKFVersion, OKFVersion:
+		return resolutionForSupported("", DefaultOKFVersion, VersionSourceDefault), nil
+	case LegacyOKFVersion, OKFVersion, OKFVersion03:
 		return resolutionForSupported(declared, declared, VersionSourceDeclared), nil
 	default:
 		return VersionResolution{
 			Declared:      declared,
-			Effective:     OKFVersion,
+			Effective:     DefaultOKFVersion,
 			Source:        VersionSourceFutureBestEffort,
 			Compatibility: VersionCompatibilityBestEffort,
 		}, nil
@@ -222,6 +239,15 @@ func resolutionForSupported(declared, effective string, source VersionSource) Ve
 	}
 }
 
+// DiscoveryVersion returns the version used to build this snapshot's concepts
+// and paths.
+func (b *Bundle) DiscoveryVersion() VersionResolution {
+	if b == nil {
+		return VersionResolution{}
+	}
+	return b.discoveryVersion
+}
+
 // VersionResolution resolves the root declaration with selector as an
 // optional assertion. Pass an empty selector for ordinary best-effort reading.
 func (b *Bundle) VersionResolution(selector string) (VersionResolution, error) {
@@ -234,13 +260,13 @@ func (b *Bundle) VersionResolutionContext(ctx context.Context, selector string) 
 	if err := ctx.Err(); err != nil {
 		return VersionResolution{}, err
 	}
-	document, present, err := b.rootIndexDocumentContext(ctx)
+	document, present, err := b.rootIndexDocumentForSelectorContext(ctx, selector)
 	if err != nil {
 		return VersionResolution{}, err
 	}
 	state := VersionDeclarationState{Valid: true}
 	if present {
-		state, err = document.Frontmatter.VersionDeclarationStateContext(ctx)
+		state, err = document.Frontmatter.rootVersionDeclarationStateContext(ctx, selector)
 		if err != nil {
 			return VersionResolution{}, err
 		}

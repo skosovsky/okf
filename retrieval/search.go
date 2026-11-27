@@ -39,22 +39,24 @@ const (
 )
 
 var (
-	ErrLimit = errors.New("section search resource limit")
-	ErrQuery = errors.New("invalid section search query")
-	ErrParse = errors.New("section search bundle parse failure")
+	ErrLimit          = errors.New("section search resource limit")
+	ErrQuery          = errors.New("invalid section search query")
+	ErrParse          = errors.New("section search bundle parse failure")
+	ErrCurrentVersion = errors.New("current-only section search requires an OKF 0.3 bundle")
 )
 
 type Hit struct {
-	ConceptID string   `json:"concept_id"`
-	Path      string   `json:"path"`
-	Heading   string   `json:"heading"`
-	Locator   string   `json:"locator"`
-	LineStart int      `json:"line_start"`
-	LineEnd   int      `json:"line_end"`
-	Digest    string   `json:"content_sha256"`
-	Snippet   string   `json:"snippet"`
-	Score     float64  `json:"score"`
-	Terms     []string `json:"matched_terms"`
+	ReplacementConceptID string   `json:"replacement_concept_id,omitempty"`
+	ConceptID            string   `json:"concept_id"`
+	Path                 string   `json:"path"`
+	Heading              string   `json:"heading"`
+	Locator              string   `json:"locator"`
+	LineStart            int      `json:"line_start"`
+	LineEnd              int      `json:"line_end"`
+	Digest               string   `json:"content_sha256"`
+	Snippet              string   `json:"snippet"`
+	Score                float64  `json:"score"`
+	Terms                []string `json:"matched_terms"`
 }
 type Result struct {
 	Query     string   `json:"query"`
@@ -157,6 +159,16 @@ func (s *boundedSource) ReadFile(ctx context.Context, p string) ([]byte, error) 
 
 // Search uses only captured bytes. A changed filesystem cannot rebind a result.
 func Search(ctx context.Context, b *bundle.Bundle, query string, limit int) (Result, error) {
+	return search(ctx, b, query, limit, false)
+}
+
+// SearchCurrent follows replacements in OKF 0.3. A historical match keeps its
+// source-pinned evidence and identifies the current concept separately.
+func SearchCurrent(ctx context.Context, b *bundle.Bundle, query string, limit int) (Result, error) {
+	return search(ctx, b, query, limit, true)
+}
+
+func search(ctx context.Context, b *bundle.Bundle, query string, limit int, currentOnly bool) (Result, error) {
 	result := Result{Query: query, Hits: []Hit{}}
 	terms, err := QueryTerms(query)
 	if err != nil {
@@ -171,6 +183,15 @@ func Search(ctx context.Context, b *bundle.Bundle, query string, limit int) (Res
 	}
 	if b == nil {
 		return Result{}, ErrParse
+	}
+	if currentOnly {
+		version, err := b.VersionResolutionContext(ctx, "")
+		if err != nil {
+			return Result{}, err
+		}
+		if version.Effective != bundle.OKFVersion03 {
+			return Result{}, ErrCurrentVersion
+		}
 	}
 	if len(b.ParseErrors()) > 0 {
 		for _, p := range b.ParseErrors() {
@@ -236,6 +257,19 @@ func Search(ctx context.Context, b *bundle.Bundle, query string, limit int) (Res
 		if !found {
 			return Result{}, ErrParse
 		}
+		var replacement string
+		if currentOnly {
+			target, state, err := b.ResolveCurrentConceptContext(ctx, id)
+			if err != nil {
+				return Result{}, err
+			}
+			if state != bundle.ReplacementCurrent {
+				continue
+			}
+			if target.String() != id.String() {
+				replacement = target.String()
+			}
+		}
 		if err = ctx.Err(); err != nil {
 			return Result{}, err
 		}
@@ -255,6 +289,7 @@ func Search(ctx context.Context, b *bundle.Bundle, query string, limit int) (Res
 			return Result{}, ErrLimit
 		}
 		for i := range parts {
+			parts[i].hit.ReplacementConceptID = replacement
 			parts[i].frequency = map[string]int{}
 			for _, field := range []struct {
 				text   string

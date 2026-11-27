@@ -246,7 +246,7 @@ func TestParserBackedYAMLPresentationCorpus(t *testing.T) {
 			before := append([]byte(nil), s["a.md"]...)
 
 			// Act.
-			result, err := Plan(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
+			result, err := planV02(context.Background(), s, change(t, s, store.RenameFragment{Concept: ref(t, "a").ID, From: "old", To: "new"}))
 
 			// Assert.
 			if !errors.Is(err, tt.want) {

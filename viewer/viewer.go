@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,6 +23,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 )
@@ -55,25 +58,36 @@ func normalizeLanguage(language string) (string, error) {
 }
 
 type Projection struct {
-	ExporterVersion string    `json:"exporter_version"`
-	SpecVersion     string    `json:"spec_version"`
-	SpecRevision    string    `json:"spec_revision"`
-	ReferenceTime   string    `json:"reference_time,omitempty"`
-	ReferenceBasis  string    `json:"reference_basis"`
-	Concepts        []Concept `json:"concepts"`
-	Edges           []Edge    `json:"edges"`
+	BundleMetadata  *bundle.BundleMetadata `json:"bundle_metadata,omitempty"`
+	ExporterVersion string                 `json:"exporter_version"`
+	SpecVersion     string                 `json:"spec_version"`
+	SpecRevision    string                 `json:"spec_revision"`
+	ReferenceTime   string                 `json:"reference_time,omitempty"`
+	ReferenceBasis  string                 `json:"reference_basis"`
+	Concepts        []Concept              `json:"concepts"`
+	Edges           []Edge                 `json:"edges"`
 }
 type Concept struct {
-	ID         string   `json:"id"`
-	Title      string   `json:"title"`
-	Type       string   `json:"type"`
-	HTML       string   `json:"html"`
-	SearchText string   `json:"search_text"`
-	Trust      string   `json:"trust"`
-	Status     string   `json:"status"`
-	Staleness  string   `json:"staleness"`
-	StaleAfter string   `json:"stale_after,omitempty"`
-	Sources    []Source `json:"sources"`
+	ID                           string         `json:"id"`
+	Title                        string         `json:"title"`
+	Type                         string         `json:"type"`
+	HTML                         string         `json:"html"`
+	SearchText                   string         `json:"search_text"`
+	Trust                        string         `json:"trust"`
+	Status                       string         `json:"status"`
+	StatusRaw                    string         `json:"status_raw,omitempty"`
+	Staleness                    string         `json:"staleness"`
+	StaleAfter                   string         `json:"stale_after,omitempty"`
+	Sources                      []Source       `json:"sources"`
+	Verifications                []Verification `json:"verifications,omitempty"`
+	Replacement                  string         `json:"replacement,omitempty"`
+	Attestable                   *bool          `json:"attestable,omitempty"`
+	ComputationUnavailableReason string         `json:"computation_unavailable_reason,omitempty"`
+}
+type Verification struct {
+	By      string `json:"by"`
+	At      string `json:"at"`
+	Current bool   `json:"current"`
 }
 type Source struct {
 	ID       string `json:"id,omitempty"`
@@ -102,11 +116,15 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 	if err != nil {
 		return Projection{}, err
 	}
+	b, err = b.WithVersionResolutionContext(ctx, resolution)
+	if err != nil {
+		return Projection{}, err
+	}
 	profile := options.TemporalProfile
 	if profile == "" {
 		profile = bundle.TemporalProfileDate
 	}
-	profile, err = bundle.NormalizeTemporalProfile(profile)
+	profile, err = bundle.NormalizeTemporalProfile(bundle.TemporalProfileForVersion(resolution, profile))
 	if err != nil {
 		return Projection{}, err
 	}
@@ -121,7 +139,11 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 	if len(concepts) > limit {
 		return Projection{}, fmt.Errorf("bundle has %d concepts; exceeds --max-nodes=%d", len(concepts), limit)
 	}
-	p := Projection{ExporterVersion: ExporterVersion, SpecVersion: resolution.Effective, SpecRevision: string(profile), ReferenceBasis: "unevaluated", Concepts: make([]Concept, 0, len(concepts)), Edges: make([]Edge, 0)}
+	metadata, err := b.BundleMetadataContext(ctx, resolution)
+	if err != nil {
+		return Projection{}, err
+	}
+	p := Projection{BundleMetadata: metadata, ExporterVersion: ExporterVersion, SpecVersion: resolution.Effective, SpecRevision: string(profile), ReferenceBasis: "unevaluated", Concepts: make([]Concept, 0, len(concepts)), Edges: make([]Edge, 0)}
 	if resolution.Effective == bundle.LegacyOKFVersion {
 		p.SpecRevision = "legacy-v0.1"
 	}
@@ -133,6 +155,16 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 			p.ReferenceTime = options.AsOf.Format(time.DateOnly)
 		}
 	}
+	markdown := safeMarkdown
+	images := offlineImages{ctx: ctx, bundle: b}
+	if resolution.Effective == bundle.OKFVersion03 {
+		markdown = goldmark.New(
+			goldmark.WithExtensions(extension.Footnote, extension.Table),
+			// The source fallback runs after Goldmark's authored footnotes.
+			goldmark.WithParserOptions(parser.WithInlineParsers(util.Prioritized(sourceFootnoteParser{}, 102))),
+			goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(safeImageRenderer{dataURI: images.dataURI}, 500))),
+		)
+	}
 	for _, c := range concepts {
 		if err := ctx.Err(); err != nil {
 			return Projection{}, err
@@ -143,15 +175,7 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 			title = id
 		}
 		typ, _ := c.Document.Frontmatter.Type()
-		var rendered bytes.Buffer
-		if err := safeMarkdown.Convert([]byte(c.Document.Body), &rendered); err != nil {
-			return Projection{}, fmt.Errorf("render %s: %w", id, err)
-		}
-		trust, err := c.Document.TrustTierContext(ctx)
-		if err != nil {
-			return Projection{}, err
-		}
-		state, err := c.Document.StatusStateContext(ctx)
+		state, err := c.Document.StatusStateForVersionContext(ctx, resolution)
 		if err != nil {
 			return Projection{}, err
 		}
@@ -159,7 +183,32 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 		if !state.Valid {
 			status = "unresolved"
 		}
-		concept := Concept{ID: id, Title: title, Type: typ, HTML: rendered.String(), SearchText: c.Document.Body, Trust: string(trust), Status: status, Staleness: "unevaluated", Sources: []Source{}}
+		concept := Concept{ID: id, Title: title, Type: typ, SearchText: c.Document.Body, Status: status, Staleness: "unevaluated", Sources: []Source{}}
+		if resolution.Effective == bundle.OKFVersion03 {
+			switch state.Effective {
+			case bundle.StatusStable, bundle.StatusDraft, bundle.StatusDeprecated:
+				// The viewer localizes the standard vocabulary.
+			default:
+				concept.StatusRaw = state.Raw
+			}
+			trust, err := c.Document.Frontmatter.TrustStateV03Context(ctx)
+			if err != nil {
+				return Projection{}, err
+			}
+			concept.Trust = string(trust.Tier)
+			for _, event := range trust.Verifications {
+				if event.Verification.Valid {
+					value := event.Verification.Value
+					concept.Verifications = append(concept.Verifications, Verification{By: value.By, At: value.At, Current: event.Current})
+				}
+			}
+		} else {
+			trust, err := c.Document.TrustTierContext(ctx)
+			if err != nil {
+				return Projection{}, err
+			}
+			concept.Trust = string(trust)
+		}
 		stale, err := c.Document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
 		if err != nil {
 			return Projection{}, err
@@ -191,6 +240,18 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 				concept.Sources = append(concept.Sources, Source{ID: s.Value.ID, Title: s.Value.Title, Resource: s.Value.Resource})
 			}
 		}
+		var rendered bytes.Buffer
+		images.documentPath = c.Path
+		body := []byte(c.Document.Body)
+		if resolution.Effective == bundle.OKFVersion03 && len(concept.Sources) > 0 && bytes.Contains(body, []byte("[^")) {
+			err = renderSourceFootnotes(ctx, markdown, body, concept.Sources, &rendered)
+		} else {
+			err = markdown.Convert(body, &rendered)
+		}
+		if err != nil {
+			return Projection{}, fmt.Errorf("render %s: %w", id, err)
+		}
+		concept.HTML = rendered.String()
 		fallback, err := c.Document.LegacyFallbackObservationContext(ctx)
 		if err != nil {
 			return Projection{}, err
@@ -211,6 +272,23 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 				concept.Sources = append(concept.Sources, Source{Title: title, Resource: citation.Resource})
 			}
 		}
+		if resolution.Effective == bundle.OKFVersion03 && status == bundle.StatusDeprecated {
+			replacement, state, err := b.ResolveCurrentConceptContext(ctx, c.ID)
+			if err != nil {
+				return Projection{}, err
+			}
+			if state == bundle.ReplacementCurrent {
+				concept.Replacement = replacement.String()
+			}
+		}
+		if resolution.Effective == bundle.OKFVersion03 && typ == bundle.AttestedComputationType {
+			computation, err := b.ComputationStateContext(ctx, c)
+			if err != nil {
+				return Projection{}, err
+			}
+			concept.Attestable = &computation.Attestable
+			concept.ComputationUnavailableReason = computation.UnavailableReason
+		}
 		p.Concepts = append(p.Concepts, concept)
 		links, err := b.LinksFromContext(ctx, c.ID)
 		if err != nil {
@@ -218,6 +296,14 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 		}
 		for _, link := range links {
 			p.Edges = append(p.Edges, Edge{From: id, To: link.Target.String(), FromConcept: id, ToConcept: link.Target.String(), Kind: "markdown", Exists: link.Exists, Raw: link.Raw})
+		}
+		pathEdges, err := b.PathConceptEdgesContext(ctx, c.ID)
+		if err != nil {
+			return Projection{}, err
+		}
+		for _, edge := range pathEdges {
+			target := edge.Target.String()
+			p.Edges = append(p.Edges, Edge{From: id, To: target, FromConcept: id, ToConcept: target, Kind: edge.FieldPath, Exists: true, Raw: edge.Raw})
 		}
 		relations, err := b.DeclaredSemanticLinksFromContext(ctx, c.ID)
 		if err != nil {
@@ -241,18 +327,62 @@ func Build(ctx context.Context, b *bundle.Bundle, options Options) (Projection, 
 	return p, nil
 }
 
-type safeImageRenderer struct{}
+type safeImageRenderer struct {
+	dataURI func(destination string) (string, error)
+}
 
-func (safeImageRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
+func (images safeImageRenderer) RegisterFuncs(r renderer.NodeRendererFuncRegisterer) {
 	r.Register(ast.KindImage, func(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if entering {
-			_, _ = w.WriteString("[image omitted]")
+		if !entering {
+			return ast.WalkContinue, nil
 		}
-		return ast.WalkSkipChildren, nil
+		if images.dataURI != nil {
+			image := n.(*ast.Image)
+			uri, err := images.dataURI(string(image.Destination))
+			if err != nil {
+				return ast.WalkStop, err
+			}
+			if uri != "" {
+				_, err = fmt.Fprintf(w, `<img src="%s" alt="%s">`, uri, html.EscapeString(string(image.Text(source))))
+				return ast.WalkSkipChildren, err
+			}
+		}
+		_, err := w.WriteString("[image omitted]")
+		return ast.WalkSkipChildren, err
 	})
 }
 
-var safeMarkdown = goldmark.New(goldmark.WithExtensions(extension.Footnote), goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(safeImageRenderer{}, 1000))))
+var safeMarkdown = goldmark.New(goldmark.WithExtensions(extension.Footnote), goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(safeImageRenderer{}, 500))))
+
+type offlineImages struct {
+	ctx          context.Context
+	bundle       *bundle.Bundle
+	documentPath string
+	bytes        uint64
+}
+
+func (images *offlineImages) dataURI(destination string) (string, error) {
+	target, _, err := images.bundle.ResolveMarkdownTargetV03Context(images.ctx, images.documentPath, destination)
+	if err != nil || !target.Exists || strings.HasSuffix(target.Path, ".md") {
+		return "", err
+	}
+	size, _, ok := images.bundle.CapturedFileMetadata(target.Path)
+	if !ok || size > 1<<20 || images.bytes+size > 8<<20 {
+		return "", nil
+	}
+	data, found, err := images.bundle.ReadFileContext(images.ctx, target.Path)
+	if err != nil || !found {
+		return "", err
+	}
+	mediaType := http.DetectContentType(data)
+	switch mediaType {
+	case "image/gif", "image/jpeg", "image/png", "image/webp":
+		images.bytes += size
+		return "data:" + mediaType + ";base64," + base64.StdEncoding.EncodeToString(data), nil
+	default:
+		return "", nil
+	}
+}
 
 // Render encodes JSON so input cannot close its script element.
 func Render(ctx context.Context, p Projection) ([]byte, error) {
@@ -293,7 +423,11 @@ func RenderWithOptions(ctx context.Context, p Projection, options RenderOptions)
 	var out bytes.Buffer
 	out.WriteString("<!doctype html><html lang=\"" + language + "\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"referrer\" content=\"no-referrer\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src ")
 	out.WriteString(jsPolicy)
-	out.WriteString("; img-src 'none'; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'\"><title>" + ui["title"] + "</title><style>")
+	imagePolicy := "'none'"
+	if p.SpecVersion == bundle.OKFVersion03 {
+		imagePolicy = "data:"
+	}
+	out.WriteString("; img-src " + imagePolicy + "; connect-src 'none'; font-src 'none'; base-uri 'none'; form-action 'none'\"><title>" + ui["title"] + "</title><style>")
 	out.Write(css)
 	out.WriteString("</style></head><body><header><h1 id=\"viewer-title\">" + ui["title"] + "</h1><span id=\"summary\"></span></header><main><aside><label><span id=\"search-label\">" + ui["search"] + "</span> <input id=\"search\" type=\"search\" autocomplete=\"off\"></label><label><span id=\"type-label\">" + ui["type"] + "</span> <select id=\"type\"><option id=\"all-types\" value=\"\">" + ui["all"] + "</option></select></label><label><input id=\"show-graph\" type=\"checkbox\"> <span id=\"graph-label\">" + ui["graph"] + "</span></label><label><span id=\"language-label\">" + ui["language"] + "</span><select id=\"language\"><option value=\"en\"" + enSelected + ">English</option><option value=\"ru\"" + ruSelected + ">Русский</option></select></label><div id=\"list\" role=\"list\"></div></aside><section id=\"detail\" aria-live=\"polite\"></section></main><script id=\"okf-data\" type=\"application/json\">")
 	out.Write(data)

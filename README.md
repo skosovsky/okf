@@ -2,9 +2,9 @@
 
 Project knowledge beside your code, for your team and AI agents.
 
-Record a rule in Markdown, cite its source, and let an agent find the answer. For example: failed job delivery needs operator review after 24 hours. When requirements change, review the related note alongside code.
+Record a rule in Markdown, cite its source, and let an agent find the answer. The example shows how a delivery deadline moved from 24 to 48 hours.
 
-[Open the training example](https://skosovsky.github.io/okf/demo/project-en.html#retry-policy) · [Try it locally](docs/quickstart.md) · [Русский](README.ru.md)
+[Open the training example](https://skosovsky.github.io/okf/demo/project-en.html#retry-policy-current) · [Try it locally](docs/quickstart.md) · [Русский](README.ru.md)
 
 ## When to use it
 
@@ -16,7 +16,7 @@ Record a rule in Markdown, cite its source, and let an agent find the answer. Fo
 
 A knowledge bundle is a folder of Markdown files with YAML metadata and a root `index.md`. Edit the files, keep them in Git, and review them in PRs. OKF adds shared metadata, source links, structural checks, search, and agent tools.
 
-Open Knowledge Format is the document specification. This repository is a Go implementation: libraries, the `okf` CLI, `okf-mcp` server, skills, and an offline HTML viewer. The current document contract is 0.2; 0.1 reading and explicit migration remain supported. Program release versions do not select document versions.
+Open Knowledge Format is the document specification. This repository is a Go implementation: libraries, the `okf` CLI, `okf-mcp` server, skills, and an offline HTML viewer. New bundles from `init` and `setup` declare 0.3. Auto-reading a bundle without a declaration still uses 0.2. Use `--spec 0.3` to read it as 0.3. The migration guide also covers 0.1.
 
 ## Install and get a first result
 
@@ -34,7 +34,7 @@ If commands are missing, add the `bin` subdirectory of `go env GOPATH` to `PATH`
 okf search examples/project-knowledge/en --query "delivery operator" --limit 5
 ```
 
-Expect snippets about 24 hours and an operator. Open `retry-policy.md`, then `source-material.md`; the full walkthrough also shows a manual deadline update to 48 hours.
+Open `retry-policy-current.md` and follow its source link to check the 48-hour deadline.
 
 ## What validation means
 
@@ -45,5 +45,5 @@ The validator checks structure and links. Compare claims with sources. `sources`
 - [File operations, search, and Markdown preparation](docs/toolkit.md).
 - [Install the agent skill](docs/skill.md) and [connect MCP](docs/getting-started-mcp.md): instructions and tools are connected separately.
 - [Knowledge review after changes](docs/knowledge-upkeep.md).
-- [Commands, Go APIs, and all 14 MCP tools](docs/reference.md).
+- [Commands, Go APIs, and all MCP tools](docs/reference.md).
 - [Examples](examples/README.md) and [current releases](https://github.com/skosovsky/okf/releases).

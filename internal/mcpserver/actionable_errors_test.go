@@ -504,8 +504,8 @@ func TestMCPConceptCountLimitRequiresSmallerBundle(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Act.
-	_, broadErr := searchConceptSnapshot(t.Context(), loaded, "body", 20, nil, bundle.TemporalProfileDate)
-	_, narrowErr := searchConceptSnapshot(t.Context(), loaded, "never-matches", 20, nil, bundle.TemporalProfileDate)
+	_, broadErr := searchConceptSnapshot(t.Context(), loaded, "body", 20, nil, bundle.TemporalProfileDate, false)
+	_, narrowErr := searchConceptSnapshot(t.Context(), loaded, "never-matches", 20, nil, bundle.TemporalProfileDate, false)
 	result := conceptQueryError("search concepts", narrowErr)
 	// Assert.
 	if !errors.Is(broadErr, errMCPConceptCountLimit) || !errors.Is(narrowErr, errMCPConceptCountLimit) {

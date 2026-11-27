@@ -28,7 +28,7 @@ func TestValidateFatalDependencyErrorsPreserveIdentityAndProduceNoReport(t *test
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			dependencies := productionRunDependencies()
-			dependencies.loadBundle = func(string) (*bundle.Bundle, error) {
+			dependencies.loadBundle = func(string, string) (*bundle.Bundle, error) {
 				return &bundle.Bundle{}, nil
 			}
 			dependencies.validateBundle = func(

@@ -302,7 +302,7 @@ func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *Validator
 	if selector == "auto" {
 		selector = ""
 	}
-	declarationState, err := b.VersionDeclarationStateContext(ctx)
+	declarationState, err := b.VersionDeclarationStateForSelectorContext(ctx, selector)
 	if err != nil {
 		return Report{}, err
 	}
@@ -310,14 +310,19 @@ func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *Validator
 	declarationMalformed := declarationState.Present && !declarationState.Valid
 	policyErr := versionErr
 	if declarationMalformed {
-		version, _ = bundle.ResolveVersion("", "")
-		policyErr = nil
-		if selector != "" {
-			_, policyErr = bundle.ResolveVersion("", selector)
+		version, policyErr = bundle.ResolveVersion("", selector)
+		if policyErr != nil {
+			version, _ = bundle.ResolveVersion("", "")
 		}
 	} else if versionErr != nil {
 		version, _ = b.VersionResolutionContext(ctx, "")
 	}
+	b, err = b.WithVersionResolutionContext(ctx, version)
+	if err != nil {
+		return Report{}, err
+	}
+	profile = bundle.TemporalProfileForVersion(version, profile)
+	config.TemporalProfile = profile
 	files, err := b.MarkdownFilesContext(ctx)
 	if err != nil {
 		return Report{}, err
@@ -381,7 +386,7 @@ func ValidateBundleContext(ctx context.Context, b *bundle.Bundle, cfg *Validator
 
 // ValidatePath loads and validates a bundle path against its resolved OKF contract.
 func ValidatePath(bundlePath string, cfg *ValidatorConfig) Report {
-	b, err := bundle.LoadBundle(bundlePath)
+	b, err := bundle.LoadBundleWithSpec(bundlePath, validationLoadSelector(cfg))
 	if err != nil {
 		return Report{Diagnostics: []Diagnostic{{
 			Code:      "bundle_load_failed",
@@ -402,7 +407,7 @@ func ValidateSource(ctx context.Context, source bundle.Source, cfg *ValidatorCon
 	if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
-	b, err := bundle.Load(ctx, source)
+	b, err := bundle.LoadWithSpec(ctx, source, validationLoadSelector(cfg))
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return Report{}, ctxErr
@@ -425,6 +430,13 @@ func ValidateSource(ctx context.Context, source bundle.Source, cfg *ValidatorCon
 		}}}, nil
 	}
 	return ValidateBundleContext(ctx, b, cfg)
+}
+
+func validationLoadSelector(cfg *ValidatorConfig) string {
+	if cfg == nil || cfg.Spec == "auto" {
+		return ""
+	}
+	return cfg.Spec
 }
 
 func (v *validator) check() error {
@@ -494,6 +506,22 @@ func (v *validator) validateConceptParseErrors() error {
 }
 
 func (v *validator) validateConcepts() error {
+	v03 := v.version.Effective == bundle.OKFVersion03
+	if v03 {
+		for _, path := range v.bundle.CompanionMarkdown() {
+			if err := v.check(); err != nil {
+				return err
+			}
+			v.warnCompanionMarkdown(path)
+			document, ok, err := v.readDocumentContext(path, false)
+			if err != nil {
+				return err
+			}
+			if ok {
+				v.addYAMLDirectiveWarnings(path, document.Frontmatter)
+			}
+		}
+	}
 	ids, err := v.bundle.ConceptIDsContext(v.ctx)
 	if err != nil {
 		return err
@@ -516,8 +544,13 @@ func (v *validator) validateConcepts() error {
 		if !ok {
 			continue
 		}
+		v.addYAMLDirectiveWarnings(path, document.Frontmatter)
 		concept := bundle.NewConcept(id, path, document)
 		if !concept.Document.HasFrontmatter {
+			if v03 {
+				v.warnCompanionMarkdown(path)
+				continue
+			}
 			v.addSpecAt(SeverityError, "concept_frontmatter_missing", v.specRef("11.1"), concept.Path, "frontmatter", "missing YAML frontmatter block")
 			continue
 		}
@@ -526,6 +559,10 @@ func (v *validator) validateConcepts() error {
 			return err
 		}
 		if !validType {
+			if v03 {
+				v.warnCompanionMarkdown(path)
+				continue
+			}
 			message := "missing or empty 'type' field"
 			state, err := concept.Document.Frontmatter.SemanticValueStateContext(v.ctx, "type")
 			if err != nil {
@@ -538,6 +575,17 @@ func (v *validator) validateConcepts() error {
 		}
 	}
 	return nil
+}
+
+func (v *validator) warnCompanionMarkdown(path string) {
+	v.addSpecAt(SeverityWarning, "markdown_not_concept", v.specRef("3.2"), path, "type", "Markdown has no non-empty type and is skipped as a concept")
+}
+
+func (v *validator) addYAMLDirectiveWarnings(path string, frontmatter bundle.Frontmatter) {
+	for _, warning := range frontmatter.YAMLDirectiveWarnings() {
+		field := fmt.Sprintf("frontmatter.line[%d]", warning.Line)
+		v.addSpecAt(SeverityWarning, warning.Code, v.specRef("4"), path, field, warning.Message)
+	}
 }
 
 func (v *validator) validateReservedFiles() error {
@@ -554,28 +602,24 @@ func (v *validator) validateReservedFiles() error {
 		if !ok {
 			continue
 		}
+		v.addYAMLDirectiveWarnings(path, document.Frontmatter)
 		if document.HasFrontmatter {
 			if !samePath(path, rootIndex) {
 				v.addIndexError(path, "frontmatter", "index.md should not contain frontmatter")
 				continue
 			}
-			keys, err := document.Frontmatter.KeysContext(v.ctx)
+			state, err := document.Frontmatter.SemanticValueStateContext(v.ctx, "okf_version")
 			if err != nil {
 				return err
 			}
-			if len(keys) == 0 {
-				v.addVersionDeclarationTypeError(path)
-			} else if state, err := document.Frontmatter.SemanticValueStateContext(v.ctx, "okf_version"); err != nil {
-				return err
-			} else if state.Ambiguous {
+			if state.Ambiguous {
 				v.addVersionDeclarationAmbiguousError(path)
 			} else {
-				state, err := document.Frontmatter.VersionDeclarationStateContext(v.ctx)
-				if err != nil {
-					return err
-				}
+				state := v.report.VersionDeclaration
 				if !state.Present {
-					v.addVersionDeclarationTypeError(path)
+					if v.version.Effective != bundle.OKFVersion03 {
+						v.addVersionDeclarationTypeError(path)
+					}
 				} else if !state.Valid {
 					node, present, err := document.Frontmatter.SemanticGetContext(v.ctx, "okf_version")
 					if err != nil {
@@ -616,6 +660,7 @@ func (v *validator) validateReservedFiles() error {
 		if !ok {
 			continue
 		}
+		v.addYAMLDirectiveWarnings(path, document.Frontmatter)
 		if document.HasFrontmatter {
 			v.addLogError(path, "frontmatter", "log.md should not contain frontmatter")
 			continue
@@ -636,7 +681,12 @@ func (v *validator) validateIndexBody(path, body string) error {
 	sectionCount := 0
 	sectionHasIntro := false
 
-	blocks, err := markdownowner.TopLevelStructureContext(v.ctx, body)
+	parse := markdownowner.TopLevelStructureContext
+	isV03 := v.version.Effective == bundle.OKFVersion03
+	if isV03 {
+		parse = markdownowner.TopLevelIndexStructureContext
+	}
+	blocks, err := parse(v.ctx, body)
 	if err != nil {
 		return err
 	}
@@ -646,7 +696,9 @@ func (v *validator) validateIndexBody(path, body string) error {
 		}
 		if block.Kind == markdownowner.TopLevelHeading {
 			if seenHeading && !sectionHasEntry {
-				if sectionCount != 1 || sectionLevel != 1 || (!sectionHasIntro && block.HeadingLevel <= sectionLevel) {
+				isIndexTitle := sectionCount == 1 && sectionLevel == 1 &&
+					(v.version.Effective == bundle.OKFVersion03 || sectionHasIntro || block.HeadingLevel > sectionLevel)
+				if !isIndexTitle {
 					v.addIndexError(path, "body", v.diagnosticMessage("index.md section has no entries: %q", sectionHeading))
 				}
 			}
@@ -656,6 +708,15 @@ func (v *validator) validateIndexBody(path, body string) error {
 			sectionHeading = block.Text
 			sectionHasEntry = false
 			sectionHasIntro = false
+			continue
+		}
+		if block.Kind == markdownowner.TopLevelTable && block.HasLink {
+			if !seenHeading {
+				v.addIndexError(path, "body", "index.md table entry appears before any heading")
+				continue
+			}
+			seenEntry = true
+			sectionHasEntry = true
 			continue
 		}
 		if block.Kind != markdownowner.TopLevelList || block.Indent != 0 {
@@ -686,118 +747,24 @@ func (v *validator) validateIndexBody(path, body string) error {
 		v.addIndexError(path, "body", v.diagnosticMessage("index.md section has no entries: %q", sectionHeading))
 	}
 	if !seenEntry {
-		v.addIndexError(path, "body", "index.md should contain at least one linked list entry")
+		message := "index.md should contain at least one linked list entry"
+		if isV03 {
+			message = "index.md should contain at least one linked entry"
+		}
+		v.addIndexError(path, "body", message)
 	}
 	return nil
 }
 
 func (v *validator) validateLog(path, body string) error {
 	nonBlankBody, err := nonBlankValidatorStringContext(v.ctx, body)
-	if err != nil {
+	if err != nil || !nonBlankBody {
 		return err
 	}
-	if !nonBlankBody {
-		return nil
-	}
-
-	type logDay struct {
-		date    string
-		entries int
-	}
-	var (
-		days          []logDay
-		current       *logDay
-		badDateLevels []string
-		nonListLines  []string
-	)
-	blocks, err := markdownowner.TopLevelStructureContext(v.ctx, body)
-	if err != nil {
-		return err
-	}
-	for _, block := range blocks {
-		if err := v.check(); err != nil {
-			return err
-		}
-		switch block.Kind {
-		case markdownowner.TopLevelHeading:
-			if block.HeadingLevel == 2 {
-				if current != nil {
-					days = append(days, *current)
-				}
-				current = &logDay{date: block.Text}
-				continue
-			}
-			if IsISODate(block.Text) {
-				badDateLevels = append(badDateLevels, block.Raw)
-			} else if current != nil {
-				nonListLines = append(nonListLines, block.Raw)
-			}
-		case markdownowner.TopLevelList:
-			if current == nil {
-				continue
-			}
-			for _, item := range block.Items {
-				if block.Indent != 0 || item.Indent != 0 || item.HasNestedList {
-					nonListLines = append(nonListLines, strings.TrimSpace(item.Raw))
-					continue
-				}
-				current.entries++
-			}
-		default:
-			if current != nil && strings.TrimSpace(block.Raw) != "" {
-				nonListLines = append(nonListLines, block.Raw)
-			}
-		}
-	}
-	if current != nil {
-		days = append(days, *current)
-	}
-
-	if len(days) == 0 && len(badDateLevels) == 0 {
-		v.addLogError(path, "body", "log.md should contain ISO-8601 date headings")
-	}
-	for _, day := range days {
-		if err := v.check(); err != nil {
-			return err
-		}
-		if !IsISODate(day.date) {
-			v.addLogError(path, "body", v.diagnosticMessage("log date heading is not ISO-8601 YYYY-MM-DD: %q", day.date))
-		}
-	}
-	for _, badLevel := range badDateLevels {
-		if err := v.check(); err != nil {
-			return err
-		}
-		v.addLogError(path, "body", v.diagnosticMessage("log date heading should use level 2: %q", badLevel))
-	}
-	for _, day := range days {
-		if err := v.check(); err != nil {
-			return err
-		}
-		if day.entries == 0 {
-			v.addLogError(path, "body", v.diagnosticMessage("log date heading has no entries: %q", day.date))
-		}
-	}
-	previousDate := ""
-	for _, day := range days {
-		if err := v.check(); err != nil {
-			return err
-		}
-		if !IsISODate(day.date) {
-			continue
-		}
-		if previousDate != "" && day.date > previousDate {
-			v.addLogError(path, "body", v.diagnosticMessage("log date headings should be newest first: %q", day.date))
-		}
-		previousDate = day.date
-	}
-	for _, line := range nonListLines {
-		if err := v.check(); err != nil {
-			return err
-		}
-		v.addLogError(path, "body", v.diagnosticMessage("log date group contains non-list entry: %q", line))
-	}
-	return nil
+	return markdownowner.InspectLogContext(v.ctx, body, func(format string, values ...any) error {
+		v.addLogError(path, "body", v.diagnosticMessage(format, values...))
+		return v.check()
+	})
 }
 
 func (v *validator) validateStrictLegacy() error {
@@ -1080,7 +1047,11 @@ func (v *validator) validateLinks() error {
 		if !document.HasFrontmatter && DetermineFileRole(path) != RoleConcept {
 			body = document.Body
 		}
-		links, err := bundle.ExtractLinksContext(v.ctx, body)
+		extract := bundle.ExtractLinksContext
+		if v.version.Effective == bundle.OKFVersion03 {
+			extract = bundle.ExtractLinksV03Context
+		}
+		links, err := extract(v.ctx, body)
 		if err != nil {
 			return err
 		}
@@ -1103,6 +1074,12 @@ func (v *validator) validateLink(sourcePath, fieldPath string, link bundle.Link)
 	}
 	if link.Kind == bundle.LinkExternal || link.Kind == bundle.LinkOther {
 		return nil
+	}
+	if v.version.Effective == bundle.OKFVersion03 {
+		target, _, err := v.bundle.ResolveMarkdownTargetV03Context(v.ctx, sourcePath, link.Target)
+		if err != nil || target.Kind == bundle.PathValueURL {
+			return err
+		}
 	}
 
 	targetPath, targetKind, fragment, ok, err := v.resolveLinkTargetContext(sourcePath, link.Target)
@@ -1142,8 +1119,25 @@ func (v *validator) validateOrphans() error {
 		dir   string
 		paths []string
 	}
+	paths := v.files
+	if v.version.Effective == bundle.OKFVersion03 {
+		ids, err := v.bundle.ConceptIDsContext(v.ctx)
+		if err != nil {
+			return err
+		}
+		paths = make([]string, 0, len(ids))
+		for _, id := range ids {
+			path, ok, err := v.bundle.ConceptPathContext(v.ctx, id)
+			if err != nil {
+				return err
+			}
+			if ok {
+				paths = append(paths, path)
+			}
+		}
+	}
 	var byDir []directoryConcepts
-	for _, path := range v.files {
+	for _, path := range paths {
 		if err := v.check(); err != nil {
 			return err
 		}
@@ -1269,7 +1263,11 @@ func (v *validator) indexCoveredConcepts(indexPath string) (*validatorStringBuck
 	if !ok {
 		return covered, nil
 	}
-	links, err := bundle.ExtractLinksContext(v.ctx, document.Body)
+	extract := bundle.ExtractLinksContext
+	if v.version.Effective == bundle.OKFVersion03 {
+		extract = bundle.ExtractLinksV03Context
+	}
+	links, err := extract(v.ctx, document.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -1311,7 +1309,7 @@ func (v *validator) readDocumentContext(path string, allowReservedNoFrontmatter 
 	if err := v.check(); err != nil {
 		return bundle.Document{}, false, err
 	}
-	document, err := bundle.ParseDocumentContext(v.ctx, string(data))
+	document, err := bundle.ParseDocumentForVersionContext(v.ctx, string(data), v.version)
 	if err != nil {
 		if ctxErr := v.ctx.Err(); ctxErr != nil {
 			return bundle.Document{}, false, ctxErr
@@ -1358,7 +1356,13 @@ func (v *validator) resolveLinkTargetContext(sourcePath, target string) (string,
 	}
 
 	var candidate string
-	if strings.HasPrefix(rawPath, "/") {
+	if v.version.Effective == bundle.OKFVersion03 {
+		resolved, ok, err := v.bundle.ResolveMarkdownTargetV03Context(v.ctx, sourcePath, target)
+		if err != nil || !ok || resolved.Path == "" {
+			return "", RoleAsset, fragment, false, err
+		}
+		candidate = filepath.Join(v.root, filepath.FromSlash(resolved.Path))
+	} else if strings.HasPrefix(rawPath, "/") {
 		candidate = filepath.Join(v.root, strings.TrimLeft(rawPath, "/"))
 	} else {
 		candidate = filepath.Join(filepath.Dir(sourcePath), rawPath)
@@ -2185,16 +2189,7 @@ func isEmptyYAMLValue(node *yaml.Node) bool {
 
 // IsISODate checks strict YYYY-MM-DD calendar-date syntax.
 func IsISODate(value string) bool {
-	if len(value) != 10 || value[4] != '-' || value[7] != '-' {
-		return false
-	}
-	for _, index := range []int{0, 1, 2, 3, 5, 6, 8, 9} {
-		if value[index] < '0' || value[index] > '9' {
-			return false
-		}
-	}
-	_, err := time.Parse("2006-01-02", value)
-	return err == nil
+	return markdownowner.IsLogDate(value)
 }
 
 func isValidURI(value string) bool {

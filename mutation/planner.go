@@ -14,6 +14,7 @@ import (
 
 	"github.com/skosovsky/okf/bundle"
 	"github.com/skosovsky/okf/internal/documentlayout"
+	"github.com/skosovsky/okf/internal/pathportability"
 	"github.com/skosovsky/okf/store"
 	"github.com/skosovsky/okf/validator"
 	"gopkg.in/yaml.v3"
@@ -141,7 +142,11 @@ func (p Planner) Plan(ctx context.Context, source bundle.Source, change store.Ch
 		}
 		return Result{}, &store.Conflict{Expected: change.BaseRevision, Actual: base, ChangedRefs: changedRefs, Retryable: true}
 	}
-	b, err := bundle.Load(ctx, tracked)
+	var selector string
+	if p.ValidatorConfig != nil && p.ValidatorConfig.Spec != "auto" {
+		selector = p.ValidatorConfig.Spec
+	}
+	b, err := bundle.LoadWithSpec(ctx, tracked, selector)
 	if err != nil {
 		return Result{}, err
 	}
@@ -164,7 +169,7 @@ func (p Planner) Plan(ctx context.Context, source bundle.Source, change store.Ch
 		if err := candidate.apply(op); err != nil {
 			return Result{}, err
 		}
-		b, err = bundle.Load(ctx, candidate.overlay)
+		b, err = bundle.LoadWithSpec(ctx, candidate.overlay, selector)
 		if err != nil {
 			return Result{}, err
 		}
@@ -184,6 +189,26 @@ func (p Planner) Plan(ctx context.Context, source bundle.Source, change store.Ch
 	}
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
+	}
+	if validation.IsConformant() && validation.Version.Effective == bundle.OKFVersion03 {
+		basePaths, err := state.overlay.cachedBasePaths(ctx)
+		if err != nil {
+			return Result{}, err
+		}
+		paths := make([]string, 0, len(state.overlay.changed))
+		for name := range state.overlay.changed {
+			paths = append(paths, name)
+		}
+		if err := sortSliceContext(ctx, paths, func(left, right string) bool { return left < right }); err != nil {
+			return Result{}, err
+		}
+		if err := pathportability.CheckNew(ctx, basePaths, paths); err != nil {
+			var collision *pathportability.CaseCollision
+			if errors.As(err, &collision) {
+				return Result{}, invalid("path_case_collision", nil, collision)
+			}
+			return Result{}, err
+		}
 	}
 	relationDiagnostics, err := state.bundle.RelationDiagnosticsContext(ctx)
 	if err != nil {
@@ -385,6 +410,14 @@ func (s *planState) apply(operation store.Operation) error {
 		return s.renameFragment(op)
 	case store.MigrateV01ToV02:
 		return s.migrateV01ToV02(op)
+	case store.MigrateV02ToV03:
+		return s.migrateV02ToV03(op)
+	case store.SetBundleMetadata:
+		return s.setBundleMetadata(op)
+	case store.SetSupersededBy:
+		return s.setSupersededBy(op)
+	case store.ProvenanceV03:
+		return s.applyProvenanceV03(op)
 	default:
 		return invalid("unknown_operation", nil, fmt.Errorf("unsupported operation %T", operation))
 	}
@@ -408,7 +441,7 @@ func (s *planState) ensure(op store.EnsureRelation) error {
 	if !ok {
 		return invalid("missing_source", nil, errors.New("source content missing"))
 	}
-	p, err := parsePresentationContext(s.ctx, data)
+	p, err := parseBundlePresentationContext(s.ctx, s.bundle, data)
 	if err != nil {
 		code := relationPresentationCode(err)
 		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, sourcePath, "ensure_relation", data)
@@ -436,7 +469,7 @@ func (s *planState) ensure(op store.EnsureRelation) error {
 		if !targetDataOK {
 			return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint content missing"))
 		}
-		targetPresentation, err := parsePresentationContext(s.ctx, targetData)
+		targetPresentation, err := parseBundlePresentationContext(s.ctx, s.bundle, targetData)
 		if err != nil {
 			code := relationPresentationCode(err)
 			return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, targetPath, "ensure_relation", targetData)
@@ -450,7 +483,7 @@ func (s *planState) ensure(op store.EnsureRelation) error {
 			return invalid("missing_relation_endpoint", []store.Diagnostic{{Code: "missing_relation_endpoint", Refs: []bundle.RelationRef{op.Source, op.Target}}}, errors.New("relation endpoint does not exist"))
 		}
 	}
-	updated, err := ensureRelationPresentationContext(s.ctx, data, op.Source, op.Type, op.Target.String())
+	updated, err := p.ensureRelationInMapping(s.ctx, sourceMapping, op.Type, op.Target.String())
 	if err != nil {
 		code := relationPresentationCode(err)
 		return s.presentationInvalid(code, []store.Diagnostic{{Code: code, Refs: []bundle.RelationRef{op.Source, op.Target}}}, err, sourcePath, "ensure_relation", data)
@@ -540,7 +573,7 @@ func (s *planState) move(op store.MoveConcept) error {
 		}
 		var documentPresentationErr error
 		if documentlayout.HasOpeningDelimiter(data) {
-			p, err := parsePresentationContext(s.ctx, data)
+			p, err := parseBundlePresentationContext(s.ctx, s.bundle, data)
 			if err != nil {
 				documentPresentationErr = err
 				_, semanticImpact := yamlImpact[file]
@@ -579,10 +612,23 @@ func (s *planState) move(op store.MoveConcept) error {
 		if staged, readErr := s.overlay.ReadFile(s.ctx, out); readErr == nil {
 			current = staged
 		}
+		coreV03 := s.bundle.DiscoveryVersion().Effective == bundle.OKFVersion03
+		var resolveErr error
 		rewritten, err := rewriteMarkdownDestinationsContext(s.ctx, current, func(destination string) (string, bool) {
+			if coreV03 {
+				if resolveErr != nil {
+					return destination, false
+				}
+				var value string
+				value, resolveErr = s.rewriteMarkdownTargetV03(destination, file, out, fromPath, toPath)
+				return value, value != destination
+			}
 			value := rewriteDestination(destination, file, out, op.From, op.To, file == fromPath)
 			return value, value != destination
 		})
+		if resolveErr != nil {
+			return resolveErr
+		}
 		if err != nil {
 			return s.presentationInvalid(presentationChangeCode(err), nil, err, out, "move_concept", current)
 		}
@@ -610,6 +656,14 @@ func (s *planState) move(op store.MoveConcept) error {
 	return nil
 }
 
+func (s *planState) rewriteMarkdownTargetV03(raw, sourcePath, outputPath, movedFrom, movedTo string) (string, error) {
+	target, local, err := s.bundle.ResolveMarkdownTargetV03Context(s.ctx, sourcePath, raw)
+	if err != nil || !local || target.Path == "" {
+		return raw, err
+	}
+	return rewriteResolvedLocalPath(raw, sourcePath, outputPath, movedFrom, movedTo, target, true), nil
+}
+
 func (s *planState) renameFragment(op store.RenameFragment) error {
 	conceptFile, ok, err := s.bundle.ConceptPathContext(s.ctx, op.Concept)
 	if err != nil {
@@ -618,7 +672,7 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 	if !ok {
 		file := conceptPath(op.Concept)
 		if data, readErr := s.overlay.ReadFile(s.ctx, file); readErr == nil {
-			if _, err := parsePresentationContext(s.ctx, data); err != nil {
+			if _, err := parseBundlePresentationContext(s.ctx, s.bundle, data); err != nil {
 				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", data)
 			}
 		}
@@ -631,7 +685,7 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 	if !ok {
 		return invalid("missing_concept", []store.Diagnostic{{Code: "missing_concept", Refs: []bundle.RelationRef{{ID: op.Concept}}}}, errors.New("concept content missing"))
 	}
-	p, err := parsePresentationContext(s.ctx, data)
+	p, err := parseBundlePresentationContext(s.ctx, s.bundle, data)
 	if err != nil {
 		return s.presentationInvalid(presentationChangeCode(err), nil, err, conceptFile, "rename_fragment", data)
 	}
@@ -714,7 +768,7 @@ func (s *planState) renameFragment(op store.RenameFragment) error {
 		if !documentlayout.HasOpeningDelimiter(data) {
 			continue
 		}
-		p, err := parsePresentationContext(s.ctx, data)
+		p, err := parseBundlePresentationContext(s.ctx, s.bundle, data)
 		if err != nil {
 			if _, need := yamlImpact[file]; need {
 				return s.presentationInvalid(presentationChangeCode(err), nil, err, file, "rename_fragment", data)

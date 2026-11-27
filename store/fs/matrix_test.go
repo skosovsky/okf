@@ -319,6 +319,105 @@ func TestCommitConcurrentEnsureRelationAndMoveConceptFreshReplan(t *testing.T) {
 	}
 }
 
+func TestOKF03StoreRejectsNewCaseAliasesBeforePublication(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	const index = "---\nokf_version: '0.3'\n---\n# Rules\n\n- [Policy](rules/policy.md)\n"
+	const original = "---\ntype: Note\n---\nOriginal.\n"
+	writeTestFile(t, root, "index.md", index)
+	writeTestFile(t, root, "rules/policy.md", original)
+	s, err := Open(root, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	registerStoreCleanup(t, s)
+	base := adversarialSnapshot(t, s)
+	target := adversarialRef(t, "Rules/new").ID
+	document, err := bundle.ParseDocument("---\ntype: Note\n---\nEdit.\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	indexDocument, err := bundle.ParseDocument(index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replacement := ReplaceConceptRequest{
+		ChangeSetID: "write-alias", Actor: "human:author", BaseRevision: base.Revision(), ConceptID: target, Document: document,
+	}
+	backfill := BackfillBatchRequest{
+		ChangeSetID: "backfill-alias", Actor: "human:author", BaseRevision: base.Revision(), IndexDocument: indexDocument,
+		Documents: []BackfillDocument{{ConceptID: target, Document: document}},
+	}
+	move := store.ChangeSet{
+		Version: store.ChangeSetFormatVersion, ID: "move-alias", Actor: "human:author", BaseRevision: base.Revision(),
+		Operations: []store.Operation{store.MoveConcept{From: adversarialRef(t, "rules/policy").ID, To: target}},
+	}
+
+	// Act.
+	_, replacementErr := s.ReplaceConcept(t.Context(), replacement, store.CommitOptions{})
+	_, backfillErr := s.PreviewBackfillBatch(t.Context(), backfill)
+	_, applyBackfillErr := s.ApplyBackfillBatch(t.Context(), backfill, store.CommitOptions{})
+	_, moveErr := s.Preview(t.Context(), move)
+	_, commitMoveErr := s.Commit(t.Context(), move, store.CommitOptions{})
+
+	// Assert.
+	for operation, err := range map[string]error{
+		"replace": replacementErr, "preview backfill": backfillErr, "apply backfill": applyBackfillErr,
+		"preview move": moveErr, "commit move": commitMoveErr,
+	} {
+		var invalid *store.InvalidChangeSet
+		if !errors.As(err, &invalid) || invalid.Code != "path_case_collision" {
+			t.Errorf("%s: %v", operation, err)
+		}
+	}
+	if revision := adversarialSnapshot(t, s).Revision(); revision != base.Revision() {
+		t.Fatalf("rejected operations changed the revision to %s", revision)
+	}
+	replacement.ConceptID = adversarialRef(t, "rules/policy").ID
+	if _, err := s.ReplaceConcept(t.Context(), replacement, store.CommitOptions{}); err != nil {
+		t.Fatalf("existing spelling cannot be updated: %v", err)
+	}
+}
+
+func TestOKF03ReplaceQuotesCoreStringBeforePublishingAndReplaysReceipt(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	s, err := Open(root, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	registerStoreCleanup(t, s)
+	frontmatter := bundle.NewFrontmatter()
+	if err := frontmatter.SetString("type", "1e9999"); err != nil {
+		t.Fatal(err)
+	}
+	base := adversarialSnapshot(t, s)
+	request := ReplaceConceptRequest{
+		ChangeSetID: "quoted-replace", Actor: "human:author", BaseRevision: base.Revision(),
+		ConceptID: adversarialRef(t, "note").ID, Document: bundle.NewDocument(frontmatter, "Body"),
+	}
+	options := store.CommitOptions{IdempotencyKey: "quoted-replace"}
+
+	// Act.
+	first, err := s.ReplaceConcept(t.Context(), request, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replay, err := s.ReplaceConcept(t.Context(), request, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert.
+	if !reflect.DeepEqual(first.Receipt, replay.Receipt) {
+		t.Fatalf("replay receipt changed: %+v versus %+v", first.Receipt, replay.Receipt)
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "note.md"))
+	if err != nil || !bytes.Contains(raw, []byte(`type: "1e9999"`)) {
+		t.Fatalf("published type = %q, %v", raw, err)
+	}
+}
+
 func TestReplaceConceptCreateUpdateRejectsStaleAndPreservesModes(t *testing.T) {
 	root := t.TempDir()
 	writeTestFile(t, root, "existing.md", adversarialDocument("old"))

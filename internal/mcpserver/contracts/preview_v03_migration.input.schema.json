@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.3/preview_v03_migration.input.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "bundle_path",
+    "id",
+    "actor"
+  ],
+  "properties": {
+    "bundle_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "actor": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "assume_v02": {
+      "type": "boolean"
+    },
+    "path_choices": {
+      "type": "array",
+      "description": "Select captured targets listed by preview. Use markdown[N] for a Markdown destination and the source path without .md for concept.",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "concept",
+          "field",
+          "target"
+        ],
+        "properties": {
+          "concept": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        }
+      }
+    }
+  }
+}

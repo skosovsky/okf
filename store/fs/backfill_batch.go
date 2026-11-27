@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/internal/documentlayout"
 	"github.com/skosovsky/okf/internal/receiptprojection"
 	"github.com/skosovsky/okf/mutation"
 	"github.com/skosovsky/okf/store"
@@ -148,11 +149,8 @@ func validateBackfillBatchRequest(req BackfillBatchRequest, options store.Commit
 }
 
 func (s *Store) stageBackfillBatch(ctx context.Context, base store.Snapshot, req BackfillBatchRequest, index string, docs map[string]string) (*snapshot, validator.Report, error) {
-	o, err := mutation.NewOverlayContext(ctx, base)
+	version, err := base.(*snapshot).concepts.VersionResolutionContext(ctx, "")
 	if err != nil {
-		return nil, validator.Report{}, err
-	}
-	if err := o.PutContext(ctx, "index.md", []byte(index)); err != nil {
 		return nil, validator.Report{}, err
 	}
 	paths := make([]string, 0, len(docs))
@@ -160,6 +158,28 @@ func (s *Store) stageBackfillBatch(ctx context.Context, base store.Snapshot, req
 		paths = append(paths, p)
 	}
 	sort.Strings(paths)
+	if version.Effective == bundle.OKFVersion03 {
+		if err := validateV03NewPaths(ctx, base, append([]string{"index.md"}, paths...)); err != nil {
+			return nil, validator.Report{}, err
+		}
+		index, err = preserveV03BackfillRoot(ctx, base, index, req.IndexDocument)
+		if err != nil {
+			return nil, validator.Report{}, err
+		}
+		for _, entry := range req.Documents {
+			target := entry.ConceptID.String() + ".md"
+			if err := validateV03Replacement(ctx, base, target, docs[target]); err != nil {
+				return nil, validator.Report{}, err
+			}
+		}
+	}
+	o, err := mutation.NewOverlayContext(ctx, base)
+	if err != nil {
+		return nil, validator.Report{}, err
+	}
+	if err := o.PutContext(ctx, "index.md", []byte(index)); err != nil {
+		return nil, validator.Report{}, err
+	}
 	for _, p := range paths {
 		if err := ctx.Err(); err != nil {
 			return nil, validator.Report{}, err
@@ -177,6 +197,42 @@ func (s *Store) stageBackfillBatch(ctx context.Context, base store.Snapshot, req
 	}
 	next, err := snapshotFromSource(ctx, o, s.config.HashAlgorithm)
 	return next, report, err
+}
+
+func preserveV03BackfillRoot(ctx context.Context, base store.Snapshot, rendered string, proposed bundle.Document) (string, error) {
+	const root = "index.md"
+	content, err := base.ReadFile(ctx, root)
+	if err != nil {
+		return "", err
+	}
+	previous, err := bundle.ParseDocumentForVersionContext(ctx, string(content), bundle.VersionResolution{Effective: bundle.OKFVersion03})
+	if err != nil {
+		return "", err
+	}
+	before, err := previous.Frontmatter.YAMLStringContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	after, err := proposed.Frontmatter.YAMLStringContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	if before != after {
+		return "", invalidV03Replacement(root, "backfill_root_metadata_changed", "Backfill can update the index body only. Keep the root metadata from the base revision.")
+	}
+	original, _, err := documentlayout.SplitContext(ctx, content)
+	if err != nil {
+		return "", err
+	}
+	next, _, err := documentlayout.SplitContext(ctx, []byte(rendered))
+	if err != nil {
+		return "", err
+	}
+	prefix := string(content[:original.BodyStart])
+	if !strings.HasSuffix(prefix, "\n") {
+		prefix += "\n"
+	}
+	return prefix + rendered[next.BodyStart:], nil
 }
 
 // PreviewBackfillBatch validates the complete desired bundle without writing.

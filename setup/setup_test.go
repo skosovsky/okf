@@ -3,12 +3,14 @@ package setup
 import (
 	"context"
 	"fmt"
-	"github.com/skosovsky/okf/validator"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/skosovsky/okf/bundle"
+	"github.com/skosovsky/okf/validator"
 )
 
 func fixture(t *testing.T, files map[string]string) Options {
@@ -62,6 +64,98 @@ func TestManagedCopyPreservesBytes(t *testing.T) {
 	}
 	if _, e := Apply(context.Background(), opts, p.Digest); e == nil {
 		t.Fatal("replay overwrites target")
+	}
+}
+
+func TestOKF03SetupCopiesCoreTypedDocumentsWithoutRewriting(t *testing.T) {
+	const raw = "---\ntype: 2026-11-27\nexternal: {revision: 079} # keep\n---\n\nPolicy.\n"
+	opts := fixture(t, map[string]string{"rule.md": raw})
+	opts.OKFVersion = bundle.OKFVersion03
+	plan, err := Preview(t.Context(), opts)
+	if err != nil || !plan.Applicable {
+		t.Fatalf("preview: %+v, %v", plan, err)
+	}
+	result, err := Apply(t.Context(), opts, plan.Digest)
+	if err != nil || !result.Published {
+		t.Fatalf("apply: %+v, %v", result, err)
+	}
+	document, err := os.ReadFile(filepath.Join(opts.Target, "rule.md"))
+	if err != nil || string(document) != raw {
+		t.Fatalf("document = %q, %v", document, err)
+	}
+	index, err := os.ReadFile(filepath.Join(opts.Target, "index.md"))
+	if err != nil || !strings.Contains(string(index), "\n# 2026-11-27\n") {
+		t.Fatalf("index = %q, %v", index, err)
+	}
+}
+
+func TestOKF03SetupRejectsCaseAliasOfGeneratedIndex(t *testing.T) {
+	opts := fixture(t, map[string]string{"INDEX.md": "# Draft\n"})
+	plan, err := Preview(t.Context(), opts)
+	if err != nil || plan.Applicable || len(plan.Diagnostics) != 1 || plan.Diagnostics[0].Code != "path_case_collision" {
+		t.Fatalf("preview = %+v, %v", plan, err)
+	}
+	if _, err := Apply(t.Context(), opts, plan.Digest); err == nil {
+		t.Fatal("setup applied a case collision")
+	}
+	if _, err := os.Stat(opts.Target); !os.IsNotExist(err) {
+		t.Fatalf("setup created a target: %v", err)
+	}
+}
+
+func TestOKF03SetupQuotesCoreNumberUsedAsAnOpaqueType(t *testing.T) {
+	// Arrange.
+	opts := fixture(t, map[string]string{"plain.md": "# Draft\n"})
+	opts.Type = "1e9999"
+
+	// Act.
+	plan, err := Preview(t.Context(), opts)
+	if err != nil || !plan.Applicable {
+		t.Fatalf("preview: %+v, %v", plan, err)
+	}
+	if _, err := Apply(t.Context(), opts, plan.Digest); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := bundle.LoadBundle(opts.Target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert.
+	concepts := loaded.Concepts()
+	if len(concepts) != 1 {
+		t.Fatalf("setup lost its concept: %v", concepts)
+	}
+	if typ, ok := concepts[0].Document.Frontmatter.Type(); !ok || typ != opts.Type {
+		t.Fatalf("setup type = %q, %t", typ, ok)
+	}
+}
+
+func TestOKF03SetupEncodesIndexPathsAndKeepsDescriptions(t *testing.T) {
+	opts := fixture(t, map[string]string{
+		"group & ]/guide ).md": "---\ntype: Guide\ntitle: 'Guide ]'\ndescription: Rules for review\n---\nGuide.\n",
+	})
+
+	plan, err := Preview(t.Context(), opts)
+	if err != nil || !plan.Applicable {
+		t.Fatalf("preview: %v %+v", err, plan)
+	}
+	if applied, err := Apply(t.Context(), opts, plan.Digest); err != nil || !applied.Published {
+		t.Fatalf("apply: %v %+v", err, applied)
+	}
+
+	for name, want := range map[string]string{
+		"index.md":           `[group & \]](group%20%26%20%5D/index.md)`,
+		"group & ]/index.md": `[Guide \]](guide%20%29.md) - Rules for review`,
+	} {
+		data, err := os.ReadFile(filepath.Join(opts.Target, filepath.FromSlash(name)))
+		if err != nil || !strings.Contains(string(data), want) {
+			t.Fatalf("%s lacks %q: %s (%v)", name, want, data, err)
+		}
+	}
+	report := validator.ValidatePath(opts.Target, &validator.ValidatorConfig{CheckLinks: true, CheckOrphans: true})
+	if !report.IsConformant() || len(report.Diagnostics) != 0 {
+		t.Fatalf("generated bundle: %+v", report.Diagnostics)
 	}
 }
 func TestBlockersNeverPublish(t *testing.T) {

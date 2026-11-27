@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://okf.dev/mcp/v0.3/apply_v03_migration.output.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "request_digest",
+    "result_revision"
+  ],
+  "properties": {
+    "status": {
+      "enum": [
+        "applied",
+        "committed_with_error"
+      ]
+    },
+    "request_digest": {
+      "type": "string"
+    },
+    "result_revision": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

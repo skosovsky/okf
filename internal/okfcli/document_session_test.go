@@ -39,6 +39,10 @@ func (session *recordingDocumentSession) VersionResolution() bundle.VersionResol
 	return session.resolution
 }
 
+func (session *recordingDocumentSession) ComputationStateContext(ctx context.Context) (bundle.AttestedComputationState, error) {
+	return session.document.AttestedComputationStateForVersionContext(ctx, session.resolution)
+}
+
 func (session *recordingDocumentSession) RewriteContext(_ context.Context, document bundle.Document) error {
 	session.rewriteCalls++
 	session.rewritten = document
@@ -134,14 +138,14 @@ func TestDocumentSessionFmtPreviewAndWriteHaveOneLifecycle(t *testing.T) {
 			name:         "preview",
 			args:         []string{"fmt", "concept.md", "--spec", "auto"},
 			wantSelector: "",
-			wantEvents:   []string{"open", "document", "close", "stdout"},
+			wantEvents:   []string{"open", "document", "version", "close", "stdout"},
 		},
 		{
 			name:         "write",
 			args:         []string{"fmt", "concept.md", "--spec", "0.2", "--write"},
 			wantRewrite:  1,
 			wantSelector: "0.2",
-			wantEvents:   []string{"open", "document", "rewrite", "close", "stdout"},
+			wantEvents:   []string{"open", "document", "version", "rewrite", "close", "stdout"},
 		},
 	}
 
@@ -186,6 +190,34 @@ func TestDocumentSessionFmtPreviewAndWriteHaveOneLifecycle(t *testing.T) {
 				if capturedErr != nil || rewrittenErr != nil || rewritten != captured {
 					t.Fatalf("rewritten document = %q/%v, want captured %q/%v", rewritten, rewrittenErr, captured, capturedErr)
 				}
+			}
+		})
+	}
+}
+
+func TestOKF03FmtKeepsPlainLogAndCompanionBytes(t *testing.T) {
+	root := t.TempDir()
+	for _, test := range []struct{ name, input string }{
+		{"log.md", "# History\r\n\r\n## 2026-11-27\r\n* **Update**: One entry.\r\n  Wrapped line."},
+		{"README.md", "# Guide\r\n\r\nUse the published policy."},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Arrange.
+			target := filepath.Join(root, test.name)
+			if err := os.WriteFile(target, []byte(test.input), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			var stdout, stderr bytes.Buffer
+
+			// Act.
+			preview := Run([]string{"fmt", target}, &stdout, &stderr)
+			view := stdout.String()
+			code := Run([]string{"fmt", target, "--write"}, &stdout, &stderr)
+
+			// Assert.
+			actual, err := os.ReadFile(target)
+			if preview != 0 || code != 0 || err != nil || view != test.input || string(actual) != test.input {
+				t.Fatalf("fmt: exit %d/%d, stderr=%s, preview=%q, disk=%q, err=%v", preview, code, stderr.String(), view, actual, err)
 			}
 		})
 	}

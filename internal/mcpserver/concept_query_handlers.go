@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/skosovsky/okf/bundle"
 )
 
 var errMCPConceptCountLimit = errors.New("MCP concept count limit exceeded")
@@ -28,10 +29,6 @@ func handleSearchConcepts(ctx context.Context, request mcp.CallToolRequest) (*mc
 	if result != nil {
 		return result, nil
 	}
-	asOf, result := optionalTemporalReference(request, "as_of", profile)
-	if result != nil {
-		return result, nil
-	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
 		return result, nil
@@ -43,7 +40,20 @@ func handleSearchConcepts(ctx context.Context, request mcp.CallToolRequest) (*mc
 	if result := parseErrorsResult(root, loaded.ParseErrors()); result != nil {
 		return result, nil
 	}
-	response, err := searchConceptSnapshot(ctx, loaded, query, limit, asOf, profile)
+	version, err := loaded.VersionResolutionContext(ctx, "")
+	if err != nil {
+		return bundleLoadError("resolve bundle version", err), nil
+	}
+	profile = bundle.TemporalProfileForVersion(version, profile)
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
+	if result != nil {
+		return result, nil
+	}
+	currentOnly, result := optionalBool(request, "current_only")
+	if result != nil {
+		return result, nil
+	}
+	response, err := searchConceptSnapshot(ctx, loaded, query, limit, asOf, profile, currentOnly)
 	if err != nil {
 		return conceptQueryError("search concepts", err), nil
 	}
@@ -80,10 +90,6 @@ func handleGetNeighbors(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 	if result != nil {
 		return result, nil
 	}
-	asOf, result := optionalTemporalReference(request, "as_of", profile)
-	if result != nil {
-		return result, nil
-	}
 	root, result := requireBundlePath(ctx, request)
 	if result != nil {
 		return result, nil
@@ -93,6 +99,15 @@ func handleGetNeighbors(ctx context.Context, request mcp.CallToolRequest) (*mcp.
 		return bundleLoadError("load bundle", err), nil
 	}
 	if result := parseErrorsResult(root, loaded.ParseErrors()); result != nil {
+		return result, nil
+	}
+	version, err := loaded.VersionResolutionContext(ctx, "")
+	if err != nil {
+		return bundleLoadError("resolve bundle version", err), nil
+	}
+	profile = bundle.TemporalProfileForVersion(version, profile)
+	asOf, result := optionalTemporalReference(request, "as_of", profile)
+	if result != nil {
 		return result, nil
 	}
 	response, err := neighborConceptSnapshot(ctx, loaded, id, direction, kinds, limit, asOf, profile)

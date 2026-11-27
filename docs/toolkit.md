@@ -17,7 +17,7 @@ This guide covers everyday operations: create a bundle, validate it, find a rule
 ```sh
 work_dir=$(mktemp -d)
 go build -o "$work_dir/okf" ./cmd/okf
-"$work_dir/okf" init "$work_dir/new-knowledge"
+"$work_dir/okf" init "$work_dir/new-knowledge" --spec 0.3
 ```
 
 This creates a root `index.md` and a starter note. Open them and replace the starter text with your rule. `type` defines the note type; only the root index declares the bundle `okf_version`. Add sources from supplied material.
@@ -40,7 +40,7 @@ cp -R examples/project-knowledge/en "$work_dir/knowledge"
 
 Expect a clean report, delivery/operator sections, an offline HTML file, a bundle summary, and a parsed note. `search` returns snippets and lines; its score reflects word matches. Words absent from the text in the same language produce no matches.
 
-`--spec auto` uses the root declaration; without one it defaults to 0.2 with compatibility rules. Explicit `--spec 0.1` or `0.2` asserts a version: a conflicting or malformed declaration is not silently replaced. Unknown future versions support best-effort reading with the declaration and compatibility information retained.
+`--spec auto` uses the root declaration and defaults to 0.3. Use `--spec 0.2` to read an undeclared bundle with the older rules. An unknown declaration stays visible and is read on a best-effort basis using 0.3.
 
 ## Prepare existing Markdown {#setup}
 
@@ -57,7 +57,7 @@ cat > "$work_dir/team-notes/operator.md" <<'EOF'
 # Operator steps
 Check the cause before another attempt.
 EOF
-"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide
+"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --spec 0.3
 ```
 
 This is a preview: the target folder has not been created. Expect two documents, `applicable=true`, `published=false`, and a `Plan digest`. `Guide` is your explicit type choice for files without one. Read the plan and diagnostics, then copy the value after `Plan digest:`:
@@ -65,8 +65,8 @@ This is a preview: the target folder has not been created. Expect two documents,
 ```sh
 printf 'Paste the reviewed plan digest: '
 read -r plan_digest
-"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --apply --plan-digest "$plan_digest"
-"$work_dir/okf" validate --path "$work_dir/imported-knowledge" --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --spec 0.3 --apply --plan-digest "$plan_digest"
+"$work_dir/okf" validate --path "$work_dir/imported-knowledge" --spec 0.3 --strict --check-links --check-orphans --max-warnings=0
 "$work_dir/okf" view "$work_dir/imported-knowledge" --output "$work_dir/imported-knowledge.html" --lang en
 ```
 
@@ -84,7 +84,7 @@ The graph shows document links. `fmt` without `-w` prints output for review; `fm
 
 ## Transitions and automation {#automation}
 
-For 0.1 → 0.2 use the [migration guide]({{ '/migration/' | relative_url }}). For APIs and all 14 MCP tools, including `search_sections`, see the [reference]({{ '/reference/' | relative_url }}). Use preview/apply pairs for MCP mutations; copy the digest and revision from the returned plan rather than inventing them.
+For 0.1 → 0.2 or 0.2 → 0.3 use the [migration guide]({{ '/migration/' | relative_url }}). For APIs and all MCP tools, including `search_sections`, see the [reference]({{ '/reference/' | relative_url }}). Use preview/apply pairs for MCP mutations; copy the digest and revision from the returned plan rather than inventing them.
 
 In Go, use the contracts of `bundle`, `validator`, `retrieval`, `setup`, `viewer`, `graph`, `mutation`, and `store`; CLI and MCP expose their operations. For temporal checks provide explicit `--as-of`: a date for the default profile, or an offset timestamp for `instant-0b87c52`.
 

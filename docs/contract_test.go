@@ -648,13 +648,15 @@ func TestPluginManifestsPublishConsistentSkills(t *testing.T) {
 	}
 	manifests := []pluginManifest{claude, codex, marketplace.Plugins[0]}
 	for index, manifest := range manifests {
-		if manifest.Name != "okf" || manifest.Version != "0.2.0" || manifest.Author.Name != "Sergey Kosovsky" ||
-			!strings.Contains(manifest.Description, "v0.2") {
+		if manifest.Name != "okf" || manifest.Version != "0.3.0" || manifest.Author.Name != "Sergey Kosovsky" {
 			t.Errorf("plugin manifest[%d] identity drifted: %#v", index, manifest)
 		}
 		if manifest.Description != claude.Description || strings.Join(manifest.Keywords, "\x00") != strings.Join(claude.Keywords, "\x00") {
 			t.Errorf("plugin manifest[%d] description/keywords differ", index)
 		}
+	}
+	if !strings.Contains(claude.Description, "0.3") || !strings.Contains(claude.Description, "0.2") {
+		t.Errorf("plugin description omits the supported migration versions: %q", claude.Description)
 	}
 	if strings.TrimSuffix(claude.Skills, "/") != "./skills" || strings.TrimSuffix(codex.Skills, "/") != "./skills" ||
 		marketplace.Plugins[0].Source != "./" {

@@ -8,13 +8,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TemporalProfile selects the temporal rules of a pinned OKF 0.2 revision.
+// TemporalProfile selects the temporal rules of an OKF document contract.
 // The zero value retains the originally published calendar-date contract.
 type TemporalProfile string
 
 const (
 	TemporalProfileDate    TemporalProfile = "date-3fcbb9f"
 	TemporalProfileInstant TemporalProfile = "instant-0b87c52"
+	TemporalProfileV03     TemporalProfile = "date-or-instant-0.3"
 )
 
 func NormalizeTemporalProfile(profile TemporalProfile) (TemporalProfile, error) {
@@ -22,11 +23,20 @@ func NormalizeTemporalProfile(profile TemporalProfile) (TemporalProfile, error) 
 		return TemporalProfileDate, nil
 	}
 	switch profile {
-	case TemporalProfileDate, TemporalProfileInstant:
+	case TemporalProfileDate, TemporalProfileInstant, TemporalProfileV03:
 		return profile, nil
 	default:
 		return "", fmt.Errorf("unknown OKF temporal profile %q", profile)
 	}
+}
+
+// TemporalProfileForVersion selects OKF 0.3 time semantics independently of
+// the historical profile used to read OKF 0.2.
+func TemporalProfileForVersion(version VersionResolution, requested TemporalProfile) TemporalProfile {
+	if version.Effective == OKFVersion03 {
+		return TemporalProfileV03
+	}
+	return requested
 }
 
 // ParseOffsetDateTime accepts the toolkit's documented RFC3339 subset. It
@@ -106,6 +116,10 @@ type ProfileStaleAfterObservation struct {
 }
 
 func temporalValueFromNodeContext(ctx context.Context, node *yaml.Node, present bool, profile TemporalProfile) (TemporalObservation, error) {
+	if profile == TemporalProfileV03 {
+		value, err := timestampV03FromNode(ctx, node, present)
+		return TemporalObservation{Raw: value.Raw, Time: value.Time, State: value.State}, err
+	}
 	if err := ctx.Err(); err != nil {
 		return TemporalObservation{}, err
 	}
@@ -195,6 +209,9 @@ func temporalWindowFromMappingContext(ctx context.Context, resolver *yamlSemanti
 		return TemporalWindowState{}, nil
 	}
 	out := TemporalWindowState{Present: true}
+	if profile == TemporalProfileV03 && value != nil && emptyV03Value(value) {
+		return TemporalWindowState{}, nil
+	}
 	if value == nil || value.Kind != yaml.MappingNode {
 		return out, nil
 	}
@@ -246,11 +263,15 @@ func (f Frontmatter) SourceStatesForProfileContext(ctx context.Context, profile 
 		return nil, err
 	}
 	node, present := semanticSelectionNode(selection)
-	if !present || node == nil || node.Kind != yaml.SequenceNode {
+	if !present || node == nil {
 		return nil, ctx.Err()
 	}
-	result := make([]TemporalSourceState, 0, len(node.Content))
-	for _, item := range node.Content {
+	items := yamlSourceItems(node, profile == TemporalProfileV03)
+	if items == nil && node.Kind != yaml.SequenceNode {
+		return nil, ctx.Err()
+	}
+	result := make([]TemporalSourceState, 0, len(items))
+	for _, item := range items {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -265,7 +286,7 @@ func (f Frontmatter) SourceStatesForProfileContext(ctx context.Context, profile 
 			result = append(result, TemporalSourceState{Source: ProvenanceSourceState{Present: true}})
 			continue
 		}
-		base, err := provenanceSourceStateContext(ctx, resolver, item)
+		base, err := provenanceSourceStateContext(ctx, resolver, item, profile == TemporalProfileV03)
 		if err != nil {
 			return nil, err
 		}

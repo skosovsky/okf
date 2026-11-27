@@ -852,6 +852,10 @@ func ensureRelationPresentationContext(ctx context.Context, data []byte, source 
 	if n == nil {
 		return nil, fmt.Errorf("source fragment missing")
 	}
+	return p.ensureRelationInMapping(ctx, n, typ, target)
+}
+
+func (p *presentation) ensureRelationInMapping(ctx context.Context, n *yaml.Node, typ, target string) ([]byte, error) {
 	if err := p.rejectMergedKeyContext(ctx, n, "relations"); err != nil {
 		return nil, err
 	}
@@ -873,11 +877,11 @@ func ensureRelationPresentationContext(ctx context.Context, data []byte, source 
 		if err != nil {
 			return nil, err
 		}
-		typeToken, err := yamlScalarTokenContext(ctx, typ, 0)
+		typeToken, err := yamlScalarTokenContext(ctx, typ, 0, p.coreV03)
 		if err != nil {
 			return nil, err
 		}
-		targetToken, err := yamlScalarTokenContext(ctx, target, 0)
+		targetToken, err := yamlScalarTokenContext(ctx, target, 0, p.coreV03)
 		if err != nil {
 			return nil, err
 		}
@@ -911,11 +915,11 @@ func ensureRelationPresentationContext(ctx context.Context, data []byte, source 
 		if err != nil {
 			return nil, err
 		}
-		typeToken, err := yamlScalarTokenContext(ctx, typ, 0)
+		typeToken, err := yamlScalarTokenContext(ctx, typ, 0, p.coreV03)
 		if err != nil {
 			return nil, err
 		}
-		targetToken, err := yamlScalarTokenContext(ctx, target, 0)
+		targetToken, err := yamlScalarTokenContext(ctx, target, 0, p.coreV03)
 		if err != nil {
 			return nil, err
 		}
@@ -958,7 +962,7 @@ func ensureRelationPresentationContext(ctx context.Context, data []byte, source 
 		return nil, err
 	}
 	if len(matches) == 1 {
-		return appendBytesContext(ctx, nil, data)
+		return appendBytesContext(ctx, nil, p.data)
 	}
 	if err := p.requireInsertionProvenanceContext(ctx, seq); err != nil {
 		return nil, err
@@ -967,7 +971,7 @@ func ensureRelationPresentationContext(ctx context.Context, data []byte, source 
 	if err != nil {
 		return nil, err
 	}
-	targetToken, err := yamlScalarTokenContext(ctx, target, 0)
+	targetToken, err := yamlScalarTokenContext(ctx, target, 0, p.coreV03)
 	if err != nil {
 		return nil, err
 	}

@@ -489,7 +489,7 @@ func TestPlannerYAMLAmbiguityLocationsCoverConcreteCandidates(t *testing.T) {
 			}
 
 			// Act.
-			result, err := Plan(context.Background(), source, change(t, source, tt.op(t)))
+			result, err := planV02(context.Background(), source, change(t, source, tt.op(t)))
 
 			// Assert.
 			var presentation *PresentationError
@@ -832,7 +832,7 @@ func TestPlanEmptyYAMLDocumentMapsAbsentLocalSpanToCompleteSource(t *testing.T) 
 	}
 
 	// Act.
-	result, err := Plan(
+	result, err := planV02(
 		context.Background(),
 		source,
 		change(t, source, store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}),
@@ -924,7 +924,7 @@ func TestPlannerMapsGeneratedYAMLSyntaxFailureToOriginalInsertionRange(t *testin
 	op := store.EnsureRelation{Source: ref(t, "a"), Type: "uses", Target: ref(t, "b")}
 
 	// Act.
-	result, err := Plan(context.Background(), source, change(t, source, op))
+	result, err := planV02(context.Background(), source, change(t, source, op))
 
 	// Assert.
 	var presentation *PresentationError
@@ -1270,7 +1270,7 @@ func fuzzYAMLPlannerAtomicRejection(t *testing.T, data []byte) {
 		store.EnsureRelation{Source: a, Type: "uses", Target: b},
 	}
 	for _, operation := range operations {
-		result, err := Plan(context.Background(), source, change(t, source, operation))
+		result, err := planV02(context.Background(), source, change(t, source, operation))
 		if err != nil {
 			if result.Staged != nil || len(result.Preview.Writes) != 0 || len(result.Preview.Renames) != 0 || len(result.Preview.Plan) != 0 {
 				t.Fatalf("rejected fuzz plan exposed staged mutation: %#v, err=%v", result, err)

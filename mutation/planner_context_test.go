@@ -321,7 +321,7 @@ func TestPlanPresentationErrorsCarryFullFileContext(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Arrange / Act.
-			result, err := Plan(context.Background(), test.source, change(t, test.source, test.op))
+			result, err := planV02(context.Background(), test.source, change(t, test.source, test.op))
 
 			// Assert.
 			if !errors.Is(err, test.wantKind) {

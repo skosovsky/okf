@@ -26,7 +26,7 @@ USAGE:
     okf <command> [args]
 
 COMMANDS:
-    init    <directory> Create a new draft OKF v0.2 bundle
+    init    <directory> Create a new draft OKF v0.3 bundle
     validate             Check a bundle against version-aware OKF conformance
     info     <bundle>    Summarize version, trust, lifecycle, provenance, and topology
     index    <bundle>    (Re)generate every index.md in the bundle
@@ -38,11 +38,12 @@ COMMANDS:
     migrate-prepare <bundle> Export fillable v0.1 migration inputs (--output-dir DIR)
     temporal-upgrade <bundle> Preview/apply explicit OKF v0.2 date-to-instant revision upgrade
     version              Show CLI and supported/default OKF versions
-    search  <bundle>    Search Markdown sections (--query TEXT, --limit N, --json)
-    setup                Preview/copy existing Markdown (--source DIR --target DIR --type TYPE)
+    migrate-v03 <bundle> Preview or apply explicit OKF 0.2 to 0.3 migration
+    search  <bundle>    Search Markdown sections (--query TEXT, --limit N, --current-only, --json)
+    setup                Preview/copy existing Markdown (--source DIR --target DIR --type TYPE [--spec 0.2|0.3])
 
 OPTIONS:
-    --spec auto|0.1|0.2 Select/assert the OKF contract (default auto)
+    --spec auto|0.1|0.2|0.3 Select/assert the OKF contract (default auto)
     --profile PROFILE    Graph profile: legacy-v0.1, skosovsky/okf-v0.2,
                          or skosovsky/okf-v0.2-instant
                          (default follows the effective OKF version)
@@ -71,13 +72,14 @@ func Run(args []string, stdout, stderr io.Writer) int {
 
 type indexRegenerator func(bundleRoot, selector string) ([]string, error)
 
-type bundleLoader func(root string) (*bundle.Bundle, error)
+type bundleLoader func(root, selector string) (*bundle.Bundle, error)
 
 type bundleValidator func(context.Context, *bundle.Bundle, *validator.ValidatorConfig) (validator.Report, error)
 
 type documentSession interface {
 	Document() bundle.Document
 	VersionResolution() bundle.VersionResolution
+	ComputationStateContext(context.Context) (bundle.AttestedComputationState, error)
 	RewriteContext(context.Context, bundle.Document) error
 	Close() error
 }
@@ -97,7 +99,7 @@ type runDependencies struct {
 func productionRunDependencies() runDependencies {
 	return runDependencies{
 		regenerateIndexes: bundle.RegenerateIndexesWithSelector,
-		loadBundle:        bundle.LoadBundle,
+		loadBundle:        bundle.LoadBundleWithSpec,
 		validateBundle:    validator.ValidateBundleContext,
 		openDocument: func(ctx context.Context, path, selector string) (documentSession, error) {
 			return bundle.OpenDocumentSessionContext(ctx, path, selector)
@@ -163,6 +165,8 @@ func runWithDependencies(
 		code, err = cmdFmtWithDocumentSession(rest, stdout, dependencies.openDocument)
 	case "migrate":
 		code, err = dependencies.migrate(rest, stdout)
+	case "migrate-v03":
+		code, err = cmdMigrateV03(rest, stdout)
 	case "migrate-prepare":
 		code, err = cmdMigratePrepare(rest, stdout)
 	case "temporal-upgrade":
@@ -203,7 +207,7 @@ func cmdHelp(args []string, stdout io.Writer) (int, error) {
 	return 0, nil
 }
 
-// VersionInfo is the stable machine-readable CLI version contract.
+// VersionInfo reports the automatic read fallback and selectable contracts.
 type VersionInfo struct {
 	CLIVersion       string   `json:"cli_version"`
 	OKFSpecDefault   string   `json:"okf_spec_default"`
@@ -222,8 +226,8 @@ func cmdVersion(args []string, stdout io.Writer) (int, error) {
 	}
 	info := VersionInfo{
 		CLIVersion:       cliVersion(),
-		OKFSpecDefault:   bundle.OKFVersion,
-		OKFSpecSupported: []string{bundle.LegacyOKFVersion, bundle.OKFVersion},
+		OKFSpecDefault:   bundle.DefaultOKFVersion,
+		OKFSpecSupported: []string{bundle.LegacyOKFVersion, bundle.OKFVersion, bundle.OKFVersion03},
 	}
 	if parsed.boolValue("--json") {
 		return 0, json.NewEncoder(stdout).Encode(info)
@@ -278,10 +282,6 @@ func cmdValidate(
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
-	if err != nil {
-		return 0, err
-	}
 	var maxWarnings *int
 	if parsed.has("--max-warnings") {
 		value, err := strconv.ParseUint(parsed.value("--max-warnings", ""), 10, 64)
@@ -299,13 +299,20 @@ func cmdValidate(
 		Spec:            spec,
 		TemporalProfile: temporalProfile,
 	}
-	if asOf != nil {
-		cfg.ReferenceDate = *asOf
-	}
-	loaded, err := loadBundle(path)
+	loaded, err := loadBundle(path, selectorAssertion(cfg.Spec))
 	if err != nil {
 		return 0, err
 	}
+	version, _ := loaded.VersionResolution(selectorAssertion(cfg.Spec))
+	cfg.TemporalProfile = bundle.TemporalProfileForVersion(version, temporalProfile)
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), cfg.TemporalProfile)
+	if err != nil {
+		return 0, err
+	}
+	if asOf != nil {
+		cfg.ReferenceDate = *asOf
+	}
+
 	report, err := validateBundle(context.Background(), loaded, &cfg)
 	if err != nil {
 		return 0, err
@@ -417,10 +424,6 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
-	if err != nil {
-		return 0, err
-	}
 	format := parsed.value("--format", "text")
 	if parsed.boolValue("--json") {
 		if parsed.has("--format") && format != "json" {
@@ -431,11 +434,17 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 	if format != "text" && format != "json" {
 		return 0, fmt.Errorf("unsupported info format: %s", format)
 	}
-	b, err := bundle.LoadBundle(path)
+	b, err := bundle.LoadBundleWithSpec(path, selectorAssertion(spec))
 	if err != nil {
 		return 0, err
 	}
 	resolution, err := resolveBundleVersion(b, spec)
+	if err != nil {
+		return 0, err
+	}
+
+	temporalProfile = bundle.TemporalProfileForVersion(resolution, temporalProfile)
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
 	if err != nil {
 		return 0, err
 	}
@@ -452,9 +461,17 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 			typ = "(none)"
 		}
 		byType[typ]++
-		trust.add(concept.Document.TrustTier())
-		lifecycle.add(concept.Document.StatusState())
-		if temporalProfile == bundle.TemporalProfileInstant {
+		tier, err := concept.Document.TrustTierForVersionContext(context.Background(), resolution)
+		if err != nil {
+			return 0, err
+		}
+		trust.add(tier)
+		status, err := concept.Document.StatusStateForVersionContext(context.Background(), resolution)
+		if err != nil {
+			return 0, err
+		}
+		lifecycle.add(status)
+		if temporalProfile != bundle.TemporalProfileDate {
 			states, err := concept.Document.Frontmatter.SourceStatesForProfileContext(context.Background(), temporalProfile)
 			if err != nil {
 				return 0, err
@@ -487,10 +504,15 @@ func cmdInfo(args []string, stdout io.Writer) (int, error) {
 	}
 	parseErrors := b.ParseErrors()
 
+	metadata, err := b.BundleMetadataContext(context.Background(), resolution)
+	if err != nil {
+		return 0, err
+	}
 	response := infoResponse{
 		VersionDTO:           projectVersion(resolution),
 		TemporalProfile:      temporalProfile,
 		Bundle:               b.Root(),
+		BundleMetadata:       metadata,
 		Concepts:             b.Len(),
 		IndexFiles:           len(b.IndexFiles()),
 		LogFiles:             len(b.LogFiles()),
@@ -518,6 +540,7 @@ type infoResponse struct {
 	VersionDTO
 	TemporalProfile      bundle.TemporalProfile `json:"temporal_profile"`
 	Bundle               string                 `json:"bundle"`
+	BundleMetadata       *bundle.BundleMetadata `json:"bundle_metadata,omitempty"`
 	Concepts             int                    `json:"concepts"`
 	IndexFiles           int                    `json:"index_files"`
 	LogFiles             int                    `json:"log_files"`
@@ -542,6 +565,15 @@ func infoArgumentError(err error) error {
 
 func writeInfoText(stdout io.Writer, response infoResponse, parseErrors []bundle.ParseError) {
 	fmt.Fprintf(stdout, "bundle:     %s\n", renderTextString(response.Bundle))
+	if metadata := response.BundleMetadata; metadata != nil {
+		for _, field := range []struct{ key, value string }{
+			{"title", metadata.Title}, {"description", metadata.Description}, {"license", metadata.License},
+		} {
+			if field.value != "" {
+				fmt.Fprintf(stdout, "%s: %s\n", field.key, renderTextString(field.value))
+			}
+		}
+	}
 	if response.VersionDTO.Declared != "" {
 		fmt.Fprintf(stdout, "okf_version: %s\n", renderTextString(response.VersionDTO.Declared))
 	} else {
@@ -636,7 +668,7 @@ func cmdGraph(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	b, err := bundle.LoadBundle(opts.path)
+	b, err := bundle.LoadBundleWithSpec(opts.path, selectorAssertion(opts.spec))
 	if err != nil {
 		return 0, err
 	}
@@ -652,10 +684,18 @@ func cmdGraph(args []string, stdout io.Writer) (int, error) {
 			profile = graph.ProjectionProfileToolkitV02
 		}
 	}
+	temporalProfile := bundle.TemporalProfileDate
+	if profile == graph.ProjectionProfileToolkitV02Instant {
+		temporalProfile = bundle.TemporalProfileInstant
+	}
+	asOf, err := parseTemporalReference(opts.asOf, bundle.TemporalProfileForVersion(resolution, temporalProfile))
+	if err != nil {
+		return 0, err
+	}
 	graphOptions := graph.Options{
 		Profile:            profile,
 		VersionSelector:    selectorAssertion(opts.spec),
-		AsOf:               opts.asOf,
+		AsOf:               asOf,
 		ExtensionRelations: opts.extensionRelations,
 		AnnotateTopology:   opts.annotateTopology,
 	}
@@ -702,7 +742,7 @@ type graphOptions struct {
 	format             graphFormat
 	profile            graph.ProjectionProfile
 	spec               string
-	asOf               *time.Time
+	asOf               string
 	extensionRelations graph.ExtensionRelationPolicy
 	annotateTopology   bool
 }
@@ -774,14 +814,7 @@ func parseGraphArgs(args []string) (graphOptions, error) {
 			return graphOptions{}, fmt.Errorf("unsupported extension relation policy: %s", raw)
 		}
 	}
-	profile := bundle.TemporalProfileDate
-	if opts.profile == graph.ProjectionProfileToolkitV02Instant {
-		profile = bundle.TemporalProfileInstant
-	}
-	opts.asOf, err = parseTemporalReference(parsed.value("--as-of", ""), profile)
-	if err != nil {
-		return graphOptions{}, err
-	}
+	opts.asOf = parsed.value("--as-of", "")
 	return opts, nil
 }
 
@@ -833,10 +866,6 @@ func cmdParseWithDocumentSessionAndProjector(
 	if err != nil {
 		return 0, err
 	}
-	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
-	if err != nil {
-		return 0, err
-	}
 	format := parsed.value("--format", "text")
 	if parsed.boolValue("--json") {
 		if parsed.has("--format") && format != "json" {
@@ -852,14 +881,31 @@ func cmdParseWithDocumentSessionAndProjector(
 	if err != nil {
 		return 0, err
 	}
+	document, version := session.Document(), session.VersionResolution()
+	temporalProfile = bundle.TemporalProfileForVersion(version, temporalProfile)
+	asOf, err := parseTemporalReference(parsed.value("--as-of", ""), temporalProfile)
+	if err != nil {
+		return 0, errors.Join(err, session.Close())
+	}
 	var projection parseResponse
-	if temporalProfile == bundle.TemporalProfileInstant {
-		projection, err = projectDocumentForTemporalProfile(ctx, path, session.Document(), session.VersionResolution(), asOf, temporalProfile)
+	if temporalProfile != bundle.TemporalProfileDate {
+		projection, err = projectDocumentForTemporalProfile(ctx, path, document, version, asOf, temporalProfile)
 	} else {
-		projection, err = project(ctx, path, session.Document(), session.VersionResolution(), asOf)
+		projection, err = project(ctx, path, document, version, asOf)
 	}
 	if err != nil {
 		return 0, errors.Join(err, session.Close())
+	}
+
+	if temporalProfile == bundle.TemporalProfileV03 && projection.ComputationAudit.TypeMatches {
+		state, err := session.ComputationStateContext(ctx)
+		if err != nil {
+			return 0, errors.Join(err, session.Close())
+		}
+		projection.ComputationAudit.Valid = state.Valid
+		projection.ComputationAudit.Attestable = &state.Attestable
+		projection.ComputationAudit.UnavailableReason = state.UnavailableReason
+		projection.ComputationAudit.ResolvedPath = state.ComputationPath
 	}
 
 	var output bytes.Buffer
@@ -899,6 +945,9 @@ func writeParseText(stdout io.Writer, projection parseResponse) {
 	}
 	if projection.Description != "" {
 		fmt.Fprintf(stdout, "description: %s\n", renderTextString(projection.Description))
+	}
+	for _, tag := range projection.Tags {
+		fmt.Fprintf(stdout, "tag: %s\n", renderTextString(tag))
 	}
 	fmt.Fprintf(stdout, "has non-empty string `type`: %t\n", projection.Conformant)
 	fmt.Fprintf(stdout, "body: %d byte(s)\n", projection.BodyBytes)
@@ -1063,6 +1112,7 @@ type parseResponse struct {
 	Type                       string                `json:"type,omitempty"`
 	Title                      string                `json:"title,omitempty"`
 	Description                string                `json:"description,omitempty"`
+	Tags                       []string              `json:"tags,omitempty"`
 	Generated                  *generationDTO        `json:"generated,omitempty"`
 	GeneratedAudit             generationAuditDTO    `json:"generated_audit"`
 	EffectiveContentChangeTime string                `json:"effective_content_change_time,omitempty"`
@@ -1201,7 +1251,7 @@ func projectDocument(
 	if err != nil {
 		return parseResponse{}, err
 	}
-	computationAudit, err := projectComputationAudit(ctx, document)
+	computationAudit, err := projectComputationAudit(ctx, document, resolution)
 	if err != nil {
 		return parseResponse{}, err
 	}
@@ -1209,10 +1259,14 @@ func projectDocument(
 	if err != nil {
 		return parseResponse{}, err
 	}
+	tier, err := document.TrustTierForVersionContext(ctx, resolution)
+	if err != nil {
+		return parseResponse{}, err
+	}
 	response := parseResponse{
 		File:             path,
 		VersionDTO:       projectVersion(resolution),
-		TrustTier:        string(document.TrustTier()),
+		TrustTier:        string(tier),
 		Conformant:       document.ValidateConformance() == nil,
 		BodyBytes:        len([]byte(document.Body)),
 		Verified:         projectVerifications(document.Verifications()),
@@ -1232,7 +1286,16 @@ func projectDocument(
 	response.Type, _ = document.Frontmatter.Type()
 	response.Title, _ = document.Frontmatter.Title()
 	response.Description, _ = document.Frontmatter.Description()
-	status := document.StatusState()
+	if resolution.Effective == bundle.OKFVersion03 {
+		response.Tags, err = document.Frontmatter.TagsContext(ctx)
+		if err != nil {
+			return parseResponse{}, err
+		}
+	}
+	status, err := document.StatusStateForVersionContext(ctx, resolution)
+	if err != nil {
+		return parseResponse{}, err
+	}
 	response.Status = status.Effective
 	response.StatusRaw = status.Raw
 	response.StatusPresent = status.Present
@@ -1247,8 +1310,13 @@ func projectDocument(
 			response.Generated.At = generation.At.Raw
 		}
 	}
-	fallback := document.LegacyFallbackObservation()
-	response.EffectiveContentChangeTime, _ = document.EffectiveContentChangeTime()
+	fallback, err := document.LegacyFallbackForVersionContext(ctx, resolution)
+	if err != nil {
+		return parseResponse{}, err
+	}
+	if resolution.Effective != bundle.OKFVersion03 {
+		response.EffectiveContentChangeTime, _ = document.EffectiveContentChangeTime()
+	}
 	response.LegacyFallback = fallback.TimestampActive || fallback.CitationsActive
 	response.legacyTimestampFallback = fallback.TimestampActive
 	response.StaleAfter, _ = document.StaleAfter()
@@ -1260,23 +1328,18 @@ func projectDocument(
 		response.Stale = &stale
 		response.AsOf = asOf.Format(time.DateOnly)
 	}
-	if contract, ok := document.AttestedComputation(); ok {
-		response.Computation = &computationDTO{
-			Runtime:     contract.Runtime,
-			Parameters:  projectParameters(contract.Parameters),
-			Computation: contract.Computation,
-		}
-		if contract.Executor != nil {
-			response.Computation.Executor = &executorDTO{
-				Resource: contract.Executor.Resource,
-				Receipt:  nonNilSlice(contract.Executor.Receipt),
-			}
-		}
-		if contract.Attester != nil {
-			response.Computation.Attester = &attesterDTO{Resource: contract.Attester.Resource}
-		}
+	if computationAudit.TypeMatches {
+		response.Computation = computationAudit.Contract.Value
 	}
-	for _, link := range document.Links() {
+	extractLinks := bundle.ExtractLinksContext
+	if resolution.Effective == bundle.OKFVersion03 {
+		extractLinks = bundle.ExtractLinksV03Context
+	}
+	links, err := extractLinks(ctx, document.Body)
+	if err != nil {
+		return parseResponse{}, err
+	}
+	for _, link := range links {
 		response.Links = append(response.Links, linkDTO{Kind: link.Kind.String(), Text: link.Text, Target: link.Target})
 	}
 	response.Links = nonNilSlice(response.Links)
@@ -1423,7 +1486,7 @@ func cmdFmtWithDocumentSession(
 		return 0, err
 	}
 	document := session.Document()
-	out, err := document.Serialize()
+	out, err := document.SerializeForVersion(session.VersionResolution())
 	if err != nil {
 		return 0, errors.Join(err, session.Close())
 	}

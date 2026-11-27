@@ -5,6 +5,16 @@
   "additionalProperties": false,
   "required": ["version", "version_declaration", "as_of", "concepts"],
   "properties": {
+    "bundle_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "license": {"type": "string"},
+        "license_path": {"type": "string"}
+      }
+    },
     "version": {
       "type": "object",
       "additionalProperties": false,
@@ -27,7 +37,7 @@
         "value": {"type": ["string", "null"]}
       }
     },
-    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"]},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52", "date-or-instant-0.3"]},
     "as_of": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]},
     "concepts": {
       "type": "array",
@@ -56,6 +66,7 @@
           "trust": {"enum": ["unverified", "machine-confirmed", "human-reviewed"]},
           "stale": {"type": ["boolean", "null"]},
           "stale_after": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]},
+          "stale_after_state": {"description": "OKF 0.3 deadline observation, independent of as_of.", "enum": ["absent", "valid", "malformed"]},
           "generated_at": {"type": ["string", "null"], "format": "date-time"},
           "source_count": {"type": "integer", "minimum": 0},
           "computation": {
@@ -63,6 +74,9 @@
             "additionalProperties": false,
             "required": ["present", "runtime", "executor", "attester"],
             "properties": {
+              "attestable": {"type": "boolean"},
+              "unavailable_reason": {"type": "string"},
+              "mode": {"type": "string"},
               "present": {"type": "boolean"},
               "runtime": {"type": ["string", "null"]},
               "executor": {"type": ["string", "null"]},
@@ -85,6 +99,6 @@
   "allOf": [{
     "if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]},
     "then": {"properties": {"as_of": {"format": "date-time"}, "concepts": {"items": {"properties": {"stale_after": {"format": "date-time"}}}}}},
-    "else": {"properties": {"as_of": {"format": "date"}, "concepts": {"items": {"properties": {"stale_after": {"format": "date"}}}}}}
+    "else": {"if": {"properties": {"temporal_profile": {"const": "date-3fcbb9f"}}, "required": ["temporal_profile"]}, "then": {"properties": {"as_of": {"format": "date"}, "concepts": {"items": {"properties": {"stale_after": {"format": "date"}}}}}}}
   }]
 }

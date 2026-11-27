@@ -1,9 +1,12 @@
 package viewer
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,7 +52,7 @@ func TestRenderEscapesScriptAndMarkdownHTML(t *testing.T) {
 	if strings.Contains(html, "</script><script>alert") {
 		t.Fatal("unescaped script delimiter")
 	}
-	if strings.Contains(html, "<img") {
+	if strings.Contains(p.Concepts[0].HTML, "<img") {
 		t.Fatal("image can trigger network fetch")
 	}
 	if strings.Contains(html, "<script>alert(2)") {
@@ -69,6 +72,33 @@ func TestRenderEscapesScriptAndMarkdownHTML(t *testing.T) {
 	}
 	if !strings.Contains(p.Concepts[0].HTML, "Source details.") || strings.Contains(p.Concepts[0].HTML, "[^toolkit]") {
 		t.Fatal("footnote rendering missing")
+	}
+}
+
+func TestOKF03ViewerRendersTablesAndCapturedRasterImages(t *testing.T) {
+	var diagram bytes.Buffer
+	if err := png.Encode(&diagram, image.NewRGBA(image.Rect(0, 0, 1, 1))); err != nil {
+		t.Fatal(err)
+	}
+	b := fixture(t, map[string]string{
+		"index.md":               "---\nokf_version: '0.3'\n---\n# Concepts\n",
+		"guide/details.md":       "---\ntype: Guide\n---\n| Step | Result |\n| --- | --- |\n| Read | Ready |\n\n![Local \"diagram\"][pic]\n![External](https://example.org/image.png)\n![Vector](/assets/vector.svg)\n![Uncaptured](../../escape.png)\n\n[pic]: ../assets/diagram%20one.png\n",
+		"assets/diagram one.png": diagram.String(),
+		"assets/vector.svg":      `<svg xmlns="http://www.w3.org/2000/svg"/>`,
+	})
+	projection, err := Build(t.Context(), b, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := projection.Concepts[0].HTML
+	if !strings.Contains(content, "<table>") || strings.Count(content, "<img ") != 1 ||
+		!strings.Contains(content, `src="data:image/png;base64,`) || !strings.Contains(content, `alt="Local &#34;diagram&#34;"`) ||
+		strings.Contains(content, "example.org") || strings.Count(content, "[image omitted]") != 3 {
+		t.Fatalf("unexpected rendered Markdown: %s", content)
+	}
+	rendered, err := Render(t.Context(), projection)
+	if err != nil || !strings.Contains(string(rendered), "img-src data:; connect-src 'none'") {
+		t.Fatalf("unexpected offline policy, error=%v", err)
 	}
 }
 

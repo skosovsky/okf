@@ -19,14 +19,18 @@
       "maxLength": 512,
       "pattern": "\\S"
     },
+    "current_only": {
+      "type": "boolean",
+      "description": "For OKF 0.3, omit non-current hits and follow a deprecated concept to its current replacement."
+    },
     "limit": {"examples": [20], "description": "Maximum returned hits, from 1 to 100; defaults to 20. total/truncated indicate omitted hits. There is no cursor: increase limit or refine query when truncated.",
       "type": "integer",
       "minimum": 1,
       "maximum": 100
     },
-    "as_of": {"description": "Explicit reference time for temporal evaluation: YYYY-MM-DD with the date profile, RFC 3339 date-time with the instant profile. Omit to leave the request reference unset; pass a value for reproducible freshness.",
+    "as_of": {"description": "Comparison time. For OKF 0.3, omit temporal_profile and pass YYYY-MM-DD or an offset-bearing RFC 3339 timestamp. Older bundles use the selected historical profile.",
       "type": "string",
-      "oneOf": [
+      "anyOf": [
         {
           "format": "date"
         },
@@ -62,14 +66,14 @@
           }
         }
       },
-      "else": {
+      "else": {"if": {"properties": {"temporal_profile": {"const": "date-3fcbb9f"}}, "required": ["temporal_profile"]}, "then": {
         "properties": {
           "as_of": {
             "type": "string",
             "format": "date"
           }
         }
-      }
+      }}
     }
   ]
 }

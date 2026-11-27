@@ -53,7 +53,7 @@ func serverToolsWithSchemaLoader(load contractSchemaLoader) ([]server.ServerTool
 		{name: "validate_bundle", description: "Use to check OKF conformance and optional link/orphan guidance; use read_concept to inspect an individual file. Returns diagnostics and guidance, not factual verification; inspect errors before editing.", readOnly: true, handler: handleValidateBundle},
 		{name: "get_semantic_graph", description: "Use when a whole-bundle JSON-LD graph is needed; use get_neighbors for one concept's bounded edges. Returns the graph subject to bundle/output limits; inspect nodes and edges before following them.", readOnly: true, handler: handleSemanticGraph},
 		{name: "write_concept", description: "Compatibility whole-concept create/update from frontmatter and body; use preview_concept_patch for bounded lossless metadata edits. Stages validation and returns a write receipt or diagnostics; read_concept and validate_bundle afterward.", handler: handleWriteConcept},
-		{name: "preview_concept_patch", description: "Use before apply_concept_patch to inspect bounded lossless v0.2 domain edits without publishing; use write_concept only for whole-concept replacement. Returns proposed diff, base revision and plan digest or blockers; review them before apply.", readOnly: true, handler: handlePreviewConceptPatch},
+		{name: "preview_concept_patch", description: "Use before apply_concept_patch to review bounded edits for OKF 0.2 or 0.3. Returns the proposed diff, base revision and plan digest or blockers. Use write_concept for whole-concept replacement.", readOnly: true, handler: handlePreviewConceptPatch},
 		{name: "apply_concept_patch", description: "Use after reviewing preview_concept_patch; submits the same operations with expected revision and plan digest. Rebuilds and transactionally publishes or reports conflict/diagnostics; validate_bundle afterward. Preview alone is not authorization.", handler: handleApplyConceptPatch},
 		{
 			name:        "preview_v02_migration",
@@ -68,6 +68,8 @@ func serverToolsWithSchemaLoader(load contractSchemaLoader) ([]server.ServerTool
 		},
 		{name: "preview_temporal_upgrade", description: "Use to plan explicit date→instant mappings for a v0.2 bundle; use preview_v02_migration for v0.1→v0.2. Returns ready/incomplete/noop, unresolved dates, base revision and plan digest when ready; resolve mappings before apply.", readOnly: true, handler: handlePreviewTemporalUpgrade},
 		{name: "apply_temporal_upgrade", description: "Use after reviewing preview_temporal_upgrade with the same mappings, base revision and plan digest. Transactionally upgrades temporal values or returns an operation_rejected error; validate_bundle with the instant profile afterward. Preview alone is not authorization.", handler: handleApplyTemporalUpgrade},
+		{name: "preview_v03_migration", description: "Preview an OKF 0.2 to 0.3 upgrade. Review path choices, changed files and trust tier changes before applying.", readOnly: true, handler: handlePreviewV03Migration},
+		{name: "apply_v03_migration", description: "Apply the reviewed OKF 0.3 migration using the same choices, base revision and plan digest. Validate the resulting bundle afterward.", handler: handleApplyV03Migration},
 	}
 	tools := make([]server.ServerTool, 0, len(specs))
 	for _, spec := range specs {

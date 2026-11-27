@@ -25,17 +25,20 @@ const (
 // Valid covers payload ownership only; strict contract-field validation remains
 // a validator responsibility.
 type AttestedComputationState struct {
-	TypeMatches     bool
-	ContractPresent bool
-	Mode            ComputationMode
-	Valid           bool
-	Contract        AttestedComputationContract
-	ContractState   ComputationContractState
-	Inline          string
-	FenceSpans      []SourceSpan
-	Unclosed        bool
-	Multiple        bool
-	Conflict        bool
+	TypeMatches       bool
+	Attestable        bool
+	UnavailableReason string
+	ComputationPath   string
+	ContractPresent   bool
+	Mode              ComputationMode
+	Valid             bool
+	Contract          AttestedComputationContract
+	ContractState     ComputationContractState
+	Inline            string
+	FenceSpans        []SourceSpan
+	Unclosed          bool
+	Multiple          bool
+	Conflict          bool
 }
 
 // SourceSpan is a half-open byte range in a document body.

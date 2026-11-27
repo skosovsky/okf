@@ -10,6 +10,8 @@ document_id: skills-open-knowledge-format-skill
 
 Это полная версия инструкции навыка для чтения, сверенная с ревизией `61e75e9aa9a8719dfb480bf1f5226553b3a21d70`. Она предназначена для людей и не устанавливается как навык. Нормативным остаётся [оригинал](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/skills/open-knowledge-format/SKILL.md) (язык оригинала).
 
+Историческая редакция для OKF 0.2. Актуальные команды есть в [руководстве по миграции]({{ "/ru/migration/" | relative_url }}).
+
 # Open Knowledge Format
 {: #section-1 }
 

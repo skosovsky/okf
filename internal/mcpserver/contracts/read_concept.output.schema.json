@@ -29,7 +29,7 @@
         "value": {"type": ["string", "null"]}
       }
     },
-    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52"]},
+    "temporal_profile": {"enum": ["date-3fcbb9f", "instant-0b87c52", "date-or-instant-0.3"]},
     "frontmatter_yaml": {"type": "string"},
     "body": {"type": "string"},
     "projection": {
@@ -161,7 +161,9 @@
             "required": ["by", "at"],
             "properties": {
               "by": {"type": "string", "minLength": 1},
-              "at": {"type": "string", "format": "date-time"}
+              "at": {"type": "string", "format": "date-time"},
+              "current": {"description": "Whether this verification contributes to trust in OKF 0.3.", "type": "boolean"},
+              "reason": {"description": "Why the verification is current or historical in OKF 0.3.", "enum": ["no_generation", "generation_time_unavailable", "before_generation", "at_or_after_generation"]}
             }
           }
         },
@@ -179,11 +181,15 @@
           }
         },
         "stale_after": {"type": ["string", "null"], "anyOf": [{"format": "date"}, {"format": "date-time"}]},
+        "stale_after_state": {"description": "OKF 0.3 deadline observation, independent of as_of.", "enum": ["absent", "valid", "malformed"]},
         "computation": {
           "type": ["object", "null"],
           "additionalProperties": false,
           "required": ["runtime", "parameters", "computation", "executor", "attester"],
           "properties": {
+            "attestable": {"type": "boolean"},
+            "unavailable_reason": {"type": "string"},
+            "mode": {"type": "string"},
             "runtime": {"type": "string"},
             "parameters": {
               "type": "array",
@@ -232,6 +238,9 @@
     }
   },
   "allOf": [{
+    "if": {"properties": {"temporal_profile": {"const": "date-or-instant-0.3"}}, "required": ["temporal_profile"]},
+    "then": {"properties": {"projection": {"properties": {"verified": {"items": {"required": ["current", "reason"]}}}}}}
+  }, {
     "if": {"properties": {"temporal_profile": {"const": "instant-0b87c52"}}, "required": ["temporal_profile"]},
     "then": {"properties": {"projection": {"properties": {
       "stale_after": {"format": "date-time"},
@@ -239,11 +248,11 @@
       "sources": {"items": {"properties": {"last_modified": {"format": "date-time"}, "usage_window": {"properties": {"from": {"format": "date-time"}, "to": {"format": "date-time"}}}}}},
       "attributions": {"items": {"properties": {"sources": {"items": {"properties": {"last_modified": {"format": "date-time"}, "usage_window": {"properties": {"from": {"format": "date-time"}, "to": {"format": "date-time"}}}}}}}}}
     }}}},
-    "else": {"properties": {"projection": {"properties": {
+    "else": {"if": {"properties": {"temporal_profile": {"const": "date-3fcbb9f"}}, "required": ["temporal_profile"]}, "then": {"properties": {"projection": {"properties": {
       "stale_after": {"format": "date"},
       "usage_window": {"properties": {"from": {"format": "date"}, "to": {"format": "date"}}},
       "sources": {"items": {"properties": {"last_modified": {"format": "date"}, "usage_window": {"properties": {"from": {"format": "date"}, "to": {"format": "date"}}}}}},
       "attributions": {"items": {"properties": {"sources": {"items": {"properties": {"last_modified": {"format": "date"}, "usage_window": {"properties": {"from": {"format": "date"}, "to": {"format": "date"}}}}}}}}}
-    }}}}
+    }}}}}
   }]
 }

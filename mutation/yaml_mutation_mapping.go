@@ -532,11 +532,14 @@ func (p *presentation) structuralValuePatch(current *yaml.Node, desired yamlRend
 	default:
 		return bytePatch{}, p.yamlNodeError(yamlCodeUnsupportedCollection, ErrUnsupportedPresentation, current)
 	}
-	text, err := renderYAMLReplacementContext(p.ctx, current, desired)
+	text, err := renderYAMLReplacementContext(p.ctx, current, desired, p.coreV03)
 	if err != nil {
 		return bytePatch{}, p.preserveTraversalError(err, "invalid_render_value", ErrUnsupportedPresentation, current)
 	}
 	text = yamlGeneratedNewlines(text, p.newline)
+	if current.Kind == yaml.ScalarNode && span.Start == span.End {
+		text = " " + text
+	}
 	if current.Kind != yaml.ScalarNode && current.Style&yaml.FlowStyle == 0 &&
 		span.End > span.Start && span.End <= len(p.yaml) && p.yaml[span.End-1] == '\n' {
 		text += string(p.newline)

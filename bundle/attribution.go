@@ -91,7 +91,7 @@ func (d Document) AttributionsContext(ctx context.Context) ([]Attribution, error
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if !source.ID.Valid {
+		if !source.ID.Valid || d.Frontmatter.coreV03 && !source.Resource.Valid {
 			continue
 		}
 		attribution, err := ensure(source.ID.Value)

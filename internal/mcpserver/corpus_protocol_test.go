@@ -55,7 +55,7 @@ var mcpCorpusProtocolCases = []mcpCorpusProtocolCase{
 	},
 	{
 		Key:               "v01_undeclared",
-		ExpectedEffective: "0.2", ExpectedResolution: "default", ExpectedCompatibility: "native",
+		ExpectedEffective: "0.3", ExpectedResolution: "default", ExpectedCompatibility: "native",
 		PreviewMigration: true,
 	},
 	{
@@ -65,7 +65,7 @@ var mcpCorpusProtocolCases = []mcpCorpusProtocolCase{
 	},
 	{
 		Key: "unknown_future", ExpectedDeclared: corpusString("9.9"),
-		ExpectedEffective: "0.2", ExpectedResolution: "future-best-effort", ExpectedCompatibility: "best-effort",
+		ExpectedEffective: "0.3", ExpectedResolution: "future-best-effort", ExpectedCompatibility: "best-effort",
 		PreviewMigration: true,
 	},
 }
@@ -138,10 +138,11 @@ func TestMCPCanonicalCorpusThroughProtocolSurfaces(t *testing.T) {
 				if err != nil {
 					t.Fatalf("LegacyFallbackObservationContext(%s) error = %v", summary.Path, err)
 				}
-				if summary.LegacyDerived.Generated != fallback.TimestampActive ||
-					summary.LegacyDerived.Citations != fallback.CitationsActive ||
-					read.LegacyFallback.GeneratedFromTimestamp != fallback.TimestampActive ||
-					read.LegacyFallback.SourcesFromCitations != fallback.CitationsActive {
+				legacy := test.ExpectedEffective != "0.3"
+				if summary.LegacyDerived.Generated != (legacy && fallback.TimestampActive) ||
+					summary.LegacyDerived.Citations != (legacy && fallback.CitationsActive) ||
+					read.LegacyFallback.GeneratedFromTimestamp != (legacy && fallback.TimestampActive) ||
+					read.LegacyFallback.SourcesFromCitations != (legacy && fallback.CitationsActive) {
 					t.Fatalf("MCP fallback projection for %s = list %#v, read %#v; shared observation = %#v",
 						summary.Path, summary.LegacyDerived, read.LegacyFallback, fallback)
 				}

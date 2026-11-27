@@ -35,6 +35,10 @@
         },
         "type": {
           "type": "string"
+        },
+        "okf_version": {
+          "enum": ["0.2", "0.3"],
+          "default": "0.3"
         }
       }
     },

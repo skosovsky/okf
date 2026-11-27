@@ -62,6 +62,20 @@ jobs:
             strict: 'false'
             max-warnings: ''
             expected: pass
+          - case: okf-03-before-deadline
+            path: examples/project-knowledge/en
+            spec: '0.3'
+            as-of: '2026-11-19T23:59:59Z'
+            strict: 'true'
+            max-warnings: '0'
+            expected: pass
+          - case: okf-03-at-deadline
+            path: examples/project-knowledge/en
+            spec: '0.3'
+            as-of: '2026-11-20'
+            strict: 'true'
+            max-warnings: '0'
+            expected: validation_failure
     steps:
       - name: Check out repository
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

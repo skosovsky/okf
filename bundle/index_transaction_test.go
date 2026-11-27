@@ -1603,8 +1603,8 @@ func TestRegenerateIndexesFindsOrphanRecoveryArtifactBeforeEmptyPlanning(t *test
 
 	// Assert: the absent leaf is restored from the exact backup before the
 	// remaining bundle is planned.
-	if err != nil || len(written) == 0 {
-		t.Fatalf("RegenerateIndexes() = %#v, %v; want automatic recovery", written, err)
+	if err != nil || len(written) != 0 {
+		t.Fatalf("RegenerateIndexes() = %#v, %v; want recovery without generating an index for an empty bundle", written, err)
 	}
 	assertFileBytes(t, destination, original)
 	assertPathDoesNotExist(t, filepath.Join(root, filepath.FromSlash(artifact)))

@@ -1143,7 +1143,7 @@ func TestMCPServerListsExpectedToolsAndSchemas(t *testing.T) {
 	assertToolSchema(t, got, "list_concepts", []string{"bundle_path"}, true)
 	assertToolProperties(t, got["list_concepts"], []string{"as_of", "bundle_path", "temporal_profile"})
 	assertToolSchema(t, got, "search_concepts", []string{"bundle_path", "query"}, true)
-	assertToolProperties(t, got["search_concepts"], []string{"as_of", "bundle_path", "limit", "query", "temporal_profile"})
+	assertToolProperties(t, got["search_concepts"], []string{"as_of", "bundle_path", "current_only", "limit", "query", "temporal_profile"})
 	assertToolSchema(t, got, "read_concept", []string{"bundle_path", "concept_id"}, true)
 	assertToolProperties(t, got["read_concept"], []string{"bundle_path", "concept_id", "temporal_profile"})
 	assertToolSchema(t, got, "get_neighbors", []string{"bundle_path", "concept_id"}, true)

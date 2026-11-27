@@ -1,0 +1,13 @@
+COMMANDS:
+    init    <directory> Create a new draft OKF v0.2 bundle
+    validate             Check a bundle against version-aware OKF conformance
+    info     <bundle>    Summarize version, trust, lifecycle, provenance, and topology
+    index    <bundle>    (Re)generate every index.md in the bundle
+    graph    <bundle>    Export a selected graph projection (--format text|dot|mermaid|json-ld|ntriples)
+    view     <bundle>    Export a self-contained offline HTML viewer (--output FILE)
+    parse    <file>      Parse one concept document and print its typed projection
+    fmt      <file>      Normalize a document by parse + re-serialize (-w writes)
+    migrate  <bundle>    Preview/apply transactional OKF v0.1 to v0.2 migration
+    migrate-prepare <bundle> Export fillable v0.1 migration inputs (--output-dir DIR)
+    temporal-upgrade <bundle> Preview/apply explicit OKF v0.2 date-to-instant revision upgrade
+    version              Show CLI and supported/default OKF versions

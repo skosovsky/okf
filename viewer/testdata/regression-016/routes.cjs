@@ -21,12 +21,13 @@ class Element {
   removeAttribute(name) { delete this.attrs[name]; }
   set href(value) { this.attrs.href = value; }
   get href() { return this.attrs.href; }
+  focus(options) { this.focused = options; }
   scrollIntoView() { this.scrolled = true; }
   set innerHTML(html) {
     this.children = [];
     for (const match of html.matchAll(/<(a|li)\b([^>]*)>/g)) {
       const child = new Element(match[1]);
-      for (const attr of match[2].matchAll(/(id|href)="([^"]*)"/g)) {
+      for (const attr of match[2].matchAll(/(id|href|class)="([^"]*)"/g)) {
         child.attrs[attr[1]] = attr[2];
         if (attr[1] === 'id') child.id = attr[2];
       }
@@ -124,6 +125,27 @@ page.location.hash = '#fn:missing'; assert.equal(page.current(), 'ordinary');
 page.location.hash = '#%E0%A4%A'; assert.equal(page.current(), 'ordinary');
 console.log('Viewer routes: direct links, clicks, simulated history, footnotes and backlinks passed.');
 
+const sourcePage = arrange('#ordinary', 'en', false, data => {
+  data.spec_version = '0.3';
+  data.concepts[0].sources = [
+    {id:'brief', title:'Design brief', resource:'https://example.test/brief'},
+    {id:'local', title:'Internal note', resource:'notes/internal.md'}
+  ];
+  data.concepts[0].html += '<a href="#fn:source-2" class="source-footnote">S2</a>';
+  data.edges.push({kind:'markdown', from_concept:'ordinary', to_concept:'тест', raw:'#fn:source-2', exists:true});
+});
+const sourceMarker = sourcePage.nodes.detail.querySelectorAll('a').find(a => a.href === '#fn:source-2');
+const sourceTarget = sourcePage.nodes.detail.querySelectorAll('[id]').find(a => a.id === 'fn:source-2');
+let sourceClickPrevented = false;
+sourceMarker.events.click({preventDefault() { sourceClickPrevented = true; }});
+assert.equal(sourceClickPrevented, true);
+assert.equal(sourceTarget.textContent, 'Internal note · ');
+assert.equal(sourceTarget.tabIndex, -1);
+assert.equal(sourceTarget.focused.preventScroll, true);
+assert.equal(sourceTarget.scrolled, true);
+assert.equal(sourcePage.location.hash, '#ordinary');
+assert.equal(sourcePage.current(), 'ordinary');
+
 function text(node) { return (node.textContent || '') + node.children.map(text).join(' '); }
 // Arrange: authored English/custom type stays exactly as supplied.
 const ru = arrange('#ordinary', 'ru');
@@ -175,6 +197,16 @@ assert.ok(text(custom.nodes.detail).includes('stable'));
 assert.ok(text(custom.nodes.detail).includes('custom_kind'));
 assert.ok(text(custom.nodes.detail).includes('(отсутствует)'));
 assert.ok(!custom.nodes.detail.querySelectorAll('a').some(a => /^javascript:/.test(a.href || '')));
+for (const value of ['invalid', 'unresolved', '17']) {
+  for (const [locale, label] of [['en', 'status'], ['ru', 'состояние']]) {
+    const raw = arrange('#ordinary', locale, false, data => {
+      data.spec_version = '0.3';
+      data.concepts[0].status = value === '17' ? 'unresolved' : value;
+      data.concepts[0].status_raw = value;
+    });
+    assert.ok(text(raw.nodes.detail).includes(label + ': ' + value), locale + ': ' + value);
+  }
+}
 const footnoteEvent = arrange('#ordinary');
 // Browser supplies an Event to hashchange. It must retain anchor behavior.
 footnoteEvent.location.hash = '#fn:1';

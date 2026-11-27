@@ -164,6 +164,42 @@ func TestDecisionMustMatchCurrentFingerprint(t *testing.T) {
 	}
 }
 
+func TestOKF03UpkeepRequiresConceptEvidenceAndLeavesReviewMetadataAlone(t *testing.T) {
+	root, cfg := fixture(t)
+	write(t, root, "knowledge/index.md", "---\nokf_version: '0.3'\n---\n# Concepts\n\n* [Guidance](nested/)\n")
+	write(t, root, "knowledge/nested/index.md", "# Guidance\n\n* [Rule](rule.md)\n")
+	write(t, root, "knowledge/nested/log.md", "# History\n")
+	const frontmatter = "---\ntype: Guide\ngenerated: {by: 'process:editor', at: '2026-11-20T09:00:00Z'}\nverified: {by: 'human:editor', at: '2026-11-21T09:00:00Z'}\n---\n"
+	const concept = "knowledge/nested/rule.md"
+	write(t, root, concept, frontmatter+"# Rule\nCheck the source.\n")
+	git(t, root, "add", "knowledge")
+	git(t, root, "commit", "-qm", "Add versioned bundle")
+	baseline, err := Snapshot(t.Context(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "src/a.go", "old\n// Clarify the implementation comment.\n")
+	write(t, root, "knowledge/nested/index.md", "# New guidance title\n\n* [Rule](rule.md)\n")
+	write(t, root, "knowledge/nested/log.md", "# History\n\n## 2026-11-27\n* Navigation adjusted.\n")
+	formatted := frontmatter + "\n# Rule\n\nCheck the source.\n"
+	write(t, root, concept, formatted)
+	first := checkFixture(t, cfg, baseline, nil)
+	for _, file := range []string{"knowledge/nested/index.md", "knowledge/nested/log.md"} {
+		decision := &Decision{Fingerprint: first.Fingerprint, Kind: "updated", UpdatedConcepts: []string{file}}
+		if result := checkFixture(t, cfg, baseline, decision); result.Status != "needs_review" || len(result.Evidence) != 0 {
+			t.Fatalf("reserved file %s supplied concept evidence: %+v", file, result)
+		}
+	}
+	decision := &Decision{Fingerprint: first.Fingerprint, Kind: "unaffected", Reason: "A code comment changed. The formatting edit kept the rule intact."}
+	if result := checkFixture(t, cfg, baseline, decision); result.Status != "explicit_unaffected" {
+		t.Fatalf("explicit review = %+v", result)
+	}
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(concept)))
+	if err != nil || string(data) != formatted {
+		t.Fatalf("checker modified verification metadata: %q, %v", data, err)
+	}
+}
+
 func TestUpdatedRequiresFreshConceptNotOldLog(t *testing.T) {
 	// Arrange: a relevant code edit and an already dirty log.
 	root, cfg := fixture(t)

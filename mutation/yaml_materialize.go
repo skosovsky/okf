@@ -229,7 +229,7 @@ func (m *yamlMutation) materializeMappingPatches() error {
 			if err := m.ctx.Err(); err != nil {
 				return err
 			}
-			rendered, err := renderYAMLMappingEntryContext(m.ctx, appendEntry.key, appendEntry.value, max(pending.mapping.Column-1, 0))
+			rendered, err := renderYAMLMappingEntryContext(m.ctx, appendEntry.key, appendEntry.value, max(pending.mapping.Column-1, 0), m.p.coreV03)
 			if err != nil {
 				return m.p.preserveTraversalError(err, "invalid_render_value", ErrUnsupportedPresentation, pending.mapping)
 			}
@@ -407,7 +407,7 @@ func (m *yamlMutation) materializeSequencePatches() error {
 				appended = append(appended, item.value)
 				order = min(order, item.order)
 			}
-			rendered, err := renderYAMLBlockContext(m.ctx, yamlSequence(appended...), max(collection.Column-1, 0))
+			rendered, err := renderYAMLBlockContext(m.ctx, yamlSequence(appended...), max(collection.Column-1, 0), m.p.coreV03)
 			if err != nil {
 				return m.p.preserveTraversalError(err, "invalid_render_value", ErrUnsupportedPresentation, collection)
 			}
@@ -717,6 +717,15 @@ func (p *presentation) sequenceItemSpan(sequence, item *yaml.Node) (SourceSpan, 
 		return SourceSpan{}, p.yamlNodeError("touched_flow", ErrUnsupportedPresentation, sequence)
 	}
 	start := p.resolver.lines[item.Line-1]
+	// YAML reports a block mapping's first key, which can be on the
+	// following line when the sequence marker stands on its own.
+	if item.Line > 1 && sequence.Column > 0 && item.Column > sequence.Column {
+		previous := p.resolver.lines[item.Line-2]
+		line := bytes.TrimRight(p.yaml[previous:start], " \t\r\n")
+		if string(line) == strings.Repeat(" ", sequence.Column-1)+"-" {
+			start = previous
+		}
+	}
 	end, err := p.structuralBoundary(item)
 	if err != nil {
 		return SourceSpan{}, err

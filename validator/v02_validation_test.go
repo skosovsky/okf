@@ -24,9 +24,9 @@ func TestVersionAwareValidationUsesSharedResolution(t *testing.T) {
 		wantCode      string
 	}{
 		{
-			name:          "absent defaults to v0.2",
+			name:          "absent defaults to v0.3",
 			spec:          "auto",
-			wantEffective: bundle.OKFVersion,
+			wantEffective: bundle.OKFVersion03,
 			wantSource:    bundle.VersionSourceDefault,
 			wantCompat:    bundle.VersionCompatibilityNative,
 		},
@@ -42,7 +42,7 @@ func TestVersionAwareValidationUsesSharedResolution(t *testing.T) {
 			name:          "future is best effort",
 			declaration:   "9.7",
 			wantDeclared:  "9.7",
-			wantEffective: bundle.OKFVersion,
+			wantEffective: bundle.OKFVersion03,
 			wantSource:    bundle.VersionSourceFutureBestEffort,
 			wantCompat:    bundle.VersionCompatibilityBestEffort,
 		},
@@ -111,9 +111,10 @@ func TestVersionSelectorDeclarationMatrix(t *testing.T) {
 		{name: "absent"},
 		{name: "legacy", value: bundle.LegacyOKFVersion},
 		{name: "native", value: bundle.OKFVersion},
+		{name: "0.3", value: bundle.OKFVersion03},
 		{name: "malformed", value: "v0.2", malformed: true},
 	}
-	selectors := []string{"auto", bundle.LegacyOKFVersion, bundle.OKFVersion, "v0.2", "9.9"}
+	selectors := []string{"auto", bundle.LegacyOKFVersion, bundle.OKFVersion, bundle.OKFVersion03, "v0.2", "9.9"}
 
 	for _, declaration := range declarations {
 		declaration := declaration
@@ -128,18 +129,22 @@ func TestVersionSelectorDeclarationMatrix(t *testing.T) {
 				if declaration.value != "" {
 					writeValidationFile(t, root, "index.md", "---\nokf_version: \""+declaration.value+"\"\n---\n# Notes\n\n* [Concept](concept.md)\n")
 				}
-				wantEffective := bundle.OKFVersion
+				wantEffective := bundle.OKFVersion03
 				wantSource := bundle.VersionSourceDefault
 				wantCompatibility := bundle.VersionCompatibilityNative
 				wantPolicyFailure := false
 				if declaration.malformed {
 					wantPolicyFailure = selector == "v0.2" || selector == "9.9"
+					if selector != "auto" && !wantPolicyFailure {
+						wantEffective = selector
+						wantSource = bundle.VersionSourceExplicit
+					}
 				} else {
 					switch {
 					case selector == "auto" && declaration.value != "":
 						wantEffective = declaration.value
 						wantSource = bundle.VersionSourceDeclared
-					case selector == bundle.LegacyOKFVersion || selector == bundle.OKFVersion:
+					case selector == bundle.LegacyOKFVersion || selector == bundle.OKFVersion || selector == bundle.OKFVersion03:
 						if declaration.value == "" || declaration.value == selector {
 							wantEffective = selector
 							wantSource = bundle.VersionSourceExplicit
@@ -223,9 +228,9 @@ func TestReportPreservesVersionDeclarationObservationSeparatelyFromTraversalReso
 			want:        bundle.VersionDeclarationState{Present: true, Raw: "v0.2"},
 		},
 		{
-			name:        "blank string",
+			name:        "blank string defaults",
 			frontmatter: "okf_version: \"\"\n",
-			want:        bundle.VersionDeclarationState{Present: true},
+			want:        bundle.VersionDeclarationState{Valid: true},
 		},
 		{
 			name:        "numeric scalar",
@@ -276,7 +281,7 @@ func TestReportPreservesVersionDeclarationObservationSeparatelyFromTraversalReso
 				t.Fatalf("VersionDeclaration = %#v, want %#v", report.VersionDeclaration, tt.want)
 			}
 			if tt.want.Present && !tt.want.Valid {
-				if report.Version.Effective != bundle.OKFVersion ||
+				if report.Version.Effective != bundle.OKFVersion03 ||
 					report.Version.Source != bundle.VersionSourceDefault {
 					t.Fatalf("malformed traversal Version = %#v, want explicit default traversal only", report.Version)
 				}
@@ -312,7 +317,7 @@ func TestStrictV02TypeOnlyAndPathValuesRemainClean(t *testing.T) {
 			writeValidationFile(t, root, "concept.md", "---\ntype: Note\n"+tt.frontmatter+"---\nBody.\n")
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			if !report.IsConformant() || report.ErrorCount() != 0 || report.WarningCount() != 0 {
@@ -340,7 +345,7 @@ func TestStrictV02MalformedOptionalFamiliesRemainWarnings(t *testing.T) {
 		"---\nBody.\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	if !report.IsConformant() || report.ErrorCount() != 0 {
@@ -358,7 +363,7 @@ func TestStrictV02MalformedOptionalFamiliesRemainWarnings(t *testing.T) {
 			FieldPath: want.path, Severity: SeverityWarning,
 		})
 	}
-	second := ValidatePath(root, &ValidatorConfig{Strict: true})
+	second := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 	if !reflect.DeepEqual(report, second) {
 		t.Fatalf("strict reports are not deterministic:\nfirst=%#v\nsecond=%#v", report, second)
 	}
@@ -377,7 +382,7 @@ func TestBaseDiagnosticsExposeCodesPathsAndSpecRefs(t *testing.T) {
 	writeValidationFile(t, root, "log.md", "# Log\n\n## someday\n* Entry\n")
 
 	// Act.
-	report := ValidatePath(root, nil)
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion})
 
 	// Assert.
 	for _, want := range []struct{ code, file, path, ref string }{
@@ -406,7 +411,7 @@ func TestDuplicateTypeAndReservedVersionRemainBaseDiagnostics(t *testing.T) {
 		writeValidationFile(t, root, "concept.md", "---\ntype: Note\ntype: Reference\n---\nBody.\n")
 
 		// Act.
-		report := ValidatePath(root, nil)
+		report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion})
 
 		// Assert.
 		assertExactValidationDiagnostic(t, report, Diagnostic{
@@ -434,7 +439,7 @@ func TestDuplicateTypeAndReservedVersionRemainBaseDiagnostics(t *testing.T) {
 			writeValidationFile(t, root, "index.md", "---\n"+tt.declarations+"---\n# Concepts\n\n* [Concept](concept.md)\n")
 
 			// Act.
-			report := ValidatePath(root, nil)
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion})
 
 			// Assert.
 			assertExactValidationDiagnostic(t, report, Diagnostic{
@@ -445,7 +450,7 @@ func TestDuplicateTypeAndReservedVersionRemainBaseDiagnostics(t *testing.T) {
 				t.Fatalf("diagnostics = %#v, want one exact duplicate-version diagnostic", report.Diagnostics)
 			}
 			if !report.VersionDeclaration.Present || report.VersionDeclaration.Valid ||
-				report.Version.Effective != bundle.OKFVersion || report.Version.Source != bundle.VersionSourceDefault {
+				report.Version.Effective != bundle.OKFVersion || report.Version.Source != bundle.VersionSourceExplicit {
 				t.Fatalf("version observation/resolution = %#v/%#v, want unresolved declaration with default traversal", report.VersionDeclaration, report.Version)
 			}
 		})
@@ -504,7 +509,7 @@ select 1
 `)
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	wants := []Diagnostic{
@@ -580,7 +585,7 @@ right: &right
 	writeValidationFile(t, root, "check.py", "def attest(): return True\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	wants := []Diagnostic{
@@ -651,7 +656,7 @@ select 1
 `)
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	wants := []Diagnostic{
@@ -736,8 +741,8 @@ func TestBaseAndReservedPathsAreVersionAwareAndExact(t *testing.T) {
 			Code: "index_structure_invalid", SpecRef: "okf-v0.2#12", File: "index.md",
 			FieldPath: "okf_version", Severity: SeverityError,
 		})
-		if report.HasPolicyFailures() || report.Version.Effective != bundle.OKFVersion || report.Version.Source != bundle.VersionSourceDefault {
-			t.Fatalf("malformed declaration outcome = %#v, want base error with v0.2 default validation and no selector-policy failure", report)
+		if report.HasPolicyFailures() || report.Version.Effective != bundle.OKFVersion03 || report.Version.Source != bundle.VersionSourceDefault {
+			t.Fatalf("malformed declaration outcome = %#v, want base error with v0.3 default validation and no selector-policy failure", report)
 		}
 	})
 
@@ -809,7 +814,7 @@ func TestStrictV02SourcesAndFootnotesHaveStablePaths(t *testing.T) {
 		"[^source-a]: Known source\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	if !report.IsConformant() {
@@ -853,7 +858,7 @@ func TestUsageCountYAMLIntegerDomainAndEffectiveWindow(t *testing.T) {
 				"---\nBody.\n")
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			if hasValidationDiagnostic(report, "source_usage_count_invalid", "sources[0].usage_count") {
@@ -876,7 +881,7 @@ func TestUsageCountYAMLIntegerDomainAndEffectiveWindow(t *testing.T) {
 				"---\nBody.\n")
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			assertValidationDiagnostic(t, report, "source_usage_count_invalid", "sources[0].usage_count")
@@ -898,7 +903,7 @@ func TestUsageCountYAMLIntegerDomainAndEffectiveWindow(t *testing.T) {
 			"---\nBody.\n")
 
 		// Act.
-		report := ValidatePath(root, &ValidatorConfig{Strict: true})
+		report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 		// Assert.
 		assertValidationDiagnostic(t, report, "usage_window_invalid", "sources[0].usage_window.from")
@@ -923,7 +928,7 @@ func TestMalformedTypedScalarsAndEmptyVerifiedAreWarnings(t *testing.T) {
 		"---\nBody.\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	for _, want := range []struct{ code, path string }{
@@ -961,7 +966,7 @@ func TestStrictV02GeneratedVerifiedAndLegacyFallback(t *testing.T) {
 		"---\nBody.\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	for _, want := range []struct{ code, path string }{
@@ -1076,7 +1081,7 @@ func TestRFC3339ScalarTagsAreSharedAcrossLegacyAndV02(t *testing.T) {
 		writeValidationFile(t, root, "valid.md", "---\ntype: Note\ngenerated: { by: process:build, at: !!timestamp 2026-07-29T00:00:00Z }\nverified: { by: human:reviewer, at: !!str 2026-07-29T00:00:00Z }\n---\nBody.\n")
 
 		// Act.
-		report := ValidatePath(root, &ValidatorConfig{Strict: true})
+		report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 		// Assert.
 		for _, want := range []Diagnostic{
@@ -1208,7 +1213,7 @@ Claim [1].
 `)
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	for _, file := range []string{"aliased.md", "merged-sources.md"} {
@@ -1239,7 +1244,7 @@ Body.
 `)
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	if len(report.Diagnostics) != 1 {
@@ -1303,7 +1308,7 @@ func TestStrictV02ActorValidationUsesSharedDomainPredicate(t *testing.T) {
 	writeValidationFile(t, root, "verified.md", "---\ntype: Note\nverified:\n  by: \"producer/version/extra\"\n  at: 2026-01-01T00:00:00Z\n---\nBody.\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	assertExactValidationDiagnostic(t, report, Diagnostic{
@@ -1334,7 +1339,7 @@ Body.
 `)
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	assertExactValidationDiagnostic(t, report, Diagnostic{
@@ -1378,7 +1383,7 @@ func TestStrictV02StaleBoundaryUsesInjectedReferenceDate(t *testing.T) {
 			}
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true, ReferenceDate: reference})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true, ReferenceDate: reference})
 
 			// Assert.
 			if got := hasValidationDiagnostic(report, "stale", "stale_after"); got != tt.wantStale {
@@ -1418,7 +1423,7 @@ func TestStrictV02AttestedComputationVariants(t *testing.T) {
 		"---\n# Computation\n\n```sql\nselect 1\n```\n")
 
 	// Act.
-	report := ValidatePath(root, &ValidatorConfig{Strict: true})
+	report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 	// Assert.
 	for _, file := range []string{"inline.md", "file.md"} {
@@ -1501,7 +1506,7 @@ func TestInlineComputationUsesParserOwnedClosedFence(t *testing.T) {
 				"---\n"+tt.body)
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			if tt.wantCode == "" {
@@ -1548,7 +1553,7 @@ func TestMalformedComputationFieldDoesNotSuppressValidInlinePayload(t *testing.T
 			)
 
 			// Act.
-			report := ValidatePath(root, &ValidatorConfig{Strict: true})
+			report := ValidatePath(root, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			assertExactValidationDiagnostic(t, report, Diagnostic{

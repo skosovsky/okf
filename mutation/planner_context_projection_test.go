@@ -117,7 +117,7 @@ func TestMoveConceptFailsClosedForStreamTerminatedPathFamilies(t *testing.T) {
 			operation := store.MoveConcept{From: ref(t, "b").ID, To: ref(t, "nested/b").ID}
 
 			// Act.
-			result, err := Plan(context.Background(), source, change(t, source, operation))
+			result, err := planV02(context.Background(), source, change(t, source, operation))
 
 			// Assert.
 			if !errors.Is(err, ErrUnsupportedPresentation) {
@@ -141,7 +141,7 @@ func TestMoveConceptFailsClosedForStreamTerminatedSelfAndOutgoingDocument(t *tes
 	operation := store.MoveConcept{From: ref(t, "b").ID, To: ref(t, "nested/b").ID}
 
 	// Act.
-	result, err := Plan(context.Background(), source, change(t, source, operation))
+	result, err := planV02(context.Background(), source, change(t, source, operation))
 
 	// Assert.
 	if !errors.Is(err, ErrUnsupportedPresentation) {

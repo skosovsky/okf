@@ -31,6 +31,7 @@ func TestPublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans(t *testin
 			source: validationSource{
 				"concept.md": []byte("---\ntype: Note\n---\n" + large),
 			},
+			cfg:    ValidatorConfig{Spec: bundle.OKFVersion},
 			target: "bundle.ParseDocumentContext",
 		},
 		{
@@ -47,7 +48,7 @@ func TestPublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans(t *testin
 			source: validationSource{
 				"concept.md": []byte("---\ntype: Note\n---\n" + large + " [target](missing.md)\n"),
 			},
-			cfg:    ValidatorConfig{CheckLinks: true},
+			cfg:    ValidatorConfig{Spec: bundle.OKFVersion, CheckLinks: true},
 			target: "bundle.ExtractLinksContext",
 		},
 		{
@@ -56,7 +57,7 @@ func TestPublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans(t *testin
 				"index.md":   []byte("# Notes\n\n- [Concept](concept.md)\n" + large),
 				"concept.md": []byte("---\ntype: Note\n---\nBody\n"),
 			},
-			cfg:    ValidatorConfig{CheckOrphans: true},
+			cfg:    ValidatorConfig{Spec: bundle.OKFVersion, CheckOrphans: true},
 			target: "bundle.ExtractLinksContext",
 		},
 	}
@@ -67,7 +68,7 @@ func TestPublicValidationRoutesContextThroughBaseLegacyLinksAndOrphans(t *testin
 			t.Parallel()
 
 			// Arrange.
-			loaded, err := bundle.Load(context.Background(), tt.source)
+			loaded, err := bundle.LoadWithSpec(context.Background(), tt.source, tt.cfg.Spec)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -142,16 +143,16 @@ func TestStrictV02RoutesContextThroughSemanticAndScalarOwners(t *testing.T) {
 			if typ == "" {
 				typ = "Note"
 			}
-			loaded, err := bundle.Load(context.Background(), validationSource{
+			loaded, err := bundle.LoadWithSpec(context.Background(), validationSource{
 				"concept.md": []byte("---\ntype: " + typ + "\n" + tt.front + "---\nBody\n"),
-			})
+			}, bundle.OKFVersion)
 			if err != nil {
 				t.Fatal(err)
 			}
 			ctx := &stackFrameCancelContext{target: tt.target}
 
 			// Act.
-			report, err := ValidateBundleContext(ctx, loaded, &ValidatorConfig{Strict: true})
+			report, err := ValidateBundleContext(ctx, loaded, &ValidatorConfig{Spec: bundle.OKFVersion, Strict: true})
 
 			// Assert.
 			if !errors.Is(err, context.Canceled) || !reflect.DeepEqual(report, Report{}) {

@@ -13,11 +13,11 @@ contracts are authoritative. Host adapters supply the client-side tool prefix.
 
 ## Choosing tools
 
-The server exposes 14 tools. `list_concepts`, `search_concepts`, `search_sections`,
+`list_concepts`, `search_concepts`, `search_sections`,
 `read_concept`, and `get_neighbors` serve selected reads;
 `get_semantic_graph` serves a whole-graph task; `validate_bundle` checks a
 bundle. `write_concept` replaces a whole document and remains a compatibility
-escape hatch. For bounded changes prefer the three preview/apply pairs below.
+escape hatch. For bounded changes use the matching preview/apply pair.
 Check current server schemas rather than inventing fields from this overview.
 
 `search_sections` matches all normalized query terms in one Markdown section, heading or concept title and ranks lexically. It returns snippets, physical line ranges, file digest and snapshot fingerprint. Recheck the digest or repeat search after edits. Scores do not establish trust or freshness. `search_concepts` retains its literal-substring behavior. Check the live schema for limits and exact fields.
@@ -36,6 +36,17 @@ anonymous forms only. Empty IDs, mixed selectors, unknown fields and ambiguous
 anonymous matches are invalid. See [selector examples](examples.md#mcp-set_usage_window-selector-examples).
 
 ## Migration
+
+### Migrate to OKF 0.3
+
+Use the OKF server's `preview_v03_migration`. Review each path whose target
+changes and supply explicit choices for ambiguity. Call `apply_v03_migration`
+with the same inputs, `base_revision`, and `plan_digest`. If the server is
+unavailable, `okf migrate-v03` previews locally and `--write` applies the
+reviewed plan. Reopen and validate the resulting bundle with `--spec 0.3`.
+[Pinned OKF 0.3 specification](https://github.com/open-knowledge-format/open-knowledge-format/blob/527e81aff55992be21507e97004286789126f88c/SPEC.md)
+
+### OKF 0.1 → 0.2
 
 `preview_v02_migration` → `apply_v02_migration` follows
 [migration policy](migration-v01-v02.md) before any apply. Preview accepts

@@ -9,13 +9,29 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/skosovsky/okf/internal/yamldirective"
 	"gopkg.in/yaml.v3"
 )
 
 // Frontmatter stores OKF YAML frontmatter as an order-preserving YAML mapping.
 type Frontmatter struct {
-	node yaml.Node
-	raw  []byte
+	node              yaml.Node
+	raw               []byte
+	coreV03           bool
+	directiveWarnings []YAMLDirectiveWarning
+}
+
+// YAMLDirectiveWarning reports a directive interpreted in compatibility mode.
+// Line is relative to the first line within the frontmatter delimiters.
+type YAMLDirectiveWarning struct {
+	Code    string
+	Line    int
+	Message string
+}
+
+// YAMLDirectiveWarnings returns the warnings from versioned frontmatter parsing.
+func (f Frontmatter) YAMLDirectiveWarnings() []YAMLDirectiveWarning {
+	return append([]YAMLDirectiveWarning(nil), f.directiveWarnings...)
 }
 
 // ScalarValueState preserves presence and raw scalar text while exposing a
@@ -100,6 +116,18 @@ func ParseFrontmatter(text string) (Frontmatter, error) {
 
 // ParseFrontmatterContext is the cancellation-aware form of ParseFrontmatter.
 func ParseFrontmatterContext(ctx context.Context, text string) (Frontmatter, error) {
+	return parseFrontmatterContext(ctx, text, false)
+}
+
+// ParseFrontmatterForVersionContext applies the selected YAML contract.
+func ParseFrontmatterForVersionContext(ctx context.Context, text string, version VersionResolution) (Frontmatter, error) {
+	if version.Effective != OKFVersion03 {
+		return ParseFrontmatterContext(ctx, text)
+	}
+	return parseFrontmatterContext(ctx, text, true)
+}
+
+func parseFrontmatterContext(ctx context.Context, text string, coreV03 bool) (Frontmatter, error) {
 	if err := ctx.Err(); err != nil {
 		return Frontmatter{}, err
 	}
@@ -118,11 +146,24 @@ func ParseFrontmatterContext(ctx context.Context, text string) (Frontmatter, err
 		return Frontmatter{}, err
 	}
 	if blank {
-		return NewFrontmatter(), nil
+		frontmatter := NewFrontmatter()
+		frontmatter.coreV03 = coreV03
+		return frontmatter, nil
 	}
 
 	var node yaml.Node
-	decoder := yaml.NewDecoder(&contextStringReader{ctx: ctx, value: text})
+	var notices []yamldirective.Notice
+	decoderText := text
+	if coreV03 {
+		decoderText, notices, err = yamldirective.ForV3Decoder(ctx, text)
+		if err != nil {
+			if ctx.Err() != nil {
+				return Frontmatter{}, ctx.Err()
+			}
+			return Frontmatter{}, fmt.Errorf("%w: %v", ErrInvalidFrontmatter, err)
+		}
+	}
+	decoder := yaml.NewDecoder(&contextStringReader{ctx: ctx, value: decoderText})
 	if err := decoder.Decode(&node); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return Frontmatter{}, ctxErr
@@ -132,6 +173,17 @@ func ParseFrontmatterContext(ctx context.Context, text string) (Frontmatter, err
 	if err := ctx.Err(); err != nil {
 		return Frontmatter{}, err
 	}
+	if coreV03 {
+		if err := decoder.Decode(new(yaml.Node)); err != io.EOF {
+			if ctx.Err() != nil {
+				return Frontmatter{}, ctx.Err()
+			}
+			if err != nil {
+				return Frontmatter{}, fmt.Errorf("%w: %v", ErrInvalidFrontmatter, err)
+			}
+			return Frontmatter{}, fmt.Errorf("%w: expected one YAML document", ErrInvalidFrontmatter)
+		}
+	}
 
 	frontmatter, err := NewFrontmatterFromNodeContext(ctx, &node)
 	if err != nil {
@@ -140,6 +192,14 @@ func ParseFrontmatterContext(ctx context.Context, text string) (Frontmatter, err
 	frontmatter.raw, err = bytesFromStringContext(ctx, text)
 	if err != nil {
 		return Frontmatter{}, err
+	}
+	if coreV03 {
+		if err := frontmatter.resolveCoreV03Context(ctx); err != nil {
+			return Frontmatter{}, err
+		}
+		for _, notice := range notices {
+			frontmatter.directiveWarnings = append(frontmatter.directiveWarnings, YAMLDirectiveWarning(notice))
+		}
 	}
 	return frontmatter, nil
 }
@@ -232,6 +292,10 @@ func (f Frontmatter) YAMLString() (string, error) {
 // raw bytes and encoder output cross a chunked context writer; cancellation or
 // graph/encoder failure returns no partial string.
 func (f Frontmatter) YAMLStringContext(ctx context.Context) (string, error) {
+	return f.yamlStringContext(ctx, f.coreV03)
+}
+
+func (f Frontmatter) yamlStringContext(ctx context.Context, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -251,6 +315,11 @@ func (f Frontmatter) YAMLStringContext(ctx context.Context) (string, error) {
 			return "", err
 		}
 		return "", nil
+	}
+	if coreV03 {
+		if err := quoteCoreYAMLStringsContext(ctx, &cloned); err != nil {
+			return "", err
+		}
 	}
 	return encodeYAMLNodeStringContext(
 		ctx,
@@ -705,6 +774,7 @@ func (f *Frontmatter) Set(key string, value *yaml.Node) error {
 	}
 	f.node = cloneYAMLNode(&candidate)
 	f.raw = nil
+	f.directiveWarnings = nil
 	return nil
 }
 
@@ -962,16 +1032,22 @@ func (f Frontmatter) TagsStateContext(ctx context.Context) (StringListState, err
 		return StringListState{}, err
 	}
 	node, present := semanticSelectionNode(selection)
-	if !present {
+	if !present || f.coreV03 && emptyV03Value(node) {
 		return StringListState{}, nil
 	}
 	state := StringListState{Present: true}
-	if node.Kind != yaml.SequenceNode {
+	var items []*yaml.Node
+	switch {
+	case node.Kind == yaml.SequenceNode:
+		items = node.Content
+	case f.coreV03 && node.Kind == yaml.ScalarNode:
+		items = []*yaml.Node{node}
+	default:
 		return state, nil
 	}
 	state.Valid = true
-	state.Items = make([]ScalarValueState, 0, len(node.Content))
-	for _, item := range node.Content {
+	state.Items = make([]ScalarValueState, 0, len(items))
+	for _, item := range items {
 		if err := ctx.Err(); err != nil {
 			return StringListState{}, err
 		}

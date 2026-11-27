@@ -65,6 +65,17 @@ func Prepare(ctx context.Context, writer DocumentWriter, m Manifest, a Analysis)
 		return Plan{}, err
 	}
 	p := Plan{SchemaVersion: SchemaVersion, EventsSHA256: m.EventsSHA256, AnalysisSHA256: sha, BaseRevision: snapshot.Revision(), Concepts: []PlannedConcept{}, Coverage: coverage}
+	if len(active) == 0 {
+		return p, nil
+	}
+	p.IndexDocument, p.Indexes, err = desiredIndexes(ctx, snapshot, active)
+	if err != nil {
+		return Plan{}, err
+	}
+	_, version, err := bundle.ParseBundleIndexContext(ctx, p.IndexDocument, "")
+	if err != nil {
+		return Plan{}, err
+	}
 	events := map[string]Event{}
 	for _, e := range m.Events {
 		events[e.ID] = e
@@ -77,20 +88,13 @@ func Prepare(ctx context.Context, writer DocumentWriter, m Manifest, a Analysis)
 		if err != nil {
 			return Plan{}, err
 		}
-		raw, err := doc.Serialize()
+		raw, err := doc.SerializeForVersion(version)
 		if err != nil {
 			return Plan{}, err
 		}
 		p.Concepts = append(p.Concepts, PlannedConcept{CandidateID: c.ID, ConceptID: c.ConceptID, Document: raw})
 	}
-	if len(active) == 0 {
-		return p, nil
-	}
-	p.IndexDocument, p.Indexes, err = desiredIndexes(ctx, snapshot, active)
-	if err != nil {
-		return Plan{}, err
-	}
-	request, err := batchRequest(p, p.BaseRevision)
+	request, err := batchRequest(ctx, p, p.BaseRevision)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -135,7 +139,12 @@ func desiredIndexes(ctx context.Context, snapshot store.Snapshot, active []Candi
 			}
 			raw = []byte("# Concepts\n")
 		}
-		doc, err := bundle.ParseDocument(string(raw))
+		var doc bundle.Document
+		if path == "index.md" {
+			doc, _, err = bundle.ParseBundleIndexContext(ctx, string(raw), "")
+		} else {
+			doc, err = bundle.ParseDocumentContext(ctx, string(raw))
+		}
 		if err != nil {
 			return "", nil, err
 		}
@@ -176,8 +185,8 @@ func escapeMarkdown(value string) string {
 	return strings.NewReplacer("\\", "\\\\", "[", "\\[", "]", "\\]", "\n", " ", "\r", " ").Replace(value)
 }
 
-func batchRequest(plan Plan, rev store.Revision) (storefs.BackfillBatchRequest, error) {
-	index, err := bundle.ParseDocument(plan.IndexDocument)
+func batchRequest(ctx context.Context, plan Plan, rev store.Revision) (storefs.BackfillBatchRequest, error) {
+	index, version, err := bundle.ParseBundleIndexContext(ctx, plan.IndexDocument, "")
 	if err != nil {
 		return storefs.BackfillBatchRequest{}, err
 	}
@@ -187,7 +196,7 @@ func batchRequest(plan Plan, rev store.Revision) (storefs.BackfillBatchRequest, 
 		if err != nil {
 			return req, err
 		}
-		doc, err := bundle.ParseDocument(p.Document)
+		doc, err := bundle.ParseDocumentForVersionContext(ctx, p.Document, version)
 		if err != nil {
 			return req, err
 		}
@@ -308,6 +317,13 @@ func Apply(ctx context.Context, writer DocumentWriter, plan Plan, m Manifest, a 
 	if plan.SchemaVersion != SchemaVersion || plan.EventsSHA256 != m.EventsSHA256 || plan.AnalysisSHA256 != analysisHash || !plan.BaseRevision.Valid() {
 		return Checkpoint{}, fmt.Errorf("plan binding mismatch")
 	}
+	if plan.IndexDocument == "" {
+		return Checkpoint{}, fmt.Errorf("missing root index plan")
+	}
+	_, version, err := bundle.ParseBundleIndexContext(ctx, plan.IndexDocument, "")
+	if err != nil {
+		return Checkpoint{}, err
+	}
 	for i, c := range active {
 		if c.ID != plan.Concepts[i].CandidateID || c.ConceptID != plan.Concepts[i].ConceptID {
 			return Checkpoint{}, fmt.Errorf("plan candidate mismatch")
@@ -316,13 +332,10 @@ func Apply(ctx context.Context, writer DocumentWriter, plan Plan, m Manifest, a 
 		if err != nil {
 			return Checkpoint{}, err
 		}
-		raw, err := d.Serialize()
+		raw, err := d.SerializeForVersion(version)
 		if err != nil || raw != plan.Concepts[i].Document {
 			return Checkpoint{}, fmt.Errorf("plan document mismatch")
 		}
-	}
-	if plan.IndexDocument == "" {
-		return Checkpoint{}, fmt.Errorf("missing root index plan")
 	}
 	planBytes, err := json.Marshal(plan)
 	if err != nil {
@@ -345,7 +358,7 @@ func Apply(ctx context.Context, writer DocumentWriter, plan Plan, m Manifest, a 
 			return Checkpoint{}, fmt.Errorf("checkpoint revision mismatch")
 		}
 	} else if errors.Is(err, os.ErrNotExist) {
-		request, requestErr := batchRequest(plan, plan.BaseRevision)
+		request, requestErr := batchRequest(ctx, plan, plan.BaseRevision)
 		if requestErr != nil {
 			return Checkpoint{}, requestErr
 		}
@@ -382,7 +395,7 @@ func Apply(ctx context.Context, writer DocumentWriter, plan Plan, m Manifest, a 
 		return Checkpoint{}, err
 	}
 	if cp.NextCandidate == 1 {
-		request, err := batchRequest(plan, plan.BaseRevision)
+		request, err := batchRequest(ctx, plan, plan.BaseRevision)
 		if err != nil {
 			return cp, err
 		}
@@ -432,7 +445,7 @@ func Apply(ctx context.Context, writer DocumentWriter, plan Plan, m Manifest, a 
 	if err := ctx.Err(); err != nil {
 		return cp, err
 	}
-	req, err := batchRequest(plan, cp.BaseRevision)
+	req, err := batchRequest(ctx, plan, cp.BaseRevision)
 	if err != nil {
 		return cp, err
 	}

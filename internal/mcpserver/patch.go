@@ -39,6 +39,8 @@ type patchOperationInput struct {
 	Lifecycle           *patchLifecycleInput           `json:"lifecycle,omitempty"`
 	AttestedComputation *patchAttestedComputationInput `json:"attested_computation,omitempty"`
 	Version             string                         `json:"version,omitempty"`
+	BundleMetadata      *patchBundleMetadataInput      `json:"bundle_metadata,omitempty"`
+	SupersededBy        *string                        `json:"superseded_by,omitempty"`
 }
 
 type patchCommitter interface {
@@ -68,6 +70,12 @@ type patchSourceInput struct {
 	UsageCount   *string                `json:"usage_count,omitempty"`
 	LastModified string                 `json:"last_modified,omitempty"`
 	UsageWindow  *patchUsageWindowInput `json:"usage_window,omitempty"`
+}
+
+type patchBundleMetadataInput struct {
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+	License     *string `json:"license"`
 }
 
 type patchLifecycleInput struct {
@@ -161,9 +169,8 @@ func handlePreviewConceptPatch(ctx context.Context, request mcp.CallToolRequest)
 	if err != nil {
 		return bundleDomainError("identify concept patch", "patch exceeds MCP resource limits", err), nil
 	}
-	planned, err := mutation.NewPlanner(&validator.ValidatorConfig{
-		Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile,
-	}).Plan(ctx, source, change)
+	config := patchValidatorConfig(ctx, source, arguments.TemporalProfile)
+	planned, err := mutation.NewPlanner(config).Plan(ctx, source, change)
 	preview := planned.Preview
 	if err != nil {
 		requestDigest, digestErr := change.RequestDigest()
@@ -254,10 +261,9 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 	if err != nil {
 		return migrationSourceError("capture patch source", err), nil
 	}
+	config := patchValidatorConfig(ctx, source, arguments.TemporalProfile)
 	if revision == expected {
-		planned, planErr := mutation.NewPlanner(&validator.ValidatorConfig{
-			Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile,
-		}).Plan(ctx, source, change)
+		planned, planErr := mutation.NewPlanner(config).Plan(ctx, source, change)
 		if planErr != nil {
 			var invalid *store.InvalidChangeSet
 			if errors.As(planErr, &invalid) {
@@ -318,7 +324,7 @@ func handleApplyConceptPatch(ctx context.Context, request mcp.CallToolRequest) (
 		return result, nil
 	}
 	opened, err := storefs.OpenContext(ctx, root, withMCPStoreLimits(storefs.Config{
-		ValidatorConfig: &validator.ValidatorConfig{Strict: true, Spec: bundle.OKFVersion, TemporalProfile: arguments.TemporalProfile},
+		ValidatorConfig: config,
 	}))
 	if err != nil {
 		return bundleDomainError("open transactional store", "patch store exceeds MCP resource limits", err), nil
@@ -419,6 +425,22 @@ func decodePatchArguments(request mcp.CallToolRequest) (conceptPatchArguments, *
 	return arguments, nil
 }
 
+func patchValidatorConfig(ctx context.Context, source *capturedMigrationSource, profile bundle.TemporalProfile) *validator.ValidatorConfig {
+	spec := bundle.OKFVersion
+	if profile == bundle.TemporalProfileV03 {
+		spec = bundle.OKFVersion03
+	} else if data := source.files["index.md"]; data == nil {
+		spec = bundle.DefaultOKFVersion
+	} else {
+		_, resolution, err := bundle.ParseBundleIndexContext(ctx, string(data), "")
+		if err == nil && resolution.Effective == bundle.OKFVersion03 &&
+			resolution.Source != bundle.VersionSourceFutureBestEffort {
+			spec = bundle.OKFVersion03
+		}
+	}
+	return &validator.ValidatorConfig{Strict: true, Spec: spec, TemporalProfile: profile}
+}
+
 func buildPatchOperations(inputs []patchOperationInput, profiles ...bundle.TemporalProfile) ([]store.Operation, *mcp.CallToolResult) {
 	profile := bundle.TemporalProfileDate
 	if len(profiles) != 0 {
@@ -428,7 +450,7 @@ func buildPatchOperations(inputs []patchOperationInput, profiles ...bundle.Tempo
 	for index, input := range inputs {
 		var concept bundle.ConceptID
 		var err error
-		if input.Kind != "set_bundle_version" {
+		if input.Kind != "set_bundle_version" && input.Kind != "set_bundle_metadata" {
 			concept, err = parseCanonicalConceptID(input.ConceptID)
 			if err != nil {
 				return nil, toolErrorf("operations[%d].concept_id: %v", index, err)
@@ -440,18 +462,25 @@ func buildPatchOperations(inputs []patchOperationInput, profiles ...bundle.Tempo
 			if input.Generated == nil {
 				return nil, toolErrorf("operations[%d].generated is required", index)
 			}
-			operation, err = store.NewSetGenerated(
-				concept,
-				store.Generation{By: input.Generated.By, At: input.Generated.At},
-			)
+			generated := store.Generation{By: input.Generated.By, At: input.Generated.At}
+			if profile == bundle.TemporalProfileV03 {
+				operation, err = store.NewSetGeneratedV03(concept, generated)
+			} else {
+				operation, err = store.NewSetGenerated(concept, generated)
+			}
 		case "ensure_verification", "remove_verification":
 			if input.Verification == nil {
 				return nil, toolErrorf("operations[%d].verification is required", index)
 			}
 			verification := store.Verification{By: input.Verification.By, At: input.Verification.At}
-			if input.Kind == "ensure_verification" {
+			switch {
+			case profile == bundle.TemporalProfileV03 && input.Kind == "ensure_verification":
+				operation, err = store.NewEnsureVerificationV03(concept, verification)
+			case profile == bundle.TemporalProfileV03:
+				operation, err = store.NewRemoveVerificationV03(concept, verification)
+			case input.Kind == "ensure_verification":
 				operation, err = store.NewEnsureVerification(concept, verification)
-			} else {
+			default:
 				operation, err = store.NewRemoveVerification(concept, verification)
 			}
 		case "put_source":
@@ -546,6 +575,14 @@ func buildPatchOperations(inputs []patchOperationInput, profiles ...bundle.Tempo
 			}
 		case "set_bundle_version":
 			operation, err = store.NewSetBundleVersion(input.Version)
+		case "set_bundle_metadata":
+			if input.BundleMetadata == nil {
+				return nil, toolErrorf("operations[%d].bundle_metadata is required", index)
+			}
+			metadata := input.BundleMetadata
+			operation, err = store.NewSetBundleMetadata(metadata.Title, metadata.Description, metadata.License)
+		case "set_superseded_by":
+			operation, err = store.NewSetSupersededBy(concept, input.SupersededBy)
 		default:
 			return nil, toolErrorf("operations[%d].kind is unsupported", index)
 		}

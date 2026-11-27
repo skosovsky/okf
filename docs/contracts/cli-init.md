@@ -10,14 +10,14 @@ permalink: /contracts/cli-init/
 
 # `okf init` CLI contract {#doc-section-001}
 
-`okf init <directory> [--json]` creates a new OKF 0.2 bundle. The directory
+`okf init <directory> [--json]` creates a new OKF 0.3 bundle. Use `--spec 0.2` to create a 0.2 bundle. The directory
 argument is required and explicit. Its parent must already exist. The command
 does not choose `.okf` as a default path; inside an existing bundle, `.okf` is
 reserved for private store state.
 
 The command creates exactly two UTF-8 Markdown files:
 
-- `index.md`: root `okf_version: "0.2"` declaration and a link to the concept;
+- `index.md`: root `okf_version: "0.3"` declaration by default and a link to the concept;
 - `getting-started.md`: a `type: Guide` concept with `status: draft` and an
   explicit placeholder body.
 
@@ -26,13 +26,13 @@ history. The template contains no invented source, verification, actor, or
 temporal metadata. Replace the draft with domain knowledge and add provenance
 only when supported by actual materials.
 
-On success, text mode writes `Created OKF v0.2 bundle at <directory>` followed
+On success, text mode writes `Created OKF v0.3 bundle at <directory>` by default followed
 by a newline. `--json` writes one JSON object with `path`, `okf_version`, and
 `files` (`["index.md","getting-started.md"]`). The `path` value is the
 lexically cleaned supplied path; the command does not resolve it to an
 absolute path. Success exits 0 with empty stderr. Usage, filesystem, and
 publication errors exit 1, write one `error: ...` line to stderr, and write no
-stdout. The command accepts no other flags or positional arguments.
+stdout. In 0.3, `--title`, `--description`, and `--license` set optional root metadata.
 
 The target must be absent. Any existing file, directory (empty or populated),
 or symlink is a conflict, including on a repeated invocation. There is no

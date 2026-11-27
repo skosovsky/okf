@@ -1,10 +1,74 @@
 package bundle
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestOKF03LogRenderingAndPublicationShareDateRules(t *testing.T) {
+	// Arrange.
+	version := VersionResolution{Effective: OKFVersion03}
+	wanted := Log{Title: "History", Days: []LogDay{
+		{Date: "2026-11-27", Entries: []LogEntry{{Kind: "Update", Text: "Reviewed the rule."}}},
+		{Date: "2026-10-31", Entries: []LogEntry{{Text: "Added an entry."}}},
+	}}
+	root := t.TempDir()
+	writeFile(t, root, "log.md", "")
+
+	// Act.
+	body, err := wanted.MarkdownForVersionContext(t.Context(), version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(root, "log.md")
+	session, err := OpenDocumentSessionContext(t.Context(), target, OKFVersion03)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := session.RewriteContext(t.Context(), Document{Body: body}); err != nil {
+		_ = session.Close()
+		t.Fatal(err)
+	}
+	if err := session.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Assert.
+	raw, err := os.ReadFile(target)
+	if err != nil || string(raw) != body || !reflect.DeepEqual(ParseLog(string(raw)), wanted) {
+		t.Fatalf("log round-trip: %q, %v", raw, err)
+	}
+	for _, test := range []struct {
+		name    string
+		next    Document
+		message string
+	}{
+		{"malformed date", Document{Body: strings.Replace(body, "2026-11-27", "2026-11-31", 1)}, "YYYY-MM-DD"},
+		{"frontmatter", NewDocument(NewFrontmatter(), body), "must not contain frontmatter"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			session, err := OpenDocumentSessionContext(t.Context(), target, OKFVersion03)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer session.Close()
+			err = session.RewriteContext(t.Context(), test.next)
+			if err == nil || !strings.Contains(err.Error(), test.message) {
+				t.Fatalf("rewrite: %v, want %s", err, test.message)
+			}
+			if actual, err := os.ReadFile(target); err != nil || string(actual) != body {
+				t.Fatalf("rejected rewrite changed bytes: %q, %v", actual, err)
+			}
+		})
+	}
+	wanted.Days[0].Date = "2026-11-31"
+	if rendered, err := wanted.MarkdownForVersionContext(t.Context(), version); err == nil || rendered != "" {
+		t.Fatalf("invalid log renderer result: %q, %v", rendered, err)
+	}
+}
 
 func TestParseLog(t *testing.T) {
 	t.Parallel()

@@ -23,22 +23,24 @@ var errConceptQueryNotFound = errors.New("concept not found")
 // A query is evaluated against one immutable Bundle snapshot. V1 deliberately
 // has no pagination: total and truncated make the bounded result explicit.
 type conceptQueryCard struct {
-	ID          string         `json:"id"`
-	Path        string         `json:"path"`
-	Type        string         `json:"type"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Tags        []string       `json:"tags"`
-	Status      *string        `json:"status"`
-	StatusState statusStateDTO `json:"status_state"`
-	Trust       string         `json:"trust"`
-	Stale       *bool          `json:"stale"`
-	StaleAfter  *string        `json:"stale_after"`
+	ID              string                    `json:"id"`
+	Path            string                    `json:"path"`
+	Type            string                    `json:"type"`
+	Title           string                    `json:"title"`
+	Description     string                    `json:"description"`
+	Tags            []string                  `json:"tags"`
+	Status          *string                   `json:"status"`
+	StatusState     statusStateDTO            `json:"status_state"`
+	Trust           string                    `json:"trust"`
+	Stale           *bool                     `json:"stale"`
+	StaleAfter      *string                   `json:"stale_after"`
+	StaleAfterState bundle.TemporalValueState `json:"stale_after_state,omitempty"`
 }
 
 type conceptSearchHit struct {
-	Concept conceptQueryCard `json:"concept"`
-	Match   string           `json:"match"`
+	Concept          conceptQueryCard `json:"concept"`
+	Match            string           `json:"match"`
+	MatchedConceptID string           `json:"matched_concept_id,omitempty"`
 }
 
 type conceptSearchResult struct {
@@ -83,7 +85,7 @@ func normalizedConceptQuery(value string) string {
 	return norm.NFC.String(cases.Fold().String(value))
 }
 
-func conceptCardContext(ctx context.Context, concept bundle.Concept, asOf *time.Time, profile bundle.TemporalProfile) (conceptQueryCard, error) {
+func conceptCardContext(ctx context.Context, concept bundle.Concept, asOf *time.Time, profile bundle.TemporalProfile, version bundle.VersionResolution) (conceptQueryCard, error) {
 	if err := ctx.Err(); err != nil {
 		return conceptQueryCard{}, err
 	}
@@ -91,11 +93,15 @@ func conceptCardContext(ctx context.Context, concept bundle.Concept, asOf *time.
 	typ, _ := frontmatter.Type()
 	title, _ := frontmatter.Title()
 	description, _ := frontmatter.Description()
-	trust, err := concept.Document.TrustTierContext(ctx)
+	trust, err := concept.Document.TrustTierForVersionContext(ctx, version)
 	if err != nil {
 		return conceptQueryCard{}, err
 	}
-	status := statusStateFromBundle(concept.Document.StatusState())
+	lifecycle, err := concept.Document.StatusStateForVersionContext(ctx, version)
+	if err != nil {
+		return conceptQueryCard{}, err
+	}
+	status := statusStateFromBundle(lifecycle)
 	card := conceptQueryCard{
 		ID: concept.ID.String(), Path: concept.Path, Type: typ, Title: title,
 		Description: description, Tags: frontmatter.Tags(), Status: status.Effective, StatusState: status,
@@ -112,6 +118,9 @@ func conceptCardContext(ctx context.Context, concept bundle.Concept, asOf *time.
 		value := staleAfter.Value.Raw
 		card.StaleAfter = &value
 	}
+	if profile == bundle.TemporalProfileV03 {
+		card.StaleAfterState = staleAfter.Value.State
+	}
 	if asOf != nil {
 		stale, known, err := concept.Document.Frontmatter.IsStaleForProfileContext(ctx, *asOf, profile)
 		if err != nil {
@@ -124,7 +133,7 @@ func conceptCardContext(ctx context.Context, concept bundle.Concept, asOf *time.
 	return card, ctx.Err()
 }
 
-func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query string, limit int, asOf *time.Time, profile bundle.TemporalProfile) (conceptSearchResult, error) {
+func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query string, limit int, asOf *time.Time, profile bundle.TemporalProfile, currentOnly bool) (conceptSearchResult, error) {
 	result := conceptSearchResult{Query: query, TemporalProfile: string(profile), Hits: []conceptSearchHit{}}
 	if asOf != nil {
 		value := formatConceptQueryAsOf(*asOf, profile)
@@ -132,6 +141,13 @@ func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query str
 	}
 	if strings.TrimSpace(query) == "" || limit < 1 || limit > maxConceptQueryLimit {
 		return result, fmt.Errorf("invalid concept search query or limit")
+	}
+	version, err := loaded.VersionResolutionContext(ctx, "")
+	if err != nil {
+		return result, err
+	}
+	if currentOnly && version.Effective != bundle.OKFVersion03 {
+		return result, fmt.Errorf("current_only requires an OKF 0.3 bundle")
 	}
 	needle := normalizedConceptQuery(query)
 	ids, err := loaded.ConceptIDsContext(ctx)
@@ -157,7 +173,7 @@ func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query str
 		if !ok {
 			return result, fmt.Errorf("captured concept index is inconsistent")
 		}
-		card, err := conceptCardContext(ctx, concept, asOf, profile)
+		card, err := conceptCardContext(ctx, concept, asOf, profile, version)
 		if err != nil {
 			return result, err
 		}
@@ -178,24 +194,60 @@ func searchConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, query str
 				match, score = "tags", 3
 			}
 		}
-		if score != 0 {
-			matches = append(matches, ranked{conceptSearchHit{card, match}, score})
+		if score == 0 {
+			continue
 		}
+		hit := conceptSearchHit{Concept: card, Match: match}
+		if currentOnly {
+			target, state, err := loaded.ResolveCurrentConceptContext(ctx, id)
+			if err != nil {
+				return result, err
+			}
+			if state != bundle.ReplacementCurrent {
+				continue
+			}
+			if target.String() != card.ID {
+				replacement, found, err := loaded.GetContext(ctx, target)
+				if err != nil {
+					return result, err
+				}
+				if !found {
+					return result, fmt.Errorf("captured replacement is missing")
+				}
+				hit.Concept, err = conceptCardContext(ctx, replacement, asOf, profile, version)
+				if err != nil {
+					return result, err
+				}
+				hit.MatchedConceptID = card.ID
+			}
+		}
+		matches = append(matches, ranked{hit: hit, score: score})
 	}
 	sort.Slice(matches, func(i, j int) bool {
 		if matches[i].score != matches[j].score {
 			return matches[i].score > matches[j].score
 		}
-		return matches[i].hit.Concept.ID < matches[j].hit.Concept.ID
+		left, right := matches[i].hit, matches[j].hit
+		if left.Concept.ID != right.Concept.ID {
+			return left.Concept.ID < right.Concept.ID
+		}
+		return left.MatchedConceptID < right.MatchedConceptID
 	})
 	if err := ctx.Err(); err != nil {
 		return result, err
 	}
-	result.Total = len(matches)
-	result.Truncated = len(matches) > limit
-	for _, match := range matches[:min(limit, len(matches))] {
-		result.Hits = append(result.Hits, match.hit)
+	emitted := make(map[string]struct{}, len(matches))
+	for _, match := range matches {
+		if _, found := emitted[match.hit.Concept.ID]; found {
+			continue
+		}
+		emitted[match.hit.Concept.ID] = struct{}{}
+		if len(result.Hits) < limit {
+			result.Hits = append(result.Hits, match.hit)
+		}
 	}
+	result.Total = len(emitted)
+	result.Truncated = result.Total > limit
 	return result, nil
 }
 
@@ -215,7 +267,11 @@ func neighborConceptSnapshot(ctx context.Context, loaded *bundle.Bundle, id bund
 	if !ok {
 		return result, errConceptQueryNotFound
 	}
-	result.Concept, err = conceptCardContext(ctx, selected, asOf, profile)
+	version, err := loaded.VersionResolutionContext(ctx, "")
+	if err != nil {
+		return result, err
+	}
+	result.Concept, err = conceptCardContext(ctx, selected, asOf, profile, version)
 	if err != nil {
 		return result, err
 	}
@@ -345,11 +401,15 @@ func neighborEdgeContext(ctx context.Context, loaded *bundle.Bundle, sourceID, t
 	if !ok {
 		return conceptNeighborEdge{}, fmt.Errorf("missing target concept")
 	}
-	sourceCard, err := conceptCardContext(ctx, source, asOf, profile)
+	version, err := loaded.VersionResolutionContext(ctx, "")
 	if err != nil {
 		return conceptNeighborEdge{}, err
 	}
-	targetCard, err := conceptCardContext(ctx, target, asOf, profile)
+	sourceCard, err := conceptCardContext(ctx, source, asOf, profile, version)
+	if err != nil {
+		return conceptNeighborEdge{}, err
+	}
+	targetCard, err := conceptCardContext(ctx, target, asOf, profile, version)
 	if err != nil {
 		return conceptNeighborEdge{}, err
 	}

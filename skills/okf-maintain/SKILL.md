@@ -54,8 +54,9 @@ adapter is optional and only for a host that supports it.
    changed API, behavior or contract; prefer `search_concepts` and selected
    `read_concept` from a connected OKF server, checking their live schemas.
    Otherwise inspect local indexes and selected Markdown. Check claims against
-   current implementation **and** the applicable source contract. Keep reads
-   focused; do not enumerate the whole bundle unless the task needs it.
+   current implementation **and** the applicable source contract. On OKF 0.3,
+   use `current_only` to follow retired concepts to their replacements. Check
+   each review date against `generated.at` before relying on that review.
 3. Make the authorized code change. Run the checker after that change:
 
    ```sh
@@ -66,16 +67,18 @@ adapter is optional and only for a host that supports it.
    Inspect `status`, `changes` and `fingerprint`. `no_relevant_change` is a
    possible result, not proof of content accuracy. `needs_review` requires a
    decision about the current diff.
-4. If claims changed, edit the affected concept(s), maintain navigation/log
-   when required by the bundle, and validate with the available OKF validator.
+4. If claims changed, edit the affected concept(s) and preserve extension
+   fields. For OKF 0.3, record the known actor and time in `generated` after a
+   meaningful edit. Preserve `generated.at` for formatting and link repair.
+   Keep earlier verification events in the file. Validate the bundle.
    Save a decision file using the current fingerprint:
 
    ```json
    {"fingerprint":"<fingerprint from check>","kind":"updated","updated_concepts":["knowledge/architecture.md"]}
    ```
 
-   The listed concept must have changed since the baseline. A `log.md` edit
-   alone is insufficient. If claims truly did not change, record a specific
+   List changed concepts as evidence. Navigation and log files record the
+   workflow separately. If claims stayed the same, record a specific
    reason tied to the code diff:
 
    ```json

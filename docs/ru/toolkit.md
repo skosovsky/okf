@@ -17,7 +17,7 @@ permalink: /ru/toolkit/
 ```sh
 work_dir=$(mktemp -d)
 go build -o "$work_dir/okf" ./cmd/okf
-"$work_dir/okf" init "$work_dir/new-knowledge"
+"$work_dir/okf" init "$work_dir/new-knowledge" --spec 0.3
 ```
 
 Появятся корневой `index.md` и начальная заметка. Откройте файлы и замените учебный текст своим правилом. Тип заметки задаёт `type`; версию всего набора задаёт `okf_version` только в корневом индексе. Источники добавляйте из предоставленных материалов.
@@ -40,7 +40,7 @@ cp -R examples/project-knowledge/ru "$work_dir/knowledge"
 
 Ожидайте чистую проверку, разделы о доставке и операторе, автономный HTML, сводку набора и разобранную заметку. `search` показывает фрагменты и строки; его оценка отражает совпадение слов. Если слов нет в тексте того же языка, выдача будет пустой.
 
-`--spec auto` использует объявление в корневом индексе; без объявления применяется 0.2 с правилами совместимости. Явный `--spec 0.1` или `0.2` проверяет выбранную версию: противоречащее или повреждённое объявление не заменяется молча. Для неизвестной будущей версии доступны чтение с сохранением объявления и сведения о совместимости.
+`--spec auto` использует объявление в корневом индексе и по умолчанию читает как 0.3. Для необъявленного набора со старыми правилами укажите `--spec 0.2`. Незнакомая версия остаётся видимой, знакомые поля читаются по правилам 0.3.
 
 ## Подготовить существующие Markdown {#setup}
 
@@ -57,7 +57,7 @@ cat > "$work_dir/team-notes/operator.md" <<'EOF'
 # Действия оператора
 Проверьте причину ошибки перед следующей попыткой.
 EOF
-"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide
+"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --spec 0.3
 ```
 
 Это предварительный просмотр: целевая папка ещё не создана. Ожидайте два документа, `applicable=true`, `published=false` и `Plan digest`. `Guide` — ваш явный выбор для файлов без типа. Прочитайте план и диагностику, затем скопируйте значение после `Plan digest:`:
@@ -65,8 +65,8 @@ EOF
 ```sh
 printf 'Вставьте контрольную сумму просмотренного плана: '
 read -r plan_digest
-"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --apply --plan-digest "$plan_digest"
-"$work_dir/okf" validate --path "$work_dir/imported-knowledge" --spec 0.2 --strict --check-links --check-orphans --max-warnings=0
+"$work_dir/okf" setup --source "$work_dir/team-notes" --target "$work_dir/imported-knowledge" --type Guide --spec 0.3 --apply --plan-digest "$plan_digest"
+"$work_dir/okf" validate --path "$work_dir/imported-knowledge" --spec 0.3 --strict --check-links --check-orphans --max-warnings=0
 "$work_dir/okf" view "$work_dir/imported-knowledge" --output "$work_dir/imported-knowledge.html" --lang ru
 ```
 
@@ -84,7 +84,7 @@ read -r plan_digest
 
 ## Переходы и автоматизация {#automation}
 
-Для 0.1 → 0.2 используйте [руководство миграции]({{ '/ru/migration/' | relative_url }}). Для API и всех 14 MCP-инструментов, включая `search_sections`, см. [справочник]({{ '/ru/reference/' | relative_url }}). Изменения через MCP выполняйте парами предварительного просмотра и применения; переносите контрольную сумму и ревизию из полученного плана, а не придумывайте их.
+Для перехода 0.1 → 0.2 или 0.2 → 0.3 используйте [руководство миграции]({{ '/ru/migration/' | relative_url }}). Для API и всех MCP-инструментов, включая `search_sections`, см. [справочник]({{ '/ru/reference/' | relative_url }}). Изменения через MCP выполняйте парами предварительного просмотра и применения; переносите контрольную сумму и ревизию из полученного плана, а не придумывайте их.
 
 В Go используйте контракты пакетов `bundle`, `validator`, `retrieval`, `setup`, `viewer`, `graph`, `mutation` и `store`; CLI и MCP предоставляют доступ к их операциям. При работе с датами задавайте явный `--as-of`: дата для стандартного профиля или время со смещением для `instant-0b87c52`.
 

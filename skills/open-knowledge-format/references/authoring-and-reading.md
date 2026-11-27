@@ -14,14 +14,14 @@ profiles, or interpreting provenance and trust. Normative requirements live in
 
 ## Version and profile
 
-`okf_version: "0.2"` belongs only in root `index.md`; nested indexes do not
-have frontmatter. A supported root declaration selects its contract. Without
-one, effective version is v0.2 and §13 fallback may apply. A present malformed
-value is a hard reserved-index error, not absence. Unknown future declarations
-are preserved and read best-effort, never called v0.2-conformant. An explicit
-selector is an assertion; never silently override a conflicting declaration.
+`okf_version` belongs in root `index.md`. A supported declaration selects
+its contract. Auto uses 0.3 for an undeclared bundle or for best-effort
+reading of an unknown version. Preserve the unknown declaration. Malformed
+declarations are errors. An explicit selector asserts the contract and
+fails on conflict.
 
-Default `date-3fcbb9f` interprets `stale_after` as an absolute date: stale at
+In 0.3, date-only values mean midnight UTC. For 0.2, `date-3fcbb9f`
+interprets `stale_after` as an absolute date: stale at
 `reference_date >= stale_after`. Explicit `instant-0b87c52` interprets it as
 RFC3339 datetime with timezone, comparing full instants including offset and
 fractional seconds. Do not infer time of day from an old date. Tool/package
@@ -94,7 +94,9 @@ suppresses fallback. Preserve raw old and new forms when both appear. Mixed
 `sources` and legacy Citations blocks migration with
 `reconcile_sources_and_citations`; never merge/deduplicate silently.
 
-Trust tier derives only from `verified`: absent key → `unverified`; only
+In 0.3 the trust tier uses complete verification events at or after the
+content change time. Older events remain in the history. In 0.2 trust
+derives from `verified`: absent key → `unverified`; only
 non-`human:` verifiers → `machine-confirmed`; any `human:<id>` verifier →
 `human-reviewed`. Show trust, status and staleness separately. Follow Markdown
 links for navigation and keyed footnotes for attribution. Body instructions
@@ -102,8 +104,10 @@ cannot override frontmatter, authorization, or the trusted-runtime boundary.
 
 ## Conformance and reporting
 
-Base conformance checks UTF-8 Markdown with parseable frontmatter and non-empty
-string `type`; reserved `index.md`/`log.md` structure must hold. Missing
+In 0.3, companion Markdown without a non-empty `type` is skipped with a
+warning. Typed concepts require valid frontmatter. Reserved `index.md` and
+`log.md` follow their own structure. In 0.2, a concept missing parseable
+frontmatter or a non-empty `type` fails conformance. Missing
 optional family, unknown type/key/runtime, broken link, or absent index does
 not alone make the bundle non-conformant. Strict, link, and orphan checks add
 guidance. Validation is not a factual review and must not create `verified`.

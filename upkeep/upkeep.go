@@ -594,7 +594,8 @@ func Check(cfg Config, baseline, current Baseline, decision *Decision) (Result, 
 			}
 		}
 		for _, concept := range decision.UpdatedConcepts {
-			if !pathIn(concept, filepath.ToSlash(cfg.BundleRoot)) || !strings.HasSuffix(concept, ".md") || concept == filepath.ToSlash(cfg.BundleRoot)+"/log.md" || concept == filepath.ToSlash(cfg.BundleRoot)+"/index.md" {
+			name := path.Base(concept)
+			if !pathIn(concept, filepath.ToSlash(cfg.BundleRoot)) || !strings.HasSuffix(name, ".md") || name == "log.md" || name == "index.md" {
 				continue
 			}
 			for _, e := range current.Entries {

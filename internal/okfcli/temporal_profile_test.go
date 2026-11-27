@@ -56,7 +56,7 @@ func TestCLIParseInstantTemporalProfilePreservesTypedProjection(t *testing.T) {
 	var output, stderr bytes.Buffer
 
 	// Act.
-	code := Run([]string{"parse", path, "--format", "json", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-23T11:00:00Z"}, &output, &stderr)
+	code := Run([]string{"parse", path, "--spec", "0.2", "--format", "json", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-23T11:00:00Z"}, &output, &stderr)
 	var projected struct {
 		TemporalProfile string `json:"temporal_profile"`
 		StaleAfter      string `json:"stale_after"`
@@ -107,7 +107,7 @@ func TestCLIParseInstantTemporalProfilePreservesTypedProjection(t *testing.T) {
 	}
 	output.Reset()
 	stderr.Reset()
-	if code := Run([]string{"parse", path, "--format", "json", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-23"}, &output, &stderr); code == 0 || !strings.Contains(stderr.String(), "invalid --as-of datetime") {
+	if code := Run([]string{"parse", path, "--spec", "0.2", "--format", "json", "--temporal-profile", "instant-0b87c52", "--as-of", "2026-09-23"}, &output, &stderr); code == 0 || !strings.Contains(stderr.String(), "invalid --as-of datetime") {
 		t.Fatalf("date-only as_of accepted by instant parse: code=%d stderr=%s", code, stderr.String())
 	}
 }

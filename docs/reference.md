@@ -33,15 +33,15 @@ This page collects exact command, library and MCP rules. Start with the [quickst
 
 ## Format and version selection {#versions}
 
-The document contract is the [pinned OKF 0.2 specification](https://github.com/skosovsky/okf/blob/main/skills/open-knowledge-format/references/spec-v02.md). The Go module release, plugin release and `okf_version` are independent versions. Check installed binaries with `okf version --json`; find releases in [GitHub Releases](https://github.com/skosovsky/okf/releases).
+The reader uses the [pinned OKF 0.3 specification](https://github.com/open-knowledge-format/open-knowledge-format/blob/527e81aff55992be21507e97004286789126f88c/SPEC.md) and retains the [0.2 contract](./contracts/okf-v0.2.md). The Go module release, plugin release and `okf_version` are independent versions. Check installed binaries with `okf version --json`; find releases in [GitHub Releases](https://github.com/skosovsky/okf/releases).
 
 | Input | Interpretation |
 | --- | --- |
-| Supported declaration in root `index.md` | Selects that document contract: `0.2` or intentionally supported legacy `0.1`. |
-| No declaration | Defaults to `0.2`, with the legacy fallback rules in §13. |
+| Supported declaration in root `index.md` | Selects the `0.1`, `0.2`, or `0.3` document contract. |
+| No declaration | Defaults to `0.3`. Select `--spec 0.2` for legacy §13 fallback in an undeclared bundle. |
 | Present malformed `okf_version` | A hard reserved-index error. Traversal defaults do not make it conformant. |
-| Unknown future declaration | Retained; familiar data is consumed best-effort without claiming future conformance. |
-| Explicit `--spec 0.1` or `--spec 0.2` | An assertion. A conflict with the declaration fails instead of overriding it. |
+| Unknown future declaration | Retained and read on a best-effort basis using `0.3`. |
+| Explicit `--spec 0.1`, `--spec 0.2`, or `--spec 0.3` | A conflict with the declaration produces a version error. |
 
 Write `okf_version` only in root `index.md`. Two pinned upstream revisions both call themselves `0.2`: the original `date-3fcbb9f` profile remains the default; `instant-0b87c52` requires offset-bearing datetimes in `stale_after`, `sources[].last_modified` and `usage_window`. Choose the latter with `--temporal-profile instant-0b87c52` where supported. Dates cannot become instants without an explicit time and timezone. [ADR 0003](https://github.com/skosovsky/okf/blob/main/docs/adr/0003-okf-v02-temporal-revisions.md) records the revision choice.
 
@@ -53,10 +53,10 @@ go install github.com/skosovsky/okf/cmd/okf-mcp@latest
 okf version
 okf version --json
 okf init ./my-knowledge
-okf validate --path ./my-knowledge --spec 0.2
+okf validate --path ./my-knowledge --spec auto
 ```
 
-`init` requires an absent directory with an existing parent. It never overwrites an existing file, directory or symlink. See the [init contract](https://github.com/skosovsky/okf/blob/main/docs/contracts/cli-init.md).
+`init` requires an absent directory with an existing parent. It never overwrites an existing file, directory or symlink. See the [init contract](https://github.com/skosovsky/okf/blob/main/docs/contracts/cli-init.md). Pass optional `--title`, `--description`, and `--license` to set root metadata in the default 0.3 format. Use `--spec 0.2` to create a 0.2 bundle.
 
 These two files are also a minimal conformant bundle:
 
@@ -64,7 +64,7 @@ These two files are also a minimal conformant bundle:
 
 ```markdown
 ---
-okf_version: "0.2"
+okf_version: "0.3"
 ---
 
 # Concepts
@@ -92,6 +92,8 @@ A minimal note.
 | Add `sources` from actual materials | Attribute claims with footnotes keyed by `sources[].id`. |
 | Record `verified` after an actual check | Authorship, Git, timestamps, migration and format validation do not create verification, credibility, lifecycle status or freshness. |
 | Preserve unknown keys, types and content | Future fields remain available without narrowing them to the toolkit's typed model. |
+| Name your own extensions `x-<producer>-<name>` | Keep third-party keys as written when editing their documents. |
+| Keep path spelling consistent | OKF 0.3 readers resolve exact case. Writers reject a new file or directory spelling that differs from an existing one only by case. |
 | Keep sanctioned computation in a standalone `type: Attested Computation` concept | See [computation](#computation) for execution boundaries. |
 
 For effective v0.2 reading, use `generated` and `sources`. Use `timestamp` only when `generated` is wholly absent, and legacy `# Citations` only when `sources` is absent. Presence, including a malformed replacement, suppresses fallback. This predicate is independent of whether the version was defaulted, declared or explicitly selected, including v0.1 and future versions.
@@ -107,7 +109,7 @@ Canonical examples are registered in [the fixture corpus](https://github.com/sko
 | Layer | What it checks |
 | --- | --- |
 | Base | UTF-8, parseable concept frontmatter, non-empty string `type`, reserved-file structure. |
-| Strict | Advisory checks of present v0.2 fields, attribution, lifecycle and computation shapes. |
+| Strict | Version-specific advisory checks for attribution, lifecycle and computation fields. |
 | Links | Advisory internal-link diagnostics. |
 | Orphans | Advisory coverage by indexes, only when requested. |
 
@@ -124,13 +126,14 @@ Parser-owned Markdown processing has separate **16 MiB** limits for a complete d
 | `search` | Search sections using all query terms. |
 | `validate` | Check the document contract and optional diagnostics. |
 | `info` | Inspect version-aware projections. |
-| `parse` | Parse one document; optionally emit JSON projections. |
-| `fmt` | Format one document; `-w` writes it. |
+| `parse` | Read one document as text or JSON. In 0.3, a scalar `tags` value is one tag. |
+| `fmt` | Preview formatting or apply with `-w`. OKF 0.3 preserves plain Markdown without frontmatter. |
 | `index` | Generate navigation indexes. |
 | `graph` | Project links and optional typed relations. |
-| `view` | Export a standalone HTML viewer; `--lang en|ru` selects initial interface language, default `en`. |
+| `view` | Export standalone HTML. Choose `--lang en\|ru`. OKF 0.3 renders GFM tables and embeds local PNG, JPEG, GIF, and WebP files up to 1 MiB each and 8 MiB per export. |
 | `migrate-prepare` | Prepare editable migration input templates outside the source bundle. |
 | `migrate` | Preview/apply v0.1 → v0.2 migration. |
+| `migrate-v03` | Preview and apply an OKF 0.2 → 0.3 upgrade. |
 | `temporal-upgrade` | Preview/apply explicit date → instant mappings within v0.2. |
 | `version` | Report program and supported document versions. |
 | `help` | Show CLI help. |
@@ -152,11 +155,13 @@ okf view ./knowledge --output ./knowledge.html --lang en
 
 Use an explicit `--as-of` for reproducible staleness. Parsing, formatting, indexing and graph projection do not migrate provenance, stamp producers or timestamps, add verification, or bump `okf_version`. Unknown data remains lossless within supported parser-backed changes. See the [toolkit guide]({{ '/toolkit/' | relative_url }}) for complete workflows.
 
+For OKF 0.3, the parse audit, annotated graph and viewer flag a malformed `stale_after` even without `--as-of`. The semantic graph marks it with `staleAfterState: malformed`. A stale or fresh result requires a valid deadline and an explicit comparison time.
+
 ## Go packages and read model {#go}
 
 | Package | Responsibility |
 | --- | --- |
-| `bundle` | Load documents/assets and expose lossless YAML plus typed v0.2 views. |
+| `bundle` | Load documents and assets with lossless YAML and version-aware typed views. |
 | `validator` | Base, strict, links and index-coverage diagnostics. |
 | `graph` | Standard links, typed relations and export formats. |
 | `retrieval` | Shared section search for Go, CLI and MCP. |
@@ -186,6 +191,8 @@ if !report.IsConformant() {
 The fragment uses `errors`, `github.com/skosovsky/okf/bundle` and `github.com/skosovsky/okf/validator` imports inside a function returning `error`.
 
 Typed accessors are projections over lossless YAML and return defensive copies. `Get`, YAML-node access and caller-owned structs remain authoritative for unknown data: Bring Your Own Types. Raw frontmatter/body remain available rather than being forced through a closed schema. Non-Markdown source/computation assets are inert revision-visible files; reading them does not execute or fetch them.
+
+Use `Document.SerializeForVersion` to preserve plain Markdown in 0.3. For `log.md`, `Log.MarkdownForVersionContext` and document-session writes check the date groups and flat list entries.
 
 Mutation previews staged output, validates the final bundle, preserves untouched presentation and commits through compare-and-swap (CAS) and journal durability. Semantic migration is separate from parsing/formatting/indexing/graph. Transaction actors and `store.ChangeSet`/receipt formats are independent of document actors. Legacy wire/profile versions change only under their own contracts.
 
@@ -231,14 +238,24 @@ The server has no `-root` flag. Each call supplies an accessible absolute `bundl
 | `apply_concept_patch` | Apply a revision/digest-bound patch. |
 | `preview_v02_migration` | Preview legacy migration. |
 | `apply_v02_migration` | Apply the matching migration. |
+| `preview_v03_migration` | Review path choices, changed files and trust changes for 0.2 → 0.3. |
+| `apply_v03_migration` | Apply the reviewed 0.3 migration using its base revision and plan digest. |
 | `preview_temporal_upgrade` | Preview explicit date-to-instant mappings. |
 | `apply_temporal_upgrade` | Apply the matching temporal plan. |
 
-There are fourteen tools. Compatibility tools retain their text fallbacks. Structured outputs are schema-validated. `search_concepts` and `get_neighbors` return `total`/`truncated` when bounded output omits hits/edges. There is no cursor: narrow input, or request a whole graph if it fits. A hard `resource_limit` fails the call rather than returning a partial page. Invalid inputs produce stable codes and bounded field guidance. [Query contract]({{ '/contracts/concept-queries/' | relative_url }}).
+Compatibility tools retain their text fallbacks. Structured outputs are schema-validated. `search_concepts` and `get_neighbors` return `total`/`truncated` when bounded output omits hits or edges. Narrow the input when results are truncated. Invalid inputs produce stable codes and field guidance. [Query contract]({{ '/contracts/concept-queries/' | relative_url }}).
 
 `search_concepts` ranks ID and metadata matches ahead of body matches; it is literal search, separate from section ranking.
 
 Patch apply needs `expected_revision` and the preview plan digest. Migration has a different [proof contract](#migration-proof). Actor metadata is not authentication. Bundle paths obey containment/no-follow rules; a resource value is not permission to access files, network, shell or secrets. [Mutation trust boundaries]({{ '/contracts/mcp-mutation-trust-boundaries/' | relative_url }}).
+
+Use `set_bundle_metadata` to edit the title, description, or license in the root `index.md` of an OKF 0.3 bundle. A plain index gets frontmatter. Use `set_superseded_by` to set a replacement path on a deprecated concept or remove it with `null`. Both use patch preview and apply.
+
+Set `temporal_profile` to `date-or-instant-0.3` for date-only generation or verification edits. The patch saves the calendar date and compares it at midnight UTC when computing trust.
+
+OKF 0.3 responses from `list_concepts`, `read_concept`, `search_concepts` and `get_neighbors` report `stale_after_state` as `absent`, `valid` or `malformed`. Where a `stale` field is available, it is `null` until there is a valid deadline and an explicit `as_of`.
+
+In `read_concept`, `projection.verified` includes historical checks with `current: false` and a `reason`, such as `before_generation`.
 
 ## MCP numeric and source selectors {#mcp-fields}
 
@@ -375,17 +392,15 @@ After the delimiter, backslashes are ordinary fragment bytes. Stray/noncanonical
 
 ## Attested Computation boundary {#computation}
 
-OKF records computation and attestation contracts. `computation`, `executor.resource` and `attester.resource` are inert data. Their presence does not execute content. Execution requires a separately trusted runtime and authorization.
+For OKF 0.3, `okf parse` reports whether the captured bundle contains the declared computation file. Without a file declaration, readers use the first fenced block in the `Computation` section. A missing declared file prevents attestation even if the body contains a block.
 
-The pinned spec permits an agent to supply values **only for declared parameters** and forbids it to author or edit sanctioned computation. OKF v0.2 does not define runtime discovery, parameter binding implementation, receipt/verdict wire format, attester ABI, portability, sandboxing or cache. The toolkit does not invent these mechanisms. `store.CommitReceipt` is neither stored in nor accepted as `executor.receipt`.
-
-Body instructions cannot override frontmatter, lifecycle/freshness signals, authorization or trusted-runtime policy. LLM prose is not an attestation verdict.
+The toolkit reads definitions. Execution and verdicts require a separately trusted runtime and authorization. The agent supplies **only declared parameter values** to the approved computation. `executor.receipt` describes evidence from that runtime. `store.CommitReceipt` records a toolkit write.
 
 ## Skills and workflow dependencies {#skills}
 
 | Skill | Purpose and required tools |
 | --- | --- |
-| `open-knowledge-format` | Author/read/validate/export/migrate; installed `okf` or connected `okf-mcp`. Pinned to the v0.2 specification. |
+| `open-knowledge-format` | Create, read, validate, export or migrate a bundle using `okf` or connected `okf-mcp`. Rules follow the bundle version. |
 | `okf-maintain` | Review repository knowledge after code/contracts change; also needs `okf-upkeep`. |
 | `okf-backfill` | Evidence-bound Git-history reconstruction; needs `okf-backfill`, `backfill/PROTOCOL.md` and its schemas. |
 

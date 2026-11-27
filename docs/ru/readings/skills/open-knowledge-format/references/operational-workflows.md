@@ -10,6 +10,8 @@ document_id: skills-open-knowledge-format-references-operational-workflows
 
 Это полный перевод инструкции для чтения. Для установки используйте исходный пакет навыка, а не эту страницу. Канонический источник: [skills/open-knowledge-format/references/operational-workflows.md](https://github.com/skosovsky/okf/blob/61e75e9aa9a8719dfb480bf1f5226553b3a21d70/skills/open-knowledge-format/references/operational-workflows.md). Проверенная ревизия источника: `61e75e9aa9a8719dfb480bf1f5226553b3a21d70`.
 
+Историческая редакция для OKF 0.2. Актуальные команды проверки и просмотра есть в [руководстве по инструментам]({{ '/ru/toolkit/' | relative_url }}).
+
 # Практические операции с OKF
 {: #section-1 }
 

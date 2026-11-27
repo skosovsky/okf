@@ -751,7 +751,7 @@ func TestRunGraphJSONLDOmitsAndSkipsParsedConcepts(t *testing.T) {
 	writeTestFile(t, root, "bad.md", "---\ntype: [\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "json-ld")
+	code, stdout, stderr := runCommand("graph", root, "--spec", "0.2", "--profile", "legacy-v0.1", "--format", "json-ld")
 
 	// Assert.
 	if code != 0 {
@@ -929,7 +929,7 @@ func TestRunGraphNTriplesOmitsAndSkipsParsedConcepts(t *testing.T) {
 	writeTestFile(t, root, "bad.md", "---\ntype: [\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--spec", "0.2", "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
@@ -954,7 +954,7 @@ func TestRunGraphNTriplesIRIEncoding(t *testing.T) {
 	writeTestFile(t, root, "unicode/тест.md", "---\ntype: Note\n---\nBody.\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("graph", root, "--profile", "legacy-v0.1", "--format", "ntriples")
+	code, stdout, stderr := runCommand("graph", root, "--spec", "0.2", "--profile", "legacy-v0.1", "--format", "ntriples")
 
 	// Assert.
 	if code != 0 {
@@ -1080,8 +1080,8 @@ func TestRunValidateAndParseNonConformant(t *testing.T) {
 	file := filepath.Join(root, "bad.md")
 
 	// Act.
-	validateCode, validateOut, validateErr := runCommand("validate", "--path", root)
-	parseCode, parseOut, parseErr := runCommand("parse", file)
+	validateCode, validateOut, validateErr := runCommand("validate", "--spec", "0.2", "--path", root)
+	parseCode, parseOut, parseErr := runCommand("parse", "--spec", "0.2", file)
 
 	// Assert.
 	if validateCode != 1 {
@@ -1150,7 +1150,7 @@ func TestRunParsePrintsDocumentStructure(t *testing.T) {
 		"[1] [Source](https://example.com)\n")
 
 	// Act.
-	code, stdout, stderr := runCommand("parse", filepath.Join(root, "a.md"))
+	code, stdout, stderr := runCommand("parse", filepath.Join(root, "a.md"), "--spec", "0.2")
 
 	// Assert.
 	if code != 0 {

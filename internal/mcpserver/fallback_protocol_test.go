@@ -27,7 +27,7 @@ func TestMCPLegacyFallbackObservationVersionSourceMatrix(t *testing.T) {
 		resolution    string
 		compatibility string
 	}{
-		{name: "default", effective: "0.2", resolution: "default", compatibility: "native"},
+		{name: "default", effective: "0.3", resolution: "default", compatibility: "native"},
 		{
 			name: "declared-v01", declaration: "0.1", declared: corpusString("0.1"),
 			effective: "0.1", resolution: "declared", compatibility: "legacy",
@@ -38,7 +38,7 @@ func TestMCPLegacyFallbackObservationVersionSourceMatrix(t *testing.T) {
 		},
 		{
 			name: "future", declaration: "9.9", declared: corpusString("9.9"),
-			effective: "0.2", resolution: "future-best-effort", compatibility: "best-effort",
+			effective: "0.3", resolution: "future-best-effort", compatibility: "best-effort",
 		},
 	}
 	documents := map[string]string{
@@ -94,10 +94,11 @@ func TestMCPLegacyFallbackObservationVersionSourceMatrix(t *testing.T) {
 				if err != nil {
 					t.Fatalf("LegacyFallbackObservationContext(%s) error = %v", summary.Path, err)
 				}
-				if summary.LegacyDerived.Generated != observation.TimestampActive ||
-					summary.LegacyDerived.Citations != observation.CitationsActive ||
-					read.LegacyFallback.GeneratedFromTimestamp != observation.TimestampActive ||
-					read.LegacyFallback.SourcesFromCitations != observation.CitationsActive {
+				legacy := version.effective != "0.3"
+				if summary.LegacyDerived.Generated != (legacy && observation.TimestampActive) ||
+					summary.LegacyDerived.Citations != (legacy && observation.CitationsActive) ||
+					read.LegacyFallback.GeneratedFromTimestamp != (legacy && observation.TimestampActive) ||
+					read.LegacyFallback.SourcesFromCitations != (legacy && observation.CitationsActive) {
 					t.Fatalf("%s fallback projection = list %#v read %#v, observation %#v",
 						summary.ID, summary.LegacyDerived, read.LegacyFallback, observation)
 				}
@@ -110,8 +111,9 @@ func TestMCPLegacyFallbackObservationVersionSourceMatrix(t *testing.T) {
 			if len(summaries) != len(documents) {
 				t.Fatalf("listed concepts = %d, want %d", len(summaries), len(documents))
 			}
-			assertFallbackFlags(t, summaries["active"], true, true)
-			assertFallbackFlags(t, summaries["malformed-active"], true, true)
+			legacy := version.effective != "0.3"
+			assertFallbackFlags(t, summaries["active"], legacy, legacy)
+			assertFallbackFlags(t, summaries["malformed-active"], legacy, legacy)
 			assertFallbackFlags(t, summaries["suppressed"], false, false)
 			assertFallbackFlags(t, summaries["marker-only"], false, false)
 
@@ -132,8 +134,8 @@ func TestMCPLegacyFallbackObservationVersionSourceMatrix(t *testing.T) {
 			}
 			decodeCorpusStructured(t, graphResult, &graphed)
 			activeID := "local:bundle:" + url.PathEscape("active")
-			if !hasLegacyFallbackGraphLink(graphed.Graph, "generationOf", activeID) ||
-				!hasLegacyFallbackGraphLink(graphed.Graph, "sourceOf", activeID) {
+			if hasLegacyFallbackGraphLink(graphed.Graph, "generationOf", activeID) != legacy ||
+				hasLegacyFallbackGraphLink(graphed.Graph, "sourceOf", activeID) != legacy {
 				t.Fatalf("graph did not project active fallbacks: %#v", graphed.Graph)
 			}
 			for _, id := range []string{"malformed-active", "suppressed", "marker-only"} {
@@ -238,6 +240,7 @@ func TestMCPGeneratedReplacementPresenceControlsEffectiveTimestampAndMigrationPr
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
+			writeTestFile(t, root, "index.md", "---\nokf_version: '0.1'\n---\n# Fallback test\n")
 			document := "---\ntype: Knowledge\n" + test.generatedYAML +
 				"timestamp: " + legacyTimestamp + "\n---\nA.\n"
 			writeTestFile(t, root, "a.md", document)
@@ -315,7 +318,7 @@ func TestMCPLegacyFallbackObservationCancellationIsStable(t *testing.T) {
 	}
 	ctx := &mcpCancelAfterErrContext{Context: t.Context(), remaining: 1}
 
-	observation, result := legacyFallbackObservation(ctx, document)
+	observation, result := legacyFallbackObservation(ctx, document, bundle.VersionResolution{Effective: bundle.OKFVersion})
 
 	if observation != (bundle.LegacyFallbackObservation{}) || result == nil || !result.IsError {
 		t.Fatalf("cancelled observation = (%#v, %#v), want stable tool error", observation, result)

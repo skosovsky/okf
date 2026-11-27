@@ -1,9 +1,13 @@
 package mcpserver
 
 import (
+	"bytes"
+	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcptest"
+	"github.com/skosovsky/okf/internal/okfcli"
 )
 
 func TestMCPListAndReadProjectVerificationTrustStalenessAndNonNullArrays(t *testing.T) {
@@ -173,5 +177,84 @@ func TestMCPListAndReadProjectVerificationTrustStalenessAndNonNullArrays(t *test
 				t.Fatalf("read verified[0].by = %#v, want %q", got, want.verifiedBy)
 			}
 		})
+	}
+}
+
+func TestOKF03MCPListAndReadIgnoreHistoricalReview(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	writeTestFile(t, root, "index.md", "---\nokf_version: '0.3'\n---\n\n# Policies\n\n- [Policy](policy.md)\n")
+	writeTestFile(t, root, "README.md", "# Companion Markdown\n")
+	writeTestFile(t, root, "policy.md", "---\ntype: Policy\ngenerated: {by: bot/v1, at: 2026-11-18T10:00:00Z}\nverified: {by: 'human:ada', at: 2026-11-18T09:00:00Z}\n---\n\nRevised policy.\n")
+	srv, err := mcptest.NewServer(t, mustServerTools(t)...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	// Act.
+	listed := callMCPTool(t, srv, "list_concepts", map[string]any{"bundle_path": root})
+	read := callMCPTool(t, srv, "read_concept", map[string]any{"bundle_path": root, "concept_id": "policy"})
+
+	// Assert.
+	if listed.IsError || read.IsError {
+		t.Fatalf("list: %s; read: %s", resultText(t, listed), resultText(t, read))
+	}
+	concepts := listed.StructuredContent.(map[string]any)["concepts"].([]any)
+	if len(concepts) != 1 || concepts[0].(map[string]any)["id"] != "policy" {
+		t.Fatalf("unexpected concept list: %#v", concepts)
+	}
+	projection := read.StructuredContent.(map[string]any)["projection"].(map[string]any)
+	if projection["trust"] != "unverified" || len(projection["verified"].([]any)) != 1 {
+		t.Fatalf("unexpected trust projection: %#v", projection)
+	}
+}
+
+func TestOKF03MCPReportsDateDeadlineAndHistoricalVerification(t *testing.T) {
+	// Arrange.
+	root := t.TempDir()
+	writeTestFile(t, root, "index.md", "---\nokf_version: '0.3'\n---\n\n# Index\n")
+	writeTestFile(t, root, "policy.md", "---\ntype: Policy\ngenerated: {by: tool/v1, at: 2026-11-18}\nverified: {by: 'human:ada', at: 2026-11-17}\n"+
+		"stale_after: 2026-11-18\nsources: {id: prev, resource: 'urn:policy:1', last_modified: '2026-11-10T09:00:00+01:00'}\n---\n")
+	srv, err := mcptest.NewServer(t, mustServerTools(t)...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srv.Close()
+
+	// Act.
+	list := callMCPTool(t, srv, "list_concepts", map[string]any{"bundle_path": root, "as_of": "2026-11-17T19:00:00-05:00"})
+	read := callMCPTool(t, srv, "read_concept", map[string]any{"bundle_path": root, "concept_id": "policy"})
+	var stdout, stderr bytes.Buffer
+	code := okfcli.Run([]string{"parse", filepath.Join(root, "policy.md"), "--spec", "0.3", "--format", "json"}, &stdout, &stderr)
+
+	// Assert.
+	if list.IsError || read.IsError {
+		t.Fatalf("list: %s; read: %s", resultText(t, list), resultText(t, read))
+	}
+	payload := list.StructuredContent.(map[string]any)
+	summary := payload["concepts"].([]any)[0].(map[string]any)
+	if payload["temporal_profile"] != "date-or-instant-0.3" || summary["stale"] != true ||
+		summary["trust"] != "unverified" || summary["generated_at"] != "2026-11-18T00:00:00Z" {
+		t.Fatalf("unexpected list summary: %#v", payload)
+	}
+	projection := read.StructuredContent.(map[string]any)["projection"].(map[string]any)
+	events := projection["verified"].([]any)
+	sources := projection["sources"].([]any)
+	if len(events) != 1 || events[0].(map[string]any)["at"] != "2026-11-17T00:00:00Z" ||
+		events[0].(map[string]any)["current"] != false || events[0].(map[string]any)["reason"] != "before_generation" ||
+		len(sources) != 1 || sources[0].(map[string]any)["last_modified"] != "2026-11-10T09:00:00+01:00" {
+		t.Fatalf("unexpected read projection: %#v", projection)
+	}
+	var audit struct {
+		TrustTier     string `json:"trust_tier"`
+		VerifiedAudit struct {
+			Entries []map[string]any `json:"entries"`
+		} `json:"verified_audit"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &audit); code != 0 || err != nil || audit.TrustTier != projection["trust"] ||
+		len(audit.VerifiedAudit.Entries) != 1 || audit.VerifiedAudit.Entries[0]["current"] != false ||
+		audit.VerifiedAudit.Entries[0]["reason"] != events[0].(map[string]any)["reason"] {
+		t.Fatalf("CLI parse differs from MCP read: exit=%d, err=%v, stderr=%s, output=%s", code, err, &stderr, &stdout)
 	}
 }

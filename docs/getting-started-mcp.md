@@ -66,4 +66,4 @@ Search returns snippets, lines, and digests. Reading returns the note content an
 - Search is empty: check the training folder language and query words.
 - The answer has no calls: request the diagnostic calls; a configuration entry alone does not confirm a connection.
 
-[Agent skill]({{ '/skill/' | relative_url }}) is installed separately. The catalog of all 14 tools and their limits is in the [reference]({{ '/reference/' | relative_url }}). This run checks connectivity and reading, rather than measuring model quality.
+[Agent skill]({{ '/skill/' | relative_url }}) is installed separately. The catalog of all tools and their limits is in the [reference]({{ '/reference/' | relative_url }}). This run checks connectivity and reading, rather than measuring model quality.

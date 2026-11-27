@@ -1,15 +1,20 @@
 ---
 type: Guide
-title: Когда подключать оператора
+title: Прежнее правило доставки
+status: deprecated
+superseded_by: retry-policy-current.md
+generated: {by: 'process:training-editor', at: '2026-11-19T09:00:00Z'}
+verified: {by: 'human:training-editor', at: '2026-11-18T09:00:00Z'}
+stale_after: '2026-11-20'
 sources:
   - id: requirements
     title: Учебные требования к доставке
     resource: source-material.md
 ---
-# Когда подключать оператора
+# Прежнее правило доставки
 
-Повторяйте неудачную доставку задания в течение 24 часов. После этого нужен оператор.[^requirements]
+По прежнему правилу неудачную доставку задания повторяли 24 часа. После этого подключался оператор.[^requirements]
 
-Откройте [предоставленные требования](source-material.md), чтобы проверить срок и действие оператора.
+Новый срок указан в [действующем правиле](retry-policy-current.md).
 
 [^requirements]: Учебные требования к доставке, предоставленный учебный материал.

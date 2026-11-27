@@ -241,9 +241,9 @@ func TestGraphAutoPreservesDomainVersionResolutionSource(t *testing.T) {
 				t.Fatalf("graph output has no proj:Projection node: %q", stdout.String())
 			}
 			declared, _ := projection["declaredOKFVersion"].(string)
-			if declared != test.wantDeclared || projection["effectiveOKFVersion"] != "0.2" ||
+			if declared != test.wantDeclared || projection["effectiveOKFVersion"] != "0.3" ||
 				projection["versionSource"] != test.wantSource || projection["compatibilityMode"] != test.wantCompat {
-				t.Fatalf("version projection = %#v, want declared=%q effective=0.2 source=%q compat=%q",
+				t.Fatalf("version projection = %#v, want declared=%q effective=0.3 source=%q compat=%q",
 					projection, test.wantDeclared, test.wantSource, test.wantCompat)
 			}
 		})

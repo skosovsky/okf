@@ -41,7 +41,8 @@ func renderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle
 	if err != nil {
 		return err
 	}
-	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+	b, version, err := selectGraphBundleContext(ctx, b, options)
+	if err != nil {
 		return err
 	}
 	nodes := mermaidNodeAllocator{}
@@ -63,6 +64,10 @@ func renderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle
 		if err != nil {
 			return err
 		}
+		pathEdges, err := b.PathConceptEdgesContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
 		var relations []bundle.Relation
 		if options.ExtensionRelations == ExtensionRelationsInclude {
 			relations, err = b.SemanticLinksFromContext(ctx, concept.ID)
@@ -70,11 +75,11 @@ func renderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle
 				return err
 			}
 		}
-		if len(links) == 0 && len(relations) == 0 {
+		if len(links) == 0 && len(pathEdges) == 0 && len(relations) == 0 {
 			continue
 		}
 		if options.AnnotateTopology {
-			annotation, err := topologyAnnotationContext(ctx, concept.Document, options)
+			annotation, err := topologyAnnotationContext(ctx, concept.Document, options, version)
 			if err != nil {
 				return err
 			}
@@ -115,6 +120,27 @@ func renderMermaidWithOptionsContext(ctx context.Context, w io.Writer, b *bundle
 				continue
 			}
 			if err := writefContext(ctx, w, "  %s -.->|\"404\"| %s\n", source, target); err != nil {
+				return err
+			}
+		}
+		for _, edge := range pathEdges {
+			source, err := graphConceptIDContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
+			target, err := graphConceptIDContext(ctx, edge.Target)
+			if err != nil {
+				return err
+			}
+			source, err = nodes.nodeContext(ctx, source)
+			if err != nil {
+				return err
+			}
+			target, err = nodes.nodeContext(ctx, target)
+			if err != nil {
+				return err
+			}
+			if err := writefContext(ctx, w, "  %s -->|%q| %s\n", source, edge.FieldPath, target); err != nil {
 				return err
 			}
 		}

@@ -94,7 +94,7 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 	if err := checkGraphContext(ctx); err != nil {
 		return toolkitProjection{}, err
 	}
-	resolution, err := b.VersionResolutionContext(ctx, options.VersionSelector)
+	b, resolution, err := selectGraphBundleContext(ctx, b, options)
 	if err != nil {
 		return toolkitProjection{}, err
 	}
@@ -174,14 +174,16 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 		}
 		if tags, err := frontmatter.TagsStateContext(ctx); err != nil {
 			return toolkitProjection{}, err
-		} else if tags.Valid {
+		} else if tags.Valid || resolution.Effective == bundle.OKFVersion03 {
 			for tagIndex, tag := range tags.Items {
 				if tagIndex%graphContextCheckInterval == 0 {
 					if err := checkGraphContext(ctx); err != nil {
 						return toolkitProjection{}, err
 					}
 				}
-				node.addLiteral("tag", tag.Value)
+				if tag.Valid {
+					node.addLiteral("tag", tag.Value)
+				}
 			}
 		}
 		links, err := b.LinksFromContext(ctx, concept.ID)
@@ -200,22 +202,37 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 			}
 			node.addIRI("references", targetIRI)
 		}
-		if err := projectLifecycleContext(ctx, &node, document, options); err != nil {
+		pathEdges, err := b.PathConceptEdgesContext(ctx, concept.ID)
+		if err != nil {
+			return toolkitProjection{}, err
+		}
+		for _, edge := range pathEdges {
+			target, err := toolkitConceptIRIContext(ctx, edge.Target)
+			if err != nil {
+				return toolkitProjection{}, err
+			}
+			if edge.FieldPath == "superseded_by" {
+				node.addIRI("supersededBy", target)
+			} else {
+				node.addIRI("pathReferences", target)
+			}
+		}
+		if err := projectLifecycleContext(ctx, &node, document, options, resolution); err != nil {
 			return toolkitProjection{}, err
 		}
 		projected := []projectionNode{node}
 		projected = append(projected, conceptAssets...)
-		generationNodes, err := projectGenerationContext(ctx, concept.ID, document)
+		generationNodes, err := projectGenerationContext(ctx, concept.ID, document, resolution)
 		if err != nil {
 			return toolkitProjection{}, err
 		}
 		projected = append(projected, generationNodes...)
-		verificationNodes, err := projectVerificationsContext(ctx, concept.ID, document)
+		verificationNodes, err := projectVerificationsContext(ctx, concept.ID, document, resolution)
 		if err != nil {
 			return toolkitProjection{}, err
 		}
 		projected = append(projected, verificationNodes...)
-		sourceNodes, sourceAssets, sourcesByNormalizedID, err := projectSourcesContextProfile(ctx, b, concept, options)
+		sourceNodes, sourceAssets, sourcesByNormalizedID, err := projectSourcesContextProfile(ctx, b, concept, options, resolution)
 		if err != nil {
 			return toolkitProjection{}, err
 		}
@@ -248,16 +265,16 @@ func buildToolkitProjectionContext(ctx context.Context, b *bundle.Bundle, option
 }
 
 func projectLifecycle(node *projectionNode, document bundle.Document, options Options) {
-	_ = projectLifecycleContext(context.Background(), node, document, options)
+	_ = projectLifecycleContext(context.Background(), node, document, options, bundle.VersionResolution{})
 }
 
-func projectLifecycleContext(ctx context.Context, node *projectionNode, document bundle.Document, options Options) error {
-	trustTier, err := document.TrustTierContext(ctx)
+func projectLifecycleContext(ctx context.Context, node *projectionNode, document bundle.Document, options Options, version bundle.VersionResolution) error {
+	trustTier, err := document.TrustTierForVersionContext(ctx, version)
 	if err != nil {
 		return err
 	}
 	node.addLiteral("trustTier", string(trustTier))
-	status, err := document.StatusStateContext(ctx)
+	status, err := document.StatusStateForVersionContext(ctx, version)
 	if err != nil {
 		return err
 	}
@@ -278,12 +295,24 @@ func projectLifecycleContext(ctx context.Context, node *projectionNode, document
 		profile = bundle.TemporalProfileInstant
 		valueKind = projectionDateTime
 	}
+	profile = bundle.TemporalProfileForVersion(version, profile)
+	if profile == bundle.TemporalProfileV03 {
+		valueKind = projectionDateTime
+	}
 	staleObservation, err := document.Frontmatter.StaleAfterForProfileContext(ctx, profile)
 	if err != nil {
 		return err
 	}
-	if staleAfter := staleObservation.Value; staleAfter.State == bundle.TemporalValid {
-		node.add("staleAfter", projectionValue{Kind: valueKind, Value: staleAfter.Raw})
+	staleAfter := staleObservation.Value
+	if profile == bundle.TemporalProfileV03 && staleAfter.State == bundle.TemporalMalformed {
+		node.addLiteral("staleAfterState", string(staleAfter.State))
+	}
+	if staleAfter.State == bundle.TemporalValid {
+		value := staleAfter.Raw
+		if profile == bundle.TemporalProfileV03 {
+			value = staleAfter.Time.Format(time.RFC3339Nano)
+		}
+		node.add("staleAfter", projectionValue{Kind: valueKind, Value: value})
 		if options.AsOf != nil {
 			asOf := options.AsOf.Format(time.RFC3339Nano)
 			if profile == bundle.TemporalProfileDate {
@@ -306,11 +335,15 @@ func projectGeneration(id bundle.ConceptID, document bundle.Document) []projecti
 	return nodes
 }
 
-func projectGenerationContext(ctx context.Context, id bundle.ConceptID, document bundle.Document) ([]projectionNode, error) {
+func projectGenerationContext(ctx context.Context, id bundle.ConceptID, document bundle.Document, versions ...bundle.VersionResolution) ([]projectionNode, error) {
 	if err := checkGraphContext(ctx); err != nil {
 		return nil, err
 	}
-	generation, err := document.GenerationStateContext(ctx)
+	profile := bundle.TemporalProfileDate
+	if len(versions) > 0 {
+		profile = bundle.TemporalProfileForVersion(versions[0], profile)
+	}
+	generation, err := document.Frontmatter.GenerationStateForProfileContext(ctx, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +355,7 @@ func projectGenerationContext(ctx context.Context, id bundle.ConceptID, document
 	if err != nil {
 		return nil, err
 	}
-	legacyFallback := fallback.TimestampAllowed &&
+	legacyFallback := profile != bundle.TemporalProfileV03 && fallback.TimestampAllowed &&
 		effectiveAt.State == bundle.TemporalValid
 	if !generation.HasValue && !legacyFallback {
 		return nil, nil
@@ -336,7 +369,11 @@ func projectGenerationContext(ctx context.Context, id bundle.ConceptID, document
 		node.addLiteral("actor", generation.By.Value)
 	}
 	if generation.At.State == bundle.TemporalValid {
-		node.add("at", projectionValue{Kind: projectionDateTime, Value: generation.At.Raw})
+		value := generation.At.Raw
+		if profile == bundle.TemporalProfileV03 {
+			value = generation.At.Time.Format(time.RFC3339Nano)
+		}
+		node.add("at", projectionValue{Kind: projectionDateTime, Value: value})
 	}
 	if legacyFallback {
 		node.add("at", projectionValue{Kind: projectionDateTime, Value: effectiveAt.Raw})
@@ -355,13 +392,30 @@ func projectVerifications(id bundle.ConceptID, document bundle.Document) []proje
 	return nodes
 }
 
-func projectVerificationsContext(ctx context.Context, id bundle.ConceptID, document bundle.Document) ([]projectionNode, error) {
+func projectVerificationsContext(ctx context.Context, id bundle.ConceptID, document bundle.Document, versions ...bundle.VersionResolution) ([]projectionNode, error) {
 	if err := checkGraphContext(ctx); err != nil {
 		return nil, err
 	}
 	verifications, err := document.VerificationsContext(ctx)
 	if err != nil {
 		return nil, err
+	}
+	var current map[bundle.Verification]bool
+	if len(versions) > 0 && versions[0].Effective == bundle.OKFVersion03 {
+		trust, err := document.Frontmatter.TrustStateV03Context(ctx)
+		if err != nil {
+			return nil, err
+		}
+		current = make(map[bundle.Verification]bool)
+		verifications = make([]bundle.Verification, 0, len(trust.Verifications))
+		for _, event := range trust.Verifications {
+			if event.Verification.Valid {
+				value := event.Verification.Value
+				value.At = event.Verification.AtValue.Time.Format(time.RFC3339Nano)
+				current[value] = event.Current
+				verifications = append(verifications, value)
+			}
+		}
 	}
 	if err := stableSortContext(ctx, verifications, func(ctx context.Context, left, right bundle.Verification) (bool, error) {
 		comparison, err := compareGraphStringsContext(ctx, left.At, right.At)
@@ -395,6 +449,9 @@ func projectVerificationsContext(ctx context.Context, id bundle.ConceptID, docum
 		if at := verification.AtValue(); at.State == bundle.TemporalValid {
 			node.add("at", projectionValue{Kind: projectionDateTime, Value: at.Raw})
 		}
+		if current != nil {
+			node.addBoolean("currentVerification", current[verification])
+		}
 		node.addIRI("verificationOf", conceptIRI)
 		nodes = append(nodes, node)
 	}
@@ -422,6 +479,7 @@ func projectSourcesContextProfile(
 	b *bundle.Bundle,
 	concept bundle.Concept,
 	options Options,
+	versions ...bundle.VersionResolution,
 ) ([]projectionNode, []projectionNode, normalizedSourceLookup, error) {
 	if err := checkGraphContext(ctx); err != nil {
 		return nil, nil, nil, err
@@ -434,6 +492,18 @@ func projectSourcesContextProfile(
 		profile = bundle.TemporalProfileInstant
 		valueKind = projectionDateTime
 	}
+	if len(versions) > 0 {
+		profile = bundle.TemporalProfileForVersion(versions[0], profile)
+	}
+	if profile == bundle.TemporalProfileV03 {
+		valueKind = projectionDateTime
+	}
+	valueText := func(observation bundle.TemporalObservation) string {
+		if profile == bundle.TemporalProfileV03 {
+			return observation.Time.Format(time.RFC3339Nano)
+		}
+		return observation.Raw
+	}
 	sourceStates, err := document.Frontmatter.SourceStatesForProfileContext(ctx, profile)
 	if err != nil {
 		return nil, nil, nil, err
@@ -442,7 +512,7 @@ func projectSourcesContextProfile(
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	if fallback.CitationsAllowed {
+	if profile != bundle.TemporalProfileV03 && fallback.CitationsAllowed {
 		return projectLegacyCitationsContext(ctx, b, concept)
 	}
 	validSources := make([]bundle.TemporalSourceState, 0, len(sourceStates))
@@ -520,7 +590,7 @@ func projectSourcesContextProfile(
 			node.addUnsignedInteger("usageCount", sourceState.Source.UsageCount.Value)
 		}
 		if sourceState.LastModified.State == bundle.TemporalValid {
-			node.add("lastModified", projectionValue{Kind: valueKind, Value: sourceState.LastModified.Raw})
+			node.add("lastModified", projectionValue{Kind: valueKind, Value: valueText(sourceState.LastModified)})
 		}
 		window := sharedWindow
 		override := sourceState.UsageWindow.Present
@@ -529,10 +599,10 @@ func projectSourcesContextProfile(
 		}
 		if window.Valid {
 			if window.From.State == bundle.TemporalValid {
-				node.add("usageFrom", projectionValue{Kind: valueKind, Value: window.From.Raw})
+				node.add("usageFrom", projectionValue{Kind: valueKind, Value: valueText(window.From)})
 			}
 			if window.To.State == bundle.TemporalValid {
-				node.add("usageTo", projectionValue{Kind: valueKind, Value: window.To.Raw})
+				node.add("usageTo", projectionValue{Kind: valueKind, Value: valueText(window.To)})
 			}
 			node.addBoolean("sourceUsageWindowOverride", override)
 		}
@@ -711,7 +781,7 @@ func projectAttestedComputationContext(ctx context.Context, b *bundle.Bundle, co
 		return nil, err
 	}
 	id := concept.ID
-	state, err := concept.Document.AttestedComputationStateContext(ctx)
+	state, err := b.ComputationStateContext(ctx, concept)
 	if err != nil {
 		return nil, err
 	}
@@ -731,6 +801,12 @@ func projectAttestedComputationContext(ctx context.Context, b *bundle.Bundle, co
 	}
 	node.addIRI("contractOf", conceptIRI)
 	node.addLiteral("computationMode", string(state.Mode))
+	if state.UnavailableReason != "" {
+		node.addLiteral("computationUnavailableReason", state.UnavailableReason)
+	}
+	if state.Attestable {
+		node.addBoolean("attestable", true)
+	}
 	if contractState.Runtime.Valid {
 		node.addLiteral("runtime", contractState.Runtime.Value)
 	}

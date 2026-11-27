@@ -4,16 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/skosovsky/okf/retrieval"
 	"io"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	"github.com/skosovsky/okf/retrieval"
 )
 
 func cmdSearch(args []string, stdout io.Writer) (int, error) {
-	parsed, err := parseArgs(args, []flagSpec{{Name: "--query", Kind: stringFlag}, {Name: "--limit", Kind: stringFlag}, {Name: "--json", Kind: boolFlag}})
+	parsed, err := parseArgs(args, []flagSpec{
+		{Name: "--query", Kind: stringFlag},
+		{Name: "--limit", Kind: stringFlag},
+		{Name: "--current-only", Kind: boolFlag},
+		{Name: "--json", Kind: boolFlag},
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -38,7 +44,11 @@ func cmdSearch(args []string, stdout io.Writer) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	result, err := retrieval.Search(ctx, b, query, limit)
+	search := retrieval.Search
+	if parsed.boolValue("--current-only") {
+		search = retrieval.SearchCurrent
+	}
+	result, err := search(ctx, b, query, limit)
 	if err != nil {
 		return 0, err
 	}
@@ -48,6 +58,11 @@ func cmdSearch(args []string, stdout io.Writer) (int, error) {
 	for _, h := range result.Hits {
 		if _, err = fmt.Fprintf(stdout, "%s lines %d–%d · %s\n%s\n", renderTextString(h.Path), h.LineStart, h.LineEnd, renderTextString(h.Heading), renderTextString(h.Snippet)); err != nil {
 			return 0, err
+		}
+		if h.ReplacementConceptID != "" {
+			if _, err = fmt.Fprintf(stdout, "Current replacement: %s\n", renderTextString(h.ReplacementConceptID)); err != nil {
+				return 0, err
+			}
 		}
 	}
 	_, err = fmt.Fprintf(stdout, "%d sections matched; truncated=%t\n", result.Total, result.Truncated)

@@ -40,6 +40,6 @@ Current server bounds: bundle loading at most 10,000 files and 10,000 concepts, 
 
 ## Temporal observation and bounds {#doc-section-005}
 
-`temporal_profile` defaults to `date-3fcbb9f`. Its `as_of` value must be a `YYYY-MM-DD` date. Explicit `instant-0b87c52` requires RFC3339 datetime with a known UTC offset. The response repeats the profile and reference time. Each concept card reports status, status state, trust, stale-after, and stale independently. Without `as_of`, `stale` is null. An unparseable or absent stale-after value also produces null rather than an invented freshness claim.
+For an OKF 0.3 bundle, omit `temporal_profile` and pass a calendar date or an RFC 3339 timestamp with a known UTC offset in `as_of`. A calendar date means midnight UTC. Older bundles use `date-3fcbb9f` by default. For the historical `instant-0b87c52` profile, pass an RFC 3339 timestamp. Available response fields report the effective profile and comparison time. The result is `stale: null` when the deadline is absent or malformed, or when `as_of` is omitted.
 
-Bundle loading is capped at 10,000 concepts and the existing MCP byte limits. Search and neighbor responses are schema-validated and capped by the common MCP output budget. Context cancellation returns an error, not a partial success. The existing nine tool names and contracts remain available; the server also has a temporal-upgrade preview/apply pair and the additive `search_sections` tool, for fourteen tools total.
+Bundle loading is capped at 10,000 concepts and the MCP byte limits. Search and neighbor responses are schema-validated and capped by the output budget. Cancellation returns an error. See the [MCP tool catalog]({{ '/reference/' | relative_url }}#mcp).

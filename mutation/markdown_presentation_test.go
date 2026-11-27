@@ -398,7 +398,7 @@ func TestMoveConcept_RewritesSemanticEscapesAndEncodesDestination(t *testing.T) 
 				"old(x).md": []byte("---\ntype: thing\n---\nA\n"),
 				"b.md":      []byte("---\ntype: thing\n---\n[move](old\\(x\\).md)\n"),
 			}
-			result, err := Plan(context.Background(), source, change(t, source, store.MoveConcept{From: ref(t, "old(x)").ID, To: ref(t, tt.to).ID}))
+			result, err := planV02(context.Background(), source, change(t, source, store.MoveConcept{From: ref(t, "old(x)").ID, To: ref(t, tt.to).ID}))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -1205,6 +1205,7 @@ func TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes(t *testing.T)
 
 	tests := []struct {
 		name             string
+		selector         string
 		relative         string
 		conceptID        string
 		wantDeclared     string
@@ -1227,10 +1228,11 @@ func TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes(t *testing.T)
 			wantGraphText:   "https://example.invalid/legacy-source",
 		},
 		{
-			name:            "undeclared v0.1 fallbacks",
+			name:            "undeclared v0.1 fallbacks with explicit 0.2",
+			selector:        bundle.OKFVersion,
 			relative:        filepath.Join("compat", "undeclared-v01"),
 			conceptID:       "legacy",
-			wantSource:      bundle.VersionSourceDefault,
+			wantSource:      bundle.VersionSourceExplicit,
 			wantEffectiveAt: "2026-05-28T22:53:05Z",
 			wantCitations:   1,
 			wantGraphText:   "https://example.test/legacy",
@@ -1268,7 +1270,7 @@ func TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes(t *testing.T)
 			if err != nil {
 				t.Fatalf("ReadFile(before) error = %v", err)
 			}
-			loaded, err := bundle.LoadBundle(root)
+			loaded, err := bundle.LoadBundleWithSpec(root, tt.selector)
 			if err != nil {
 				t.Fatalf("LoadBundle() error = %v", err)
 			}
@@ -1282,19 +1284,19 @@ func TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes(t *testing.T)
 			}
 
 			// Act.
-			resolution, err := loaded.VersionResolution("")
+			resolution, err := loaded.VersionResolution(tt.selector)
 			if err != nil {
-				t.Fatalf("VersionResolution(auto) error = %v", err)
+				t.Fatalf("VersionResolution error = %v", err)
 			}
 			effectiveAt, hasEffectiveAt := concept.Document.EffectiveContentChangeTime()
 			sources := concept.Document.Sources()
 			citations := concept.Document.Citations()
-			report := validator.ValidateBundle(loaded, &validator.ValidatorConfig{Strict: true})
+			report := validator.ValidateBundle(loaded, &validator.ValidatorConfig{Spec: tt.selector, Strict: true})
 			var projection bytes.Buffer
 			if err := graph.RenderJSONLDWithOptions(
 				&projection,
 				loaded,
-				graph.Options{Profile: graph.ProjectionProfileToolkitV02},
+				graph.Options{Profile: graph.ProjectionProfileToolkitV02, VersionSelector: tt.selector},
 			); err != nil {
 				t.Fatalf("RenderJSONLDWithOptions() error = %v", err)
 			}
@@ -1305,7 +1307,7 @@ func TestV02CompatibilityCorpusPreservesFallbackPrecedenceAndBytes(t *testing.T)
 
 			// Assert.
 			if resolution.Declared != tt.wantDeclared || resolution.Source != tt.wantSource {
-				t.Fatalf("VersionResolution(auto) = %#v, want declared=%q source=%q", resolution, tt.wantDeclared, tt.wantSource)
+				t.Fatalf("VersionResolution = %#v, want declared=%q source=%q", resolution, tt.wantDeclared, tt.wantSource)
 			}
 			if tt.wantEffectiveAt != "" && (!hasEffectiveAt || effectiveAt != tt.wantEffectiveAt) {
 				t.Fatalf("EffectiveContentChangeTime() = %q, %v; want %q, true", effectiveAt, hasEffectiveAt, tt.wantEffectiveAt)

@@ -660,6 +660,12 @@ func yamlRenderFromNodeContext(ctx context.Context, n *yaml.Node) (yamlRenderVal
 			}
 			return yamlBool(value), nil
 		case "!!int":
+			if usesCoreYAMLMutation(ctx) {
+				if value, ok := coreMutationInteger(n.Value); ok {
+					return value, nil
+				}
+				return yamlRenderValue{}, fmt.Errorf("%w: invalid core integer", ErrUnsupportedPresentation)
+			}
 			value, err := strconv.ParseInt(n.Value, 0, 64)
 			if err == nil {
 				return yamlInt(value), nil

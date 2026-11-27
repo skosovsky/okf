@@ -98,7 +98,7 @@ func (p *presentation) resolvedScalarPatch(n *yaml.Node, value string) (bytePatc
 	if !ok {
 		return bytePatch{}, p.yamlLocalError("unindexed_scalar", ErrUnsupportedPresentation, span.Span)
 	}
-	token, err := yamlScalarTokenContext(p.ctx, value, span.Style)
+	token, err := yamlScalarTokenContext(p.ctx, value, span.Style, p.coreV03)
 	if err != nil {
 		return bytePatch{}, err
 	}

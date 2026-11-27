@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/skosovsky/okf/bundle"
 	"gopkg.in/yaml.v3"
 )
 
@@ -78,8 +79,14 @@ func (value yamlRenderValue) semanticUncheckedContext(ctx context.Context) (*yam
 	case yamlRenderBool:
 		return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!bool", Value: strconv.FormatBool(value.boolean)}, nil
 	case yamlRenderInt:
+		if value.lexical != "" {
+			return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!int", Value: value.lexical}, nil
+		}
 		return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!int", Value: strconv.FormatInt(value.integer, 10)}, nil
 	case yamlRenderUint:
+		if value.lexical != "" {
+			return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!int", Value: value.lexical}, nil
+		}
 		return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!int", Value: strconv.FormatUint(value.unsigned, 10)}, nil
 	case yamlRenderDate, yamlRenderDateTime:
 		return &yamlSemanticNode{Kind: yaml.ScalarNode, Tag: "!!timestamp", Value: value.text}, nil
@@ -213,54 +220,54 @@ func isTemporalSelectorKey(key string) bool {
 	}
 }
 
-func renderYAMLReplacementContext(ctx context.Context, current *yaml.Node, desired yamlRenderValue) (string, error) {
+func renderYAMLReplacementContext(ctx context.Context, current *yaml.Node, desired yamlRenderValue, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
 	if desired.kind != yamlRenderMapping && desired.kind != yamlRenderSequence {
-		return renderYAMLInlineContext(ctx, desired)
+		return renderYAMLInlineContext(ctx, desired, coreV03)
 	}
 	if current.Kind == yaml.ScalarNode || current.Style&yaml.FlowStyle != 0 {
-		return renderYAMLFlowContext(ctx, desired)
+		return renderYAMLFlowContext(ctx, desired, coreV03)
 	}
 	indent := max(current.Column-1, 0)
-	rendered, err := renderYAMLBlockContext(ctx, desired, indent)
+	rendered, err := renderYAMLBlockContext(ctx, desired, indent, coreV03)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimPrefix(rendered, strings.Repeat(" ", indent)), nil
 }
 
-func renderYAMLMappingEntryContext(ctx context.Context, key string, value yamlRenderValue, indent int) (string, error) {
+func renderYAMLMappingEntryContext(ctx context.Context, key string, value yamlRenderValue, indent int, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	safe, err := yamlPlainSafeContext(ctx, key)
+	safe, err := yamlPlainSafeContext(ctx, key, coreV03)
 	if err != nil {
 		return "", err
 	}
 	if !safe {
-		key, err = yamlScalarTokenContext(ctx, key, 0)
+		key, err = yamlScalarTokenContext(ctx, key, 0, coreV03)
 		if err != nil {
 			return "", err
 		}
 	}
 	prefix := strings.Repeat(" ", indent) + key + ":"
 	if value.kind != yamlRenderMapping && value.kind != yamlRenderSequence || value.emptyCollection() {
-		inline, err := renderYAMLInlineContext(ctx, value)
+		inline, err := renderYAMLInlineContext(ctx, value, coreV03)
 		if err != nil {
 			return "", err
 		}
 		return prefix + " " + inline, nil
 	}
-	nested, err := renderYAMLBlockContext(ctx, value, indent+2)
+	nested, err := renderYAMLBlockContext(ctx, value, indent+2, coreV03)
 	if err != nil {
 		return "", err
 	}
 	return prefix + "\n" + nested, nil
 }
 
-func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent int) (string, error) {
+func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent int, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -274,7 +281,7 @@ func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent i
 			if err := ctx.Err(); err != nil {
 				return "", err
 			}
-			line, err := renderYAMLMappingEntryContext(ctx, entry.Key, entry.Value, indent)
+			line, err := renderYAMLMappingEntryContext(ctx, entry.Key, entry.Value, indent, coreV03)
 			if err != nil {
 				return "", err
 			}
@@ -292,14 +299,14 @@ func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent i
 			}
 			prefix := strings.Repeat(" ", indent) + "-"
 			if item.kind != yamlRenderMapping && item.kind != yamlRenderSequence || item.emptyCollection() {
-				inline, err := renderYAMLInlineContext(ctx, item)
+				inline, err := renderYAMLInlineContext(ctx, item, coreV03)
 				if err != nil {
 					return "", err
 				}
 				lines = append(lines, prefix+" "+inline)
 				continue
 			}
-			nested, err := renderYAMLBlockContext(ctx, item, indent+2)
+			nested, err := renderYAMLBlockContext(ctx, item, indent+2, coreV03)
 			if err != nil {
 				return "", err
 			}
@@ -307,7 +314,7 @@ func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent i
 		}
 		return strings.Join(lines, "\n"), nil
 	default:
-		inline, err := renderYAMLInlineContext(ctx, value)
+		inline, err := renderYAMLInlineContext(ctx, value, coreV03)
 		if err != nil {
 			return "", err
 		}
@@ -315,29 +322,35 @@ func renderYAMLBlockContext(ctx context.Context, value yamlRenderValue, indent i
 	}
 }
 
-func renderYAMLInlineContext(ctx context.Context, value yamlRenderValue) (string, error) {
+func renderYAMLInlineContext(ctx context.Context, value yamlRenderValue, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
 	switch value.kind {
 	case yamlRenderString:
-		return yamlScalarTokenContext(ctx, value.text, 0)
+		return yamlScalarTokenContext(ctx, value.text, 0, coreV03)
 	case yamlRenderBool:
 		return strconv.FormatBool(value.boolean), nil
 	case yamlRenderInt:
+		if value.lexical != "" {
+			return value.lexical, nil
+		}
 		return strconv.FormatInt(value.integer, 10), nil
 	case yamlRenderUint:
+		if value.lexical != "" {
+			return value.lexical, nil
+		}
 		return strconv.FormatUint(value.unsigned, 10), nil
 	case yamlRenderDate, yamlRenderDateTime:
 		return value.text, nil
 	case yamlRenderMapping, yamlRenderSequence:
-		return renderYAMLFlowContext(ctx, value)
+		return renderYAMLFlowContext(ctx, value, coreV03)
 	default:
 		return "", fmt.Errorf("invalid YAML render value")
 	}
 }
 
-func renderYAMLFlowContext(ctx context.Context, value yamlRenderValue) (string, error) {
+func renderYAMLFlowContext(ctx context.Context, value yamlRenderValue, coreV03 bool) (string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
@@ -349,14 +362,14 @@ func renderYAMLFlowContext(ctx context.Context, value yamlRenderValue) (string, 
 				return "", err
 			}
 			key := entry.Key
-			safe, err := yamlFlowPlainSafeContext(ctx, key)
+			safe, err := yamlFlowPlainSafeContext(ctx, key, coreV03)
 			if err != nil {
 				return "", err
 			}
 			if !safe {
 				key = strconv.Quote(key)
 			}
-			rendered, err := renderYAMLFlowContext(ctx, entry.Value)
+			rendered, err := renderYAMLFlowContext(ctx, entry.Value, coreV03)
 			if err != nil {
 				return "", err
 			}
@@ -369,7 +382,7 @@ func renderYAMLFlowContext(ctx context.Context, value yamlRenderValue) (string, 
 			if err := ctx.Err(); err != nil {
 				return "", err
 			}
-			rendered, err := renderYAMLFlowContext(ctx, item)
+			rendered, err := renderYAMLFlowContext(ctx, item, coreV03)
 			if err != nil {
 				return "", err
 			}
@@ -377,14 +390,14 @@ func renderYAMLFlowContext(ctx context.Context, value yamlRenderValue) (string, 
 		}
 		return "[" + strings.Join(parts, ", ") + "]", nil
 	case yamlRenderString:
-		return yamlFlowScalarTokenContext(ctx, value.text)
+		return yamlFlowScalarTokenContext(ctx, value.text, coreV03)
 	default:
-		return renderYAMLInlineContext(ctx, value)
+		return renderYAMLInlineContext(ctx, value, coreV03)
 	}
 }
 
-func yamlFlowScalarTokenContext(ctx context.Context, value string) (string, error) {
-	safe, err := yamlFlowPlainSafeContext(ctx, value)
+func yamlFlowScalarTokenContext(ctx context.Context, value string, coreV03 bool) (string, error) {
+	safe, err := yamlFlowPlainSafeContext(ctx, value, coreV03)
 	if err != nil {
 		return "", err
 	}
@@ -394,7 +407,7 @@ func yamlFlowScalarTokenContext(ctx context.Context, value string) (string, erro
 	return strconv.Quote(value), nil
 }
 
-func yamlFlowPlainSafeContext(ctx context.Context, value string) (bool, error) {
+func yamlFlowPlainSafeContext(ctx context.Context, value string, coreV03 bool) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
@@ -402,7 +415,7 @@ func yamlFlowPlainSafeContext(ctx context.Context, value string) (bool, error) {
 		return false, nil
 	}
 	probe, ok := boundedSyntheticYAMLScalarProbe("{v: ", value, "}\n")
-	if !ok {
+	if !ok || coreV03 && bundle.YAMLCoreStringNeedsQuotes(value) {
 		return false, nil
 	}
 	doc, err := decodeGuardedYAMLNodeContext(ctx, probe)

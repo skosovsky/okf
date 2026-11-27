@@ -39,7 +39,8 @@ func renderDOTWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bun
 	if err != nil {
 		return err
 	}
-	if err := assertVersionSelectorContext(ctx, b, options); err != nil {
+	b, version, err := selectGraphBundleContext(ctx, b, options)
+	if err != nil {
 		return err
 	}
 	if err := writelnContext(ctx, w, "digraph okf {"); err != nil {
@@ -62,6 +63,10 @@ func renderDOTWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bun
 		if err != nil {
 			return err
 		}
+		pathEdges, err := b.PathConceptEdgesContext(ctx, concept.ID)
+		if err != nil {
+			return err
+		}
 		var relations []bundle.Relation
 		if options.ExtensionRelations == ExtensionRelationsInclude {
 			relations, err = b.SemanticLinksFromContext(ctx, concept.ID)
@@ -69,12 +74,12 @@ func renderDOTWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bun
 				return err
 			}
 		}
-		if options.AnnotateTopology && (len(links) > 0 || len(relations) > 0) {
+		if options.AnnotateTopology && (len(links) > 0 || len(pathEdges) > 0 || len(relations) > 0) {
 			conceptID, err := graphConceptIDContext(ctx, concept.ID)
 			if err != nil {
 				return err
 			}
-			annotation, err := topologyAnnotationContext(ctx, concept.Document, options)
+			annotation, err := topologyAnnotationContext(ctx, concept.Document, options, version)
 			if err != nil {
 				return err
 			}
@@ -101,6 +106,19 @@ func renderDOTWithOptionsContext(ctx context.Context, w io.Writer, b *bundle.Bun
 				return err
 			}
 			if err := writefContext(ctx, w, "  %q -> %q%s;\n", source, target, style); err != nil {
+				return err
+			}
+		}
+		for _, edge := range pathEdges {
+			source, err := graphConceptIDContext(ctx, concept.ID)
+			if err != nil {
+				return err
+			}
+			target, err := graphConceptIDContext(ctx, edge.Target)
+			if err != nil {
+				return err
+			}
+			if err := writefContext(ctx, w, "  %q -> %q [label=%q];\n", source, target, edge.FieldPath); err != nil {
 				return err
 			}
 		}

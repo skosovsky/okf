@@ -3135,7 +3135,7 @@ func setMigrationBundleVersion(ctx context.Context, source []byte, version strin
 		if bytes.Contains(source, []byte("\r\n")) {
 			newline = "\r\n"
 		}
-		versionToken, err := yamlScalarTokenContext(ctx, version, 0)
+		versionToken, err := yamlScalarTokenContext(ctx, version, 0, version == bundle.OKFVersion03)
 		if err != nil {
 			return nil, err
 		}
